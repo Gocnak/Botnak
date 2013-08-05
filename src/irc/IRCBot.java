@@ -62,7 +62,6 @@ public class IRCBot extends PircBot {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        setVerbose(true);
         botnakTimer = new Timer(chatTime);
         soundTimer = new Timer(soundTime);
         soundBackTimer = new Timer(0);
