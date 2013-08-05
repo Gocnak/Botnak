@@ -3,10 +3,13 @@ Botnak
 
 A Java-based IRC chat client with bot capabilities and a focus on Twitch.tv streams.
 
-A full example list of commands and such can be found at http://bit.ly/1366RwM
+A full example list of commands and such can be found at http://bit.ly/1366RwM.
 
 TODO:
 - Code the ability to join SRL race chats
+- Make Botnak recognize admins/staff of Twitch and assign appropriate icons.
+- Make a working !songrq command that handles song requests -- add an engine for this maybe.
+- New-line detection for commands - perhaps typing a special character (like '[' or something) in the message text.
 - After a certain amount of lines (like, a LOT of lines), clear the chat (intelligently, keep the lines on screen) to prevent memory/lag issues
 - Hardcode all of the Twitch faces (Sub emotes and the kind) -- will do this when I make the viewer branch.
 - Make the viewer branch Kappa
