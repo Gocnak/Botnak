@@ -293,13 +293,14 @@ public class GUIMain extends JFrame {
                 chatText.setCaretPosition(doc.getLength());
                 int start = chatText.getCaretPosition();
                 doc.insertString(chatText.getCaretPosition(), time, norm);
-                if (modMap.contains(sender)) {
-                    insertModIcon(doc, chatText.getCaretPosition(), 0);
+                if (Utils.isUserOp(GUIMain.viewer, channel, sender)) {
+                    if (channel.contains(sender.toLowerCase())) {//broadcaster
+                        insertModIcon(doc, chatText.getCaretPosition(), 1);
+                    } else {//a mod
+                        insertModIcon(doc, chatText.getCaretPosition(), 0);
+                    }
                 }
-                if (sender.equals(viewer.getMaster())) {
-                    insertModIcon(doc, chatText.getCaretPosition(), 1);
-                }
-                if (sender.equalsIgnoreCase("pipe")) {
+                if (sender.equalsIgnoreCase("pipe")) {//TODO change this to detect SPECIALUSER or some shit
                     insertModIcon(doc, chatText.getCaretPosition(), 2);
                 }
                 doc.insertString(chatText.getCaretPosition(), " " + sender + " ", user);

@@ -3,6 +3,7 @@ package util;
 import gui.GUIMain;
 import irc.IRCBot;
 import lib.pircbot.org.jibble.pircbot.PircBot;
+import lib.pircbot.org.jibble.pircbot.User;
 
 import javax.swing.*;
 import java.awt.*;
@@ -552,6 +553,27 @@ public class Utils {
             given = given * 1000; //convert to millis
         }
         return given;
+    }
+
+    /**
+     * Checks whether the given nick that sent a message is an Operator or not.
+     *
+     * @param c The bot that is connected to the channel. Viewer is usually the default.
+     * @param channel The channel the user is in.
+     * @param nick The nick of the user.
+     * @return true if the user is an operator; otherwise false.
+     */
+    public static boolean isUserOp(PircBot c, String channel, String nick) {
+        if (c == null || channel == null || nick == null) return false;
+        User[] users = c.getUsers(channel);
+        for (User u : users) {
+            if (u != null) {
+                if (u.getNick().equalsIgnoreCase(nick)) {
+                    return u.isOp();
+                }
+            }
+        }
+        return false;
     }
 
     public static void addCommands(HashMap<StringArray, Timer> map, String s) {
