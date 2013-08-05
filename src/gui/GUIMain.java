@@ -35,7 +35,6 @@ public class GUIMain extends JFrame {
     public static HashMap<String, int[]> userColMap;
     public static HashMap<StringArray, Timer> commandMap;
     public static HashSet<String> channelMap;
-    public static HashSet<String> modMap;
     public static File defaultDir;
     public static String userNorm, userBot, userNormPass, userBotPass;
 
@@ -45,7 +44,6 @@ public class GUIMain extends JFrame {
     public static File accountsFile;
     public static File streamsFile;
     public static File soundsFile;
-    public static File modsFile;
     public static File imgFile;
     public static File userColFile;
     public static File commandsFile;
@@ -79,7 +77,6 @@ public class GUIMain extends JFrame {
         soundMap = new HashMap<>();
         channelMap = new HashSet<>();
         imgMap = new HashMap<>();
-        modMap = new HashSet<>();
         userColMap = new HashMap<>();
         commandMap = new HashMap<>();
         defaultDir = new File(FileSystemView.getFileSystemView().getDefaultDirectory().getAbsolutePath()
@@ -87,7 +84,6 @@ public class GUIMain extends JFrame {
         soundsFile = new File(defaultDir + File.separator + "sounds.txt");
         streamsFile = new File(defaultDir + File.separator + "streams.txt");
         accountsFile = new File(defaultDir + File.separator + "acc.ini");
-        modsFile = new File(defaultDir + File.separator + "mods.txt");
         imgFile = new File(defaultDir + File.separator + "faces.txt");
         userColFile = new File(defaultDir + File.separator + "usercols.txt");
         commandsFile = new File(defaultDir + File.separator + "commands.txt");
@@ -141,9 +137,6 @@ public class GUIMain extends JFrame {
             }
             streamList.setModel(d);
         }
-        if (loadedMods()) {
-            System.out.println("LOADED MODS");
-        }
         if (loadedCommands()) {
             System.out.println("LOADED COMMANDS");
         }
@@ -172,10 +165,6 @@ public class GUIMain extends JFrame {
             System.out.println("Loading sounds...");
             Utils.loadSounds(soundMap, soundsFile);
         }
-        if (modsFile != null && modsFile.exists()) {
-            System.out.println("Loading mods...");
-            Utils.loadMods(modMap, modsFile);
-        }
         if (userColFile != null && userColFile.exists()) {
             System.out.println("Loading user colors...");
             Utils.loadUserColors(userColMap, userColFile);
@@ -196,10 +185,6 @@ public class GUIMain extends JFrame {
 
     public static boolean loadedStreams() {
         return !channelMap.isEmpty();
-    }
-
-    public static boolean loadedMods() {
-        return !modMap.isEmpty();
     }
 
     public static boolean loadedCommands() {
@@ -466,11 +451,9 @@ public class GUIMain extends JFrame {
             bot.disconnect();
             bot.dispose();
         }
-        if (loadedMods()) Utils.saveMods(modMap, modsFile);
         if (rememberBot || rememberNorm) Utils.saveAccountData();
         if (!soundMap.isEmpty()) Utils.saveSounds(soundMap, soundsFile);
         if (loadedStreams()) Utils.saveStreams(channelMap, streamsFile);
-        if (loadedMods()) Utils.saveMods(modMap, modsFile);
         if (!imgMap.isEmpty()) Utils.saveFaces(imgMap, imgFile);
         if (!userColMap.isEmpty()) Utils.saveUserColors(userColMap, userColFile);
         if (loadedCommands()) Utils.saveCommands(commandMap, commandsFile);

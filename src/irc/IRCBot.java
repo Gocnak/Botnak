@@ -122,7 +122,7 @@ public class IRCBot extends PircBot {
                         handleDev(channel, message.substring(1));
                     }
                     //mod
-                    if (GUIMain.modMap.contains(sender)) {
+                    if (Utils.isUserOp(this, channel, sender)) {
                         handleMod(channel, message.substring(1));
                     }
                     //sound
@@ -192,9 +192,9 @@ public class IRCBot extends PircBot {
                     B = 0;
                 }
                 if (!Utils.checkInts(R, G, B)) {//see if at least one is > 99
-                    Utils.updateHashMap(GUIMain.userColMap, user, new int[]{usercolor.getRed(), usercolor.getGreen(), usercolor.getBlue()});
+                    GUIMain.userColMap.put(user, new int[]{usercolor.getRed(), usercolor.getGreen(), usercolor.getBlue()});
                 } else {
-                    Utils.updateHashMap(GUIMain.userColMap, user, new int[]{R, G, B});
+                    GUIMain.userColMap.put(user, new int[]{R, G, B});
                 }
             } else {
                 if (split.length == 2) { //contains String colorname
@@ -216,19 +216,18 @@ public class IRCBot extends PircBot {
                     int G = color.getGreen();
                     int B = color.getBlue();
                     if (!Utils.checkInts(R, G, B)) {
-                        Utils.updateHashMap(GUIMain.userColMap, user, new int[]{usercolor.getRed(), usercolor.getGreen(), usercolor.getBlue()});
+                        GUIMain.userColMap.put(user, new int[]{usercolor.getRed(), usercolor.getGreen(), usercolor.getBlue()});
                     } else {
-                        Utils.updateHashMap(GUIMain.userColMap, user, new int[]{R, G, B});
+                        GUIMain.userColMap.put(user, new int[]{R, G, B});
                     }
                 }
             }
-
         }
     }
 
 
     /**
-     * Boot trigger for sounds. Checks if a dev sound is not playing, if the general delay is up,
+     * Base trigger for sounds. Checks if a dev sound is not playing, if the general delay is up,
      * if the channel is yours, and if the user can even play the sound if it exists.
      *
      * @param s       Sound command's trigger/name.
@@ -236,7 +235,7 @@ public class IRCBot extends PircBot {
      * @param channel Channel the command was in.
      * @return true to play the sound, else false
      */
-    public static boolean soundTrigger(String s, String send, String channel) {
+    public boolean soundTrigger(String s, String send, String channel) {
         if (!soundBackTimer.isRunning()) {//check from a dev song
             soundBackTimer = new Timer(0);//reset the backup sound timer, and
             if (soundTimer.period > soundTime) {//check if the sound was longer (which is mostly true)
@@ -245,7 +244,7 @@ public class IRCBot extends PircBot {
         }
         if (!soundTimer.isRunning()) {//not on a delay
             if (channel.equalsIgnoreCase("#" + masterChannel)) {//is in main channel
-                if (soundCheck(s, send)) {//let's check the existence/permission
+                if (soundCheck(s, send, channel)) {//let's check the existence/permission
                     soundTimer.reset();
                     return true;//HIT THAT SHIT
                 }
@@ -261,10 +260,10 @@ public class IRCBot extends PircBot {
      * @param sender Sender of the command trigger.
      * @return false if the sound is not allowed, else true if it is.
      */
-    public static boolean soundCheck(String sound, String sender) {
+    public boolean soundCheck(String sound, String sender, String channel) {
         //set the permission
         int permission = Sound.PERMISSION_ALL;
-        if (GUIMain.modMap.contains(sender)) {
+        if (Utils.isUserOp(this, channel, sender)) {
             permission = Sound.PERMISSION_MOD;
         }
         if (GUIMain.viewer.getMaster().equals(sender)) {
@@ -294,7 +293,7 @@ public class IRCBot extends PircBot {
                 sendMessage(channel, cont);
                 if (channel.equals(lastChannel)) {
                     if (message.equals(lastMessage) || message.equals(secondToLastMessage)) {
-                        Utils.updateHashMap(GUIMain.commandMap, new StringArray(new String[]{message, cont}), new Timer(timer.period));
+                        GUIMain.commandMap.put(new StringArray(new String[]{message, cont}), new Timer(timer.period));
                     }
                 }
                 if (firstTime) {
@@ -316,16 +315,6 @@ public class IRCBot extends PircBot {
         privateMessage = message;
     }
 
-    public void onOp(String channel, String sourceNick, String sourceLogin, String sourceHostname, String recipient) {
-        if (GUIMain.viewer != null) {
-            if (channel.substring(1).equals(GUIMain.viewer.getMaster())) {
-                if (!GUIMain.modMap.contains(recipient)) {
-                    GUIMain.modMap.add(recipient);
-                }
-            }
-        }
-    }
-
     public String getPrivateMessage() {
         return privateMessage;
     }
@@ -345,12 +334,6 @@ public class IRCBot extends PircBot {
             if (GUIMain.soundMap.containsKey(remove)) {
                 GUIMain.soundMap.remove(remove);
             }
-        }
-        if (s.startsWith("setmods")) {
-            Utils.buildMods(this, channel, GUIMain.modMap);
-        }
-        if (s.startsWith("savemods")) {
-            Utils.saveMods(GUIMain.modMap, GUIMain.modsFile);
         }
         handleMod(channel, s);
     }
@@ -374,29 +357,10 @@ public class IRCBot extends PircBot {
                 Utils.removeCommands(GUIMain.commandMap, s.split(" ")[1]);
             }
             if (s.startsWith("changeface")) {
-                if (GUIMain.defaultFaceDir != null && !GUIMain.defaultFaceDir.equals("null")) {
-                    String[] split = s.split(" ");
-                    String name = split[1];
-                    String file = split[2];
-                    String filename = GUIMain.defaultFaceDir + File.separator + file;
-                    File test = new File(filename);
-                    if (test.exists() && test.length() > 0 && GUIMain.imgMap.containsKey(name)) {
-                        Utils.updateHashMap(GUIMain.imgMap, name, filename);
-                    }
-                }
+                Utils.handleFace(s);
             }
             if (s.startsWith("addface")) {
-                if (GUIMain.defaultFaceDir != null && !GUIMain.defaultFaceDir.equals("null")) {
-                    String[] split = s.split(" ");
-                    String name = split[1];
-                    String file = split[2];
-                    String filename = GUIMain.defaultFaceDir + File.separator + file;
-                    File test = new File(filename);
-                    if (test.exists() && test.length() > 0 && !GUIMain.imgMap.containsKey(name)
-                            && !GUIMain.imgMap.containsValue(filename)) {
-                        GUIMain.imgMap.put(name, filename);
-                    }
-                }
+                Utils.handleFace(s);
             }
             if (s.startsWith("removeface")) {
                 String[] split = s.split(" ");
@@ -424,7 +388,7 @@ public class IRCBot extends PircBot {
                             String filename = GUIMain.defaultSoundDir + File.separator + files + ".wav";
                             if (Utils.areFilesGood(filename)) {
                                 if (map.containsKey(name)) {//they could technically change the permission here as well
-                                    Utils.updateHashMap(map, name, new Sound(perm,// add it tooo it maaan
+                                    map.put(name, new Sound(perm,// add it tooo it maaan
                                             Utils.addStringToArray(filename, map.get(name).getSounds().data)));
                                 } else { //*gasp* A NEW SOUND!?
                                     GUIMain.soundMap.put(name, new Sound(perm, filename));
@@ -441,7 +405,7 @@ public class IRCBot extends PircBot {
                             if (map.containsKey(name)) {
                                 Collections.addAll(list, map.get(name).getSounds().data);
                                 Utils.checkAndAdd(list, filesSplit);//checks for repetition
-                                Utils.updateHashMap(map, name, new Sound(perm, list.toArray(new String[list.size()])));
+                                map.put(name, new Sound(perm, list.toArray(new String[list.size()])));
                             } else {// NEW SOUNDS CONFIRMED
                                 map.put(name, new Sound(perm, filesSplit));
                             }
@@ -472,11 +436,11 @@ public class IRCBot extends PircBot {
                                     list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
                                 }             //calls the areFilesGood boolean in it (filters bad files already)
                                 filesSplit = Utils.checkFiles(list.toArray(new String[list.size()]));
-                                Utils.updateHashMap(map, name, new Sound(perm, filesSplit));
+                                map.put(name, new Sound(perm, filesSplit));
                             } else {//singular
                                 String test = GUIMain.defaultSoundDir + File.separator + split[3] + ".wav";
                                 if (Utils.areFilesGood(test)) {
-                                    Utils.updateHashMap(map, name, new Sound(perm, test));
+                                    map.put(name, new Sound(perm, test));
                                 }
                             }
                         }
@@ -486,13 +450,12 @@ public class IRCBot extends PircBot {
                             try {
                                 perm = Integer.parseInt(split[2]);//I mean come on. What sound will have a 1 char name?
                                 if (perm != -1) {
-                                    Utils.updateHashMap(map, name, new Sound(perm,
-                                            map.get(name).getSounds().data));//A pretty bad one...
+                                    map.put(name, new Sound(perm, map.get(name).getSounds().data));//A pretty bad one...
                                 }
                             } catch (NumberFormatException e) {//maybe it really is a 1-char-named sound?
                                 String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
                                 if (Utils.areFilesGood(test)) { //wow...
-                                    Utils.updateHashMap(map, name, new Sound(map.get(name).getPermission(), test));
+                                    map.put(name, new Sound(map.get(name).getPermission(), test));
                                 }
                             }
                         } else { //it's a/some new file(s) as replacement!
@@ -503,11 +466,11 @@ public class IRCBot extends PircBot {
                                     list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
                                 }             //calls the areFilesGood boolean in it (filters bad files already)
                                 filesSplit = Utils.checkFiles(list.toArray(new String[list.size()]));
-                                Utils.updateHashMap(map, name, new Sound(map.get(name).getPermission(), filesSplit));
+                                map.put(name, new Sound(map.get(name).getPermission(), filesSplit));
                             } else {//not
                                 String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
                                 if (Utils.areFilesGood(test)) {
-                                    Utils.updateHashMap(map, name, new Sound(map.get(name).getPermission(), test));
+                                    map.put(name, new Sound(map.get(name).getPermission(), test));
                                 }
                             }
                         }

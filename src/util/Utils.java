@@ -23,6 +23,11 @@ public class Utils {
 
     static Random r = new Random();
 
+    /**
+     * Gets the extension of a file.
+     * @param f File to get the extension of.
+     * @return The file's extension.
+     */
     public static String getExtension(File f) {
         String ext = null;
         String s = f.getName();
@@ -75,6 +80,12 @@ public class Utils {
         }
     }
 
+    /**
+     * Checks to see if a Pircbot is in a given channel.
+     * @param v The Pircbot to check.
+     * @param channel The channel in question.
+     * @return true if in the channel, otherwise false.
+     */
     public static boolean isInChannel(PircBot v, String channel) {
         if (v == null) return false;
         if (!channel.startsWith("#")) channel = "#" + channel;
@@ -152,6 +163,12 @@ public class Utils {
         }
     }
 
+    /**
+     * Adds a single string to an array of strings, first checking to see if the array contains it.
+     * @param toAdd The string to add to the array.
+     * @param array The array to add the string to.
+     * @return The array of Strings.
+     */
     public static String[] addStringToArray(String toAdd, String[] array) {
         ArrayList<String> list = new ArrayList<>();
         Collections.addAll(list, array);
@@ -159,6 +176,12 @@ public class Utils {
         return list.toArray(new String[list.size()]);
     }
 
+    /**
+     * Compares two arrays of Strings and adds the non-repeating ones to the same one.
+     * @param list List of strings to compare to.
+     * @param toAdd String(s) to add to the list.
+     * @return The list with filtered Strings.
+     */
     public static ArrayList<String> checkAndAdd(ArrayList<String> list, String... toAdd) {
         for (String s : toAdd) {
             if (!list.contains(s)) {
@@ -168,6 +191,13 @@ public class Utils {
         return list;
     }
 
+    /**
+     * Checks individual files one by one like #areFilesGood(String...) and
+     * returns the good and legitimate files.
+     *
+     * @param files The path(s) to the file(s) to check.
+     * @return The array of paths to files that actually exist.
+     */
     public static String[] checkFiles(String... files) {
         ArrayList<String> list = new ArrayList<>();
         for (String s : files) {
@@ -179,6 +209,13 @@ public class Utils {
         return list.toArray(new String[list.size()]);
     }
 
+    /**
+     * Checks to see if the files are actually existing and non-blank.
+     *
+     * @param files The path(s) to the file(s) to check.
+     * @return true if (all) the file(s) exist(s)
+     * @see #checkFiles(String...) For removing bad files and adding the others anyway.
+     */
     public static boolean areFilesGood(String... files) {
         int i = 0;
         for (String s : files) {
@@ -268,6 +305,11 @@ public class Utils {
         }
     }
 
+    /**
+     * Removes a file extension from a path.
+     * @param s The path to a file, or the file and its extension.
+     * @return The file/path name without the extension.
+     */
     public static String removeExt(String s) {
         if (s != null) {
             int pos = s.lastIndexOf(".");
@@ -277,21 +319,31 @@ public class Utils {
         return s;
     }
 
+    /**
+     * Checks to see if the input is IRC-worthy of printing.
+     * @param input The input in question.
+     * @return The given input if it checks out, otherwise nothing.
+     */
     public static String checkText(String input) {
         return input != null && input.length() > 0 && input.trim().length() > 0 ? input : "";
     }
 
+    /**
+     * Returns a number between a given minimum and maximum (exclusive).
+     * @param min The minimum number to generate on.
+     * @param max The non-inclusive maximum number to generate on.
+     * @return Some random number between the given numbers.
+     */
     public static int random(int min, int max) {
         return min + (max == min ? 0 : r.nextInt(max - min));
     }
 
     /**
-     * Generates a
+     * Generates a color from the #hashCode() of any java.lang.Object.
      *
-     *
+     * Author - Dr_Kegel from Gocnak's stream.
      * @param seed The Hashcode of the object you want dynamic color for.
      * @return The Color of the object's hash.
-     * Author - Dr_Kegel from Gocnak's stream.
      */
     public static Color getColor(final int seed) {
         /* We do some bit hacks here
@@ -318,69 +370,6 @@ public class Utils {
 		/* at the moment h,s,b are in the range of [0 .. 1) */
 		/* For s and b this is restricted to [0.75 .. 1) at the moment. */
         return Color.getHSBColor(h, s * 0.25f + 0.75f, b * 0.25f + 0.75f);
-    }
-
-    public static void loadMods(HashSet<String> set, File f) {
-        if (f != null && set != null) {
-            try {
-                BufferedReader br = new BufferedReader(new InputStreamReader(f.toURI().toURL().openStream()));
-                String line;
-                while ((line = br.readLine()) != null) {
-                    set.add(line);
-                }
-                br.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public static HashSet<String> buildMods(final IRCBot bot, final String channel, final HashSet<String> set) {
-        if (bot != null && channel != null && !channel.equals("") && set != null) {
-            try {
-                Thread t = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            bot.sendMessage(channel, ".mods");
-                            Thread.sleep(5000);
-                            String upModsPre = bot.getPrivateMessage();
-                            if (!upModsPre.equals("")) {
-                                String init = upModsPre.substring(upModsPre.indexOf(":") + 1);
-                                String[] upMods = init.replaceAll(" ", "").split(",");
-                                for (String s : upMods) {
-                                    if (set.contains(s)) continue;
-                                    if (s != null && !s.equals("")) set.add(s);
-                                }
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-
-                    }
-                });
-                t.start();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return set;
-    }
-
-    public static void saveMods(HashSet<String> set, File f) {
-        try {
-            PrintWriter br = new PrintWriter(f);
-            String[] loadedMods = set.toArray(new String[set.size()]);
-            for (String s : loadedMods) {
-                if (s != null && !s.equals("")) {
-                    br.println(s);
-                }
-            }
-            br.flush();
-            br.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
 
@@ -458,12 +447,6 @@ public class Utils {
             br.close();
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-    public static void updateHashMap(HashMap map, Object key, Object newvalue) {
-        if (map != null && key != null && newvalue != null) {
-            map.put(key, newvalue);
         }
     }
 
@@ -576,6 +559,14 @@ public class Utils {
         return false;
     }
 
+    /**
+     * Adds a command to the command map.
+     *
+     * To do this in chat, simply type !addcommand command time message
+     * More examples at http://bit.ly/1366RwM
+     * @param map The command map to add to.
+     * @param s The string from the chat.
+     */
     public static void addCommands(HashMap<StringArray, Timer> map, String s) {
         String[] split = s.split(" ");
         if (map != null && split != null) {
@@ -602,6 +593,11 @@ public class Utils {
         }
     }
 
+    /**
+     * Removes a command from the command map.
+     * @param map The map the commands are in.
+     * @param key The !command trigger, or key.
+     */
     public static void removeCommands(HashMap<StringArray, Timer> map, String key) {
         if (map != null && key != null) {
             Set<StringArray> set = map.keySet();
@@ -615,6 +611,12 @@ public class Utils {
         }
     }
 
+    /**
+     * Checks to see if a certain string was a key to a command.
+     * @param map The map the commands are in.
+     * @param s The string in question.
+     * @return True if the string in question was indeed a key for a command; else false.
+     */
     public static boolean commandTrigger(HashMap<StringArray, Timer> map, String s) {
         if (map != null && s != null) {
             Set<StringArray> set = map.keySet();
@@ -628,6 +630,29 @@ public class Utils {
         return false;
     }
 
+    /**
+     * Changes a face to have a new file, or add the face to the map.
+     *
+     * @param s The latter part of the !addface or !changeface command.
+     */
+    public static void handleFace(String s) {
+        if (GUIMain.defaultFaceDir != null && !GUIMain.defaultFaceDir.equals("null")) {
+            String[] split = s.split(" ");
+            String name = split[1];
+            String file = split[2];
+            String filename = GUIMain.defaultFaceDir + File.separator + file;
+            if (areFilesGood(filename)) {
+                GUIMain.imgMap.put(name, filename);
+            }
+        }
+    }
+
+    /**
+     * Get the Message from the !command trigger.
+     * @param map The map the commands are stored in.
+     * @param key The !command trigger, or key.
+     * @return The message that the command triggers.
+     */
     public static String getMessage(HashMap<StringArray, Timer> map, String key) {
         String mess = "";
         if (map != null && key != null) {
@@ -645,6 +670,12 @@ public class Utils {
         return mess;
     }
 
+    /**
+     * Gets the timer for a command.
+     * @param map The command map the commands are stored in.
+     * @param key The !command trigger, or key, of the command.
+     * @return The Timer of the command.
+     */
     public static Timer getTimer(HashMap<StringArray, Timer> map, String key) {
         Timer local = new Timer(10000);
         Set<StringArray> set = map.keySet();
@@ -660,6 +691,13 @@ public class Utils {
         return local;
     }
 
+    /**
+     * Checks the red, green, and blue in order to show up in botnak.
+     * @param r Red value
+     * @param g Green value
+     * @param b Blue value
+     * @return If the ints meet the specification.
+     */
     public static boolean checkInts(int r, int g, int b) {
         if (r < 100) {
             if (g > 100 && g < 256 || b > 100 && b < 256) return true;
@@ -669,7 +707,12 @@ public class Utils {
         return false;
     }
 
-    //58b389e3c442211daf2b34f537c01977
+    /**
+     * Using the API that is generously free on unshorten.it, we can unshorten those sneaky short links.
+     *
+     * @param url The shortened URL to un-shortify.
+     * @return The long URL (hopefully).
+     */
     public static String getLongURL(String url) {
         String longUrl = "Cannot get full URL. Click with caution.";
         try {
