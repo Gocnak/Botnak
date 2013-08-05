@@ -7,6 +7,7 @@ import javax.sound.sampled.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.StringTokenizer;
 
 /**
  * The Sound Wrapper Class
@@ -17,9 +18,20 @@ public class Sound {
 
     private static final int BUFFER_SIZE = 320000;
 
-    public static final int PERMISSION_ALL = 0;//all users may use the sound
-    public static final int PERMISSION_MOD = 1;//only mods/dev can use the sound
-    public static final int PERMISSION_DEV = 2;//only the person running Botnak can use the sound
+    /**
+     * All users may use the sound
+     */
+    public static final int PERMISSION_ALL = 0;
+
+    /**
+     * Only mods and the person running Botnak can use the sound
+     */
+    public static final int PERMISSION_MOD = 1;
+
+    /**
+     * Only the person running Botnak can use the sound
+     */
+    public static final int PERMISSION_DEV = 2;
 
     private final int userPermission;
     private final StringArray filePaths;
@@ -34,6 +46,15 @@ public class Sound {
         userPermission = permission;
         filePaths = new StringArray(file);
     }
+
+    /**
+     * Constructs a sound with default PERMISSION_ALL.
+     * @param files The file path(s) of the sound(s).
+     */
+    public Sound(String... files) {
+        this(PERMISSION_ALL, files);
+    }
+
 
     public StringArray getSounds() {
         return filePaths;

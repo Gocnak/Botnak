@@ -165,14 +165,17 @@ public class Utils {
 
     /**
      * Adds a single string to an array of strings, first checking to see if the array contains it.
-     * @param toAdd The string to add to the array.
+     * @param toAdd The string(s) to add to the array.
      * @param array The array to add the string to.
      * @return The array of Strings.
      */
-    public static String[] addStringToArray(String toAdd, String[] array) {
+    public static String[] addStringsToArray(String[] array, String... toAdd) {
         ArrayList<String> list = new ArrayList<>();
         Collections.addAll(list, array);
-        if (!list.contains(toAdd)) list.add(toAdd);//gotta check those repetitives, maaaan.
+        for (String s : toAdd) {
+            if (!list.contains(s)) list.add(s);//gotta check those repetitives, maaaan.
+        }
+
         return list.toArray(new String[list.size()]);
     }
 
@@ -734,5 +737,124 @@ public class Utils {
         return longUrl;
     }
 
+    /**
+     * Handles the adding/changing of a sound, its permission, and/or its files.
+     *
+     * @param s The string from the chat to manipulate.
+     * @param change True for changing a sound, false for adding.
+     */
+     public static void handleSound(String s, boolean change) {
+         if (GUIMain.defaultSoundDir != null && !GUIMain.defaultSoundDir.equals("null") && !GUIMain.defaultSoundDir.equals("")) {
+             try {
+                 String[] split = s.split(" ");
+                 String name = split[1];//both commands have this in common.
+                 int perm = -1;
+                 if (split.length > 3) {//!add/changesound sound 0 sound(,maybe,more)
+                     try {
+                         perm = Integer.parseInt(split[2]);
+                     } catch (Exception e) {
+                         return;
+                     }
+                     String files = split[3];
+                     if (perm == -1) return;
+                     if (!files.contains(",")) {//isn't multiple
+                         //this can be !addsound sound 0 sound or !changesound sound 0 newsound
+                         String filename = GUIMain.defaultSoundDir + File.separator + files + ".wav";
+                         if (areFilesGood(filename)) {
+                             if (GUIMain.soundMap.containsKey(name)) {//they could technically change the permission here as well
+                                 if (!change) {//!addsound
+                                     GUIMain.soundMap.put(name, new Sound(perm,// add it tooo it maaan
+                                             addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, filename)));
+                                 } else {//!changesound
+                                     GUIMain.soundMap.put(name, new Sound(perm, filename));//replace it
+                                 }
+                             } else { //*gasp* A NEW SOUND!?
+                                 if (!change) GUIMain.soundMap.put(name, new Sound(perm, filename));
+                                 //can't have !changesound act like !addsound
+                             }
+                         }
+                     } else {//is multiple
+                         //this can be !addsound sound 0 multi,sound or !changesound sound 0 multi,sound
+                         ArrayList<String> list = new ArrayList<>();
+                         String[] filesSplit = files.split(",");
+                         for (String str : filesSplit) {
+                             list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
+                         }             //calls the areFilesGood boolean in it (filters bad files already)
+                         filesSplit = checkFiles(list.toArray(new String[list.size()]));
+                         list.clear();//recycle time!
+                         if (!change) { //adding sounds
+                             if (GUIMain.soundMap.containsKey(name)) {//adding sounds, so get the old ones V
+                                 Collections.addAll(list, GUIMain.soundMap.get(name).getSounds().data);
+                             }
+                             checkAndAdd(list, filesSplit);//checks for repetition, will add anyway if list is empty
+                             GUIMain.soundMap.put(name, new Sound(perm, list.toArray(new String[list.size()])));
+                         } else {//!changesound, so replace it if it's in there
+                             if (GUIMain.soundMap.containsKey(name)) GUIMain.soundMap.put(name, new Sound(perm, filesSplit));
+                         }
+                     }
+                 }
+                 if (split.length == 3) {//add/changesound sound perm/newsound
+                     if (split[2].length() == 1) {//ASSUMING it's a permission change.
+                         try {
+                             perm = Integer.parseInt(split[2]);//I mean come on. What sound will have a 1 char name?
+                             if (perm != -1) {
+                                 if (change)//because adding just a sound name and a permission is silly
+                                 GUIMain.soundMap.put(name, new Sound(perm, GUIMain.soundMap.get(name).getSounds().data));//A pretty bad one...
+                             }
+                         } catch (NumberFormatException e) {//maybe it really is a 1-char-named sound?
+                             String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
+                             if (areFilesGood(test)) { //wow...
+                                 if (change) {
+                                     GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), test));
+                                 } else {//adding a 1 char sound that exists to the pool...
+                                     GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(),
+                                             addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, test)));
+                                 }
+                             }
+                         }
+                     } else { //it's a/some new file(s) as replacement/to add!
+                         if (split[2].contains(",")) {//multiple
+                             String[] filesSplit = split[2].split(",");
+                             ArrayList<String> list = new ArrayList<>();
+                             for (String str : filesSplit) {
+                                 list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
+                             }             //calls the areFilesGood boolean in it (filters bad files already)
+                             filesSplit = checkFiles(list.toArray(new String[list.size()]));
+                             if (!change) {//!addsound soundname more,sounds
+                                 if (GUIMain.soundMap.containsKey(name)) {
+                                     filesSplit = addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, filesSplit);
+                                     GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), filesSplit));
+                                 } else { //use default permission
+                                     GUIMain.soundMap.put(name, new Sound(filesSplit));
+                                 }
+                             } else {//!changesound soundname new,sounds
+                                if (GUIMain.soundMap.containsKey(name))//!changesound isn't !addsound
+                                 GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), filesSplit));
+                             }
+                         } else {//singular
+                             String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
+                             if (Utils.areFilesGood(test)) {
+                                 if (!change) {//!addsound sound newsound
+                                    if (GUIMain.soundMap.containsKey(name)) {//getting the old permission/files
+                                        GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(),
+                                                addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, test)));
+                                    } else {//use default permission
+                                        GUIMain.soundMap.put(name, new Sound(test));
+                                    }
+                                 } else { //!changesound sound newsound
+                                     if (GUIMain.soundMap.containsKey(name))//!changesound isn't !addsound
+                                         GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), test));
+                                 }
+                             }
+                         }
+                     }
+
+                 }
+             } catch (Exception e) {
+                 e.printStackTrace();
+             }
+         }
+
+     }
 
 }

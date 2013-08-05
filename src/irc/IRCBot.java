@@ -369,116 +369,11 @@ public class IRCBot extends PircBot {
                     GUIMain.imgMap.remove(toremove);
                 }
             }
-            //                                       0 |  1  |2|    3
-            if (s.startsWith("addsound")) { //!addsound gaben 0 gaben0(,gaben1,etc)
-                if (GUIMain.defaultSoundDir != null && !GUIMain.defaultSoundDir.equals("null") && !GUIMain.defaultSoundDir.equals("")) {
-                    try {
-                        HashMap<String, Sound> map = GUIMain.soundMap;
-                        String[] split = s.split(" ");
-                        String name = split[1];
-                        int perm = -1;
-                        try {
-                            perm = Integer.parseInt(split[2]);
-                        } catch (Exception e) {
-                            return;
-                        }
-                        String files = split[3];
-                        if (perm == -1) return;
-                        if (!files.contains(",")) {//isn't multiple
-                            String filename = GUIMain.defaultSoundDir + File.separator + files + ".wav";
-                            if (Utils.areFilesGood(filename)) {
-                                if (map.containsKey(name)) {//they could technically change the permission here as well
-                                    map.put(name, new Sound(perm,// add it tooo it maaan
-                                            Utils.addStringToArray(filename, map.get(name).getSounds().data)));
-                                } else { //*gasp* A NEW SOUND!?
-                                    GUIMain.soundMap.put(name, new Sound(perm, filename));
-                                }
-                            }
-                        } else {//is multiple
-                            ArrayList<String> list = new ArrayList<>();
-                            String[] filesSplit = files.split(",");
-                            for (String str : filesSplit) {
-                                list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
-                            }             //calls the areFilesGood boolean in it (filters bad files already)
-                            filesSplit = Utils.checkFiles(list.toArray(new String[list.size()]));
-                            list.clear();//recycle time!
-                            if (map.containsKey(name)) {
-                                Collections.addAll(list, map.get(name).getSounds().data);
-                                Utils.checkAndAdd(list, filesSplit);//checks for repetition
-                                map.put(name, new Sound(perm, list.toArray(new String[list.size()])));
-                            } else {// NEW SOUNDS CONFIRMED
-                                map.put(name, new Sound(perm, filesSplit));
-                            }
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
+            if (s.startsWith("addsound")) {
+                Utils.handleSound(s, false);
             }
             if (s.startsWith("changesound")) {
-                try {
-                    int perm = -1;
-                    HashMap<String, Sound> map = GUIMain.soundMap;
-                    String[] split = s.split(" ");// 0     1       2                 3
-                    String name = split[1];//!changesound name perm/newfile(s) maybe(,some,more,sounds)
-                    if (split.length > 3) {//has the full shebang ^
-                        try {
-                            perm = Integer.parseInt(split[2]);
-                        } catch (Exception e) {//bitch! yo numba's BROKE
-                            e.printStackTrace();
-                            return;
-                        }
-                        if (perm != -1) {
-                            if (split[3].contains(",")) {//multiple
-                                String[] filesSplit = split[3].split(",");
-                                ArrayList<String> list = new ArrayList<>();
-                                for (String str : filesSplit) {
-                                    list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
-                                }             //calls the areFilesGood boolean in it (filters bad files already)
-                                filesSplit = Utils.checkFiles(list.toArray(new String[list.size()]));
-                                map.put(name, new Sound(perm, filesSplit));
-                            } else {//singular
-                                String test = GUIMain.defaultSoundDir + File.separator + split[3] + ".wav";
-                                if (Utils.areFilesGood(test)) {
-                                    map.put(name, new Sound(perm, test));
-                                }
-                            }
-                        }
-                    }
-                    if (split.length == 3) {
-                        if (split[2].length() == 1) {//ASSUMING it's a permission change.
-                            try {
-                                perm = Integer.parseInt(split[2]);//I mean come on. What sound will have a 1 char name?
-                                if (perm != -1) {
-                                    map.put(name, new Sound(perm, map.get(name).getSounds().data));//A pretty bad one...
-                                }
-                            } catch (NumberFormatException e) {//maybe it really is a 1-char-named sound?
-                                String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
-                                if (Utils.areFilesGood(test)) { //wow...
-                                    map.put(name, new Sound(map.get(name).getPermission(), test));
-                                }
-                            }
-                        } else { //it's a/some new file(s) as replacement!
-                            if (split[2].contains(",")) {//multiple
-                                String[] filesSplit = split[2].split(",");
-                                ArrayList<String> list = new ArrayList<>();
-                                for (String str : filesSplit) {
-                                    list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
-                                }             //calls the areFilesGood boolean in it (filters bad files already)
-                                filesSplit = Utils.checkFiles(list.toArray(new String[list.size()]));
-                                map.put(name, new Sound(map.get(name).getPermission(), filesSplit));
-                            } else {//not
-                                String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
-                                if (Utils.areFilesGood(test)) {
-                                    map.put(name, new Sound(map.get(name).getPermission(), test));
-                                }
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
+                Utils.handleSound(s, true);
             }
             if (s.startsWith("soundstate")) {
                 int delay = soundTime / 1000;
