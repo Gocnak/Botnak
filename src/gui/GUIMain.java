@@ -213,10 +213,6 @@ public class GUIMain extends JFrame {
 
 
     public void chatButtonActionPerformed() {
-        User[] people = viewer.getUsers("#gocnak");
-        for (User u : people) {
-            System.out.println(u);
-        }
         String channel = streamList.getSelectedItem().toString();
         String userInput = userChat.getText().replaceAll("\n", "");
         if (channel != null) {
