@@ -76,8 +76,9 @@ public class Utils {
 
     public static boolean isInChannel(PircBot v, String channel) {
         if (v == null) return false;
+        if (!channel.startsWith("#")) channel = "#" + channel;
         String[] channels = v.getChannels();
-        if (channels != null && channel != null) {
+        if (channels != null) {
             for (String s : channels) {
                 if (s.equalsIgnoreCase(channel)) {
                     return true;
@@ -283,14 +284,20 @@ public class Utils {
         return min + (max == min ? 0 : r.nextInt(max - min));
     }
 
+    /**
+     * Generates a
+     *
+     *
+     * @param seed The Hashcode of the object you want dynamic color for.
+     * @return The Color of the object's hash.
+     * Author - Dr_Kegel from Gocnak's stream.
+     */
     public static Color getColor(final int seed) {
-        /* We do some bit hacks here */
-
-		/* hashCode has 32 bit, we use every bit as a random source */
+        /* We do some bit hacks here
+		   hashCode has 32 bit, we use every bit as a random source */
         final int HUE_BITS = 12, HUE_MASK = ((1 << HUE_BITS) - 1);
         final int SATURATION_BITS = 8, SATURATION_MASK = ((1 << SATURATION_BITS) - 1);
         final int BRIGHTNESS_BITS = 12, BRIGHTNESS_MASK = ((1 << BRIGHTNESS_BITS) - 1);
-
         int t = seed;
 
 		/*
@@ -534,6 +541,12 @@ public class Utils {
         }
     }
 
+    /**
+     * Converts a given int to the correct millis form, except for 0.
+     *
+     * @param given Integer to convert.
+     * @return The correct Integer in milliseconds.
+     */
     public static int handleInt(int given) {
         if (given < 1000 && given > 0) {// not in millis
             given = given * 1000; //convert to millis

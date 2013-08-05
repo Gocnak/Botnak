@@ -2,6 +2,7 @@ package gui;
 
 import irc.IRCBot;
 import irc.IRCViewer;
+import lib.pircbot.org.jibble.pircbot.User;
 import util.Sound;
 import util.StringArray;
 import util.Timer;
@@ -212,6 +213,10 @@ public class GUIMain extends JFrame {
 
 
     public void chatButtonActionPerformed() {
+        User[] people = viewer.getUsers("#gocnak");
+        for (User u : people) {
+            System.out.println(u);
+        }
         String channel = streamList.getSelectedItem().toString();
         String userInput = userChat.getText().replaceAll("\n", "");
         if (channel != null) {
@@ -221,14 +226,18 @@ public class GUIMain extends JFrame {
                     if (c.equalsIgnoreCase("all chats")) continue;
                     if (!Utils.checkText(userInput).equals("")) {
                         viewer.sendMessage("#" + c, userInput);
-                        onMessage("#" + channel, viewer.getMaster(), userInput);
+                        boolean isMe = userInput.startsWith("/me");
+                        if (isMe) userInput = userInput.replaceAll("/me ", "");
+                        onMessage("#" + channel, viewer.getMaster(), userInput, isMe);
                         userChat.setText("");
                     }
                 }
             } else {
                 if (!Utils.checkText(userInput).equals("")) {
                     viewer.sendMessage("#" + channel, userInput);
-                    onMessage("#" + channel, viewer.getMaster(), userInput);
+                    boolean isMe = userInput.startsWith("/me");
+                    if (isMe) userInput = userInput.replaceAll("/me ", "");
+                    onMessage("#" + channel, viewer.getMaster(), userInput, isMe);
                     userChat.setText("");
                 }
             }
@@ -244,18 +253,12 @@ public class GUIMain extends JFrame {
             throw new IndexOutOfBoundsException("expected: distance > 1");
         }
         final StringBuilder builder = new StringBuilder(input);
-
         int next = -1, current = 0;
-
         while ((next = builder.indexOf(" ", current)) >= 0) {
-            final int result = innerLoop(c, distance, builder, next,
-                    current);
-
+            final int result = innerLoop(c, distance, builder, next, current);
             current = next + 1 + result;
         }
-
         innerLoop(c, distance, builder, builder.length(), current);
-
         return builder.toString();
     }
 
@@ -273,7 +276,7 @@ public class GUIMain extends JFrame {
     }
 
     //called from IRCViewer
-    public void onMessage(String channel, String sender, String message) {
+    public void onMessage(String channel, String sender, String message, boolean isMe) {
         if (message != null && channel != null && sender != null) {
             if (message.replaceAll(" ", "").length() > 512) return;
             message = magic(message, '\u0020', 20);
@@ -299,9 +302,13 @@ public class GUIMain extends JFrame {
                 if (sender.equalsIgnoreCase("pipe")) {
                     insertModIcon(doc, chatText.getCaretPosition(), 2);
                 }
-                doc.insertString(chatText.getCaretPosition(), " " + sender, user);
-                doc.insertString(chatText.getCaretPosition(), " (" + channel.substring(1) + "): ", norm);
-                doc.insertString(chatText.getCaretPosition(), message + "\n", message.toLowerCase().contains(viewer.getMaster()) ? color : norm);
+                doc.insertString(chatText.getCaretPosition(), " " + sender + " ", user);
+                if (isMe) {
+                    doc.insertString(chatText.getCaretPosition(), message + "\n", message.toLowerCase().contains(viewer.getMaster()) ? color : user);
+                } else {
+                    doc.insertString(chatText.getCaretPosition(), "(" + channel.substring(1) + "): ", norm);
+                    doc.insertString(chatText.getCaretPosition(), message + "\n", message.toLowerCase().contains(viewer.getMaster()) ? color : norm);
+                }
                 chatText.setCaretPosition(doc.getLength());
                 doc.setParagraphAttributes(start, chatText.getCaretPosition(), line, false);
             } catch (Exception e) {

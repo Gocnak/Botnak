@@ -88,8 +88,8 @@ public abstract class PircBot implements ReplyConstants {
      * @throws IrcException              if the server would not let us join it.
      * @throws NickAlreadyInUseException if our nick is already in use on the server.
      */
-    public final synchronized void connect(String hostname) throws IOException, IrcException, NickAlreadyInUseException {
-        this.connect(hostname, 6667, null);
+    public final synchronized void connect(String hostname) throws IOException, IrcException {
+        connect(hostname, 6667, null);
     }
 
 
@@ -103,8 +103,8 @@ public abstract class PircBot implements ReplyConstants {
      * @throws IrcException              if the server would not let us join it.
      * @throws NickAlreadyInUseException if our nick is already in use on the server.
      */
-    public final synchronized void connect(String hostname, int port) throws IOException, IrcException, NickAlreadyInUseException {
-        this.connect(hostname, port, null);
+    public final synchronized void connect(String hostname, int port) throws IOException, IrcException {
+        connect(hostname, port, null);
     }
 
 
@@ -120,7 +120,7 @@ public abstract class PircBot implements ReplyConstants {
      * @throws IrcException              if the server would not let us join it.
      * @throws NickAlreadyInUseException if our nick is already in use on the server.
      */
-    public final synchronized void connect(String hostname, int port, String password) throws IOException, IrcException, NickAlreadyInUseException {
+    public final synchronized void connect(String hostname, int port, String password) throws IOException, IrcException {
 
         _server = hostname;
         _port = port;
@@ -133,16 +133,16 @@ public abstract class PircBot implements ReplyConstants {
         // Don't clear the outqueue - there might be something important in it!
 
         // Clear everything we may have know about channels.
-        this.removeAllChannels();
+        removeAllChannels();
 
         // Connect to the server.
         Socket socket = new Socket(hostname, port);
-        this.log("*** Connected to server.");
+        log("*** Connected to server.");
 
         _inetAddress = socket.getLocalAddress();
 
-        InputStreamReader inputStreamReader = null;
-        OutputStreamWriter outputStreamWriter = null;
+        InputStreamReader inputStreamReader;
+        OutputStreamWriter outputStreamWriter;
         if (getEncoding() != null) {
             // Assume the specified encoding is valid for this JVM.
             inputStreamReader = new InputStreamReader(socket.getInputStream(), getEncoding());
@@ -160,9 +160,9 @@ public abstract class PircBot implements ReplyConstants {
         if (password != null && !password.equals("")) {
             OutputThread.sendRawLine(this, bwriter, "PASS " + password);
         }
-        String nick = this.getName();
+        String nick = getName();
         OutputThread.sendRawLine(this, bwriter, "NICK " + nick);
-        OutputThread.sendRawLine(this, bwriter, "USER " + this.getLogin() + " 8 * :" + this.getVersion());
+        OutputThread.sendRawLine(this, bwriter, "USER " + getLogin() + " 8 * :" + getVersion());
 
         _inputThread = new InputThread(this, socket, breader, bwriter);
 
@@ -171,7 +171,7 @@ public abstract class PircBot implements ReplyConstants {
         int tries = 1;
         while ((line = breader.readLine()) != null) {
 
-            this.handleLine(line);
+            handleLine(line);
 
             int firstSpace = line.indexOf(" ");
             int secondSpace = line.indexOf(" ", firstSpace + 1);
@@ -197,11 +197,11 @@ public abstract class PircBot implements ReplyConstants {
                     throw new IrcException("Could not log into the IRC server: " + line);
                 }
             }
-            this.setNick(nick);
+            setNick(nick);
 
         }
 
-        this.log("*** Logged onto server.");
+        log("*** Logged onto server.");
 
         // This makes the socket timeout on read operations after 5 minutes.
         // Maybe in some future version I will let the user change this at runtime.
@@ -216,7 +216,7 @@ public abstract class PircBot implements ReplyConstants {
             _outputThread.start();
         }
 
-        this.onConnect();
+        onConnect();
 
     }
 
@@ -249,7 +249,7 @@ public abstract class PircBot implements ReplyConstants {
      * @see #quitServer(String) quitServer
      */
     public final synchronized void disconnect() {
-        this.quitServer();
+        quitServer();
     }
 
 
@@ -307,7 +307,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param channel The name of the channel to join (eg "#cs").
      */
     public final void joinChannel(String channel) {
-        this.sendRawLine("JOIN " + channel);
+        sendRawLine("JOIN " + channel);
     }
 
 
@@ -318,7 +318,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param key     The key that will be used to join the channel.
      */
     public final void joinChannel(String channel, String key) {
-        this.joinChannel(channel + " " + key);
+        joinChannel(channel + " " + key);
     }
 
 
@@ -328,7 +328,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param channel The name of the channel to leave.
      */
     public final void partChannel(String channel) {
-        this.sendRawLine("PART " + channel);
+        sendRawLine("PART " + channel);
     }
 
 
@@ -339,7 +339,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param reason  The reason for parting the channel.
      */
     public final void partChannel(String channel, String reason) {
-        this.sendRawLine("PART " + channel + " :" + reason);
+        sendRawLine("PART " + channel + " :" + reason);
     }
 
 
@@ -350,7 +350,7 @@ public abstract class PircBot implements ReplyConstants {
      * disconnects us.
      */
     public final void quitServer() {
-        this.quitServer("");
+        quitServer("");
     }
 
 
@@ -363,7 +363,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param reason The reason for quitting the server.
      */
     public final void quitServer(String reason) {
-        this.sendRawLine("QUIT :" + reason);
+        sendRawLine("QUIT :" + reason);
     }
 
 
@@ -467,7 +467,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param newNick The new nick to use.
      */
     public final void changeNick(String newNick) {
-        this.sendRawLine("NICK " + newNick);
+        sendRawLine("NICK " + newNick);
     }
 
 
@@ -496,7 +496,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param password The password which will be used to identify with NickServ.
      */
     public final void identify(String password) {
-        this.sendRawLine("NICKSERV IDENTIFY " + password);
+        sendRawLine("NICKSERV IDENTIFY " + password);
     }
 
 
@@ -515,7 +515,7 @@ public abstract class PircBot implements ReplyConstants {
      * @see #op(String, String) op
      */
     public final void setMode(String channel, String mode) {
-        this.sendRawLine("MODE " + channel + " " + mode);
+        sendRawLine("MODE " + channel + " " + mode);
     }
 
 
@@ -528,7 +528,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param channel The channel you are inviting the user to join.
      */
     public final void sendInvite(String nick, String channel) {
-        this.sendRawLine("INVITE " + nick + " :" + channel);
+        sendRawLine("INVITE " + nick + " :" + channel);
     }
 
 
@@ -543,7 +543,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param hostmask A hostmask representing the user we're banning.
      */
     public final void ban(String channel, String hostmask) {
-        this.sendRawLine("MODE " + channel + " +b " + hostmask);
+        sendRawLine("MODE " + channel + " +b " + hostmask);
     }
 
 
@@ -557,7 +557,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param hostmask A hostmask representing the user we're unbanning.
      */
     public final void unBan(String channel, String hostmask) {
-        this.sendRawLine("MODE " + channel + " -b " + hostmask);
+        sendRawLine("MODE " + channel + " -b " + hostmask);
     }
 
 
@@ -570,7 +570,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param nick    The nick of the user we are opping.
      */
     public final void op(String channel, String nick) {
-        this.setMode(channel, "+o " + nick);
+        setMode(channel, "+o " + nick);
     }
 
 
@@ -583,7 +583,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param nick    The nick of the user we are deopping.
      */
     public final void deOp(String channel, String nick) {
-        this.setMode(channel, "-o " + nick);
+        setMode(channel, "-o " + nick);
     }
 
 
@@ -596,7 +596,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param nick    The nick of the user we are voicing.
      */
     public final void voice(String channel, String nick) {
-        this.setMode(channel, "+v " + nick);
+        setMode(channel, "+v " + nick);
     }
 
 
@@ -609,7 +609,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param nick    The nick of the user we are devoicing.
      */
     public final void deVoice(String channel, String nick) {
-        this.setMode(channel, "-v " + nick);
+        setMode(channel, "-v " + nick);
     }
 
 
@@ -623,7 +623,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param topic   The new topic for the channel.
      */
     public final void setTopic(String channel, String topic) {
-        this.sendRawLine("TOPIC " + channel + " :" + topic);
+        sendRawLine("TOPIC " + channel + " :" + topic);
     }
 
 
@@ -636,7 +636,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param nick    The nick of the user to kick.
      */
     public final void kick(String channel, String nick) {
-        this.kick(channel, nick, "");
+        kick(channel, nick, "");
     }
 
 
@@ -650,7 +650,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param reason  A description of the reason for kicking a user.
      */
     public final void kick(String channel, String nick, String reason) {
-        this.sendRawLine("KICK " + channel + " " + nick + " :" + reason);
+        sendRawLine("KICK " + channel + " " + nick + " :" + reason);
     }
 
 
@@ -663,7 +663,7 @@ public abstract class PircBot implements ReplyConstants {
      * @see #onChannelInfo(String, int, String) onChannelInfo
      */
     public final void listChannels() {
-        this.listChannels(null);
+        listChannels(null);
     }
 
 
@@ -684,9 +684,9 @@ public abstract class PircBot implements ReplyConstants {
      */
     public final void listChannels(String parameters) {
         if (parameters == null) {
-            this.sendRawLine("LIST");
+            sendRawLine("LIST");
         } else {
-            this.sendRawLine("LIST " + parameters);
+            sendRawLine("LIST " + parameters);
         }
     }
 
@@ -846,12 +846,12 @@ public abstract class PircBot implements ReplyConstants {
      * @param line The raw line of text from the server.
      */
     protected void handleLine(String line) {
-        this.log(line);
+        log(line);
 
         // Check for server pings.
         if (line.startsWith("PING ")) {
             // Respond to the ping and return immediately.
-            this.onServerPing(line.substring(5));
+            onServerPing(line.substring(5));
             return;
         }
 
@@ -884,7 +884,7 @@ public abstract class PircBot implements ReplyConstants {
 
                     if (code != -1) {
                         String response = line.substring(line.indexOf(command, senderInfo.length()) + 4, line.length());
-                        this.processServerResponse(code, response);
+                        processServerResponse(code, response);
                         // Return from the method.
                         return;
                     } else {
@@ -896,7 +896,7 @@ public abstract class PircBot implements ReplyConstants {
                     }
                 } else {
                     // We don't know what this line means.
-                    this.onUnknown(line);
+                    onUnknown(line);
                     // Return from the method;
                     return;
                 }
@@ -920,91 +920,91 @@ public abstract class PircBot implements ReplyConstants {
             String request = line.substring(line.indexOf(":\u0001") + 2, line.length() - 1);
             if (request.equals("VERSION")) {
                 // VERSION request
-                this.onVersion(sourceNick, sourceLogin, sourceHostname, target);
+                onVersion(sourceNick, sourceLogin, sourceHostname, target);
             } else if (request.startsWith("ACTION ")) {
                 // ACTION request
-                this.onAction(sourceNick, sourceLogin, sourceHostname, target, request.substring(7));
+                onAction(sourceNick, sourceLogin, sourceHostname, target, request.substring(7));
             } else if (request.startsWith("PING ")) {
                 // PING request
-                this.onPing(sourceNick, sourceLogin, sourceHostname, target, request.substring(5));
+                onPing(sourceNick, sourceLogin, sourceHostname, target, request.substring(5));
             } else if (request.equals("TIME")) {
                 // TIME request
-                this.onTime(sourceNick, sourceLogin, sourceHostname, target);
+                onTime(sourceNick, sourceLogin, sourceHostname, target);
             } else if (request.equals("FINGER")) {
                 // FINGER request
-                this.onFinger(sourceNick, sourceLogin, sourceHostname, target);
+                onFinger(sourceNick, sourceLogin, sourceHostname, target);
             } else if ((tokenizer = new StringTokenizer(request)).countTokens() >= 5 && tokenizer.nextToken().equals("DCC")) {
                 // This is a DCC request.
                 boolean success = _dccManager.processRequest(sourceNick, sourceLogin, sourceHostname, request);
                 if (!success) {
                     // The DccManager didn't know what to do with the line.
-                    this.onUnknown(line);
+                    onUnknown(line);
                 }
             } else {
                 // An unknown CTCP message - ignore it.
-                this.onUnknown(line);
+                onUnknown(line);
             }
         } else if (command.equals("PRIVMSG") && _channelPrefixes.indexOf(target.charAt(0)) >= 0) {
             // This is a normal message to a channel.
-            this.onMessage(target, sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
+            onMessage(target, sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
         } else if (command.equals("PRIVMSG")) {
             // This is a private message to us.
-            this.onPrivateMessage(sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
+            onPrivateMessage(sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
         } else if (command.equals("JOIN")) {
             // Someone is joining a channel.
-            this.addUser(target, new User("", sourceNick));
-            this.onJoin(target, sourceNick, sourceLogin, sourceHostname);
+            addUser(target, new User("", sourceNick));
+            onJoin(target, sourceNick, sourceLogin, sourceHostname);
         } else if (command.equals("PART")) {
             // Someone is parting from a channel.
-            this.removeUser(target, sourceNick);
-            if (sourceNick.equals(this.getNick())) {
-                this.removeChannel(target);
+            removeUser(target, sourceNick);
+            if (sourceNick.equals(getNick())) {
+                removeChannel(target);
             }
-            this.onPart(target, sourceNick, sourceLogin, sourceHostname);
+            onPart(target, sourceNick, sourceLogin, sourceHostname);
         } else if (command.equals("NICK")) {
             // Somebody is changing their nick.
-            this.renameUser(sourceNick, target);
-            if (sourceNick.equals(this.getNick())) {
+            renameUser(sourceNick, target);
+            if (sourceNick.equals(getNick())) {
                 // Update our nick if it was us that changed nick.
-                this.setNick(target);
+                setNick(target);
             }
-            this.onNickChange(sourceNick, sourceLogin, sourceHostname, target);
+            onNickChange(sourceNick, sourceLogin, sourceHostname, target);
         } else if (command.equals("NOTICE")) {
             // Someone is sending a notice.
-            this.onNotice(sourceNick, sourceLogin, sourceHostname, target, line.substring(line.indexOf(" :") + 2));
+            onNotice(sourceNick, sourceLogin, sourceHostname, target, line.substring(line.indexOf(" :") + 2));
         } else if (command.equals("QUIT")) {
             // Someone has quit from the IRC server.
-            if (sourceNick.equals(this.getNick())) {
-                this.removeAllChannels();
+            if (sourceNick.equals(getNick())) {
+                removeAllChannels();
             } else {
-                this.removeUser(sourceNick);
+                removeUser(null, sourceNick);
             }
-            this.onQuit(sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
+            onQuit(sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
         } else if (command.equals("KICK")) {
             // Somebody has been kicked from a channel.
             String recipient = tokenizer.nextToken();
-            if (recipient.equals(this.getNick())) {
-                this.removeChannel(target);
+            if (recipient.equals(getNick())) {
+                removeChannel(target);
             }
-            this.removeUser(target, recipient);
-            this.onKick(target, sourceNick, sourceLogin, sourceHostname, recipient, line.substring(line.indexOf(" :") + 2));
+            removeUser(target, recipient);
+            onKick(target, sourceNick, sourceLogin, sourceHostname, recipient, line.substring(line.indexOf(" :") + 2));
         } else if (command.equals("MODE")) {
             // Somebody is changing the mode on a channel or user.
             String mode = line.substring(line.indexOf(target, 2) + target.length() + 1);
             if (mode.startsWith(":")) {
                 mode = mode.substring(1);
             }
-            this.processMode(target, sourceNick, sourceLogin, sourceHostname, mode);
+            processMode(target, sourceNick, sourceLogin, sourceHostname, mode);
         } else if (command.equals("TOPIC")) {
             // Someone is changing the topic.
-            this.onTopic(target, line.substring(line.indexOf(" :") + 2), sourceNick, System.currentTimeMillis(), true);
+            onTopic(target, line.substring(line.indexOf(" :") + 2), sourceNick, System.currentTimeMillis(), true);
         } else if (command.equals("INVITE")) {
             // Somebody is inviting somebody else into a channel.
-            this.onInvite(target, sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
+            onInvite(target, sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
         } else {
             // If we reach this point, then we've found something that the PircBot
             // Doesn't currently deal with.
-            this.onUnknown(line);
+            onUnknown(line);
         }
 
     }
@@ -1073,7 +1073,7 @@ public abstract class PircBot implements ReplyConstants {
                 // Stick with the value of zero.
             }
             String topic = response.substring(colon + 1);
-            this.onChannelInfo(channel, userCount, topic);
+            onChannelInfo(channel, userCount, topic);
         } else if (code == RPL_TOPIC) {
             // This is topic information about a channel we've just joined.
             int firstSpace = response.indexOf(' ');
@@ -1085,7 +1085,7 @@ public abstract class PircBot implements ReplyConstants {
             _topics.put(channel, topic);
 
             // For backwards compatibility only - this onTopic method is deprecated.
-            this.onTopic(channel, topic);
+            onTopic(channel, topic);
         } else if (code == RPL_TOPICINFO) {
             StringTokenizer tokenizer = new StringTokenizer(response);
             tokenizer.nextToken();
@@ -1098,10 +1098,10 @@ public abstract class PircBot implements ReplyConstants {
                 // Stick with the default value of zero.
             }
 
-            String topic = (String) _topics.get(channel);
+            String topic = _topics.get(channel);
             _topics.remove(channel);
 
-            this.onTopic(channel, topic, setBy, date, false);
+            onTopic(channel, topic, setBy, date, false);
         } else if (code == RPL_NAMREPLY) {
             // This is a list of nicks in a channel that we've just joined.
             int channelEndIndex = response.indexOf(" :");
@@ -1122,17 +1122,17 @@ public abstract class PircBot implements ReplyConstants {
                     prefix = ".";
                 }
                 nick = nick.substring(prefix.length());
-                this.addUser(channel, new User(prefix, nick));
+                addUser(channel.toLowerCase(), new User(prefix, nick));
             }
         } else if (code == RPL_ENDOFNAMES) {
             // This is the end of a NAMES list, so we know that we've got
             // the full list of users in the channel that we just joined. 
             String channel = response.substring(response.indexOf(' ') + 1, response.indexOf(" :"));
-            User[] users = this.getUsers(channel);
-            this.onUserList(channel, users);
+            User[] users = getUsers(channel);
+            onUserList(channel, users);
         }
 
-        this.onServerResponse(code, response);
+        onServerResponse(code, response);
     }
 
 
@@ -1404,6 +1404,8 @@ public abstract class PircBot implements ReplyConstants {
      * Note that this method is private and is not intended to appear
      * in the javadoc generated documentation.
      *
+     * YEAH I'M GUESSING IT'S BECAUSE YOU HALF-ASSED IT SO HARD
+     *
      * @param target         The channel or nick that the mode operation applies to.
      * @param sourceNick     The nick of the user that set the mode.
      * @param sourceLogin    The login of the user that set the mode.
@@ -1412,7 +1414,8 @@ public abstract class PircBot implements ReplyConstants {
      */
     private void processMode(String target, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
 
-        if (_channelPrefixes.indexOf(target.charAt(0)) >= 0) {
+
+        if (mode.charAt(0) == '#') {
             // The mode of a channel is being changed.
             StringTokenizer tok = new StringTokenizer(mode);
             String[] params = new String[tok.countTokens()];
@@ -1422,56 +1425,59 @@ public abstract class PircBot implements ReplyConstants {
                 params[t] = tok.nextToken();
                 t++;
             }
-
+            /**
+             * OKAY SO
+             * #gocnak +o gocnak
+             * PARAMS[0] IS THE FUCKING CHANNEL
+             * PARAMS[1] IS THE MODE
+             * PARAMS[2] IS THE TARGET
+             *
+             * GOD SERIOUSLY WHY AM I BOTHERING WITH THIS
+             */
+            target = params[0];
             char pn = ' ';
-            int p = 1;
-
+            //                        VVVVVVVVV YEAH I KNOW RIGHT? FUCK
             // All of this is very large and ugly, but it's the only way of providing
             // what the users want :-/
-            for (int i = 0; i < params[0].length(); i++) {
-                char atPos = params[0].charAt(i);
-
+            for (int i = 0; i < params[1].length(); i++) {
+                char atPos = params[1].charAt(i);
+                //                  ^ THIS RIGHT HERE
                 if (atPos == '+' || atPos == '-') {
                     pn = atPos;
                 } else if (atPos == 'o') {
                     if (pn == '+') {
-                        this.updateUser(target, OP_ADD, params[p]);
-                        onOp(target, sourceNick, sourceLogin, sourceHostname, params[p]);
+                        updateUser(target, OP_ADD, params[2]);
+                        onOp(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     } else {
-                        this.updateUser(target, OP_REMOVE, params[p]);
-                        onDeop(target, sourceNick, sourceLogin, sourceHostname, params[p]);
+                        updateUser(target, OP_REMOVE, params[2]);
+                        onDeop(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     }
-                    p++;
                 } else if (atPos == 'v') {
                     if (pn == '+') {
-                        this.updateUser(target, VOICE_ADD, params[p]);
-                        onVoice(target, sourceNick, sourceLogin, sourceHostname, params[p]);
+                        updateUser(target, VOICE_ADD, params[2]);
+                        onVoice(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     } else {
-                        this.updateUser(target, VOICE_REMOVE, params[p]);
-                        onDeVoice(target, sourceNick, sourceLogin, sourceHostname, params[p]);
+                        updateUser(target, VOICE_REMOVE, params[2]);
+                        onDeVoice(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     }
-                    p++;
                 } else if (atPos == 'k') {
                     if (pn == '+') {
-                        onSetChannelKey(target, sourceNick, sourceLogin, sourceHostname, params[p]);
+                        onSetChannelKey(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     } else {
-                        onRemoveChannelKey(target, sourceNick, sourceLogin, sourceHostname, params[p]);
+                        onRemoveChannelKey(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     }
-                    p++;
                 } else if (atPos == 'l') {
                     if (pn == '+') {
-                        onSetChannelLimit(target, sourceNick, sourceLogin, sourceHostname, Integer.parseInt(params[p]));
-                        p++;
+                        onSetChannelLimit(target, sourceNick, sourceLogin, sourceHostname, Integer.parseInt(params[2]));
                     } else {
                         onRemoveChannelLimit(target, sourceNick, sourceLogin, sourceHostname);
                     }
                 } else if (atPos == 'b') {
                     if (pn == '+') {
-                        onSetChannelBan(target, sourceNick, sourceLogin, sourceHostname, params[p]);
+                        onSetChannelBan(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     } else {
-                        onRemoveChannelBan(target, sourceNick, sourceLogin, sourceHostname, params[p]);
+                        onRemoveChannelBan(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     }
-                    p++;
                 } else if (atPos == 't') {
                     if (pn == '+') {
                         onSetTopicProtection(target, sourceNick, sourceLogin, sourceHostname);
@@ -1510,11 +1516,10 @@ public abstract class PircBot implements ReplyConstants {
                     }
                 }
             }
-
-            this.onMode(target, sourceNick, sourceLogin, sourceHostname, mode);
+            onMode(target, sourceNick, sourceLogin, sourceHostname, mode);
         } else {
-            // The mode of a user is being changed.
-            this.onUserMode(target, sourceNick, sourceLogin, sourceHostname, mode);
+            // The mode of a user is being changed. ARE YOU FUCKING ME RIGHT NOW
+            onUserMode(target, sourceNick, sourceLogin, sourceHostname, mode);
         }
     }
 
@@ -2154,7 +2159,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param target         The target of the VERSION request, be it our nick or a channel name.
      */
     protected void onVersion(String sourceNick, String sourceLogin, String sourceHostname, String target) {
-        this.sendRawLine("NOTICE " + sourceNick + " :\u0001VERSION " + _version + "\u0001");
+        sendRawLine("NOTICE " + sourceNick + " :\u0001VERSION " + _version + "\u0001");
     }
 
 
@@ -2173,7 +2178,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param pingValue      The value that was supplied as an argument to the PING command.
      */
     protected void onPing(String sourceNick, String sourceLogin, String sourceHostname, String target, String pingValue) {
-        this.sendRawLine("NOTICE " + sourceNick + " :\u0001PING " + pingValue + "\u0001");
+        sendRawLine("NOTICE " + sourceNick + " :\u0001PING " + pingValue + "\u0001");
     }
 
 
@@ -2187,7 +2192,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param response The response that should be given back in your PONG.
      */
     protected void onServerPing(String response) {
-        this.sendRawLine("PONG " + response);
+        sendRawLine("PONG " + response);
     }
 
 
@@ -2204,7 +2209,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param target         The target of the TIME request, be it our nick or a channel name.
      */
     protected void onTime(String sourceNick, String sourceLogin, String sourceHostname, String target) {
-        this.sendRawLine("NOTICE " + sourceNick + " :\u0001TIME " + new Date().toString() + "\u0001");
+        sendRawLine("NOTICE " + sourceNick + " :\u0001TIME " + new Date().toString() + "\u0001");
     }
 
 
@@ -2221,7 +2226,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param target         The target of the FINGER request, be it our nick or a channel name.
      */
     protected void onFinger(String sourceNick, String sourceLogin, String sourceHostname, String target) {
-        this.sendRawLine("NOTICE " + sourceNick + " :\u0001FINGER " + _finger + "\u0001");
+        sendRawLine("NOTICE " + sourceNick + " :\u0001FINGER " + _finger + "\u0001");
     }
 
 
@@ -2734,19 +2739,7 @@ public abstract class PircBot implements ReplyConstants {
      */
     public final User[] getUsers(String channel) {
         channel = channel.toLowerCase();
-        User[] userArray = new User[0];
-        synchronized (_channels) {
-            Hashtable users = (Hashtable) _channels.get(channel);
-            if (users != null) {
-                userArray = new User[users.size()];
-                Enumeration enumeration = users.elements();
-                for (int i = 0; i < userArray.length; i++) {
-                    User user = (User) enumeration.nextElement();
-                    userArray[i] = user;
-                }
-            }
-        }
-        return userArray;
+        return _channels.get(channel).toArray(new User[_channels.get(channel).size()]);
     }
 
 
@@ -2762,15 +2755,7 @@ public abstract class PircBot implements ReplyConstants {
      * @since PircBot 1.0.0
      */
     public final String[] getChannels() {
-        String[] channels = new String[0];
-        synchronized (_channels) {
-            channels = new String[_channels.size()];
-            Enumeration enumeration = _channels.keys();
-            for (int i = 0; i < channels.length; i++) {
-                channels[i] = (String) enumeration.nextElement();
-            }
-        }
-        return channels;
+        return _channels.keySet().toArray(new String[_channels.keySet().size()]);
     }
 
 
@@ -2794,7 +2779,6 @@ public abstract class PircBot implements ReplyConstants {
      * @since 1.2.2
      */
     public synchronized void dispose() {
-        //System.out.println("disposing...");
         _outputThread.interrupt();
         _inputThread.dispose();
     }
@@ -2805,43 +2789,58 @@ public abstract class PircBot implements ReplyConstants {
      * Overwrite the existing entry if it exists.
      */
     private void addUser(String channel, User user) {
-        channel = channel.toLowerCase();
         synchronized (_channels) {
-            Hashtable users = (Hashtable) _channels.get(channel);
-            if (users == null) {
-                users = new Hashtable();
-                _channels.put(channel, users);
-            }
-            users.put(user, user);
-        }
-    }
-
-
-    /**
-     * Remove a user from the specified channel in our memory.
-     */
-    private User removeUser(String channel, String nick) {
-        channel = channel.toLowerCase();
-        User user = new User("", nick);
-        synchronized (_channels) {
-            Hashtable users = (Hashtable) _channels.get(channel);
+            channel = channel.toLowerCase();
+            HashSet<User> users = _channels.get(channel);
             if (users != null) {
-                return (User) users.remove(user);
+                if (users.contains(user)) {
+                    users.remove(user);
+                }
+                users.add(user);
+            } else {
+                users = new HashSet<>();
+                users.add(user);
             }
+            _channels.put(channel, users);
         }
-        return null;
     }
 
 
+
+
     /**
-     * Remove a user from all channels in our memory.
+     * Remove a user from a specified channel or otherwise all channels in our memory.
+     *
+     * @param chnl The channel in which to remove the specified user.
+     * @param nick The nick of the user to be removed.
      */
-    private void removeUser(String nick) {
+    private void removeUser(String chnl, String nick) {
         synchronized (_channels) {
-            Enumeration enumeration = _channels.keys();
-            while (enumeration.hasMoreElements()) {
-                String channel = (String) enumeration.nextElement();
-                this.removeUser(channel, nick);
+            if (chnl == null) {//all channels
+                String[] channels = _channels.keySet().toArray(new String[_channels.keySet().size()]);
+                for (String channel : channels) {
+                    HashSet<User> userSet = _channels.get(channel.toLowerCase());
+                    if (userSet != null) {
+                        for (User u : userSet) {
+                            if (u != null) {
+                                if (u.getNick().equalsIgnoreCase(nick)) {
+                                    userSet.remove(u);
+                                }
+                            }
+                        }                                // replaced old map
+                        _channels.put(channel.toLowerCase(), userSet);
+                    }
+                }
+            } else {//specified
+                HashSet<User> users = _channels.get(chnl.toLowerCase());
+                for (User u : users) {
+                    if (u != null) {
+                        if (u.getNick().equalsIgnoreCase(nick)) {
+                            users.remove(u);
+                        }
+                    }
+                }                                // replaced old map
+                _channels.put(chnl.toLowerCase(), users);
             }
         }
     }
@@ -2852,13 +2851,19 @@ public abstract class PircBot implements ReplyConstants {
      */
     private void renameUser(String oldNick, String newNick) {
         synchronized (_channels) {
-            Enumeration enumeration = _channels.keys();
-            while (enumeration.hasMoreElements()) {
-                String channel = (String) enumeration.nextElement();
-                User user = this.removeUser(channel, oldNick);
-                if (user != null) {
-                    user = new User(user.getPrefix(), newNick);
-                    this.addUser(channel, user);
+            String[] channels = _channels.keySet().toArray(new String[_channels.keySet().size()]);
+            for (String channel : channels) {
+                HashSet<User> userSet = _channels.get(channel.toLowerCase());
+                if (userSet != null) {
+                    for (User u : userSet) {
+                        if (u != null) {
+                            if (u.getNick().equalsIgnoreCase(oldNick)) {
+                                userSet.remove(u);
+                                userSet.add(new User(u.getPrefix(), newNick));
+                            }
+                        }
+                    }                                // replaced old map
+                    _channels.put(channel.toLowerCase(), userSet);
                 }
             }
         }
@@ -2881,56 +2886,68 @@ public abstract class PircBot implements ReplyConstants {
      */
     private void removeAllChannels() {
         synchronized (_channels) {
-            _channels = new Hashtable<>();
+            _channels.clear();
         }
     }
 
-
+    /**
+     * Updates the user with the given nick in the given channel in response to a
+     * specific user mode, like receiving voice, op, etc.
+     *
+     * @param channel Channel the userMode was changed.
+     * @param userMode The usermode that took place.
+     * @param nick Recipient of the usermode event change.
+     */
     private void updateUser(String channel, int userMode, String nick) {
-        channel = channel.toLowerCase();
         synchronized (_channels) {
-            Hashtable users = _channels.get(channel);
-            User newUser = null;
-            if (users != null) {
-                Enumeration enumeration = users.elements();
-                while (enumeration.hasMoreElements()) {
-                    User userObj = (User) enumeration.nextElement();
-                    if (userObj.getNick().equalsIgnoreCase(nick)) {
-                        if (userMode == OP_ADD) {
-                            if (userObj.hasVoice()) {
-                                newUser = new User("@+", nick);
-                            } else {
-                                newUser = new User("@", nick);
-                            }
-                        } else if (userMode == OP_REMOVE) {
-                            if (userObj.hasVoice()) {
-                                newUser = new User("+", nick);
-                            } else {
-                                newUser = new User("", nick);
-                            }
-                        } else if (userMode == VOICE_ADD) {
-                            if (userObj.isOp()) {
-                                newUser = new User("@+", nick);
-                            } else {
-                                newUser = new User("+", nick);
-                            }
-                        } else if (userMode == VOICE_REMOVE) {
-                            if (userObj.isOp()) {
-                                newUser = new User("@", nick);
-                            } else {
-                                newUser = new User("", nick);
+            channel = channel.toLowerCase();
+            HashSet<User> userSet = (_channels.containsKey(channel)  ? _channels.get(channel) : new HashSet<User>());
+            if (userSet == null) userSet = new HashSet<>();//create a blank HashSet if it's still null somehow
+            if (!userSet.isEmpty()) {
+                User[] users = userSet.toArray(new User[userSet.size()]);
+                for (User u : users) {
+                    if (u != null) {
+                        if (u.getNick().equalsIgnoreCase(nick)) {
+                            if (userMode == OP_ADD) {
+                                userSet.remove(u);
+                                if (u.hasVoice()) {
+                                    userSet.add(new User("@+", u.getNick()));
+                                } else {
+                                    userSet.add(new User("@", u.getNick()));
+                                }
+                            } else if (userMode == OP_REMOVE) {
+                                userSet.remove(u);
+                                if (u.hasVoice()) {
+                                    userSet.add(new User("+", u.getNick()));
+                                } else {
+                                    userSet.add(new User("", u.getNick()));
+                                }
+                            } else if (userMode == VOICE_ADD) {
+                                userSet.remove(u);
+                                if (u.isOp()) {
+                                    userSet.add(new User("@+", u.getNick()));
+                                } else {
+                                    userSet.add(new User("+", u.getNick()));
+                                }
+                            } else if (userMode == VOICE_REMOVE) {
+                                userSet.remove(u);
+                                if (u.isOp()) {
+                                    userSet.add(new User("@", u.getNick()));
+                                } else {
+                                    userSet.add(new User("", u.getNick()));
+                                }
                             }
                         }
                     }
                 }
+            } else {// we just joined a channel
+                if (userMode == OP_ADD) {
+                    userSet.add(new User("@", nick));
+                } else if (userMode == VOICE_ADD) {
+                    userSet.add(new User("+", nick));
+                }
             }
-            if (newUser != null) {
-                users.put(newUser, newUser);
-            } else {
-                // just in case ...
-                newUser = new User("", nick);
-                users.put(newUser, newUser);
-            }
+            _channels.put(channel, userSet);// replaced old map
         }
     }
 
@@ -2950,13 +2967,16 @@ public abstract class PircBot implements ReplyConstants {
     private Queue _outQueue = new Queue();
     private long _messageDelay = 1000;
 
-    // A Hashtable of channels that points to a selfreferential Hashtable of
-    // User objects (used to remember which users are in which channels).
-    private Hashtable<String, Hashtable> _channels = new Hashtable<>();
+    /**
+     * A HashMap of the channels as keys with corresponding users in the channels as values.
+     * <p/>
+     * Modified to hopefully make user detection work now.
+     */
+    private HashMap<String, HashSet<User>> _channels = new HashMap<>();
 
     // A Hashtable to temporarily store channel topics when we join them
     // until we find out who set that topic.
-    private Hashtable<String, String> _topics = new Hashtable<>();
+    private HashMap<String, String> _topics = new HashMap<>();
 
     // DccManager to process and handle all DCC events.
     private DccManager _dccManager = new DccManager(this);

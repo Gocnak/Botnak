@@ -43,11 +43,7 @@ public class IRCViewer extends PircBot {
                 e.printStackTrace();
             }
         } else {
-            try {
-                joinChannel(channelName);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            joinChannel(channelName);
             if (Utils.isInChannel(this, channel)) {
                 if (!GUIMain.channelMap.contains(channel)) GUIMain.channelMap.add(channel);
             }
@@ -71,10 +67,18 @@ public class IRCViewer extends PircBot {
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                GUIMain.mainGUI.onMessage(channel, sender, message);
+                GUIMain.mainGUI.onMessage(channel, sender, message, false);
             }
         });
     }
 
+    public void onAction(final String sender, final String login, final String hostname, final String target, final String action) {
+        EventQueue.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                GUIMain.mainGUI.onMessage(target, sender, action, true);
+            }
+        });
+    }
 
 }

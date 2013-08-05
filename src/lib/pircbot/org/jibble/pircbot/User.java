@@ -98,7 +98,7 @@ public class User {
      * @return The user's prefix and nick.
      */
     public String toString() {
-        return this.getPrefix() + this.getNick();
+        return getPrefix() + getNick();
     }
 
 

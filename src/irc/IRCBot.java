@@ -26,17 +26,14 @@ import java.util.Random;
  * Finish "Nice" soundlist
  * Expand the files to detect other audio formats (why doesn't mp3 work...) (look into Media class)
  * Look into adding newline for commands, for example !keygasm
- * Package the sucker up (in a jar) and public release this shit
  */
 public class IRCBot extends PircBot {
-
     public static int soundTime = 5000;
     public static int chatTime = 5000;
 
     public static boolean stopSound = false;
-    private static Random r;
     public static String masterChannel;
-    private static String pass;
+    private String pass;
     public ChatterBot chatBot;
     public ChatterBotSession session;
     public static Timer botnakTimer, soundTimer, soundBackTimer;
@@ -55,7 +52,6 @@ public class IRCBot extends PircBot {
         name = user;
         setName(name);
         setLogin(name);
-        r = new Random();
         pass = password;
         masterChannel = GUIMain.viewer.getMaster();
         GUIMain.botUser.setText(name);
@@ -66,6 +62,7 @@ public class IRCBot extends PircBot {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        setVerbose(true);
         botnakTimer = new Timer(chatTime);
         soundTimer = new Timer(soundTime);
         soundBackTimer = new Timer(0);
@@ -80,11 +77,7 @@ public class IRCBot extends PircBot {
                 e.printStackTrace();
             }
         } else {
-            try {
-                joinChannel(channelName);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            joinChannel(channelName);
             if (Utils.isInChannel(this, channelName)) {
                 if (!GUIMain.channelMap.contains(channel)) GUIMain.channelMap.add(channel);
             }
@@ -93,8 +86,7 @@ public class IRCBot extends PircBot {
 
     public void doLeave(String channel, boolean forget) {
         String channelName = "#" + channel;
-        if (Utils.isInChannel(this, channel)) {
-            System.out.println("WE'RE IN " + channel + " AND WE'RE GOING TO LEAVE IT");
+        if (Utils.isInChannel(this, channelName)) {
             partChannel(channelName);
         }
         if (forget) {
@@ -326,10 +318,11 @@ public class IRCBot extends PircBot {
     }
 
     public void onOp(String channel, String sourceNick, String sourceLogin, String sourceHostname, String recipient) {
-        if (channel.substring(1).equals(GUIMain.viewer.getMaster())) {
-            if (!GUIMain.modMap.contains(recipient)) {
-                GUIMain.modMap.add(recipient);
-                Utils.saveMods(GUIMain.modMap, GUIMain.modsFile);
+        if (GUIMain.viewer != null) {
+            if (channel.substring(1).equals(GUIMain.viewer.getMaster())) {
+                if (!GUIMain.modMap.contains(recipient)) {
+                    GUIMain.modMap.add(recipient);
+                }
             }
         }
     }
