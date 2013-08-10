@@ -7,7 +7,6 @@ import javax.sound.sampled.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.StringTokenizer;
 
 /**
  * The Sound Wrapper Class
@@ -16,7 +15,6 @@ import java.util.StringTokenizer;
  */
 public class Sound {
 
-    private static final int BUFFER_SIZE = 320000;
 
     /**
      * All users may use the sound
@@ -87,69 +85,48 @@ public class Sound {
         return sb.toString();
     }
 
-    public void play() {
-        File soundFile;                //could be > 1, either way it will play either index 0 or a random sound
-        soundFile = new File(filePaths.data[Utils.r.nextInt(filePaths.data.length)]);
-        if (!soundFile.exists() || soundFile.length() == 0) {
-            return;
-        }
-        final AudioInputStream audioStream;
-        try {
-            audioStream = AudioSystem.getAudioInputStream(soundFile);
-        } catch (Exception e) {
-            System.out.println(soundFile.getName() + " doesn't want to give its InputStream for some reason.");
-            return;
-        }
-        if (audioStream == null) {
-            return;
-        }
-        AudioFormat audioFormat = audioStream.getFormat();
-        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
-        final SourceDataLine sourceLine;
-        try {
-            sourceLine = (SourceDataLine) AudioSystem.getLine(info);
-            sourceLine.open(audioFormat);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
-        long frames = audioStream.getFrameLength();
-        double durationInSeconds = (frames + 0.0) / audioFormat.getFrameRate();
-        if (((int) durationInSeconds) * 1000 > IRCBot.soundTimer.period) {//we're checking the duration to see
-            IRCBot.soundTimer = new Timer(((int) durationInSeconds) * 1000);//if it's a dev sound/really long sound
-            IRCBot.soundBackTimer = new Timer(((int) durationInSeconds) * 1000);//so we can setup the backup timers
-        }
-        sourceLine.start();
+    private Clip clip = null;
+    private AudioInputStream audioStream = null;
 
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int nBytesRead = 0;
-                byte[] abData = new byte[BUFFER_SIZE];
-                while (nBytesRead != -1 && !IRCBot.stopSound && !GUIMain.shutDown) {
-                    try {
-                        nBytesRead = audioStream.read(abData, 0, abData.length);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    if (nBytesRead >= 0) {
-                        sourceLine.write(abData, 0, nBytesRead);
-                    }
-                }
-                sourceLine.drain();
-                sourceLine.close();
-                try {
-                    audioStream.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+    public void stop() {
+        if (clip != null && audioStream != null) {
+            clip.stop();
+            clip.close();
+            try {
+                audioStream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        });
-
-        if (!IRCBot.stopSound) {
-            t.start();
         }
     }
 
+    public boolean isPlaying() {
+        return clip != null && clip.isActive();
+    }
 
+    public void play() {
+        File soundFile;                //could be > 1, either way it will play either index 0 or a random sound
+        soundFile = new File(filePaths.data[Utils.r.nextInt(filePaths.data.length)]);
+        if (!Utils.areFilesGood(soundFile.getAbsolutePath())) {
+            return;
+        }
+        try {
+            clip = AudioSystem.getClip();
+            audioStream = AudioSystem.getAudioInputStream(soundFile);
+            if (!GUIMain.shutDown && !IRCBot.stopSound) {
+                clip.open(audioStream);
+                clip.start();
+                long frames = audioStream.getFrameLength();
+                double durationInSeconds = (frames + 0.0) / clip.getFormat().getFrameRate();
+                if (IRCBot.soundTimer.period != 0) {//if being raided/allotting spam, ignore the following code
+                    if (((int) durationInSeconds) * 1000 > IRCBot.soundTimer.period) {//we're checking the duration to see
+                        IRCBot.soundTimer = new Timer(((int) durationInSeconds) * 1000);//if it's a dev sound/really long sound
+                        IRCBot.soundBackTimer = new Timer(((int) durationInSeconds) * 1000);//so we can setup the backup timers
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

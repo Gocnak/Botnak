@@ -25,6 +25,7 @@ import java.util.Random;
  * //TODO
  * Finish "Nice" soundlist
  * Expand the files to detect other audio formats (why doesn't mp3 work...) (look into Media class)
+ * Online image downloading from websites, include check to see if image is too big before setting icon
  * Look into adding newline for commands, for example !keygasm
  */
 public class IRCBot extends PircBot {
@@ -122,16 +123,17 @@ public class IRCBot extends PircBot {
                         handleDev(channel, message.substring(1));
                     }
                     //mod
-                    if (Utils.isUserOp(this, channel, sender)) {
+                    if (Utils.isUserOp(this, channel, sender) && !sender.equals(GUIMain.viewer.getMaster())) {
                         handleMod(channel, message.substring(1));
                     }
                     //sound
                     if (soundTrigger(content, sender, channel)) {
-                        GUIMain.soundMap.get(content).play();
+                        GUIMain.currentSound = GUIMain.soundMap.get(content);
+                        GUIMain.currentSound.play();
                     }
                     //color
                     if (content.startsWith("setcol")) {
-                        handleColor(sender, message.substring(1));
+                        Utils.handleColor(sender, message.substring(1));
                     }
                     //reply
                     if (content.equals("ask")) {
@@ -168,62 +170,6 @@ public class IRCBot extends PircBot {
         }
     }
 
-    public static void handleColor(String user, String mess) {
-        if (user != null && mess != null) {
-            Color usercolor = Utils.getColor(user.hashCode());
-            String[] split = mess.split(" ");
-            if (split.length > 2) { //contains R, G, B
-                int R;
-                int G;
-                int B;
-                try {
-                    R = Integer.parseInt(split[1]);
-                } catch (NumberFormatException e) {
-                    R = 0;
-                }
-                try {
-                    G = Integer.parseInt(split[2]);
-                } catch (NumberFormatException e) {
-                    G = 0;
-                }
-                try {
-                    B = Integer.parseInt(split[3]);
-                } catch (NumberFormatException e) {
-                    B = 0;
-                }
-                if (!Utils.checkInts(R, G, B)) {//see if at least one is > 99
-                    GUIMain.userColMap.put(user, new int[]{usercolor.getRed(), usercolor.getGreen(), usercolor.getBlue()});
-                } else {
-                    GUIMain.userColMap.put(user, new int[]{R, G, B});
-                }
-            } else {
-                if (split.length == 2) { //contains String colorname
-                    Color color = usercolor;
-                    try {
-                        Field[] fields = Color.class.getFields();
-                        for (Field f : fields) {
-                            if (f != null) {
-                                String name = f.getName();
-                                if (name.equalsIgnoreCase(split[1])) {
-                                    color = (Color) f.get(null);
-                                    break;
-                                }
-                            }
-                        }
-                    } catch (Exception ignored) {
-                    }
-                    int R = color.getRed();
-                    int G = color.getGreen();
-                    int B = color.getBlue();
-                    if (!Utils.checkInts(R, G, B)) {
-                        GUIMain.userColMap.put(user, new int[]{usercolor.getRed(), usercolor.getGreen(), usercolor.getBlue()});
-                    } else {
-                        GUIMain.userColMap.put(user, new int[]{R, G, B});
-                    }
-                }
-            }
-        }
-    }
 
 
     /**
@@ -236,7 +182,7 @@ public class IRCBot extends PircBot {
      * @return true to play the sound, else false
      */
     public boolean soundTrigger(String s, String send, String channel) {
-        if (!soundBackTimer.isRunning()) {//check from a dev song
+        if (!soundBackTimer.isRunning() || (soundBackTimer.period > soundTimer.period)) {//check from a dev song
             soundBackTimer = new Timer(0);//reset the backup sound timer, and
             if (soundTimer.period > soundTime) {//check if the sound was longer (which is mostly true)
                 soundTimer = new Timer(soundTime);//reset it so you don't have to
@@ -308,17 +254,6 @@ public class IRCBot extends PircBot {
         }
     }
 
-
-    public static String privateMessage = "";
-
-    public void onPrivateMessage(String sender, String login, String hostname, String message) {
-        privateMessage = message;
-    }
-
-    public String getPrivateMessage() {
-        return privateMessage;
-    }
-
     public void handleDev(String channel, String s) {
         if (s.startsWith("setreply")) {
             try {
@@ -329,27 +264,17 @@ public class IRCBot extends PircBot {
             chatTime = Utils.handleInt(chatTime);
             botnakTimer = new Timer(chatTime);
         }
-        if (s.startsWith("removesound")) {
-            String remove = s.split(" ")[1];
-            if (GUIMain.soundMap.containsKey(remove)) {
-                GUIMain.soundMap.remove(remove);
-            }
-        }
         handleMod(channel, s);
     }
 
     public void handleMod(String channel, String s) {
         if (channel.substring(1).equals(GUIMain.viewer.getMaster())) {
-/*            if (s.startsWith("songrq")) {
-                String req = s.split(" ")[1];
-                if (req != null && !req.equals("")) {
-                    if (req.contains("youtube")) {
-                        String id = req.split("=")[1];
-                        String base = "http://www.youtube.com/embed/";
-                        util.Utils.openSong(base + id); TODO make this work without focus
-                    }
+            if (s.startsWith("removesound")) {
+                String remove = s.split(" ")[1];
+                if (GUIMain.soundMap.containsKey(remove)) {
+                    GUIMain.soundMap.remove(remove);
                 }
-            }*/
+            }
             if (s.startsWith("addcommand")) {
                 Utils.addCommands(GUIMain.commandMap, s);
             }
@@ -381,9 +306,13 @@ public class IRCBot extends PircBot {
                         + (delay < 2 ? (delay == 0 ? "no delay." : "a delay of 1 second.") : ("a delay of " + delay + " seconds.")));
             }
             if (s.startsWith("togglesound")) {
+                if (GUIMain.currentSound != null && GUIMain.currentSound.isPlaying()) {
+                    GUIMain.currentSound.stop();
+                }
                 stopSound = !stopSound;
                 sendMessage(channel, "Sound is now turned " + (stopSound ? "OFF" : "ON"));
                 soundTimer = new Timer(soundTime);
+                soundBackTimer = new Timer(0);//reset the backup sound timer*/
             }
             if (s.startsWith("setsound")) {
                 try {

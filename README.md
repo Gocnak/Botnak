@@ -8,7 +8,6 @@ A full example list of commands and such can be found at http://bit.ly/1366RwM.
 TODO:
 - Code the ability to join SRL race chats
 - Make Botnak recognize admins/staff of Twitch and assign appropriate icons.
-- Make a working !songrq command that handles song requests -- add an engine for this maybe.
 - New-line detection for commands - perhaps typing a special character (like '[' or something) in the message text.
 - After a certain amount of lines (like, a LOT of lines), clear the chat (intelligently, keep the lines on screen) to prevent memory/lag issues
 - Hardcode all of the Twitch faces (Sub emotes and the kind) -- will do this when I make the viewer branch.
@@ -24,6 +23,7 @@ OTHER CHANNELS: Botnak supports other channels, but it's wise to only join a few
 
 
 Credits:  
-Chatterbot API for making Botnak come alive in chats - https://code.google.com/p/chatter-bot-api/  
-Pircbot API for giving me headaches - http://www.jibble.org/pircbot.php  
+Chatterbot API for making Botnak come alive in chats - https://code.google.com/p/chatter-bot-api/
+Scalr API for Image Scaling - https://github.com/thebuzzmedia/imgscalr/
+Pircbot API for giving me headaches - http://www.jibble.org/pircbot.php
 Dr. Kegel from my Twitch chat for fixing them - http://www.twitch.tv/dr_kegel

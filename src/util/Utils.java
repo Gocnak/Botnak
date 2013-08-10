@@ -2,12 +2,19 @@ package util;
 
 import gui.GUIMain;
 import irc.IRCBot;
+import javafx.scene.transform.Scale;
 import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
+import lib.scalr.Scalr;
 
+import javax.imageio.ImageIO;
+import javax.sound.sampled.Clip;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
 import java.io.*;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.*;
@@ -25,6 +32,7 @@ public class Utils {
 
     /**
      * Gets the extension of a file.
+     *
      * @param f File to get the extension of.
      * @return The file's extension.
      */
@@ -82,7 +90,8 @@ public class Utils {
 
     /**
      * Checks to see if a Pircbot is in a given channel.
-     * @param v The Pircbot to check.
+     *
+     * @param v       The Pircbot to check.
      * @param channel The channel in question.
      * @return true if in the channel, otherwise false.
      */
@@ -165,6 +174,7 @@ public class Utils {
 
     /**
      * Adds a single string to an array of strings, first checking to see if the array contains it.
+     *
      * @param toAdd The string(s) to add to the array.
      * @param array The array to add the string to.
      * @return The array of Strings.
@@ -181,7 +191,8 @@ public class Utils {
 
     /**
      * Compares two arrays of Strings and adds the non-repeating ones to the same one.
-     * @param list List of strings to compare to.
+     *
+     * @param list  List of strings to compare to.
      * @param toAdd String(s) to add to the list.
      * @return The list with filtered Strings.
      */
@@ -310,6 +321,7 @@ public class Utils {
 
     /**
      * Removes a file extension from a path.
+     *
      * @param s The path to a file, or the file and its extension.
      * @return The file/path name without the extension.
      */
@@ -324,6 +336,7 @@ public class Utils {
 
     /**
      * Checks to see if the input is IRC-worthy of printing.
+     *
      * @param input The input in question.
      * @return The given input if it checks out, otherwise nothing.
      */
@@ -333,6 +346,7 @@ public class Utils {
 
     /**
      * Returns a number between a given minimum and maximum (exclusive).
+     *
      * @param min The minimum number to generate on.
      * @param max The non-inclusive maximum number to generate on.
      * @return Some random number between the given numbers.
@@ -343,14 +357,15 @@ public class Utils {
 
     /**
      * Generates a color from the #hashCode() of any java.lang.Object.
-     *
+     * <p/>
      * Author - Dr_Kegel from Gocnak's stream.
+     *
      * @param seed The Hashcode of the object you want dynamic color for.
      * @return The Color of the object's hash.
      */
     public static Color getColor(final int seed) {
         /* We do some bit hacks here
-		   hashCode has 32 bit, we use every bit as a random source */
+           hashCode has 32 bit, we use every bit as a random source */
         final int HUE_BITS = 12, HUE_MASK = ((1 << HUE_BITS) - 1);
         final int SATURATION_BITS = 8, SATURATION_MASK = ((1 << SATURATION_BITS) - 1);
         final int BRIGHTNESS_BITS = 12, BRIGHTNESS_MASK = ((1 << BRIGHTNESS_BITS) - 1);
@@ -544,9 +559,9 @@ public class Utils {
     /**
      * Checks whether the given nick that sent a message is an Operator or not.
      *
-     * @param c The bot that is connected to the channel. Viewer is usually the default.
+     * @param c       The bot that is connected to the channel. Viewer is usually the default.
      * @param channel The channel the user is in.
-     * @param nick The nick of the user.
+     * @param nick    The nick of the user.
      * @return true if the user is an operator; otherwise false.
      */
     public static boolean isUserOp(PircBot c, String channel, String nick) {
@@ -564,11 +579,12 @@ public class Utils {
 
     /**
      * Adds a command to the command map.
-     *
+     * <p/>
      * To do this in chat, simply type !addcommand command time message
      * More examples at http://bit.ly/1366RwM
+     *
      * @param map The command map to add to.
-     * @param s The string from the chat.
+     * @param s   The string from the chat.
      */
     public static void addCommands(HashMap<StringArray, Timer> map, String s) {
         String[] split = s.split(" ");
@@ -598,6 +614,7 @@ public class Utils {
 
     /**
      * Removes a command from the command map.
+     *
      * @param map The map the commands are in.
      * @param key The !command trigger, or key.
      */
@@ -616,8 +633,9 @@ public class Utils {
 
     /**
      * Checks to see if a certain string was a key to a command.
+     *
      * @param map The map the commands are in.
-     * @param s The string in question.
+     * @param s   The string in question.
      * @return True if the string in question was indeed a key for a command; else false.
      */
     public static boolean commandTrigger(HashMap<StringArray, Timer> map, String s) {
@@ -633,25 +651,10 @@ public class Utils {
         return false;
     }
 
-    /**
-     * Changes a face to have a new file, or add the face to the map.
-     *
-     * @param s The latter part of the !addface or !changeface command.
-     */
-    public static void handleFace(String s) {
-        if (GUIMain.defaultFaceDir != null && !GUIMain.defaultFaceDir.equals("null")) {
-            String[] split = s.split(" ");
-            String name = split[1];
-            String file = split[2];
-            String filename = GUIMain.defaultFaceDir + File.separator + file;
-            if (areFilesGood(filename)) {
-                GUIMain.imgMap.put(name, filename);
-            }
-        }
-    }
 
     /**
      * Get the Message from the !command trigger.
+     *
      * @param map The map the commands are stored in.
      * @param key The !command trigger, or key.
      * @return The message that the command triggers.
@@ -675,6 +678,7 @@ public class Utils {
 
     /**
      * Gets the timer for a command.
+     *
      * @param map The command map the commands are stored in.
      * @param key The !command trigger, or key, of the command.
      * @return The Timer of the command.
@@ -695,7 +699,72 @@ public class Utils {
     }
 
     /**
+     * Sets a color to the user based on either a R G B value in their message
+     * or a standard color from the Color class.
+     *
+     * @param user User to change the color for.
+     * @param mess Their message.
+     */
+    public static void handleColor(String user, String mess) {
+        if (user != null && mess != null) {
+            Color usercolor = getColor(user.hashCode());
+            String[] split = mess.split(" ");
+            if (split.length > 2) { //contains R, G, B
+                int R;
+                int G;
+                int B;
+                try {
+                    R = Integer.parseInt(split[1]);
+                } catch (NumberFormatException e) {
+                    R = 0;
+                }
+                try {
+                    G = Integer.parseInt(split[2]);
+                } catch (NumberFormatException e) {
+                    G = 0;
+                }
+                try {
+                    B = Integer.parseInt(split[3]);
+                } catch (NumberFormatException e) {
+                    B = 0;
+                }
+                if (!checkInts(R, G, B)) {//see if at least one is > 99
+                    GUIMain.userColMap.put(user, new int[]{usercolor.getRed(), usercolor.getGreen(), usercolor.getBlue()});
+                } else {
+                    GUIMain.userColMap.put(user, new int[]{R, G, B});
+                }
+            } else {
+                if (split.length == 2) { //contains String colorname
+                    Color color = usercolor;
+                    try {
+                        Field[] fields = Color.class.getFields();
+                        for (Field f : fields) {
+                            if (f != null) {
+                                String name = f.getName();
+                                if (name.equalsIgnoreCase(split[1])) {
+                                    color = (Color) f.get(null);
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {
+                    }
+                    int R = color.getRed();
+                    int G = color.getGreen();
+                    int B = color.getBlue();
+                    if (!checkInts(R, G, B)) {
+                        GUIMain.userColMap.put(user, new int[]{usercolor.getRed(), usercolor.getGreen(), usercolor.getBlue()});
+                    } else {
+                        GUIMain.userColMap.put(user, new int[]{R, G, B});
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Checks the red, green, and blue in order to show up in botnak.
+     *
      * @param r Red value
      * @param g Green value
      * @param b Blue value
@@ -740,121 +809,207 @@ public class Utils {
     /**
      * Handles the adding/changing of a sound, its permission, and/or its files.
      *
-     * @param s The string from the chat to manipulate.
+     * @param s      The string from the chat to manipulate.
      * @param change True for changing a sound, false for adding.
      */
-     public static void handleSound(String s, boolean change) {
-         if (GUIMain.defaultSoundDir != null && !GUIMain.defaultSoundDir.equals("null") && !GUIMain.defaultSoundDir.equals("")) {
-             try {
-                 String[] split = s.split(" ");
-                 String name = split[1];//both commands have this in common.
-                 int perm = -1;
-                 if (split.length > 3) {//!add/changesound sound 0 sound(,maybe,more)
-                     try {
-                         perm = Integer.parseInt(split[2]);
-                     } catch (Exception e) {
-                         return;
-                     }
-                     String files = split[3];
-                     if (perm == -1) return;
-                     if (!files.contains(",")) {//isn't multiple
-                         //this can be !addsound sound 0 sound or !changesound sound 0 newsound
-                         String filename = GUIMain.defaultSoundDir + File.separator + files + ".wav";
-                         if (areFilesGood(filename)) {
-                             if (GUIMain.soundMap.containsKey(name)) {//they could technically change the permission here as well
-                                 if (!change) {//!addsound
-                                     GUIMain.soundMap.put(name, new Sound(perm,// add it tooo it maaan
-                                             addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, filename)));
-                                 } else {//!changesound
-                                     GUIMain.soundMap.put(name, new Sound(perm, filename));//replace it
-                                 }
-                             } else { //*gasp* A NEW SOUND!?
-                                 if (!change) GUIMain.soundMap.put(name, new Sound(perm, filename));
-                                 //can't have !changesound act like !addsound
-                             }
-                         }
-                     } else {//is multiple
-                         //this can be !addsound sound 0 multi,sound or !changesound sound 0 multi,sound
-                         ArrayList<String> list = new ArrayList<>();
-                         String[] filesSplit = files.split(",");
-                         for (String str : filesSplit) {
-                             list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
-                         }             //calls the areFilesGood boolean in it (filters bad files already)
-                         filesSplit = checkFiles(list.toArray(new String[list.size()]));
-                         list.clear();//recycle time!
-                         if (!change) { //adding sounds
-                             if (GUIMain.soundMap.containsKey(name)) {//adding sounds, so get the old ones V
-                                 Collections.addAll(list, GUIMain.soundMap.get(name).getSounds().data);
-                             }
-                             checkAndAdd(list, filesSplit);//checks for repetition, will add anyway if list is empty
-                             GUIMain.soundMap.put(name, new Sound(perm, list.toArray(new String[list.size()])));
-                         } else {//!changesound, so replace it if it's in there
-                             if (GUIMain.soundMap.containsKey(name)) GUIMain.soundMap.put(name, new Sound(perm, filesSplit));
-                         }
-                     }
-                 }
-                 if (split.length == 3) {//add/changesound sound perm/newsound
-                     if (split[2].length() == 1) {//ASSUMING it's a permission change.
-                         try {
-                             perm = Integer.parseInt(split[2]);//I mean come on. What sound will have a 1 char name?
-                             if (perm != -1) {
-                                 if (change)//because adding just a sound name and a permission is silly
-                                 GUIMain.soundMap.put(name, new Sound(perm, GUIMain.soundMap.get(name).getSounds().data));//A pretty bad one...
-                             }
-                         } catch (NumberFormatException e) {//maybe it really is a 1-char-named sound?
-                             String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
-                             if (areFilesGood(test)) { //wow...
-                                 if (change) {
-                                     GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), test));
-                                 } else {//adding a 1 char sound that exists to the pool...
-                                     GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(),
-                                             addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, test)));
-                                 }
-                             }
-                         }
-                     } else { //it's a/some new file(s) as replacement/to add!
-                         if (split[2].contains(",")) {//multiple
-                             String[] filesSplit = split[2].split(",");
-                             ArrayList<String> list = new ArrayList<>();
-                             for (String str : filesSplit) {
-                                 list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
-                             }             //calls the areFilesGood boolean in it (filters bad files already)
-                             filesSplit = checkFiles(list.toArray(new String[list.size()]));
-                             if (!change) {//!addsound soundname more,sounds
-                                 if (GUIMain.soundMap.containsKey(name)) {
-                                     filesSplit = addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, filesSplit);
-                                     GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), filesSplit));
-                                 } else { //use default permission
-                                     GUIMain.soundMap.put(name, new Sound(filesSplit));
-                                 }
-                             } else {//!changesound soundname new,sounds
+    public static void handleSound(String s, boolean change) {
+        if (GUIMain.defaultSoundDir != null && !GUIMain.defaultSoundDir.equals("null") && !GUIMain.defaultSoundDir.equals("")) {
+            try {
+                String[] split = s.split(" ");
+                String name = split[1];//both commands have this in common.
+                int perm = -1;
+                if (split.length > 3) {//!add/changesound sound 0 sound(,maybe,more)
+                    try {
+                        perm = Integer.parseInt(split[2]);
+                    } catch (Exception e) {
+                        return;
+                    }
+                    String files = split[3];
+                    if (perm == -1) return;
+                    if (!files.contains(",")) {//isn't multiple
+                        //this can be !addsound sound 0 sound or !changesound sound 0 newsound
+                        String filename = GUIMain.defaultSoundDir + File.separator + files + ".wav";
+                        if (areFilesGood(filename)) {
+                            if (GUIMain.soundMap.containsKey(name)) {//they could technically change the permission here as well
+                                if (!change) {//!addsound
+                                    GUIMain.soundMap.put(name, new Sound(perm,// add it tooo it maaan
+                                            addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, filename)));
+                                } else {//!changesound
+                                    GUIMain.soundMap.put(name, new Sound(perm, filename));//replace it
+                                }
+                            } else { //*gasp* A NEW SOUND!?
+                                if (!change) GUIMain.soundMap.put(name, new Sound(perm, filename));
+                                //can't have !changesound act like !addsound
+                            }
+                        }
+                    } else {//is multiple
+                        //this can be !addsound sound 0 multi,sound or !changesound sound 0 multi,sound
+                        ArrayList<String> list = new ArrayList<>();
+                        String[] filesSplit = files.split(",");
+                        for (String str : filesSplit) {
+                            list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
+                        }             //calls the areFilesGood boolean in it (filters bad files already)
+                        filesSplit = checkFiles(list.toArray(new String[list.size()]));
+                        list.clear();//recycle time!
+                        if (!change) { //adding sounds
+                            if (GUIMain.soundMap.containsKey(name)) {//adding sounds, so get the old ones V
+                                Collections.addAll(list, GUIMain.soundMap.get(name).getSounds().data);
+                            }
+                            checkAndAdd(list, filesSplit);//checks for repetition, will add anyway if list is empty
+                            GUIMain.soundMap.put(name, new Sound(perm, list.toArray(new String[list.size()])));
+                        } else {//!changesound, so replace it if it's in there
+                            if (GUIMain.soundMap.containsKey(name))
+                                GUIMain.soundMap.put(name, new Sound(perm, filesSplit));
+                        }
+                    }
+                }
+                if (split.length == 3) {//add/changesound sound perm/newsound
+                    if (split[2].length() == 1) {//ASSUMING it's a permission change.
+                        try {
+                            perm = Integer.parseInt(split[2]);//I mean come on. What sound will have a 1 char name?
+                            if (perm != -1) {
+                                if (change)//because adding just a sound name and a permission is silly
+                                    GUIMain.soundMap.put(name, new Sound(perm, GUIMain.soundMap.get(name).getSounds().data));//A pretty bad one...
+                            }
+                        } catch (NumberFormatException e) {//maybe it really is a 1-char-named sound?
+                            String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
+                            if (areFilesGood(test)) { //wow...
+                                if (change) {
+                                    GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), test));
+                                } else {//adding a 1 char sound that exists to the pool...
+                                    GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(),
+                                            addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, test)));
+                                }
+                            }
+                        }
+                    } else { //it's a/some new file(s) as replacement/to add!
+                        if (split[2].contains(",")) {//multiple
+                            String[] filesSplit = split[2].split(",");
+                            ArrayList<String> list = new ArrayList<>();
+                            for (String str : filesSplit) {
+                                list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
+                            }             //calls the areFilesGood boolean in it (filters bad files already)
+                            filesSplit = checkFiles(list.toArray(new String[list.size()]));
+                            if (!change) {//!addsound soundname more,sounds
+                                if (GUIMain.soundMap.containsKey(name)) {
+                                    filesSplit = addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, filesSplit);
+                                    GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), filesSplit));
+                                } else { //use default permission
+                                    GUIMain.soundMap.put(name, new Sound(filesSplit));
+                                }
+                            } else {//!changesound soundname new,sounds
                                 if (GUIMain.soundMap.containsKey(name))//!changesound isn't !addsound
-                                 GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), filesSplit));
-                             }
-                         } else {//singular
-                             String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
-                             if (Utils.areFilesGood(test)) {
-                                 if (!change) {//!addsound sound newsound
+                                    GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), filesSplit));
+                            }
+                        } else {//singular
+                            String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
+                            if (areFilesGood(test)) {
+                                if (!change) {//!addsound sound newsound
                                     if (GUIMain.soundMap.containsKey(name)) {//getting the old permission/files
                                         GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(),
                                                 addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, test)));
                                     } else {//use default permission
                                         GUIMain.soundMap.put(name, new Sound(test));
                                     }
-                                 } else { //!changesound sound newsound
-                                     if (GUIMain.soundMap.containsKey(name))//!changesound isn't !addsound
-                                         GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), test));
-                                 }
-                             }
-                         }
-                     }
+                                } else { //!changesound sound newsound
+                                    if (GUIMain.soundMap.containsKey(name))//!changesound isn't !addsound
+                                        GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), test));
+                                }
+                            }
+                        }
+                    }
 
-                 }
-             } catch (Exception e) {
-                 e.printStackTrace();
-             }
-         }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
-     }
+    /**
+     * Either adds a face to the image map or changes a face to another variant.
+     * If the face image size is too big, it is scaled (using Scalr) to fit the 26 pixel height limit.
+     *
+     * @param s The string from the chat.
+     */
+    public static void handleFace(String s) {
+        if (GUIMain.defaultFaceDir == null || GUIMain.defaultFaceDir.equals("") || GUIMain.defaultFaceDir.equals("null")) return;
+        try {
+            File f;
+            BufferedImage image;
+            String[] split = s.split(" ");
+            if (split == null) return;
+            String command = split[0];
+            String name = split[1];
+            String file = split[2];//or the URL...
+            if (command.equalsIgnoreCase("addface")) {//a new face
+               if (GUIMain.imgMap.containsKey(name)) return;//!addface is not !changeface, remove the face first or call changeface
+               if (file.startsWith("http://")) {//online
+                   f = new File(GUIMain.defaultFaceDir + File.separator + name + ".png");//file based on name of command, case sensitive
+                   try {
+                       URL url = new URL(file);//bad URL or something
+                       image = ImageIO.read(url);//just incase the file is null/it can't read it
+                   } catch (Exception e) {
+                       e.printStackTrace();
+                       return;
+                   }
+                   if (image.getHeight() > 26) {//if it's too big...
+                       image = Scalr.resize(image, Scalr.Method.QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26, Scalr.OP_ANTIALIAS);//...scale it
+                   }
+                   ImageIO.write(image, "PNG", f);//save it
+                   GUIMain.imgMap.put(name, f.getAbsolutePath());
+               } else {//local
+                   f = new File(GUIMain.defaultFaceDir + File.separator + file);
+                   try {
+                       image = ImageIO.read(f);
+                   } catch (Exception e) {//just incase it doesn't exist or anything
+                       e.printStackTrace();
+                       return;
+                   }
+                   if (image.getHeight() > 26) {//if it's too big
+                       image = Scalr.resize(image, Scalr.Method.QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26, Scalr.OP_ANTIALIAS);//scale it
+                   }
+                   ImageIO.write(image, "PNG", f);//save it
+                   GUIMain.imgMap.put(name, f.getAbsolutePath());
+               }
+            }
+            if (command.equalsIgnoreCase("changeface")) {//replace entirely
+               if (GUIMain.imgMap.containsKey(name)) {//!changeface is not !addface
+                   f = new File(GUIMain.imgMap.get(name));
+                   if (file.startsWith("http:")) {
+                       try {
+                           URL url = new URL(file);//bad URL or something
+                           image = ImageIO.read(url);//just incase the file is null/it can't read it
+                       } catch (Exception e) {
+                           e.printStackTrace();
+                           return;
+                       }
+                       if (image.getHeight() > 26) {//if it's too big
+                           image = Scalr.resize(image, Scalr.Method.QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26, Scalr.OP_ANTIALIAS);//scale it
+                       }
+                       ImageIO.write(image, "PNG", f);//save it
+                       GUIMain.imgMap.put(name, f.getAbsolutePath());
+                   } else {//local file
+                       f = new File(GUIMain.imgMap.get(name));
+                       File ftosave = new File(GUIMain.defaultFaceDir + File.separator + file);
+                       try {
+                           image = ImageIO.read(ftosave);
+                       } catch (Exception e) {//just incase it doesn't exist or anything
+                           e.printStackTrace();
+                           return;
+                       }
+                       if (image.getHeight() > 26) {//if it's too big
+                           image = Scalr.resize(image, Scalr.Method.QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26, Scalr.OP_ANTIALIAS);//scale it
+                       }
+                       ImageIO.write(image, "PNG", f);//save it
+                       GUIMain.imgMap.put(name, f.getAbsolutePath());
+                   }
+               }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
 }

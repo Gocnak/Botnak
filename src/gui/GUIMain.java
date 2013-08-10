@@ -53,7 +53,6 @@ public class GUIMain extends JFrame {
     public static String customBroad = GUIMain.class.getResource("/resource/broad.png").getFile();
 
     public static GUIMain mainGUI;
-    public static Random r;
 
     public static boolean shutDown = false;
     public static boolean rememberNorm = false;
@@ -71,6 +70,8 @@ public class GUIMain extends JFrame {
     public static String defaultFaceDir = "";
     public static boolean useMod = false;
     public static boolean useBroad = false;
+
+    public static Sound currentSound = null;
 
 
     public GUIMain() {
@@ -96,7 +97,6 @@ public class GUIMain extends JFrame {
         StyleConstants.setForeground(color, Color.orange);
         StyleConstants.setFontFamily(color, "Calibri");
         StyleConstants.setFontSize(color, 18);
-        r = new Random();
         initComponents();
         initListener();
         Utils.buildImages(imgMap, imgFile);
@@ -402,20 +402,18 @@ public class GUIMain extends JFrame {
                                 int end = Utilities.getWordEnd(chatText, e.getOffset() + e.getLength());
                                 String text = doc.getText(start, end - start);
                                 String[] faces = imgMap.keySet().toArray(new String[imgMap.keySet().size()]);
-                                String mess1 = text.toLowerCase();
                                 for (String s : faces) {
-                                    String s1 = s.toLowerCase();
-                                    if (mess1.contains(s1)) {
-                                        int i = mess1.indexOf(s1);
+                                    if (text.contains(s)) {//case sensitive now
+                                        int i = text.indexOf(s);
                                         while (i >= 0 && !shutDown) {
                                             final SimpleAttributeSet attrs = new SimpleAttributeSet(
                                                     doc.getCharacterElement(start + i).getAttributes());
                                             if (StyleConstants.getIcon(attrs) == null) {
                                                 StyleConstants.setIcon(attrs, new ImageIcon(imgMap.get(s)));
-                                                doc.remove(start + i, s1.length());
+                                                doc.remove(start + i, s.length());
                                                 doc.insertString(start + i, s, attrs);
                                             }
-                                            i = mess1.indexOf(s1, i + s1.length() - 1);
+                                            i = text.indexOf(s, i + s.length() - 1);
                                         }
                                     }
                                 }
