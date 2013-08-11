@@ -13,6 +13,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.text.*;
+import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -204,12 +205,11 @@ public class GUIMain extends JFrame {
             if (channel.equalsIgnoreCase("all chats")) {
                 String[] channels = channelMap.toArray(new String[channelMap.size()]);
                 for (String c : channels) {
-                    if (c.equalsIgnoreCase("all chats")) continue;
                     if (!Utils.checkText(userInput).equals("")) {
                         viewer.sendMessage("#" + c, userInput);
                         boolean isMe = userInput.startsWith("/me");
                         if (isMe) userInput = userInput.replaceAll("/me ", "");
-                        onMessage("#" + channel, viewer.getMaster(), userInput, isMe);
+                        onMessage("#" + c, viewer.getMaster(), userInput, isMe);
                         userChat.setText("");
                     }
                 }
