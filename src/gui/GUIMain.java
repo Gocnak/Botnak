@@ -289,6 +289,11 @@ public class GUIMain extends JFrame {
     //called from IRCViewer
     public static void onMessage(String channel, String sender, String message, boolean isMe) {
         if (message != null && channel != null && sender != null && GUIMain.viewer != null && GUIMain.bot != null) {
+            if (!channel.substring(1).equalsIgnoreCase((String) streamList.getSelectedItem())) {//not the focused channel
+                if (!((String) streamList.getSelectedItem()).equalsIgnoreCase("all chats")) {//not on "all chats"
+                    return;//gtfo
+                }
+            }
             sender = sender.toLowerCase();
             if (message.replaceAll(" ", "").length() > 512) return;
             message = magic(message, '\u0020', 20);
