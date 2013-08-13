@@ -404,7 +404,7 @@ public class Utils {
         t.start();
     }
 
-    private static Thread t = new Thread(new Runnable() {
+    public static Thread t = new Thread(new Runnable() {
         @Override
         public void run() {
             HashSet<StringArray> fromSite = buildMap();
