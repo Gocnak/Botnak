@@ -428,6 +428,7 @@ public class GUIMain extends JFrame {
         if (!userColMap.isEmpty()) Utils.saveUserColors();
         if (loadedCommands()) Utils.saveCommands();
         if (viewerCheck != null && viewerCheck.isAlive()) viewerCheck.interrupt();
+        if (Utils.t != null && Utils.t.isAlive()) Utils.t.interrupt();
         dispose();
         System.exit(0);
     }
