@@ -27,28 +27,22 @@ public class GUILogin extends JFrame {
         }
     }
 
-    public static String user, userpass, botuser, bpass;
-
 
     public void loginButtonActionPerformed() {
-        String normus = normUser.getText();
+        String normus = normUser.getText().toLowerCase();
         String normpass = new String(normPass.getPassword());
-        String botus = botUser.getText();
+        String botus = botUser.getText().toLowerCase();
         String botpass = new String(botPass.getPassword());
         if (normus != null && !normus.equals("") && !normus.contains(" ")) {
             if (!normpass.equals("") && !normpass.contains(" ")) {
-                user = normus;
-                userpass = normpass;
-                GUIMain.viewer = new IRCViewer(user, userpass);
+                GUIMain.viewer = new IRCViewer(normus, normpass);
                 GUIMain.rememberNorm = rememberNormLogin.isSelected();
                 GUIMain.addStream.setEnabled(true);
             }
         }
         if (botus != null && !botus.equals("") && !botus.contains(" ")) {
             if (!botpass.equals("") && !botpass.contains(" ")) {
-                botuser = botus;
-                bpass = botpass;
-                GUIMain.bot = new IRCBot(botuser, bpass);
+                GUIMain.bot = new IRCBot(botus, botpass);
                 GUIMain.rememberBot = rememberBotLogin.isSelected();
             }
         }

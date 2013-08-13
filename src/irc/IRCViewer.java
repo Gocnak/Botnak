@@ -31,7 +31,13 @@ public class IRCViewer extends PircBot {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        if (GUIMain.loadedStreams()) {
+            for (String s : GUIMain.channelMap) {
+                doConnect(s);
+            }
+        }
         GUIMain.viewerCheck.start();
+        GUIMain.viewer = this;
     }
 
     public void doConnect(String channel) {
@@ -44,7 +50,7 @@ public class IRCViewer extends PircBot {
             }
         } else {
             joinChannel(channelName);
-            if (Utils.isInChannel(this, channel)) {
+            if (Utils.isInChannel(this, channelName)) {
                 if (!GUIMain.channelMap.contains(channel)) GUIMain.channelMap.add(channel);
             }
         }

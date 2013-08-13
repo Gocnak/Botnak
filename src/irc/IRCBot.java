@@ -10,22 +10,10 @@ import util.Timer;
 import util.Utils;
 import lib.chatbot.ChatterBot;
 
-import javax.sound.sampled.*;
-import java.awt.*;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.ConnectException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Random;
 
 /**
  * //TODO
- * Finish "Nice" soundlist
- * Expand the files to detect other audio formats (why doesn't mp3 work...) (look into Media class)
- * Online image downloading from websites, include check to see if image is too big before setting icon
  * Look into adding newline for commands, for example !keygasm
  */
 public class IRCBot extends PircBot {
@@ -66,6 +54,12 @@ public class IRCBot extends PircBot {
         botnakTimer = new Timer(chatTime);
         soundTimer = new Timer(soundTime);
         soundBackTimer = new Timer(0);
+        if (GUIMain.loadedStreams()) {
+            for (String s : GUIMain.channelMap) {
+                doConnect(s);
+            }
+        }
+        GUIMain.bot = this;
     }
 
     public void doConnect(String channel) {
@@ -104,6 +98,7 @@ public class IRCBot extends PircBot {
 
     public void onMessage(String channel, String sender, String login, String hostname, String message) {
         if (message != null && channel != null && sender != null) {
+            sender = sender.toLowerCase();
             String low = message.toLowerCase();
             //un-shorten short URLs
             if (low.contains("bit.ly/") || low.contains("tinyurl.com/") || low.contains("goo.gl")) {
@@ -139,11 +134,10 @@ public class IRCBot extends PircBot {
                     if (content.equals("ask")) {
                         if (!botnakTimer.isRunning()) {
                             talkBack(channel, sender, message.substring(4));
-                            botnakTimer.reset();
                         }
                     }
                     //command
-                    if (Utils.commandTrigger(GUIMain.commandMap, content)) {
+                    if (Utils.commandTrigger(content)) {
                         handleMessage(channel, content);
                     }
                 }
@@ -154,9 +148,7 @@ public class IRCBot extends PircBot {
     public void talkBack(String channel, String sender, String message) {
         if (channel != null && sender != null && message != null && session != null && chatBot != null) {
             String reply = "";
-            if (sender.equals(GUIMain.viewer.getMaster())) {
-                sender = "Master";
-            }
+            if (sender.equals(GUIMain.viewer.getMaster())) sender = "Master";
             try {
                 reply = session.think(message);
             } catch (Exception e) {
@@ -166,10 +158,10 @@ public class IRCBot extends PircBot {
             }
             if (!reply.equals("")) {
                 sendMessage(channel, sender + ", " + reply);
+                botnakTimer.reset();
             }
         }
     }
-
 
 
     /**
@@ -232,8 +224,8 @@ public class IRCBot extends PircBot {
     }
 
     public void handleMessage(String channel, String message) {
-        String cont = Utils.getMessage(GUIMain.commandMap, message);
-        Timer timer = Utils.getTimer(GUIMain.commandMap, message);
+        String cont = Utils.getMessage(message);
+        Timer timer = Utils.getTimer(message);
         if (!cont.equals("")) {
             if (!timer.isRunning()) {
                 sendMessage(channel, cont);
@@ -276,10 +268,10 @@ public class IRCBot extends PircBot {
                 }
             }
             if (s.startsWith("addcommand")) {
-                Utils.addCommands(GUIMain.commandMap, s);
+                Utils.addCommands(s);
             }
             if (s.startsWith("removecommand")) {
-                Utils.removeCommands(GUIMain.commandMap, s.split(" ")[1]);
+                Utils.removeCommands(s.split(" ")[1]);
             }
             if (s.startsWith("changeface")) {
                 Utils.handleFace(s);
@@ -290,8 +282,8 @@ public class IRCBot extends PircBot {
             if (s.startsWith("removeface")) {
                 String[] split = s.split(" ");
                 String toremove = split[1];
-                if (GUIMain.imgMap.containsKey(toremove)) {
-                    GUIMain.imgMap.remove(toremove);
+                if (GUIMain.faceMap.containsKey(toremove)) {
+                    Utils.removeFace(toremove);
                 }
             }
             if (s.startsWith("addsound")) {

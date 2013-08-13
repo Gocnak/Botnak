@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
+import java.net.URL;
 import javax.swing.GroupLayout;
 import javax.swing.LayoutStyle;
 import javax.swing.event.*;
@@ -28,13 +29,13 @@ public class GUIDefaults extends JFrame {
             useCustomBroad.setSelected(true);
             customBroad.setEnabled(true);
             customBroadButton.setEnabled(true);
-            customBroad.setText(GUIMain.customBroad);
+            customBroad.setText(GUIMain.customBroad.toString());
         }
         if (GUIMain.useMod) {
             useCustomMod.setSelected(true);
             customMod.setEnabled(true);
             customModButton.setEnabled(true);
-            customMod.setText(GUIMain.customMod);
+            customMod.setText(GUIMain.customMod.toString());
         }
     }
 
@@ -88,23 +89,32 @@ public class GUIDefaults extends JFrame {
     public void saveButtonActionPerformed() {
         String text1 = faceDir.getText();
         String text2 = soundDir.getText();
-        String text3 = customMod.getText();
-        String text4 = customBroad.getText();
+        URL text3;
+        URL text4;
+        try {
+            text3 = new URL(customMod.getText());
+            text4 = new URL(customBroad.getText());
+        } catch (Exception e) {
+            text3 = getClass().getResource("/resource/mod.png");
+            text4 = getClass().getResource("/resource/broad.png");
+        }
         GUIMain.useMod = useCustomMod.isSelected();
         GUIMain.useBroad = useCustomBroad.isSelected();
         if (text1 == null || text1.equals("")) text1 = null;
         if (text2 == null || text2.equals("")) text2 = null;
-        if (text3 == null || text3.equals("")) text3 = getClass().getResource("/resource/mod.png").getFile();
-        if (text4 == null || text4.equals("")) text4 = getClass().getResource("/resource/broad.png").getFile();
+        if (text3 == null || text3.toString().equals("")) text3 = getClass().getResource("/resource/mod.png");
+        if (text4 == null || text4.toString().equals("")) text4 = getClass().getResource("/resource/broad.png");
         if (!useCustomMod.isSelected()) {//just incase they put a path in, but not have the box ticked when hitting "save"
-            text3 = getClass().getResource("/resource/mod.png").getFile();
+            text3 = getClass().getResource("/resource/mod.png");
         }
         if (!useCustomBroad.isSelected()) {
-            text4 = getClass().getResource("/resource/broad.png").getFile();
+            text4 = getClass().getResource("/resource/broad.png");
         }
+        if (text1 != null) GUIMain.defaultFaceDir = text1;
+        if (text2 != null) GUIMain.defaultSoundDir = text2;
         GUIMain.customMod = text3;
         GUIMain.customBroad = text4;
-        Utils.saveDefaults(text1, text2, useCustomMod.isSelected(), useCustomBroad.isSelected(), text3, text4);
+        Utils.saveDefaults(text1, text2, useCustomMod.isSelected(), useCustomBroad.isSelected(), text3.toString(), text4.toString());
         dispose();
     }
 
@@ -126,7 +136,11 @@ public class GUIDefaults extends JFrame {
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File selectedFile = jfc.getSelectedFile();
             if (selectedFile != null) {
-                customMod.setText(selectedFile.getPath());
+                try {
+                    customMod.setText(selectedFile.toURI().toURL().toString());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -145,7 +159,11 @@ public class GUIDefaults extends JFrame {
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File selectedFile = jfc.getSelectedFile();
             if (selectedFile != null) {
-                customBroad.setText(selectedFile.getPath());
+                try {
+                    customBroad.setText(selectedFile.toURI().toURL().toString());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

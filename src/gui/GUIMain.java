@@ -2,18 +2,14 @@ package gui;
 
 import irc.IRCBot;
 import irc.IRCViewer;
-import lib.pircbot.org.jibble.pircbot.User;
-import util.Sound;
-import util.StringArray;
+import util.*;
 import util.Timer;
-import util.Utils;
 
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileSystemView;
-import javax.swing.text.*;
-import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -30,13 +26,25 @@ import java.util.regex.Pattern;
 
 public class GUIMain extends JFrame {
 
-    //command, sound
     public static HashMap<String, Sound> soundMap;
-    public static HashMap<String, String> imgMap;
     public static HashMap<String, int[]> userColMap;
     public static HashMap<StringArray, Timer> commandMap;
     public static HashSet<String> channelMap;
+    /**
+     * Okay so. The String key is a name for the Face. IT IS NOT THE REGEX.
+     * <p/>
+     * The name is never used to see if it's in chat, the REGEX IS.
+     * <p/>
+     * When people add custom faces, they will _specify a name_ for
+     * easier future referencing to it. Twitch faces will be the filenames
+     * minus the extension, so they won't be able to change them unless
+     * they guess the cache file name.
+     * <p/>
+     * tl;dr: NAME (KEY) IS JUST A PLACEHOLDER HERE
+     *///                 name    Face(Regex, Path)
+    public static HashMap<String, Face> faceMap;
     public static File defaultDir;
+    public static File faceDir;
     public static String userNorm, userBot, userNormPass, userBotPass;
 
     public static IRCBot bot;
@@ -45,13 +53,14 @@ public class GUIMain extends JFrame {
     public static File accountsFile;
     public static File streamsFile;
     public static File soundsFile;
-    public static File imgFile;
+    public static File faceFile;
     public static File userColFile;
     public static File commandsFile;
     public static File defaultsFile;
 
-    public static String customMod = GUIMain.class.getResource("/resource/mod.png").getFile();
-    public static String customBroad = GUIMain.class.getResource("/resource/broad.png").getFile();
+    public static URL customMod = GUIMain.class.getResource("/resource/mod.png");
+    public static URL customBroad = GUIMain.class.getResource("/resource/broad.png");
+    public static URL adminIcon = GUIMain.class.getResource("/resource/admin.png");
 
     public static GUIMain mainGUI;
 
@@ -59,12 +68,12 @@ public class GUIMain extends JFrame {
     public static boolean rememberNorm = false;
     public static boolean rememberBot = false;
     public static boolean autoLog = false;
+    public static boolean doneWithFaces = false;
 
     SimpleDateFormat format = new SimpleDateFormat("[h:mm a]", Locale.getDefault());
     SimpleAttributeSet norm = new SimpleAttributeSet();
     SimpleAttributeSet user = new SimpleAttributeSet();
     SimpleAttributeSet color = new SimpleAttributeSet();
-    SimpleAttributeSet line = new SimpleAttributeSet();
 
     public static String lastSoundDir = "";
     public static String defaultSoundDir = "";
@@ -78,15 +87,16 @@ public class GUIMain extends JFrame {
     public GUIMain() {
         soundMap = new HashMap<>();
         channelMap = new HashSet<>();
-        imgMap = new HashMap<>();
+        faceMap = new HashMap<>();
         userColMap = new HashMap<>();
         commandMap = new HashMap<>();
         defaultDir = new File(FileSystemView.getFileSystemView().getDefaultDirectory().getAbsolutePath()
                 + File.separator + "Botnak");
+        faceDir = new File(defaultDir + File.separator + "Faces");
         soundsFile = new File(defaultDir + File.separator + "sounds.txt");
         streamsFile = new File(defaultDir + File.separator + "streams.txt");
         accountsFile = new File(defaultDir + File.separator + "acc.ini");
-        imgFile = new File(defaultDir + File.separator + "faces.txt");
+        faceFile = new File(defaultDir + File.separator + "faces.txt");
         userColFile = new File(defaultDir + File.separator + "usercols.txt");
         commandsFile = new File(defaultDir + File.separator + "commands.txt");
         defaultsFile = new File(defaultDir + File.separator + "defaults.ini");
@@ -99,16 +109,14 @@ public class GUIMain extends JFrame {
         StyleConstants.setFontFamily(color, "Calibri");
         StyleConstants.setFontSize(color, 18);
         initComponents();
-        initListener();
-        Utils.buildImages(imgMap, imgFile);
-        if (defaultDir.exists() && defaultDir.list().length > 0) {
+        defaultDir.mkdirs();
+        faceDir.mkdirs();
+        if (defaultDir.list().length > 0) {
             try {
                 loadSettings();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else {
-            defaultDir.mkdirs();
         }
         if (loadedSettingsUser()) {
             System.out.println("LOADED USER");
@@ -142,38 +150,42 @@ public class GUIMain extends JFrame {
             System.out.println("LOADED COMMANDS");
         }
         addStream.setEnabled(loadedSettingsUser());
-
         mainGUI = this;
     }
 
     public static void loadSettings() {
-        if (accountsFile != null && accountsFile.exists()) {
+        if (Utils.areFilesGood(accountsFile.getAbsolutePath())) {
             System.out.println("Loading accounts...");
-            Utils.loadPropData(accountsFile, 0);
+            Utils.loadPropData(0);
         }
-        if (defaultsFile != null && defaultsFile.exists()) {
+        if (Utils.areFilesGood(defaultsFile.getAbsolutePath())) {
             System.out.println("Loading defaults...");
-            Utils.loadPropData(defaultsFile, 1);
+            Utils.loadPropData(1);
         }
-        if (streamsFile != null && streamsFile.exists()) {
+        if (Utils.areFilesGood(streamsFile.getAbsolutePath())) {
             System.out.println("Loading streams...");
-            String[] readStreams = Utils.loadStreams(streamsFile);
+            String[] readStreams = Utils.loadStreams();
             if (readStreams != null) {
                 Collections.addAll(channelMap, readStreams);
             }
         }
-        if (soundsFile != null && soundsFile.exists()) {
+        if (Utils.areFilesGood(soundsFile.getAbsolutePath())) {
             System.out.println("Loading sounds...");
-            Utils.loadSounds(soundMap, soundsFile);
+            Utils.loadSounds();
         }
-        if (userColFile != null && userColFile.exists()) {
+        if (Utils.areFilesGood(userColFile.getAbsolutePath())) {
             System.out.println("Loading user colors...");
-            Utils.loadUserColors(userColMap, userColFile);
+            Utils.loadUserColors();
         }
-        if (commandsFile != null && commandsFile.exists()) {
+        if (Utils.areFilesGood(commandsFile.getAbsolutePath())) {
             System.out.println("Loading commands...");
-            Utils.loadCommands(commandMap, commandsFile);
+            Utils.loadCommands();
         }
+        System.out.println("Loading faces...");
+        if (Utils.areFilesGood(faceFile.getAbsolutePath())) {
+            Utils.loadFaces();
+        }
+        Utils.loadDefaultFaces();
     }
 
     public static boolean loadedSettingsUser() {
@@ -258,7 +270,8 @@ public class GUIMain extends JFrame {
 
     //called from IRCViewer
     public void onMessage(String channel, String sender, String message, boolean isMe) {
-        if (message != null && channel != null && sender != null) {
+        if (message != null && channel != null && sender != null && GUIMain.viewer != null && GUIMain.bot != null) {
+            sender = sender.toLowerCase();
             if (message.replaceAll(" ", "").length() > 512) return;
             message = magic(message, '\u0020', 20);
             String time = format.format(new Date(System.currentTimeMillis()));
@@ -272,34 +285,36 @@ public class GUIMain extends JFrame {
             StyleConstants.setForeground(user, c);
             try {
                 chatText.setCaretPosition(doc.getLength());
-                int start = chatText.getCaretPosition();
                 doc.insertString(chatText.getCaretPosition(), time, norm);
                 if (Utils.isUserOp(GUIMain.viewer, channel, sender)) {
-                    if (channel.contains(sender.toLowerCase())) {//broadcaster
-                        insertModIcon(doc, chatText.getCaretPosition(), 1);
+                    if (channel.contains(sender)) {//broadcaster
+                        insertIcon(doc, chatText.getCaretPosition(), 1);
                     } else {//a mod
-                        insertModIcon(doc, chatText.getCaretPosition(), 0);
+                        insertIcon(doc, chatText.getCaretPosition(), 0);
                     }
                 }
-                if (sender.equalsIgnoreCase("pipe")) {//TODO change this to detect SPECIALUSER or some shit
-                    insertModIcon(doc, chatText.getCaretPosition(), 2);
+                if (sender.equals("pipe")) {//TODO change this to detect SPECIALUSER or some shit
+                    insertIcon(doc, chatText.getCaretPosition(), 2);
                 }
                 doc.insertString(chatText.getCaretPosition(), " " + sender + " ", user);
+                int messStart;
                 if (isMe) {
+                    messStart = chatText.getCaretPosition();
                     doc.insertString(chatText.getCaretPosition(), message + "\n", message.toLowerCase().contains(viewer.getMaster()) ? color : user);
                 } else {
                     doc.insertString(chatText.getCaretPosition(), "(" + channel.substring(1) + "): ", norm);
+                    messStart = chatText.getCaretPosition();
                     doc.insertString(chatText.getCaretPosition(), message + "\n", message.toLowerCase().contains(viewer.getMaster()) ? color : norm);
                 }
+                Utils.handleFaces(doc, messStart, message.replaceAll("\u0020", ""));
                 chatText.setCaretPosition(doc.getLength());
-                doc.setParagraphAttributes(start, chatText.getCaretPosition(), line, false);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public static void insertModIcon(StyledDocument doc, int pos, int type) {
+    public static void insertIcon(StyledDocument doc, int pos, int type) {
         SimpleAttributeSet attrs = new SimpleAttributeSet();
         ImageIcon icon;
         String kind;
@@ -313,7 +328,7 @@ public class GUIMain extends JFrame {
                 kind = "Broadcaster";
                 break;
             case 2:
-                icon = new ImageIcon(defaultFaceDir + File.separator + "admin.png");
+                icon = new ImageIcon(adminIcon);
                 kind = "Admin";
                 break;
             default:
@@ -335,24 +350,25 @@ public class GUIMain extends JFrame {
         public void run() {
             while (!shutDown) {
                 viewerCount.setText(String.valueOf(viewerCount()));
-                try {
-                    Thread.sleep(5000);
+                try {//sleep for a random time between 2.5 to 6 seconds
+                    Thread.sleep(Utils.random(2500, 6000));
                 } catch (Exception ignored) {
                 }
             }
         }
     });
 
-    public static Pattern p = Pattern.compile("\"viewers_count\":\\s*(\\d+)");
+    public static Pattern viewerPattern = Pattern.compile("\"viewers_count\":\\s*(\\d+)");
+    public static Pattern fileExclPattern = Pattern.compile("[\\/:\"*?<>|]");
 
     public static int viewerCount() {
         int count = 0;
-        try {
+        try {//this could be parsed with JSON, but patterns work, and if it ain't broke...
             URL twitch = new URL("http://api.justin.tv/api/stream/summary.json?channel=" + viewer.getMaster());
             BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
             String line;
             while (!shutDown && (line = br.readLine()) != null) {
-                Matcher m = p.matcher(line);
+                Matcher m = viewerPattern.matcher(line);
                 if (m.find()) {
                     try {
                         count = Integer.parseInt(m.group(1));
@@ -389,50 +405,6 @@ public class GUIMain extends JFrame {
         s.setVisible(true);
     }
 
-    public void initListener() {
-        chatText.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent event) {
-                final DocumentEvent e = event;
-                SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
-                        if (e.getDocument() instanceof StyledDocument) {
-                            try {
-                                StyledDocument doc = (StyledDocument) e.getDocument();
-                                int start = Utilities.getRowStart(chatText, Math.max(0, e.getOffset() - 1));
-                                int end = Utilities.getWordEnd(chatText, e.getOffset() + e.getLength());
-                                String text = doc.getText(start, end - start);
-                                String[] faces = imgMap.keySet().toArray(new String[imgMap.keySet().size()]);
-                                for (String s : faces) {
-                                    if (text.contains(s)) {//case sensitive now
-                                        int i = text.indexOf(s);
-                                        while (i >= 0 && !shutDown) {
-                                            final SimpleAttributeSet attrs = new SimpleAttributeSet(
-                                                    doc.getCharacterElement(start + i).getAttributes());
-                                            if (StyleConstants.getIcon(attrs) == null) {
-                                                StyleConstants.setIcon(attrs, new ImageIcon(imgMap.get(s)));
-                                                doc.remove(start + i, s.length());
-                                                doc.insertString(start + i, s, attrs);
-                                            }
-                                            i = text.indexOf(s, i + s.length() - 1);
-                                        }
-                                    }
-                                }
-                            } catch (BadLocationException e1) {
-                                e1.printStackTrace();
-                            }
-                        }
-                    }
-                });
-            }
-
-            public void removeUpdate(DocumentEvent e) {
-            }
-
-            public void changedUpdate(DocumentEvent e) {
-            }
-        });
-    }
-
     public void exitButtonActionPerformed() {
         shutDown = true;
         if (viewer != null && viewer.isConnected()) {
@@ -450,11 +422,11 @@ public class GUIMain extends JFrame {
             bot.dispose();
         }
         if (rememberBot || rememberNorm) Utils.saveAccountData();
-        if (!soundMap.isEmpty()) Utils.saveSounds(soundMap, soundsFile);
-        if (loadedStreams()) Utils.saveStreams(channelMap, streamsFile);
-        if (!imgMap.isEmpty()) Utils.saveFaces(imgMap, imgFile);
-        if (!userColMap.isEmpty()) Utils.saveUserColors(userColMap, userColFile);
-        if (loadedCommands()) Utils.saveCommands(commandMap, commandsFile);
+        if (!soundMap.isEmpty()) Utils.saveSounds();
+        if (loadedStreams()) Utils.saveStreams();
+        if (!faceMap.isEmpty()) Utils.saveFaces();
+        if (!userColMap.isEmpty()) Utils.saveUserColors();
+        if (loadedCommands()) Utils.saveCommands();
         if (viewerCheck != null && viewerCheck.isAlive()) viewerCheck.interrupt();
         dispose();
         System.exit(0);

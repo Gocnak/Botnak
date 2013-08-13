@@ -1,5 +1,7 @@
 import gui.GUIMain;
 
+import javax.swing.*;
+
 /**
  * Created with IntelliJ IDEA.
  * User: Nick
@@ -10,6 +12,11 @@ import gui.GUIMain;
 public class Boot {
     public static void main(String[] args) {
         GUIMain g = new GUIMain();
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         g.setVisible(true);
     }
 }

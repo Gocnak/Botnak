@@ -66,13 +66,12 @@ public class GUIStreams extends JFrame {
     }
 
     public void saveButtonActionPerformed() {
-        File save = GUIMain.streamsFile;
         String[] channels = Utils.readList(streamList);
         DefaultListModel<String> d = new DefaultListModel<>();
         if (channels != null) {
-            Utils.handleList(GUIMain.channelMap, channels);
+            Utils.handleList(channels);
             if (rememberStreams.isSelected()) {
-                Utils.saveStreams(GUIMain.channelMap, save);
+                Utils.saveStreams();
             }
             for (String s : channels) {
                 d.addElement(s);
