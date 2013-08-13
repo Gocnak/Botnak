@@ -29,14 +29,24 @@ public class IRCViewer extends PircBot {
         try {
             connect("irc.twitch.tv", 6667, pass);
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
         if (GUIMain.loadedStreams()) {
             for (String s : GUIMain.channelMap) {
                 doConnect(s);
             }
         }
-        GUIMain.viewerCheck.start();
+        try {
+            EventQueue.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    GUIMain.viewerCheck.start();
+                }
+            });
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+        GUIMain.log("LOADED USER: " + name);
         GUIMain.viewer = this;
     }
 
@@ -46,7 +56,7 @@ public class IRCViewer extends PircBot {
             try {
                 connect("irc.twitch.tv", 6667, pass);
             } catch (Exception e) {
-                e.printStackTrace();
+                GUIMain.log(e.getMessage());
             }
         } else {
             joinChannel(channelName);
@@ -73,7 +83,7 @@ public class IRCViewer extends PircBot {
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                GUIMain.mainGUI.onMessage(channel, sender, message, false);
+                GUIMain.onMessage(channel, sender, message, false);
             }
         });
     }
@@ -82,7 +92,7 @@ public class IRCViewer extends PircBot {
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                GUIMain.mainGUI.onMessage(target, sender, action, true);
+                GUIMain.onMessage(target, sender, action, true);
             }
         });
     }

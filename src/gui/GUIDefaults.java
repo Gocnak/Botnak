@@ -139,7 +139,7 @@ public class GUIDefaults extends JFrame {
                 try {
                     customMod.setText(selectedFile.toURI().toURL().toString());
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    GUIMain.log(e.getMessage());
                 }
             }
         }
@@ -162,7 +162,7 @@ public class GUIDefaults extends JFrame {
                 try {
                     customBroad.setText(selectedFile.toURI().toURL().toString());
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    GUIMain.log(e.getMessage());
                 }
             }
         }

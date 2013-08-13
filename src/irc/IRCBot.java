@@ -49,7 +49,7 @@ public class IRCBot extends PircBot {
             session = chatBot.createSession();
             connect("irc.twitch.tv", 6667, pass);
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
         botnakTimer = new Timer(chatTime);
         soundTimer = new Timer(soundTime);
@@ -59,6 +59,7 @@ public class IRCBot extends PircBot {
                 doConnect(s);
             }
         }
+        GUIMain.log("LOADED BOT: " + name);
         GUIMain.bot = this;
     }
 
@@ -68,7 +69,7 @@ public class IRCBot extends PircBot {
             try {
                 connect("irc.twitch.tv", 6667, pass);
             } catch (Exception e) {
-                e.printStackTrace();
+                GUIMain.log(e.getMessage());
             }
         } else {
             joinChannel(channelName);
@@ -125,6 +126,7 @@ public class IRCBot extends PircBot {
                     if (soundTrigger(content, sender, channel)) {
                         GUIMain.currentSound = GUIMain.soundMap.get(content);
                         GUIMain.currentSound.play();
+                        soundTimer.reset();
                     }
                     //color
                     if (content.startsWith("setcol")) {
@@ -183,7 +185,6 @@ public class IRCBot extends PircBot {
         if (!soundTimer.isRunning()) {//not on a delay
             if (channel.equalsIgnoreCase("#" + masterChannel)) {//is in main channel
                 if (soundCheck(s, send, channel)) {//let's check the existence/permission
-                    soundTimer.reset();
                     return true;//HIT THAT SHIT
                 }
             }
@@ -286,6 +287,13 @@ public class IRCBot extends PircBot {
                     Utils.removeFace(toremove);
                 }
             }
+            if (s.startsWith("mod")) {
+                String[] split = s.split(" ");
+                String toMod = split[1];
+                if (GUIMain.viewer != null) {
+                    GUIMain.viewer.sendMessage(channel, ".mod " + toMod);
+                }
+            }
             if (s.startsWith("addsound")) {
                 Utils.handleSound(s, false);
             }
@@ -319,6 +327,4 @@ public class IRCBot extends PircBot {
             }
         }
     }
-
-
 }

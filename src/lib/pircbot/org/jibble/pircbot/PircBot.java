@@ -1403,7 +1403,7 @@ public abstract class PircBot implements ReplyConstants {
      * <p/>
      * Note that this method is private and is not intended to appear
      * in the javadoc generated documentation.
-     *
+     * <p/>
      * YEAH I'M GUESSING IT'S BECAUSE YOU HALF-ASSED IT SO HARD
      *
      * @param target         The channel or nick that the mode operation applies to.
@@ -2739,7 +2739,9 @@ public abstract class PircBot implements ReplyConstants {
      */
     public final User[] getUsers(String channel) {
         channel = channel.toLowerCase();
-        return _channels.get(channel).toArray(new User[_channels.get(channel).size()]);
+        synchronized (_channels) {
+            return _channels.get(channel).toArray(new User[_channels.get(channel).size()]);
+        }
     }
 
 
@@ -2755,7 +2757,9 @@ public abstract class PircBot implements ReplyConstants {
      * @since PircBot 1.0.0
      */
     public final String[] getChannels() {
-        return _channels.keySet().toArray(new String[_channels.keySet().size()]);
+        synchronized (_channels) {
+            return _channels.keySet().toArray(new String[_channels.keySet().size()]);
+        }
     }
 
 
@@ -2804,8 +2808,6 @@ public abstract class PircBot implements ReplyConstants {
             _channels.put(channel, users);
         }
     }
-
-
 
 
     /**
@@ -2894,14 +2896,14 @@ public abstract class PircBot implements ReplyConstants {
      * Updates the user with the given nick in the given channel in response to a
      * specific user mode, like receiving voice, op, etc.
      *
-     * @param channel Channel the userMode was changed.
+     * @param channel  Channel the userMode was changed.
      * @param userMode The usermode that took place.
-     * @param nick Recipient of the usermode event change.
+     * @param nick     Recipient of the usermode event change.
      */
     private void updateUser(String channel, int userMode, String nick) {
         synchronized (_channels) {
             channel = channel.toLowerCase();
-            HashSet<User> userSet = (_channels.containsKey(channel)  ? _channels.get(channel) : new HashSet<User>());
+            HashSet<User> userSet = (_channels.containsKey(channel) ? _channels.get(channel) : new HashSet<User>());
             if (userSet == null) userSet = new HashSet<>();//create a blank HashSet if it's still null somehow
             if (!userSet.isEmpty()) {
                 User[] users = userSet.toArray(new User[userSet.size()]);

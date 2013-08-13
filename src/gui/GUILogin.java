@@ -29,26 +29,42 @@ public class GUILogin extends JFrame {
 
 
     public void loginButtonActionPerformed() {
-        String normus = normUser.getText().toLowerCase();
-        String normpass = new String(normPass.getPassword());
-        String botus = botUser.getText().toLowerCase();
-        String botpass = new String(botPass.getPassword());
-        if (normus != null && !normus.equals("") && !normus.contains(" ")) {
-            if (!normpass.equals("") && !normpass.contains(" ")) {
-                GUIMain.viewer = new IRCViewer(normus, normpass);
-                GUIMain.rememberNorm = rememberNormLogin.isSelected();
-                GUIMain.addStream.setEnabled(true);
-            }
+        try {
+            t.start();
+            EventQueue.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    dispose();
+                }
+            });
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
         }
-        if (botus != null && !botus.equals("") && !botus.contains(" ")) {
-            if (!botpass.equals("") && !botpass.contains(" ")) {
-                GUIMain.bot = new IRCBot(botus, botpass);
-                GUIMain.rememberBot = rememberBotLogin.isSelected();
-            }
-        }
-        GUIMain.autoLog = autoLoginBox.isSelected();
-        dispose();
     }
+
+    private static Thread t = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            String normus = normUser.getText().toLowerCase();
+            String normpass = new String(normPass.getPassword());
+            String botus = botUser.getText().toLowerCase();
+            String botpass = new String(botPass.getPassword());
+            if (normus != null && !normus.equals("") && !normus.contains(" ")) {
+                if (!normpass.equals("") && !normpass.contains(" ")) {
+                    GUIMain.viewer = new IRCViewer(normus, normpass);
+                    GUIMain.rememberNorm = rememberNormLogin.isSelected();
+                    GUIMain.addStream.setEnabled(true);
+                }
+            }
+            if (botus != null && !botus.equals("") && !botus.contains(" ")) {
+                if (!botpass.equals("") && !botpass.contains(" ")) {
+                    GUIMain.bot = new IRCBot(botus, botpass);
+                    GUIMain.rememberBot = rememberBotLogin.isSelected();
+                }
+            }
+            GUIMain.autoLog = autoLoginBox.isSelected();
+        }
+    });
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents

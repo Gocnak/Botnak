@@ -47,6 +47,7 @@ public class Sound {
 
     /**
      * Constructs a sound with default PERMISSION_ALL.
+     *
      * @param files The file path(s) of the sound(s).
      */
     public Sound(String... files) {
@@ -95,7 +96,7 @@ public class Sound {
             try {
                 audioStream.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                GUIMain.log(e.getMessage());
             }
         }
     }
@@ -126,7 +127,7 @@ public class Sound {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 }

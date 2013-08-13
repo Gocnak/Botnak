@@ -59,7 +59,7 @@ public class Utils {
             }
             br.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
         return streams.toArray(new String[streams.size()]);
     }
@@ -77,14 +77,14 @@ public class Utils {
                     try {
                         perm = Integer.parseInt(split[1]);
                     } catch (NumberFormatException e) {
-                        System.out.println(split[0] + " has a problem. Making it public.");
+                        GUIMain.log(split[0] + " has a problem. Making it public.");
                     }
                     GUIMain.soundMap.put(split[0], new Sound(perm, split2add));
                 }
             }
             br.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 
@@ -142,7 +142,7 @@ public class Utils {
             br.flush();
             br.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 
@@ -166,7 +166,7 @@ public class Utils {
             br.flush();
             br.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 
@@ -248,8 +248,8 @@ public class Utils {
                 if (p.getProperty("AutoLog") != null && p.getProperty("AutoLog").equalsIgnoreCase("true")) {
                     GUIMain.autoLog = true;
                 }
-            } catch (Exception ignored) {
-                ignored.printStackTrace();
+            } catch (Exception e) {
+                GUIMain.log(e.getMessage());
             }
         }
         if (type == 1) { //defaults
@@ -262,7 +262,7 @@ public class Utils {
                     try {
                         GUIMain.customMod = new URL(p.getProperty("CustomMod"));
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        GUIMain.log(e.getMessage());
                     }
                 }
                 if (p.getProperty("UseBroad") != null && p.getProperty("UseBroad").equals("true")) {
@@ -270,11 +270,11 @@ public class Utils {
                     try {
                         GUIMain.customBroad = new URL(p.getProperty("CustomBroad"));
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        GUIMain.log(e.getMessage());
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                GUIMain.log(e.getMessage());
             }
         }
     }
@@ -306,12 +306,16 @@ public class Utils {
     public static boolean saveAccountData() {
         Properties p = new Properties();
         if (GUIMain.rememberNorm) {
-            p.put("UserNorm", GUIMain.viewer.getMaster());
-            p.put("UserNormPass", GUIMain.viewer.getPass());
+            if (GUIMain.viewer != null) {
+                p.put("UserNorm", GUIMain.viewer.getMaster());
+                p.put("UserNormPass", GUIMain.viewer.getPass());
+            }
         }
         if (GUIMain.rememberBot) {
-            p.put("UserBot", GUIMain.bot.getUser());
-            p.put("UserBotPass", GUIMain.bot.getPass());
+            if (GUIMain.bot != null) {
+                p.put("UserBot", GUIMain.bot.getUser());
+                p.put("UserBotPass", GUIMain.bot.getPass());
+            }
         }
         if (GUIMain.autoLog) {
             p.put("AutoLog", String.valueOf(GUIMain.autoLog));
@@ -401,7 +405,16 @@ public class Utils {
      * This process is threaded, and will only show the faces when it's done downloading.
      */
     public static void loadDefaultFaces() {
-        t.start();
+        try {
+            EventQueue.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    t.start();
+                }
+            });
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
     }
 
     public static Thread t = new Thread(new Runnable() {
@@ -421,7 +434,7 @@ public class Utils {
                             }
                         }
                         if (!flag) { //guess not
-                            System.out.println("Missing a face, downloading it... ");
+                            GUIMain.log("Missing a face, downloading it... ");
                             downloadFace(URL, GUIMain.faceDir.getAbsolutePath(), fileTheo, regex);
                         }
                     }
@@ -433,6 +446,7 @@ public class Utils {
                         downloadFace(URL, GUIMain.faceDir.getAbsolutePath(), filename, regex);
                     }
                 }
+                GUIMain.log("Done downloading faces.");
                 GUIMain.doneWithFaces = true;
             }
         }
@@ -465,7 +479,7 @@ public class Utils {
             if (GUIMain.faceMap.containsKey(name)) removeFace(name);//remove it if it exists, delete the old face
             GUIMain.faceMap.put(name, faec);//put it
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 
@@ -501,7 +515,7 @@ public class Utils {
                     for (int i = 0; i < emotes.length(); i++) {
                         JSONObject emote = emotes.getJSONObject(i);
                         JSONObject imageStuff = emote.getJSONArray("images").getJSONObject(0);//3 is URL, 4 is height
-                        String regex = emote.getString("regex").replaceAll("&lt", "<").replaceAll("&gt", ">");
+                        String regex = emote.getString("regex").replaceAll("&lt\\\\;", "<").replaceAll("&gt\\\\;", ">");
                         if (imageStuff != null) {//split("-")[4] is the filename
                             String uRL = imageStuff.getString("url");
                             set.add(new StringArray(new String[]{regex, uRL, (uRL.split("-")[4] + ".png")}));
@@ -510,7 +524,7 @@ public class Utils {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
         return set;
     }
@@ -532,7 +546,7 @@ public class Utils {
             }
             br.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 
@@ -571,7 +585,7 @@ public class Utils {
                 }
             }
         } catch (BadLocationException e1) {
-            e1.printStackTrace();
+            GUIMain.log(e1.getMessage());
         }
     }
 
@@ -592,7 +606,7 @@ public class Utils {
             br.flush();
             br.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 
@@ -608,7 +622,7 @@ public class Utils {
             }
             br.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 
@@ -623,7 +637,7 @@ public class Utils {
             br.flush();
             br.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 
@@ -647,7 +661,7 @@ public class Utils {
             }
             br.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 
@@ -665,7 +679,7 @@ public class Utils {
             br.flush();
             br.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 
@@ -731,7 +745,7 @@ public class Utils {
                     GUIMain.commandMap.put(new StringArray(new String[]{name, message}), local);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                GUIMain.log(e.getMessage());
             }
         }
     }
@@ -1038,7 +1052,7 @@ public class Utils {
 
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                GUIMain.log(e.getMessage());
             }
         }
     }
@@ -1054,7 +1068,7 @@ public class Utils {
             Pattern.compile(toCheck);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
             return false;
         }
     }
@@ -1173,7 +1187,7 @@ public class Utils {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            GUIMain.log(e.getMessage());
         }
     }
 }

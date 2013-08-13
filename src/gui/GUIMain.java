@@ -62,18 +62,16 @@ public class GUIMain extends JFrame {
     public static URL customBroad = GUIMain.class.getResource("/resource/broad.png");
     public static URL adminIcon = GUIMain.class.getResource("/resource/admin.png");
 
-    public static GUIMain mainGUI;
-
     public static boolean shutDown = false;
     public static boolean rememberNorm = false;
     public static boolean rememberBot = false;
     public static boolean autoLog = false;
     public static boolean doneWithFaces = false;
 
-    SimpleDateFormat format = new SimpleDateFormat("[h:mm a]", Locale.getDefault());
-    SimpleAttributeSet norm = new SimpleAttributeSet();
-    SimpleAttributeSet user = new SimpleAttributeSet();
-    SimpleAttributeSet color = new SimpleAttributeSet();
+    static SimpleDateFormat format = new SimpleDateFormat("[h:mm a]", Locale.getDefault());
+    static SimpleAttributeSet norm = new SimpleAttributeSet();
+    static SimpleAttributeSet user = new SimpleAttributeSet();
+    static SimpleAttributeSet color = new SimpleAttributeSet();
 
     public static String lastSoundDir = "";
     public static String defaultSoundDir = "";
@@ -109,31 +107,33 @@ public class GUIMain extends JFrame {
         StyleConstants.setFontFamily(color, "Calibri");
         StyleConstants.setFontSize(color, 18);
         initComponents();
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {
+        }
+        setVisible(true);
         defaultDir.mkdirs();
         faceDir.mkdirs();
         if (defaultDir.list().length > 0) {
             try {
                 loadSettings();
             } catch (Exception e) {
-                e.printStackTrace();
+                log(e.getMessage());
             }
         }
         if (loadedSettingsUser()) {
-            System.out.println("LOADED USER");
             rememberNorm = true;
             if (autoLog) {
                 viewer = new IRCViewer(userNorm, userNormPass);
             }
         }
         if (loadedSettingsBot()) {
-            System.out.println("LOADED BOT");
             rememberBot = true;
             if (autoLog) {
                 bot = new IRCBot(userBot, userBotPass);
             }
         }
         if (loadedStreams()) {
-            System.out.println("LOADED STREAMS");
             String[] channels = channelMap.toArray(new String[channelMap.size()]);
             DefaultComboBoxModel<String> d = new DefaultComboBoxModel<>();
             d.addElement("All Chats");
@@ -145,43 +145,43 @@ public class GUIMain extends JFrame {
                 }
             }
             streamList.setModel(d);
+            log("LOADED STREAMS");
         }
         if (loadedCommands()) {
-            System.out.println("LOADED COMMANDS");
+            log("LOADED COMMANDS");
         }
         addStream.setEnabled(loadedSettingsUser());
-        mainGUI = this;
     }
 
     public static void loadSettings() {
         if (Utils.areFilesGood(accountsFile.getAbsolutePath())) {
-            System.out.println("Loading accounts...");
+            log("Loading accounts...");
             Utils.loadPropData(0);
         }
         if (Utils.areFilesGood(defaultsFile.getAbsolutePath())) {
-            System.out.println("Loading defaults...");
+            log("Loading defaults...");
             Utils.loadPropData(1);
         }
         if (Utils.areFilesGood(streamsFile.getAbsolutePath())) {
-            System.out.println("Loading streams...");
+            log("Loading streams...");
             String[] readStreams = Utils.loadStreams();
             if (readStreams != null) {
                 Collections.addAll(channelMap, readStreams);
             }
         }
         if (Utils.areFilesGood(soundsFile.getAbsolutePath())) {
-            System.out.println("Loading sounds...");
+            log("Loading sounds...");
             Utils.loadSounds();
         }
         if (Utils.areFilesGood(userColFile.getAbsolutePath())) {
-            System.out.println("Loading user colors...");
+            log("Loading user colors...");
             Utils.loadUserColors();
         }
         if (Utils.areFilesGood(commandsFile.getAbsolutePath())) {
-            System.out.println("Loading commands...");
+            log("Loading commands...");
             Utils.loadCommands();
         }
-        System.out.println("Loading faces...");
+        log("Loading faces...");
         if (Utils.areFilesGood(faceFile.getAbsolutePath())) {
             Utils.loadFaces();
         }
@@ -268,8 +268,26 @@ public class GUIMain extends JFrame {
         return linebreaks;
     }
 
+    /**
+     * Logs a message to the chat console under all white, SYS username.
+     * This should only be used for serious reports, like exception reporting and
+     * other status updates.
+     *
+     * @param message The thing to log.
+     */
+    public static void log(Object message) {
+        String time = format.format(new Date(System.currentTimeMillis()));
+        StyledDocument doc = chatText.getStyledDocument();
+        try {
+            chatText.setCaretPosition(doc.getLength());
+            doc.insertString(chatText.getCaretPosition(), time + " SYS: " + message.toString() + "\n", norm);
+            chatText.setCaretPosition(doc.getLength());
+        } catch (Exception ignored) {
+        }
+    }
+
     //called from IRCViewer
-    public void onMessage(String channel, String sender, String message, boolean isMe) {
+    public static void onMessage(String channel, String sender, String message, boolean isMe) {
         if (message != null && channel != null && sender != null && GUIMain.viewer != null && GUIMain.bot != null) {
             sender = sender.toLowerCase();
             if (message.replaceAll(" ", "").length() > 512) return;
@@ -286,17 +304,20 @@ public class GUIMain extends JFrame {
             try {
                 chatText.setCaretPosition(doc.getLength());
                 doc.insertString(chatText.getCaretPosition(), time, norm);
+                if (channel.substring(1).equals(sender)) {//broadcaster
+                    insertIcon(doc, chatText.getCaretPosition(), 1);
+                }
                 if (Utils.isUserOp(GUIMain.viewer, channel, sender)) {
-                    if (channel.contains(sender)) {//broadcaster
-                        insertIcon(doc, chatText.getCaretPosition(), 1);
-                    } else {//a mod
+                    if (!channel.substring(1).equals(sender)) {//don't want two of these.
                         insertIcon(doc, chatText.getCaretPosition(), 0);
                     }
                 }
                 if (sender.equals("pipe")) {//TODO change this to detect SPECIALUSER or some shit
                     insertIcon(doc, chatText.getCaretPosition(), 2);
                 }
+                int nameStart = chatText.getCaretPosition();
                 doc.insertString(chatText.getCaretPosition(), " " + sender + " ", user);
+                Utils.handleFaces(doc, nameStart, sender);//if the sender has a custom face that they want instead
                 int messStart;
                 if (isMe) {
                     messStart = chatText.getCaretPosition();
@@ -306,10 +327,10 @@ public class GUIMain extends JFrame {
                     messStart = chatText.getCaretPosition();
                     doc.insertString(chatText.getCaretPosition(), message + "\n", message.toLowerCase().contains(viewer.getMaster()) ? color : norm);
                 }
-                Utils.handleFaces(doc, messStart, message.replaceAll("\u0020", ""));
+                Utils.handleFaces(doc, messStart, message);
                 chatText.setCaretPosition(doc.getLength());
             } catch (Exception e) {
-                e.printStackTrace();
+                log(e.getMessage());
             }
         }
     }
@@ -340,7 +361,7 @@ public class GUIMain extends JFrame {
             doc.insertString(pos, " ", null);
             doc.insertString(pos + 1, kind, attrs);
         } catch (Exception e) {
-            e.printStackTrace();
+            log(e.getMessage());
         }
     }
 
