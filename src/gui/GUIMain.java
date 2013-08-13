@@ -315,7 +315,7 @@ public class GUIMain extends JFrame {
                 if (sender.equals("pipe")) {//TODO change this to detect SPECIALUSER or some shit
                     insertIcon(doc, chatText.getCaretPosition(), 2);
                 }
-                int nameStart = chatText.getCaretPosition();
+                int nameStart = chatText.getCaretPosition() + 1;
                 doc.insertString(chatText.getCaretPosition(), " " + sender + " ", user);
                 Utils.handleFaces(doc, nameStart, sender);//if the sender has a custom face that they want instead
                 int messStart;
