@@ -213,6 +213,7 @@ public class GUIMain extends JFrame {
 
 
     public void chatButtonActionPerformed() {
+        if (GUIMain.viewer == null) return;
         String channel = streamList.getSelectedItem().toString();
         String userInput = userChat.getText().replaceAll("\n", "");
         if (channel != null) {

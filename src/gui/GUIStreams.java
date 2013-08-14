@@ -52,7 +52,9 @@ public class GUIStreams extends JFrame {
                     listModel.addElement(user);
                 }
             }
-            GUIMain.viewer.doLeave(channelToLeave, true);
+            if (GUIMain.viewer != null) {
+                GUIMain.viewer.doLeave(channelToLeave, true);
+            }
             if (GUIMain.bot != null) {
                 GUIMain.bot.doLeave(channelToLeave, true);
             }
@@ -75,13 +77,11 @@ public class GUIStreams extends JFrame {
             }
             for (String s : channels) {
                 d.addElement(s);
-                if (!Utils.isInChannel(GUIMain.viewer, "#" + s)) {
+                if (GUIMain.viewer != null && !Utils.isInChannel(GUIMain.viewer, "#" + s)) {
                     GUIMain.viewer.doConnect(s);
                 }
-                if (GUIMain.bot != null) {
-                    if (!Utils.isInChannel(GUIMain.bot, "#" + s)) {
-                        GUIMain.bot.doConnect(s);
-                    }
+                if (GUIMain.bot != null && !Utils.isInChannel(GUIMain.bot, "#" + s)) {
+                    GUIMain.bot.doConnect(s);
                 }
             }
             if (d.getSize() > 0) {

@@ -99,7 +99,7 @@ public class IRCBot extends PircBot {
 
 
     public void onMessage(String channel, String sender, String login, String hostname, String message) {
-        if (message != null && channel != null && sender != null) {
+        if (message != null && channel != null && sender != null && GUIMain.viewer != null) {
             sender = sender.toLowerCase();
             String low = message.toLowerCase();
             //un-shorten short URLs
@@ -152,7 +152,7 @@ public class IRCBot extends PircBot {
     public void talkBack(String channel, String sender, String message) {
         if (channel != null && sender != null && message != null && session != null && chatBot != null) {
             String reply = "";
-            if (sender.equals(GUIMain.viewer.getMaster())) sender = "Master";
+            if (GUIMain.viewer != null && sender.equals(GUIMain.viewer.getMaster())) sender = "Master";
             try {
                 reply = session.think(message);
             } catch (Exception e) {
@@ -208,7 +208,7 @@ public class IRCBot extends PircBot {
         if (u != null && u.isOp()) {
             permission = Sound.PERMISSION_MOD;
         }
-        if (GUIMain.viewer.getMaster().equals(sender)) {
+        if (GUIMain.viewer != null && GUIMain.viewer.getMaster().equals(sender)) {
             permission = Sound.PERMISSION_DEV;
         }
         String[] keys = GUIMain.soundMap.keySet().toArray(new String[GUIMain.soundMap.keySet().size()]);
@@ -264,6 +264,7 @@ public class IRCBot extends PircBot {
     }
 
     public void handleMod(String channel, String s) {
+        if (GUIMain.viewer == null) return;
         if (channel.substring(1).equals(GUIMain.viewer.getMaster())) {
             if (s.startsWith("removesound")) {
                 String remove = s.split(" ")[1];
@@ -293,9 +294,7 @@ public class IRCBot extends PircBot {
             if (s.startsWith("mod")) {
                 String[] split = s.split(" ");
                 String toMod = split[1];
-                if (GUIMain.viewer != null) {
-                    GUIMain.viewer.sendMessage(channel, ".mod " + toMod);
-                }
+                GUIMain.viewer.sendMessage(channel, ".mod " + toMod);
             }
             if (s.startsWith("addsound")) {
                 Utils.handleSound(s, false);
