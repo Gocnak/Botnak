@@ -17,6 +17,7 @@ package lib.pircbot.org.jibble.pircbot;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("unused")
 /**
@@ -68,6 +69,8 @@ public abstract class PircBot implements ReplyConstants {
     private static final int OP_REMOVE = 2;
     private static final int VOICE_ADD = 3;
     private static final int VOICE_REMOVE = 4;
+    private static final int ADMIN = 5;
+    private static final int STAFF = 6;
 
 
     /**
@@ -947,6 +950,9 @@ public abstract class PircBot implements ReplyConstants {
         } else if (command.equals("PRIVMSG") && _channelPrefixes.indexOf(target.charAt(0)) >= 0) {
             // This is a normal message to a channel.
             onMessage(target, sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
+        } else if (command.equals("PRIVMSG") && line.contains("SPECIALUSER")) {
+            // This is a private message to us.
+            handleSpecial(line.substring(line.indexOf(" :") + 2));
         } else if (command.equals("PRIVMSG")) {
             // This is a private message to us.
             onPrivateMessage(sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
@@ -2739,9 +2745,7 @@ public abstract class PircBot implements ReplyConstants {
      */
     public final User[] getUsers(String channel) {
         channel = channel.toLowerCase();
-        synchronized (_channels) {
-            return _channels.get(channel).toArray(new User[_channels.get(channel).size()]);
-        }
+        return _channels.get(channel).toArray(new User[_channels.get(channel).size()]);
     }
 
 
@@ -2757,9 +2761,7 @@ public abstract class PircBot implements ReplyConstants {
      * @since PircBot 1.0.0
      */
     public final String[] getChannels() {
-        synchronized (_channels) {
-            return _channels.keySet().toArray(new String[_channels.keySet().size()]);
-        }
+        return _channels.keySet().toArray(new String[_channels.keySet().size()]);
     }
 
 
@@ -2787,26 +2789,43 @@ public abstract class PircBot implements ReplyConstants {
         _inputThread.dispose();
     }
 
+    /**
+     * Determines if a user is admin or staff, and sets their prefix accordingly.
+     *
+     * @param line The line to parse.
+     */
+    public void handleSpecial(String line) {
+        if (line != null) {//SPECIALUSER name type
+            String[] split = line.split(" ");
+            String user = split[1].toLowerCase();
+            if (split[2].equalsIgnoreCase("admin")) {
+                updateUser(null, ADMIN, user);
+            }
+            if (split[2].equalsIgnoreCase("staff")) {
+                updateUser(null, STAFF, user);
+            }
+        }
+    }
+
 
     /**
      * Add a user to the specified channel in our memory.
      * Overwrite the existing entry if it exists.
      */
     private void addUser(String channel, User user) {
-        synchronized (_channels) {
-            channel = channel.toLowerCase();
-            HashSet<User> users = _channels.get(channel);
-            if (users != null) {
-                if (users.contains(user)) {
-                    users.remove(user);
-                }
-                users.add(user);
-            } else {
-                users = new HashSet<>();
-                users.add(user);
+        if (channel == null || user == null) return;
+        channel = channel.toLowerCase();
+        HashSet<User> users = _channels.get(channel);
+        if (users != null) {
+            if (users.contains(user)) {
+                users.remove(user);
             }
-            _channels.put(channel, users);
+            users.add(user);
+        } else {
+            users = new HashSet<>();
+            users.add(user);
         }
+        _channels.put(channel, users);
     }
 
 
@@ -2817,33 +2836,31 @@ public abstract class PircBot implements ReplyConstants {
      * @param nick The nick of the user to be removed.
      */
     private void removeUser(String chnl, String nick) {
-        synchronized (_channels) {
-            if (chnl == null) {//all channels
-                String[] channels = _channels.keySet().toArray(new String[_channels.keySet().size()]);
-                for (String channel : channels) {
-                    HashSet<User> userSet = _channels.get(channel.toLowerCase());
-                    if (userSet != null) {
-                        for (User u : userSet) {
-                            if (u != null) {
-                                if (u.getNick().equalsIgnoreCase(nick)) {
-                                    userSet.remove(u);
-                                }
+        if (chnl == null) {//all channels
+            String[] channels = _channels.keySet().toArray(new String[_channels.keySet().size()]);
+            for (String channel : channels) {
+                HashSet<User> userSet = _channels.get(channel.toLowerCase());
+                if (userSet != null) {
+                    for (User u : userSet) {
+                        if (u != null) {
+                            if (u.getNick().equalsIgnoreCase(nick)) {
+                                userSet.remove(u);
                             }
-                        }                                // replaced old map
-                        _channels.put(channel.toLowerCase(), userSet);
+                        }
+                    }                                // replaced old map
+                    _channels.put(channel.toLowerCase(), userSet);
+                }
+            }
+        } else {//specified
+            HashSet<User> users = _channels.get(chnl.toLowerCase());
+            for (User u : users) {
+                if (u != null) {
+                    if (u.getNick().equalsIgnoreCase(nick)) {
+                        users.remove(u);
                     }
                 }
-            } else {//specified
-                HashSet<User> users = _channels.get(chnl.toLowerCase());
-                for (User u : users) {
-                    if (u != null) {
-                        if (u.getNick().equalsIgnoreCase(nick)) {
-                            users.remove(u);
-                        }
-                    }
-                }                                // replaced old map
-                _channels.put(chnl.toLowerCase(), users);
-            }
+            }                                // replaced old map
+            _channels.put(chnl.toLowerCase(), users);
         }
     }
 
@@ -2852,21 +2869,19 @@ public abstract class PircBot implements ReplyConstants {
      * Rename a user if they appear in any of the channels we know about.
      */
     private void renameUser(String oldNick, String newNick) {
-        synchronized (_channels) {
-            String[] channels = _channels.keySet().toArray(new String[_channels.keySet().size()]);
-            for (String channel : channels) {
-                HashSet<User> userSet = _channels.get(channel.toLowerCase());
-                if (userSet != null) {
-                    for (User u : userSet) {
-                        if (u != null) {
-                            if (u.getNick().equalsIgnoreCase(oldNick)) {
-                                userSet.remove(u);
-                                userSet.add(new User(u.getPrefix(), newNick));
-                            }
+        String[] channels = _channels.keySet().toArray(new String[_channels.keySet().size()]);
+        for (String channel : channels) {
+            HashSet<User> userSet = _channels.get(channel.toLowerCase());
+            if (userSet != null) {
+                for (User u : userSet) {
+                    if (u != null) {
+                        if (u.getNick().equalsIgnoreCase(oldNick)) {
+                            userSet.remove(u);
+                            userSet.add(new User(u.getPrefix(), newNick));
                         }
-                    }                                // replaced old map
-                    _channels.put(channel.toLowerCase(), userSet);
-                }
+                    }
+                }                                // replaced old map
+                _channels.put(channel.toLowerCase(), userSet);
             }
         }
     }
@@ -2877,9 +2892,7 @@ public abstract class PircBot implements ReplyConstants {
      */
     private void removeChannel(String channel) {
         channel = channel.toLowerCase();
-        synchronized (_channels) {
-            _channels.remove(channel);
-        }
+        _channels.remove(channel);
     }
 
 
@@ -2887,9 +2900,7 @@ public abstract class PircBot implements ReplyConstants {
      * Removes all channels from our memory of users.
      */
     private void removeAllChannels() {
-        synchronized (_channels) {
-            _channels.clear();
-        }
+        _channels.clear();
     }
 
     /**
@@ -2901,55 +2912,80 @@ public abstract class PircBot implements ReplyConstants {
      * @param nick     Recipient of the usermode event change.
      */
     private void updateUser(String channel, int userMode, String nick) {
+        if ((channel == null) && (nick == null)) return;
         synchronized (_channels) {
-            channel = channel.toLowerCase();
-            HashSet<User> userSet = (_channels.containsKey(channel) ? _channels.get(channel) : new HashSet<User>());
-            if (userSet == null) userSet = new HashSet<>();//create a blank HashSet if it's still null somehow
-            if (!userSet.isEmpty()) {
-                User[] users = userSet.toArray(new User[userSet.size()]);
-                for (User u : users) {
-                    if (u != null) {
-                        if (u.getNick().equalsIgnoreCase(nick)) {
-                            if (userMode == OP_ADD) {
-                                userSet.remove(u);
-                                if (u.hasVoice()) {
-                                    userSet.add(new User("@+", u.getNick()));
-                                } else {
-                                    userSet.add(new User("@", u.getNick()));
+            if (channel == null) {//@see #handleSpecial(String), this is all channels
+                String[] channels = _channels.keySet().toArray(new String[_channels.keySet().size()]);
+                for (String s : channels) {
+                    HashSet<User> userSet = _channels.get(s.toLowerCase());
+                    if (userSet != null) {
+                        for (User u : userSet) {
+                            if (u != null) {
+                                if (u.getNick().equalsIgnoreCase(nick)) {
+                                    if (userMode == ADMIN) {
+                                        userSet.remove(u);
+                                        userSet.add(new User("a" + u.getPrefix(), u.getNick()));
+                                    }
+                                    if (userMode == STAFF) {
+                                        userSet.remove(u);
+                                        userSet.add(new User("s" + u.getPrefix(), u.getNick()));
+                                    }
                                 }
-                            } else if (userMode == OP_REMOVE) {
-                                userSet.remove(u);
-                                if (u.hasVoice()) {
-                                    userSet.add(new User("+", u.getNick()));
-                                } else {
-                                    userSet.add(new User("", u.getNick()));
-                                }
-                            } else if (userMode == VOICE_ADD) {
-                                userSet.remove(u);
-                                if (u.isOp()) {
-                                    userSet.add(new User("@+", u.getNick()));
-                                } else {
-                                    userSet.add(new User("+", u.getNick()));
-                                }
-                            } else if (userMode == VOICE_REMOVE) {
-                                userSet.remove(u);
-                                if (u.isOp()) {
-                                    userSet.add(new User("@", u.getNick()));
-                                } else {
-                                    userSet.add(new User("", u.getNick()));
+                            }
+                        }                                // replaced old map
+                        _channels.put(s.toLowerCase(), userSet);
+                    }
+                }
+            } else {
+                channel = channel.toLowerCase();
+                HashSet<User> userSet = (_channels.containsKey(channel) ? _channels.get(channel) : new HashSet<User>());
+                if (userSet == null) userSet = new HashSet<>();//create a blank HashSet if it's still null somehow
+                if (!userSet.isEmpty()) {
+                    User[] users = userSet.toArray(new User[userSet.size()]);
+                    for (User u : users) {
+                        if (u != null) {
+                            if (u.getNick().equalsIgnoreCase(nick)) {
+                                if (userMode == OP_ADD) {
+                                    userSet.remove(u);
+                                    if (u.hasVoice()) {
+                                        userSet.add(new User("@+", u.getNick()));
+                                    } else {
+                                        userSet.add(new User("@", u.getNick()));
+                                    }
+                                } else if (userMode == OP_REMOVE) {
+                                    userSet.remove(u);
+                                    if (u.hasVoice()) {
+                                        userSet.add(new User("+", u.getNick()));
+                                    } else {
+                                        userSet.add(new User("", u.getNick()));
+                                    }
+                                } else if (userMode == VOICE_ADD) {
+                                    userSet.remove(u);
+                                    if (u.isOp()) {
+                                        userSet.add(new User("@+", u.getNick()));
+                                    } else {
+                                        userSet.add(new User("+", u.getNick()));
+                                    }
+                                } else if (userMode == VOICE_REMOVE) {
+                                    userSet.remove(u);
+                                    if (u.isOp()) {
+                                        userSet.add(new User("@", u.getNick()));
+                                    } else {
+                                        userSet.add(new User("", u.getNick()));
+                                    }
                                 }
                             }
                         }
                     }
+                } else {// we just joined a channel
+                    if (userMode == OP_ADD) {
+                        userSet.add(new User("@", nick));
+                    } else if (userMode == VOICE_ADD) {
+                        userSet.add(new User("+", nick));
+                    }
                 }
-            } else {// we just joined a channel
-                if (userMode == OP_ADD) {
-                    userSet.add(new User("@", nick));
-                } else if (userMode == VOICE_ADD) {
-                    userSet.add(new User("+", nick));
-                }
+                _channels.put(channel, userSet);// replaced old map
             }
-            _channels.put(channel, userSet);// replaced old map
         }
     }
 
@@ -2974,7 +3010,7 @@ public abstract class PircBot implements ReplyConstants {
      * <p/>
      * Modified to hopefully make user detection work now.
      */
-    private HashMap<String, HashSet<User>> _channels = new HashMap<>();
+    private ConcurrentHashMap<String, HashSet<User>> _channels = new ConcurrentHashMap<>();
 
     // A Hashtable to temporarily store channel topics when we join them
     // until we find out who set that topic.

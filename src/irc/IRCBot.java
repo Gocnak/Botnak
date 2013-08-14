@@ -4,6 +4,7 @@ import gui.GUIMain;
 import lib.chatbot.ChatterBotSession;
 import lib.chatbot.Cleverbot;
 import lib.pircbot.org.jibble.pircbot.PircBot;
+import lib.pircbot.org.jibble.pircbot.User;
 import util.Sound;
 import util.StringArray;
 import util.Timer;
@@ -119,7 +120,8 @@ public class IRCBot extends PircBot {
                         handleDev(channel, message.substring(1));
                     }
                     //mod
-                    if (Utils.isUserOp(this, channel, sender) && !sender.equals(GUIMain.viewer.getMaster())) {
+                    User u = Utils.getUser(this, channel, sender);
+                    if (u != null && u.isOp()) {
                         handleMod(channel, message.substring(1));
                     }
                     //sound
@@ -202,7 +204,8 @@ public class IRCBot extends PircBot {
     public boolean soundCheck(String sound, String sender, String channel) {
         //set the permission
         int permission = Sound.PERMISSION_ALL;
-        if (Utils.isUserOp(this, channel, sender)) {
+        User u = Utils.getUser(this, channel, sender);
+        if (u != null && u.isOp()) {
             permission = Sound.PERMISSION_MOD;
         }
         if (GUIMain.viewer.getMaster().equals(sender)) {

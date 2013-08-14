@@ -2,6 +2,7 @@ package gui;
 
 import irc.IRCBot;
 import irc.IRCViewer;
+import lib.pircbot.org.jibble.pircbot.User;
 import util.*;
 import util.Timer;
 
@@ -61,6 +62,7 @@ public class GUIMain extends JFrame {
     public static URL customMod = GUIMain.class.getResource("/resource/mod.png");
     public static URL customBroad = GUIMain.class.getResource("/resource/broad.png");
     public static URL adminIcon = GUIMain.class.getResource("/resource/admin.png");
+    public static URL staffIcon = GUIMain.class.getResource("/resource/staff.png");
 
     public static boolean shutDown = false;
     public static boolean rememberNorm = false;
@@ -309,16 +311,22 @@ public class GUIMain extends JFrame {
             try {
                 chatText.setCaretPosition(doc.getLength());
                 doc.insertString(chatText.getCaretPosition(), time, norm);
-                if (channel.substring(1).equals(sender)) {//broadcaster
-                    insertIcon(doc, chatText.getCaretPosition(), 1);
-                }
-                if (Utils.isUserOp(GUIMain.viewer, channel, sender)) {
-                    if (!channel.substring(1).equals(sender)) {//don't want two of these.
-                        insertIcon(doc, chatText.getCaretPosition(), 0);
+                User u = Utils.getUser(GUIMain.viewer, channel, sender);
+                if (u != null) {
+                    if (channel.substring(1).equals(sender)) {
+                        insertIcon(doc, chatText.getCaretPosition(), 1);
                     }
-                }
-                if (sender.equals("pipe")) {//TODO change this to detect SPECIALUSER or some shit
-                    insertIcon(doc, chatText.getCaretPosition(), 2);
+                    if (u.isStaff()) {
+                        insertIcon(doc, chatText.getCaretPosition(), 3);
+                    }
+                    if (u.isAdmin()) {
+                        insertIcon(doc, chatText.getCaretPosition(), 2);
+                    }
+                    if (u.isOp()) {
+                        if (!channel.substring(1).equals(sender)) {//not the broadcaster again
+                            insertIcon(doc, chatText.getCaretPosition(), 0);
+                        }
+                    }
                 }
                 int nameStart = chatText.getCaretPosition() + 1;
                 doc.insertString(chatText.getCaretPosition(), " " + sender + " ", user);
@@ -347,19 +355,24 @@ public class GUIMain extends JFrame {
         switch (type) {
             case 0:
                 icon = new ImageIcon(customMod);
-                kind = "Mod";
+                kind = "Mod ";
                 break;
             case 1:
                 icon = new ImageIcon(customBroad);
-                kind = "Broadcaster";
+                kind = "Broadcaster ";
                 break;
             case 2:
                 icon = new ImageIcon(adminIcon);
-                kind = "Admin";
+                kind = "Admin ";
+                break;
+            case 3:
+                icon = new ImageIcon(staffIcon);
+                kind = "Staff ";
                 break;
             default:
                 icon = new ImageIcon(customMod);
-                kind = "Mod";
+                kind = "Mod ";
+                break;
         }
         StyleConstants.setIcon(attrs, icon);
         try {

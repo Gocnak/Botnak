@@ -7,7 +7,6 @@ A full example list of commands and such can be found at http://bit.ly/1366RwM.
 
 TODO:
 - Code the ability to join SRL race chats
-- Make Botnak recognize admins/staff of Twitch and assign appropriate icons.
 - New-line detection for commands - perhaps typing a special character (like '[' or something) in the message text.
 - After a certain amount of lines (like, a LOT of lines), clear the chat (intelligently, keep the lines on screen) to prevent memory/lag issues
 - Make the viewer branch Kappa
@@ -23,9 +22,15 @@ FILE SIZES/LENGTH: Try to keep faces below 26 px in height, with size 18 font it
 OTHER CHANNELS: Botnak supports other channels, but it's wise to only join a few at a time to prevent potential lag/memory issues.
 
 
-Credits:  
+Credits:
+
 Chatterbot API for making Botnak come alive in chats - https://code.google.com/p/chatter-bot-api/
+
 JSON Library for making Twitch parsing easier - https://github.com/douglascrockford/JSON-java
+
 Scalr API for Image Scaling - https://github.com/thebuzzmedia/imgscalr/
+
 Pircbot API for giving me headaches - http://www.jibble.org/pircbot.php
+
 Dr. Kegel from my Twitch chat for fixing them - http://www.twitch.tv/dr_kegel
+

@@ -80,6 +80,23 @@ public class User {
         return _prefix.indexOf('+') >= 0;
     }
 
+    /**
+     * Checks to see if the user is an Admin on Twitch.
+     *
+     * @return true if they are an admin.
+     */
+    public boolean isAdmin() {
+        return _prefix.indexOf('a') >= 0;
+    }
+
+    /**
+     * Checks to see if the user is a part of the Staff of Twitch.
+     *
+     * @return true if they are a staff member.
+     */
+    public boolean isStaff() {
+        return _prefix.indexOf('s') >= 0;
+    }
 
     /**
      * Returns the nick of the user.

@@ -702,18 +702,18 @@ public class Utils {
      * @param c       The bot that is connected to the channel. Viewer is usually the default.
      * @param channel The channel the user is in.
      * @param nick    The nick of the user.
-     * @return true if the user is an operator; otherwise false.
+     * @return null if the user cannot be found/args are null, otherwise the specified user.
      */
-    public static boolean isUserOp(PircBot c, String channel, String nick) {
-        if (c == null || channel == null || nick == null) return false;
+    public static User getUser(PircBot c, String channel, String nick) {
+        if (c == null || channel == null || nick == null) return null;
         for (User u : c.getUsers(channel)) {
             if (u != null) {
                 if (u.getNick().equalsIgnoreCase(nick)) {
-                    return u.isOp();
+                    return u;
                 }
             }
         }
-        return false;
+        return null;
     }
 
     /**
