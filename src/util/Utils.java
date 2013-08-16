@@ -577,10 +577,11 @@ public class Utils {
                             return;
                         }
                         StyleConstants.setIcon(attrs, new ImageIcon(GUIMain.faceMap.get(name).getFilePath()));
-                        //                        find the face V  from either 0 or the next index of it, and removes it
-                        doc.remove(start + message.indexOf(m.group(), lastFound), m.group().length());
+                        //                        find the face V  from either 0 or the next index of it, and removes it\
+                        lastFound = message.indexOf((m.group()), lastFound);
+                        doc.remove(start + lastFound, m.group().length());
                         //            sets the index to the last index found, and adds the icon with the face text
-                        doc.insertString(start + (lastFound = message.indexOf(m.group())), m.group(), attrs);
+                        doc.insertString(start + lastFound, m.group(), attrs);
                     }
                 }
             }
