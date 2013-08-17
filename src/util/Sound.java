@@ -92,6 +92,7 @@ public class Sound {
     public void stop() {
         if (clip != null && audioStream != null) {
             clip.stop();
+            clip.flush();
             clip.close();
             try {
                 audioStream.close();

@@ -472,11 +472,13 @@ public class Utils {
             if (image.getHeight() > 26) {//if it's too big
                 image = Scalr.resize(image, Scalr.Method.QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26, Scalr.OP_ANTIALIAS);//scale it
             }
+            name = removeExt(name);
+            if (GUIMain.faceMap.containsKey(name)) removeFace(name);//remove it if it exists, delete the old face
+            name = name + ".png";
             File tosave = new File(directory + File.separator + name);
             ImageIO.write(image, "PNG", tosave);//save it
             Face faec = new Face(regex, tosave.getAbsolutePath());
             name = removeExt(name);
-            if (GUIMain.faceMap.containsKey(name)) removeFace(name);//remove it if it exists, delete the old face
             GUIMain.faceMap.put(name, faec);//put it
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -1181,7 +1183,7 @@ public class Utils {
                                 downloadFace(new File(GUIMain.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
                                         GUIMain.faceDir.getAbsolutePath(),
                                         (name + ".png"),
-                                        face.getRegex());//< this will be the regex, so case sensitive
+                                        face.getRegex());
                             }
                         }
                     }
