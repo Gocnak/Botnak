@@ -2,16 +2,12 @@ package gui;
 
 import irc.IRCBot;
 import irc.IRCViewer;
-import lib.pircbot.org.jibble.pircbot.User;
-import util.*;
-import util.Timer;
 
-import javax.swing.*;
-import javax.swing.filechooser.FileSystemView;
-import javax.swing.text.SimpleAttributeSet;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -21,9 +17,49 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.GroupLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextPane;
+import javax.swing.LayoutStyle;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingConstants;
+import javax.swing.WindowConstants;
+import javax.swing.filechooser.FileSystemView;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.BoxView;
+import javax.swing.text.ComponentView;
+import javax.swing.text.Element;
+import javax.swing.text.IconView;
+import javax.swing.text.LabelView;
+import javax.swing.text.ParagraphView;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
+import javax.swing.text.StyledEditorKit;
+import javax.swing.text.View;
+import javax.swing.text.ViewFactory;
+
+import lib.pircbot.org.jibble.pircbot.User;
+import util.Face;
+import util.Sound;
+import util.StringArray;
+import util.Timer;
+import util.Utils;
 
 public class GUIMain extends JFrame {
 
@@ -109,6 +145,8 @@ public class GUIMain extends JFrame {
         StyleConstants.setFontFamily(color, "Calibri");
         StyleConstants.setFontSize(color, 18);
         initComponents();
+        
+        chatText.setEditorKit(new WrapEditorKit());
 
         defaultDir.mkdirs();
         faceDir.mkdirs();
@@ -733,5 +771,53 @@ public class GUIMain extends JFrame {
     public static JTextArea userChat;
     public static JButton exitButton;
 
+
+}
+
+class WrapEditorKit extends StyledEditorKit {
+    ViewFactory defaultFactory=new WrapColumnFactory();
+    public ViewFactory getViewFactory() {
+        return defaultFactory;
+    }
+
+}
+
+class WrapColumnFactory implements ViewFactory {
+    public View create(Element elem) {
+        String kind = elem.getName();
+        if (kind != null) {
+            if (kind.equals(AbstractDocument.ContentElementName)) {
+                return new WrapLabelView(elem);
+            } else if (kind.equals(AbstractDocument.ParagraphElementName)) {
+                return new ParagraphView(elem);
+            } else if (kind.equals(AbstractDocument.SectionElementName)) {
+                return new BoxView(elem, View.Y_AXIS);
+            } else if (kind.equals(StyleConstants.ComponentElementName)) {
+                return new ComponentView(elem);
+            } else if (kind.equals(StyleConstants.IconElementName)) {
+                return new IconView(elem);
+            }
+        }
+
+        // default to text display
+        return new LabelView(elem);
+    }
+}
+
+class WrapLabelView extends LabelView {
+    public WrapLabelView(Element elem) {
+        super(elem);
+    }
+
+    public float getMinimumSpan(int axis) {
+        switch (axis) {
+            case View.X_AXIS:
+                return 0;
+            case View.Y_AXIS:
+                return super.getMinimumSpan(axis);
+            default:
+                throw new IllegalArgumentException("Invalid axis: " + axis);
+        }
+    }
 
 }
