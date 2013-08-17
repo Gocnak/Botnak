@@ -109,11 +109,7 @@ public class GUIMain extends JFrame {
         StyleConstants.setFontFamily(color, "Calibri");
         StyleConstants.setFontSize(color, 18);
         initComponents();
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {
-        }
-        setVisible(true);
+
         defaultDir.mkdirs();
         faceDir.mkdirs();
         if (defaultDir.list().length > 0) {
@@ -298,8 +294,8 @@ public class GUIMain extends JFrame {
                 }
             }
             sender = sender.toLowerCase();
-            if (message.replaceAll(" ", "").length() > 512) return;
-            message = magic(message, '\u0020', 20);
+            //if (message.replaceAll(" ", "").length() > 512) return;
+            //message = magic(message, '\u0020', 20);
             String time = format.format(new Date(System.currentTimeMillis()));
             StyledDocument doc = chatText.getStyledDocument();
             Color c;
