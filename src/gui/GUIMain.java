@@ -304,8 +304,7 @@ public class GUIMain extends JFrame {
         }
     }
     
-    //TODO: After Thread-safety cleanup: remove static and atomic
-    private static AtomicInteger cleanupCounter = new AtomicInteger(0);
+    private int cleanupCounter = 0;
 
     //called from IRCViewer
     public static void onMessage(final String channel, final String sender, final String message, final boolean isMe) {
@@ -316,17 +315,20 @@ public class GUIMain extends JFrame {
         
         if(EventQueue.isDispatchThread())
         {
-            handler.run();}
-        else{
-        try {
-            EventQueue.invokeAndWait(handler);
-        } catch (InvocationTargetException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }}
+            handler.run();
+        }
+        else
+        {
+            try {
+                EventQueue.invokeAndWait(handler);
+            } catch (InvocationTargetException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
     }
         
     private void onMessageAction(String channel, String sender, String message, boolean isMe) {
@@ -337,9 +339,11 @@ public class GUIMain extends JFrame {
                 }
             }
             
-            if((cleanupCounter.getAndIncrement() & 0x7F) == 0)
+            cleanupCounter++;
+            if(cleanupCounter > 100)
             {
-                /* cleanup every 4 messages */
+                cleanupCounter = 0;
+                /* cleanup every 100 messages */
                 cleanupChat();
             }           
             
