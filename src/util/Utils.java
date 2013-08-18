@@ -428,9 +428,11 @@ public class Utils {
                         String URL = pick.data[1];
                         String fileTheo = pick.data[2];//theoretically, you should have it
                         boolean flag = false;
-                        for (String fileActual : GUIMain.faceDir.list()) {
+                        String[] files = GUIMain.faceDir.list();
+                        for (String fileActual : files) {
                             if (fileActual.equals(fileTheo)) {//but do you actually have it?
                                 flag = true;//it exists, no need for downloading it
+                                break;
                             }
                         }
                         if (!flag) { //guess not
@@ -472,9 +474,6 @@ public class Utils {
             if (image.getHeight() > 26) {//if it's too big
                 image = Scalr.resize(image, Scalr.Method.QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26, Scalr.OP_ANTIALIAS);//scale it
             }
-            name = removeExt(name);
-            if (GUIMain.faceMap.containsKey(name)) removeFace(name);//remove it if it exists, delete the old face
-            name = name + ".png";
             File tosave = new File(directory + File.separator + name);
             ImageIO.write(image, "PNG", tosave);//save it
             Face faec = new Face(regex, tosave.getAbsolutePath());
