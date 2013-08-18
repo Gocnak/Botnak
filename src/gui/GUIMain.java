@@ -286,37 +286,6 @@ public class GUIMain extends JFrame {
         }
     }
 
-    public static String magic(final String input, final char c,
-                               final int distance) {
-        if (input == null) {
-            throw new NullPointerException("expected: input != null");
-        }
-        if (distance < 2) {
-            throw new IndexOutOfBoundsException("expected: distance > 1");
-        }
-        final StringBuilder builder = new StringBuilder(input);
-        int next = -1, current = 0;
-        while ((next = builder.indexOf(" ", current)) >= 0) {
-            final int result = innerLoop(c, distance, builder, next, current);
-            current = next + 1 + result;
-        }
-        innerLoop(c, distance, builder, builder.length(), current);
-        return builder.toString();
-    }
-
-    private static int innerLoop(final char c, final int distance,
-                                 final StringBuilder builder, int next, int current) {
-        int linebreaks = 0;
-        if (current + next >= distance) {
-            for (int i = current + distance; i < next; i += distance) {
-                builder.insert(i + linebreaks, c);
-
-                linebreaks++;
-            }
-        }
-        return linebreaks;
-    }
-
     /**
      * Logs a message to the chat console under all white, SYS username.
      * This should only be used for serious reports, like exception reporting and
@@ -368,7 +337,7 @@ public class GUIMain extends JFrame {
                 }
             }
             
-            if((cleanupCounter.getAndIncrement() & 0x03) == 0)
+            if((cleanupCounter.getAndIncrement() & 0x7F) == 0)
             {
                 /* cleanup every 4 messages */
                 cleanupChat();
