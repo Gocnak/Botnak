@@ -6,15 +6,19 @@ import irc.IRCViewer;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.Point2D;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -22,6 +26,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,14 +40,17 @@ import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextPane;
+import javax.swing.JViewport;
 import javax.swing.LayoutStyle;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.text.AbstractDocument;
+import javax.swing.text.BadLocationException;
 import javax.swing.text.BoxView;
 import javax.swing.text.ComponentView;
+import javax.swing.text.Document;
 import javax.swing.text.Element;
 import javax.swing.text.IconView;
 import javax.swing.text.LabelView;
@@ -119,8 +127,11 @@ public class GUIMain extends JFrame {
 
     public static Sound currentSound = null;
 
+    
+    private static GUIMain instance;
 
     public GUIMain() {
+        instance = this;
         soundMap = new HashMap<>();
         channelMap = new HashSet<>();
         faceMap = new HashMap<>();
@@ -147,6 +158,7 @@ public class GUIMain extends JFrame {
         initComponents();
         
         chatText.setEditorKit(new WrapEditorKit());
+        chatText.setMargin(new Insets(0, 0, 0, 0));
 
         defaultDir.mkdirs();
         faceDir.mkdirs();
@@ -322,15 +334,46 @@ public class GUIMain extends JFrame {
         } catch (Exception ignored) {
         }
     }
+    
+    //TODO: After Thread-safety cleanup: remove static and atomic
+    private static AtomicInteger cleanupCounter = new AtomicInteger(0);
 
     //called from IRCViewer
-    public static void onMessage(String channel, String sender, String message, boolean isMe) {
+    public static void onMessage(final String channel, final String sender, final String message, final boolean isMe) {
+        
+        Runnable handler = new Runnable() {public void run() {
+            instance.onMessageAction(channel, sender, message, isMe);     
+        };};
+        
+        if(EventQueue.isDispatchThread())
+        {
+            handler.run();}
+        else{
+        try {
+            EventQueue.invokeAndWait(handler);
+        } catch (InvocationTargetException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }}
+    }
+        
+    private void onMessageAction(String channel, String sender, String message, boolean isMe) {
         if (message != null && channel != null && sender != null && GUIMain.viewer != null && GUIMain.bot != null) {
             if (!channel.substring(1).equalsIgnoreCase((String) streamList.getSelectedItem())) {//not the focused channel
                 if (!((String) streamList.getSelectedItem()).equalsIgnoreCase("all chats")) {//not on "all chats"
                     return;//gtfo
                 }
             }
+            
+            if((cleanupCounter.getAndIncrement() & 0x03) == 0)
+            {
+                /* cleanup every 4 messages */
+                cleanupChat();
+            }           
+            
             sender = sender.toLowerCase();
             //if (message.replaceAll(" ", "").length() > 512) return;
             //message = magic(message, '\u0020', 20);
@@ -379,6 +422,36 @@ public class GUIMain extends JFrame {
                 chatText.setCaretPosition(doc.getLength());
             } catch (Exception e) {
                 log(e.getMessage());
+            }
+        }
+    }
+
+    // Source: http://stackoverflow.com/a/4628879
+    // by http://stackoverflow.com/users/131872/camickr & Community
+    //TODO: Transform to action
+    private static void cleanupChat() {
+        
+        if(!(chatText.getParent() instanceof JViewport))
+        {      
+            return;
+        }
+        
+        JViewport viewport = ((JViewport) chatText.getParent());
+        Point startPoint = viewport.getViewPosition();
+        
+        // we are not deleting right before the visible area, but one screen behind
+        // for convenience, otherwise flickering.
+        int start = chatText.viewToModel(startPoint);
+        
+        if(start > 0) // not equal zero, because then we don't have to delete anything
+        {
+            Document doc = chatText.getDocument();
+            try {
+                doc.remove(0, start);
+                chatText.setCaretPosition(doc.getLength());
+            } catch (BadLocationException e) {
+                // we cannot do anything here
+                e.printStackTrace();
             }
         }
     }
@@ -774,6 +847,8 @@ public class GUIMain extends JFrame {
 
 }
 
+// Source: http://stackoverflow.com/a/13375811 by 
+// http://stackoverflow.com/users/301607/stanislavl
 class WrapEditorKit extends StyledEditorKit {
     ViewFactory defaultFactory=new WrapColumnFactory();
     public ViewFactory getViewFactory() {
