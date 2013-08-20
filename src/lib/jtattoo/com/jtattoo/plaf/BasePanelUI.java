@@ -23,11 +23,11 @@
 
 package lib.jtattoo.com.jtattoo.plaf;
 
-import java.awt.*;
-import java.lang.reflect.Field;
 import javax.swing.*;
 import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.basic.BasicPanelUI;
+import java.awt.*;
+import java.lang.reflect.Field;
 
 /**
  * @author Michael Hagen

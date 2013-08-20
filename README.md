@@ -11,11 +11,13 @@ TODO:
 - Code the ability to join SRL race chats
 - New-line detection for commands - perhaps typing a special character (like '[' or something) in the message text.
 - Make the Defaults GUI have more options (logging the chat, how many lines before clearing, other fonts for chat, etc.)
-- Make the viewer branch - this will happen when the above (as well as other minor GUI improvements; *cough*GUILogin*cough*) is made
+- Make the viewer branch - this will happen when the above is made
 
 Some useful pieces of advice:
 
-IN YO FACE: Botnak supports all Twitch faces, including Subscriber face. He downloads them and puts them in the "Botnak/Face/" folder on a seperate thread. Faces will not work until he's done so, and he will print out "Done downloading faces." in the panel. See: http://puu.sh/40H6D.png
+#BLAMETWITCH: If you cannot login (logging in freezes for a long time) on a recently-made account, look at this help topic for the solution: http://help.twitch.tv/customer/portal/questions/1366327-can-t-connect-to-irc-with-new-account-
+
+IN YO FACE: Botnak supports all Twitch faces, including Subscriber faces. He downloads them and puts them in the "Botnak/Face/" folder on a seperate thread. Faces will not work until he's done so, and he will print out "Done downloading faces." in the panel. See: http://puu.sh/40H6D.png
 
 YOU NEED STANDARDS: Click the "Defaults Settings" button in the main GUI and set the default face and sound to a Dropbox directory, which is recommended so that you can invite other people to it and they can add faces/sounds while you stream.
 

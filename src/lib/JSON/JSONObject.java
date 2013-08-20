@@ -1156,7 +1156,7 @@ public class JSONObject {
                     w.write("\\b");
                     break;
                 case '\t':
-                    w.write("\\t");
+                    w.write("\\faceCheck");
                     break;
                 case '\n':
                     w.write("\\n");

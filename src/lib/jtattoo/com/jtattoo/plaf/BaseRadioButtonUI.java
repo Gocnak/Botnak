@@ -23,11 +23,13 @@
 
 package lib.jtattoo.com.jtattoo.plaf;
 
-import java.awt.*;
 import javax.swing.*;
 import javax.swing.plaf.ComponentUI;
-import javax.swing.plaf.basic.*;
+import javax.swing.plaf.basic.BasicGraphicsUtils;
+import javax.swing.plaf.basic.BasicHTML;
+import javax.swing.plaf.basic.BasicRadioButtonUI;
 import javax.swing.text.View;
+import java.awt.*;
 
 /**
  * @author Michael Hagen

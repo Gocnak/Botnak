@@ -23,32 +23,22 @@ public class IRCBot extends PircBot {
 
     public static boolean stopSound = false;
     public static String masterChannel;
-    private String pass;
     public ChatterBot chatBot;
     public ChatterBotSession session;
     public static Timer botnakTimer, soundTimer, soundBackTimer;
 
-    public static String name;
-
-    public String getUser() {
-        return name;
-    }
-
-    public String getPass() {
-        return pass;
-    }
 
     public IRCBot(String user, String password) {
-        name = user;
-        setName(name);
-        setLogin(name);
-        pass = password;
+        GUIMain.userBot = user;
+        GUIMain.userBotPass = password;
+        setName(user);
+        setLogin(user);
         masterChannel = GUIMain.viewer.getMaster();
-        GUIMain.botUser.setText(name);
+        GUIMain.botUser.setText(user);
         try {
             chatBot = Cleverbot.create();
             session = chatBot.createSession();
-            connect("irc.twitch.tv", 6667, pass);
+            connect("irc.twitch.tv", 6667, password);
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -60,7 +50,7 @@ public class IRCBot extends PircBot {
                 doConnect(s);
             }
         }
-        GUIMain.log("LOADED BOT: " + name);
+        GUIMain.log("LOADED BOT: " + user);
         GUIMain.bot = this;
     }
 
@@ -68,7 +58,7 @@ public class IRCBot extends PircBot {
         String channelName = "#" + channel;
         if (!isConnected()) {
             try {
-                connect("irc.twitch.tv", 6667, pass);
+                connect("irc.twitch.tv", 6667, GUIMain.userBotPass);
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
@@ -80,6 +70,13 @@ public class IRCBot extends PircBot {
         }
     }
 
+    /**
+     * Leaves a channel and if specified, removes the channel from the
+     * channel list.
+     *
+     * @param channel The channel name to leave (# not included).
+     * @param forget  If true, will remove the channel from the channel list.
+     */
     public void doLeave(String channel, boolean forget) {
         String channelName = "#" + channel;
         if (Utils.isInChannel(this, channelName)) {
@@ -91,6 +88,24 @@ public class IRCBot extends PircBot {
             }
         }
     }
+
+    /**
+     * Disconnects from all chats and disposes of the bot.
+     */
+    public void close(boolean forget) {
+        GUIMain.log("LOGGING OUT BOT: " + GUIMain.userBot);
+        for (String s : getChannels()) {
+            doLeave(s.substring(1), false);
+        }
+        disconnect();
+        dispose();
+        if (forget) {
+            GUIMain.userBot = null;
+            GUIMain.userBotPass = null;
+        }
+        GUIMain.bot = null;
+    }
+
 
     public static String lastChannel = "";
     public static String lastMessage = "";

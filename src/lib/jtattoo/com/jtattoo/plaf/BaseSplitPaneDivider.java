@@ -23,11 +23,11 @@
 
 package lib.jtattoo.com.jtattoo.plaf;
 
-import java.awt.*;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
+import java.awt.*;
 
 /**
  * @author Michael Hagen

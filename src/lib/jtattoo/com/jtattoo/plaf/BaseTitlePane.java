@@ -27,13 +27,16 @@
 
 package lib.jtattoo.com.jtattoo.plaf;
 
+import javax.swing.*;
+import javax.swing.plaf.UIResource;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import javax.swing.*;
-import javax.swing.plaf.UIResource;
 
 /**
  * This class is a modified copy of the javax.swing.plaf.metal.MetalTitlePaneUI

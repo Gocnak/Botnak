@@ -21,8 +21,8 @@ public class IRCViewer extends PircBot {
     }
 
     public IRCViewer(String user, String password) {
-        name = user;
-        pass = password;
+        GUIMain.userNorm = name = user;
+        GUIMain.userNormPass = pass = password;
         setName(name);
         setLogin(name);
         GUIMain.normUser.setText(user);
@@ -40,7 +40,9 @@ public class IRCViewer extends PircBot {
             EventQueue.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    GUIMain.viewerCheck.start();
+                    if (!GUIMain.viewerCheck.isAlive()) {
+                        GUIMain.viewerCheck.start();
+                    }
                 }
             });
         } catch (Exception e) {
@@ -66,6 +68,13 @@ public class IRCViewer extends PircBot {
         }
     }
 
+    /**
+     * Leaves a channel and if specified, removes the channel from the
+     * channel list.
+     *
+     * @param channel The channel name to leave (# not included).
+     * @param forget  If true, will remove the channel from the channel list.
+     */
     public void doLeave(String channel, boolean forget) {
         String channelName = "#" + channel;
         if (Utils.isInChannel(this, channelName)) {
@@ -76,6 +85,25 @@ public class IRCViewer extends PircBot {
                 GUIMain.channelMap.remove(channel);
             }
         }
+    }
+
+    /**
+     * Disconnects from all chats and disposes of the bot.
+     *
+     * @param forget If true, will forget the user.
+     */
+    public void close(boolean forget) {
+        GUIMain.log("LOGGING OUT USER: " + name);
+        for (String s : getChannels()) {
+            doLeave(s.substring(1), false);
+        }
+        disconnect();
+        dispose();
+        if (forget) {
+            GUIMain.userNorm = null;
+            GUIMain.userNormPass = null;
+        }
+        GUIMain.viewer = null;
     }
 
 

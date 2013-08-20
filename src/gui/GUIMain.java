@@ -21,7 +21,6 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class GUIMain extends JFrame {
 
@@ -57,8 +56,8 @@ public class GUIMain extends JFrame {
     public static File commandsFile;
     public static File defaultsFile;
 
-    public static URL customMod = GUIMain.class.getResource("/resource/mod.png");
-    public static URL customBroad = GUIMain.class.getResource("/resource/broad.png");
+    public static URL modIcon = GUIMain.class.getResource("/resource/mod.png");
+    public static URL broadIcon = GUIMain.class.getResource("/resource/broad.png");
     public static URL adminIcon = GUIMain.class.getResource("/resource/admin.png");
     public static URL staffIcon = GUIMain.class.getResource("/resource/staff.png");
 
@@ -68,19 +67,24 @@ public class GUIMain extends JFrame {
     public static boolean autoLog = false;
     public static boolean doneWithFaces = false;
 
-    static SimpleDateFormat format = new SimpleDateFormat("[h:mm a]", Locale.getDefault());
-    static SimpleAttributeSet norm = new SimpleAttributeSet();
-    static SimpleAttributeSet user = new SimpleAttributeSet();
-    static SimpleAttributeSet color = new SimpleAttributeSet();
+    public static SimpleDateFormat format = new SimpleDateFormat("[h:mm a]", Locale.getDefault());
+    public static SimpleAttributeSet norm = new SimpleAttributeSet();
+    public static SimpleAttributeSet user = new SimpleAttributeSet();
+    public static SimpleAttributeSet color = new SimpleAttributeSet();
 
     public static String lastSoundDir = "";
     public static String defaultSoundDir = "";
     public static String defaultFaceDir = "";
     public static boolean useMod = false;
     public static boolean useBroad = false;
+    public static boolean useAdmin = false;
+    public static boolean useStaff = false;
+
+
+    public static int fontSize = 18;
+    public static Font font = new Font("Calibri", Font.PLAIN, 18);
 
     public static Sound currentSound = null;
-
 
     private static GUIMain instance;
 
@@ -369,11 +373,11 @@ public class GUIMain extends JFrame {
         String kind;
         switch (type) {
             case 0:
-                icon = new ImageIcon(customMod);
+                icon = new ImageIcon(modIcon);
                 kind = "Mod ";
                 break;
             case 1:
-                icon = new ImageIcon(customBroad);
+                icon = new ImageIcon(broadIcon);
                 kind = "Broadcaster ";
                 break;
             case 2:
@@ -385,7 +389,7 @@ public class GUIMain extends JFrame {
                 kind = "Staff ";
                 break;
             default:
-                icon = new ImageIcon(customMod);
+                icon = new ImageIcon(modIcon);
                 kind = "Mod ";
                 break;
         }
@@ -398,12 +402,12 @@ public class GUIMain extends JFrame {
         }
     }
 
-
+    private static int viewerPeak = 0;
     public static Thread viewerCheck = new Thread(new Runnable() {
         @Override
         public void run() {
             while (!shutDown) {
-                viewerCount.setText(String.valueOf(viewerCount()));
+                viewerCount.setText(viewerCount() + " | Peak " + viewerPeak);
                 try {//sleep for a random time between 2.5 to 6 seconds
                     Thread.sleep(Utils.random(2500, 6000));
                 } catch (Exception ignored) {
@@ -412,8 +416,6 @@ public class GUIMain extends JFrame {
         }
     });
 
-    public static Pattern viewerPattern = Pattern.compile("\"viewers_count\":\\s*(\\d+)");
-    public static Pattern fileExclPattern = Pattern.compile("[\\/:\"*?<>|]");
 
     public static int viewerCount() {
         int count = 0;
@@ -422,21 +424,21 @@ public class GUIMain extends JFrame {
             BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
             String line;
             while (!shutDown && (line = br.readLine()) != null) {
-                Matcher m = viewerPattern.matcher(line);
+                Matcher m = Constants.viewerPattern.matcher(line);
                 if (m.find()) {
                     try {
                         count = Integer.parseInt(m.group(1));
-                    } catch (Exception e) {
-                        count = 0;
-                    }
+                        if (count >= viewerPeak) viewerPeak = count;
+                        break;
+                    } catch (Exception ignored) {
+                    }//bad Int parsing
                 }
             }
             br.close();
-
+            return count;
         } catch (Exception e) {
-            return 0;
+            return count;
         }
-        return count;
     }
 
     public void addStreamActionPerformed() {
@@ -461,19 +463,11 @@ public class GUIMain extends JFrame {
 
     public void exitButtonActionPerformed() {
         shutDown = true;
-        if (viewer != null && viewer.isConnected()) {
-            for (String s : viewer.getChannels()) {
-                viewer.doLeave(s.substring(1), false);
-            }
-            viewer.disconnect();
-            viewer.dispose();
+        if (viewer != null) {
+            viewer.close(false);
         }
-        if (bot != null && bot.isConnected()) {
-            for (String s : bot.getChannels()) {
-                bot.doLeave(s.substring(1), false);
-            }
-            bot.disconnect();
-            bot.dispose();
+        if (bot != null) {
+            bot.close(false);
         }
         if (rememberBot || rememberNorm) Utils.saveAccountData();
         if (!soundMap.isEmpty()) Utils.saveSounds();
@@ -482,7 +476,7 @@ public class GUIMain extends JFrame {
         if (!userColMap.isEmpty()) Utils.saveUserColors();
         if (loadedCommands()) Utils.saveCommands();
         if (viewerCheck != null && viewerCheck.isAlive()) viewerCheck.interrupt();
-        if (Utils.t != null && Utils.t.isAlive()) Utils.t.interrupt();
+        if (Utils.faceCheck != null && Utils.faceCheck.isAlive()) Utils.faceCheck.interrupt();
         dispose();
         System.exit(0);
     }
@@ -511,7 +505,7 @@ public class GUIMain extends JFrame {
         //======== Botnak ========
         {
             setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-            setMinimumSize(new Dimension(680, 380));
+            setMinimumSize(new Dimension(705, 400));
             setName("Botnak Control Panel");
             setTitle("Botnak");
             Container BotnakContentPane = getContentPane();

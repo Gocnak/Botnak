@@ -23,11 +23,11 @@
 
 package lib.jtattoo.com.jtattoo.plaf;
 
-import java.awt.*;
-import java.awt.event.MouseEvent;
 import javax.swing.*;
 import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.basic.BasicScrollBarUI;
+import java.awt.*;
+import java.awt.event.MouseEvent;
 
 /**
  * @author Michael Hagen

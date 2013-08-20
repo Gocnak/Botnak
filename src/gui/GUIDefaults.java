@@ -1,18 +1,16 @@
 package gui;
 
+import util.Constants;
 import util.Utils;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.net.URL;
-import javax.swing.GroupLayout;
-import javax.swing.LayoutStyle;
-import javax.swing.event.*;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class GUIDefaults extends JFrame {
     public GUIDefaults() {
@@ -29,34 +27,20 @@ public class GUIDefaults extends JFrame {
             useCustomBroad.setSelected(true);
             customBroad.setEnabled(true);
             customBroadButton.setEnabled(true);
-            customBroad.setText(GUIMain.customBroad.toString());
+            customBroad.setText(GUIMain.broadIcon.toString());
         }
         if (GUIMain.useMod) {
             useCustomMod.setSelected(true);
             customMod.setEnabled(true);
             customModButton.setEnabled(true);
-            customMod.setText(GUIMain.customMod.toString());
+            customMod.setText(GUIMain.modIcon.toString());
         }
     }
 
-    static FileFilter folderFilter = new FileFilter() {
-        @Override
-        public boolean accept(File f) {
-            return f != null && f.isDirectory();
-        }
-
-        @Override
-        public String getDescription() {
-            return "Folders";
-        }
-    };
-
-    static FileFilter pictureFilter = new FileNameExtensionFilter(
-            "Image files", ImageIO.getReaderFileSuffixes());
 
     public void faceButtonActionPerformed() {
         JFileChooser jfc = new JFileChooser();
-        jfc.setFileFilter(folderFilter);
+        jfc.setFileFilter(Constants.folderFilter);
         jfc.setAcceptAllFileFilterUsed(false);
         jfc.setMultiSelectionEnabled(false);
         jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -72,7 +56,7 @@ public class GUIDefaults extends JFrame {
 
     public void soundsButtonActionPerformed() {
         JFileChooser jfc = new JFileChooser();
-        jfc.setFileFilter(folderFilter);
+        jfc.setFileFilter(Constants.folderFilter);
         jfc.setAcceptAllFileFilterUsed(false);
         jfc.setMultiSelectionEnabled(false);
         jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -112,8 +96,8 @@ public class GUIDefaults extends JFrame {
         }
         if (text1 != null) GUIMain.defaultFaceDir = text1;
         if (text2 != null) GUIMain.defaultSoundDir = text2;
-        GUIMain.customMod = text3;
-        GUIMain.customBroad = text4;
+        GUIMain.modIcon = text3;
+        GUIMain.broadIcon = text4;
         Utils.saveDefaults(text1, text2, useCustomMod.isSelected(), useCustomBroad.isSelected(), text3.toString(), text4.toString());
         dispose();
     }
@@ -129,7 +113,7 @@ public class GUIDefaults extends JFrame {
 
     public void customModButtonActionPerformed() {
         JFileChooser jfc = new JFileChooser();
-        jfc.setFileFilter(pictureFilter);
+        jfc.setFileFilter(Constants.pictureFilter);
         jfc.setAcceptAllFileFilterUsed(false);
         jfc.setMultiSelectionEnabled(false);
         int returnVal = jfc.showOpenDialog(this);
@@ -152,7 +136,7 @@ public class GUIDefaults extends JFrame {
 
     public void customBroadButtonActionPerformed() {
         JFileChooser jfc = new JFileChooser();
-        jfc.setFileFilter(pictureFilter);
+        jfc.setFileFilter(Constants.pictureFilter);
         jfc.setAcceptAllFileFilterUsed(false);
         jfc.setMultiSelectionEnabled(false);
         int returnVal = jfc.showOpenDialog(this);

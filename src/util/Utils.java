@@ -260,7 +260,7 @@ public class Utils {
                 if (p.getProperty("UseMod") != null && p.getProperty("UseMod").equals("true")) {
                     GUIMain.useMod = true;
                     try {
-                        GUIMain.customMod = new URL(p.getProperty("CustomMod"));
+                        GUIMain.modIcon = new URL(p.getProperty("CustomMod"));
                     } catch (Exception e) {
                         GUIMain.log(e.getMessage());
                     }
@@ -268,7 +268,7 @@ public class Utils {
                 if (p.getProperty("UseBroad") != null && p.getProperty("UseBroad").equals("true")) {
                     GUIMain.useBroad = true;
                     try {
-                        GUIMain.customBroad = new URL(p.getProperty("CustomBroad"));
+                        GUIMain.broadIcon = new URL(p.getProperty("CustomBroad"));
                     } catch (Exception e) {
                         GUIMain.log(e.getMessage());
                     }
@@ -306,16 +306,12 @@ public class Utils {
     public static boolean saveAccountData() {
         Properties p = new Properties();
         if (GUIMain.rememberNorm) {
-            if (GUIMain.viewer != null) {
-                p.put("UserNorm", GUIMain.viewer.getMaster());
-                p.put("UserNormPass", GUIMain.viewer.getPass());
-            }
+            p.put("UserNorm", GUIMain.userNorm);
+            p.put("UserNormPass", GUIMain.userNormPass);
         }
         if (GUIMain.rememberBot) {
-            if (GUIMain.bot != null) {
-                p.put("UserBot", GUIMain.bot.getUser());
-                p.put("UserBotPass", GUIMain.bot.getPass());
-            }
+            p.put("UserBot", GUIMain.userBot);
+            p.put("UserBotPass", GUIMain.userBotPass);
         }
         if (GUIMain.autoLog) {
             p.put("AutoLog", String.valueOf(GUIMain.autoLog));
@@ -409,7 +405,7 @@ public class Utils {
             EventQueue.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    t.start();
+                    faceCheck.start();
                 }
             });
         } catch (Exception e) {
@@ -417,7 +413,7 @@ public class Utils {
         }
     }
 
-    public static Thread t = new Thread(new Runnable() {
+    public static Thread faceCheck = new Thread(new Runnable() {
         @Override
         public void run() {
             HashSet<StringArray> fromSite = buildMap();
@@ -1082,7 +1078,7 @@ public class Utils {
      * @return true if the name is invalid.
      */
     public static boolean checkName(String toCheck) {
-        Matcher m = GUIMain.fileExclPattern.matcher(toCheck);
+        Matcher m = Constants.fileExclPattern.matcher(toCheck);
         return m.find();
     }
 

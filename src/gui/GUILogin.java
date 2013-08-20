@@ -3,48 +3,57 @@ package gui;
 import irc.IRCBot;
 import irc.IRCViewer;
 
-import java.awt.*;
-import java.awt.event.*;
 import javax.swing.*;
-import javax.swing.GroupLayout;
-import javax.swing.LayoutStyle;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 
 public class GUILogin extends JFrame {
 
     public GUILogin() {
         initComponents();
-        if (GUIMain.loadedSettingsUser()) {
+        if (GUIMain.viewer != null) {
             rememberNormLogin.setSelected(GUIMain.rememberNorm);
             normUser.setText(GUIMain.userNorm);
             normPass.setText(GUIMain.userNormPass);
             autoLoginBox.setSelected(GUIMain.autoLog);
+            userLogoutButton.setEnabled(true);
         }
-        if (GUIMain.loadedSettingsBot()) {
+        if (GUIMain.bot != null) {
             rememberBotLogin.setSelected(GUIMain.rememberBot);
             botUser.setText(GUIMain.userBot);
             botPass.setText(GUIMain.userBotPass);
+            botLogoutButton.setEnabled(true);
         }
     }
 
+    public void userLogoutButtonActionPerformed() {
+        if (GUIMain.viewer != null) {
+            GUIMain.viewer.close(true);
+            normUser.setText("");
+            normPass.setText("");
+            rememberNormLogin.setSelected(false);
+            userLogoutButton.setEnabled(false);
+        }
+    }
+
+    public void botLogoutButtonActionPerformed() {
+        if (GUIMain.bot != null) {
+            GUIMain.bot.close(true);
+            botUser.setText("");
+            botPass.setText("");
+            rememberBotLogin.setSelected(false);
+            botLogoutButton.setEnabled(false);
+        }
+    }
+
+    public void cancelButtonActionPerformed() {
+        dispose();
+    }
 
     public void loginButtonActionPerformed() {
         try {
-            t.start();
-            EventQueue.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    dispose();
-                }
-            });
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
-
-    private static Thread t = new Thread(new Runnable() {
-        @Override
-        public void run() {
             String normus = normUser.getText().toLowerCase();
             String normpass = new String(normPass.getPassword());
             String botus = botUser.getText().toLowerCase();
@@ -63,12 +72,15 @@ public class GUILogin extends JFrame {
                 }
             }
             GUIMain.autoLog = autoLoginBox.isSelected();
+            dispose();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
         }
-    });
+    }
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
-        // Generated using JFormDesigner Evaluation license - Nick K
+        // Generated using JFormDesigner Evaluation license - Nick K.
         normUser = new JTextField();
         normUsername = new JLabel();
         label1 = new JLabel();
@@ -82,9 +94,15 @@ public class GUILogin extends JFrame {
         rememberBotLogin = new JCheckBox();
         autoLoginBox = new JCheckBox();
         loginButton = new JButton();
+        userLogoutButton = new JButton();
+        botLogoutButton = new JButton();
+        cancelButton = new JButton();
+        userLogoutButton.setEnabled(false);
+        botLogoutButton.setEnabled(false);
 
         //======== this ========
         setTitle("Login Settings");
+        setResizable(false);
         Container contentPane = getContentPane();
 
         //---- normUsername ----
@@ -127,49 +145,91 @@ public class GUILogin extends JFrame {
             }
         });
 
+        //---- userLogoutButton ----
+        userLogoutButton.setText("Logout");
+        userLogoutButton.setToolTipText("Logs out of the current Normal account.");
+        userLogoutButton.setFocusable(false);
+        userLogoutButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                userLogoutButtonActionPerformed();
+            }
+        });
+
+        //---- botLogoutButton ----
+        botLogoutButton.setText("Logout");
+        botLogoutButton.setFocusable(false);
+        botLogoutButton.setToolTipText("Logs out of the current Bot account.");
+        botLogoutButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                botLogoutButtonActionPerformed();
+            }
+        });
+
+        //---- cancelButton ----
+        cancelButton.setText("Cancel");
+        cancelButton.setFocusable(false);
+        cancelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cancelButtonActionPerformed();
+            }
+        });
+
         GroupLayout contentPaneLayout = new GroupLayout(contentPane);
         contentPane.setLayout(contentPaneLayout);
         contentPaneLayout.setHorizontalGroup(
                 contentPaneLayout.createParallelGroup()
                         .addGroup(contentPaneLayout.createSequentialGroup()
                                 .addContainerGap()
-                                .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.TRAILING, false)
-                                        .addGroup(GroupLayout.Alignment.LEADING, contentPaneLayout.createSequentialGroup()
-                                                .addGroup(contentPaneLayout.createParallelGroup()
-                                                        .addComponent(normUsername)
-                                                        .addComponent(label2))
-                                                .addGroup(contentPaneLayout.createParallelGroup()
-                                                        .addGroup(contentPaneLayout.createSequentialGroup()
-                                                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                                .addComponent(rememberNormLogin))
-                                                        .addGroup(contentPaneLayout.createSequentialGroup()
-                                                                .addGap(20, 20, 20)
-                                                                .addGroup(contentPaneLayout.createParallelGroup()
-                                                                        .addComponent(normUser)
-                                                                        .addGroup(contentPaneLayout.createSequentialGroup()
-                                                                                .addComponent(normPass, GroupLayout.PREFERRED_SIZE, 117, GroupLayout.PREFERRED_SIZE)
-                                                                                .addGap(0, 0, Short.MAX_VALUE))))))
-                                        .addGroup(GroupLayout.Alignment.LEADING, contentPaneLayout.createSequentialGroup()
-                                                .addGroup(contentPaneLayout.createParallelGroup()
-                                                        .addComponent(label3)
-                                                        .addComponent(label4))
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                                .addGroup(contentPaneLayout.createParallelGroup()
-                                                        .addComponent(botPass)
-                                                        .addComponent(botUser)))
-                                        .addComponent(rememberBotLogin)
+                                .addGroup(contentPaneLayout.createParallelGroup()
                                         .addGroup(contentPaneLayout.createSequentialGroup()
-                                                .addComponent(autoLoginBox)
-                                                .addGap(22, 22, 22)))
-                                .addContainerGap(16, Short.MAX_VALUE))
+                                                .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
+                                                        .addGroup(GroupLayout.Alignment.LEADING, contentPaneLayout.createSequentialGroup()
+                                                                .addGroup(contentPaneLayout.createParallelGroup()
+                                                                        .addComponent(normUsername)
+                                                                        .addComponent(label2)
+                                                                        .addComponent(userLogoutButton))
+                                                                .addGroup(contentPaneLayout.createParallelGroup()
+                                                                        .addGroup(contentPaneLayout.createSequentialGroup()
+                                                                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                                                .addComponent(rememberNormLogin))
+                                                                        .addGroup(contentPaneLayout.createSequentialGroup()
+                                                                                .addGap(20, 20, 20)
+                                                                                .addGroup(contentPaneLayout.createParallelGroup()
+                                                                                        .addComponent(normUser)
+                                                                                        .addGroup(contentPaneLayout.createSequentialGroup()
+                                                                                                .addComponent(normPass, GroupLayout.PREFERRED_SIZE, 117, GroupLayout.PREFERRED_SIZE)
+                                                                                                .addGap(0, 0, Short.MAX_VALUE))))))
+                                                        .addGroup(GroupLayout.Alignment.LEADING, contentPaneLayout.createSequentialGroup()
+                                                                .addGroup(contentPaneLayout.createParallelGroup()
+                                                                        .addComponent(label3)
+                                                                        .addComponent(label4))
+                                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                                                                .addGroup(contentPaneLayout.createParallelGroup()
+                                                                        .addComponent(botPass)
+                                                                        .addComponent(botUser)))
+                                                        .addGroup(contentPaneLayout.createSequentialGroup()
+                                                                .addComponent(botLogoutButton)
+                                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                                .addComponent(rememberBotLogin)))
+                                                .addContainerGap(21, Short.MAX_VALUE))
+                                        .addGroup(GroupLayout.Alignment.TRAILING, contentPaneLayout.createSequentialGroup()
+                                                .addGap(0, 71, Short.MAX_VALUE)
+                                                .addComponent(label1)
+                                                .addGap(72, 72, 72))))
                         .addGroup(contentPaneLayout.createSequentialGroup()
-                                .addGap(98, 98, 98)
-                                .addComponent(loginButton)
-                                .addGap(0, 94, Short.MAX_VALUE))
-                        .addGroup(GroupLayout.Alignment.TRAILING, contentPaneLayout.createSequentialGroup()
-                                .addContainerGap(76, Short.MAX_VALUE)
-                                .addComponent(label1)
-                                .addGap(72, 72, 72))
+                                .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.LEADING, false)
+                                        .addGroup(contentPaneLayout.createSequentialGroup()
+                                                .addGap(49, 49, 49)
+                                                .addComponent(loginButton)
+                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                .addComponent(cancelButton))
+                                        .addGroup(contentPaneLayout.createSequentialGroup()
+                                                .addGap(38, 38, 38)
+                                                .addComponent(autoLoginBox)))
+                                .addGap(0, 43, Short.MAX_VALUE))
         );
         contentPaneLayout.setVerticalGroup(
                 contentPaneLayout.createParallelGroup()
@@ -185,7 +245,9 @@ public class GUILogin extends JFrame {
                                         .addComponent(label2)
                                         .addComponent(normPass, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(rememberNormLogin)
+                                .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                        .addComponent(rememberNormLogin)
+                                        .addComponent(userLogoutButton))
                                 .addGap(18, 18, 18)
                                 .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                                         .addComponent(label3)
@@ -195,11 +257,15 @@ public class GUILogin extends JFrame {
                                         .addComponent(label4)
                                         .addComponent(botPass, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(rememberBotLogin)
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                        .addComponent(rememberBotLogin)
+                                        .addComponent(botLogoutButton))
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 15, Short.MAX_VALUE)
                                 .addComponent(autoLoginBox)
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(loginButton)
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                        .addComponent(loginButton)
+                                        .addComponent(cancelButton))
                                 .addContainerGap())
         );
         pack();
@@ -208,7 +274,7 @@ public class GUILogin extends JFrame {
     }
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
-    // Generated using JFormDesigner Evaluation license - Nick K
+    // Generated using JFormDesigner Evaluation license - Nick K.
     public static JTextField normUser;
     public static JLabel normUsername;
     public static JLabel label1;
@@ -222,6 +288,9 @@ public class GUILogin extends JFrame {
     public static JCheckBox rememberBotLogin;
     public static JCheckBox autoLoginBox;
     public static JButton loginButton;
+    public static JButton userLogoutButton;
+    public static JButton botLogoutButton;
+    public static JButton cancelButton;
 
 
 }
