@@ -1,0 +1,263 @@
+package util;
+
+import gui.GUIMain;
+import gui.WrapEditorKit;
+import lib.pircbot.org.jibble.pircbot.User;
+import lib.scalr.Scalr;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import javax.swing.text.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.net.URL;
+import java.util.Date;
+
+/**
+ * All channels other than All Chats is stored in this format.
+ */
+public class ChatPane {
+
+
+    private String chan;
+    private JTextPane textPane;
+    private int cleanupCounter;
+
+    /**
+     * You initialize this class with the channel it's for, a randomly-made scroll pane,
+     * and the text pane you'll be editing.
+     *
+     * @param channel The channel ("name") of this chat pane. Ex: "All Chats" or "#gocnak"
+     * @param pane    The text pane that shows the messages for the given channel.
+     */
+    public ChatPane(String channel, JTextPane pane) {
+        chan = channel;
+        textPane = pane;
+        cleanupCounter = 0;
+    }
+
+    /**
+     * In order to update one pane that isn't hard coded requires a bit of trickery.
+     * We'll have a set of these, but the channel will be the trigger, which is
+     * compared elsewhere (GUIMain). The update happens; it can be a clearing event
+     * (if they're clearing the chat), a logging event, and the line is added.
+     * <p/>
+     * The changed Pane needs to be returned so it can be updated in the set.
+     *
+     * @param channel The channel the message was sent in.
+     * @param sender  The sender of the message.
+     * @param message The message from the chat.
+     * @param isMe    Is a /me message.
+     * @return The updated ChatPane to replace in the map.
+     */
+    public ChatPane onMessage(String channel, String sender, String message, boolean isMe) {
+        if (GUIMain.currentSettings.cleanupChat) {
+            cleanupCounter++;
+            if (cleanupCounter > GUIMain.currentSettings.chatMax) {
+                /* cleanup every n messages */
+                cleanupChat();
+                cleanupCounter = 0;
+            }
+        }
+        sender = sender.toLowerCase();
+        String time = GUIMain.format.format(new Date(System.currentTimeMillis()));
+        StyledDocument doc = textPane.getStyledDocument();
+        Color c;
+        if (GUIMain.userColMap.containsKey(sender)) {
+            c = new Color(GUIMain.userColMap.get(sender)[0], GUIMain.userColMap.get(sender)[1], GUIMain.userColMap.get(sender)[2]);
+        } else {
+            c = Utils.getColor(sender.hashCode());
+        }
+        StyleConstants.setForeground(GUIMain.user, c);
+        try {
+            textPane.setCaretPosition(doc.getLength());
+            doc.insertString(textPane.getCaretPosition(), time, GUIMain.norm);
+            User u = Utils.getUser(GUIMain.viewer, channel, sender);
+            if (u != null) {
+                if (channel.substring(1).equals(sender)) {
+                    insertIcon(doc, textPane.getCaretPosition(), 1);
+                }
+                if (u.isStaff()) {
+                    insertIcon(doc, textPane.getCaretPosition(), 3);
+                }
+                if (u.isAdmin()) {
+                    insertIcon(doc, textPane.getCaretPosition(), 2);
+                }
+                if (u.isOp()) {
+                    if (!channel.substring(1).equals(sender)) {//not the broadcaster again
+                        insertIcon(doc, textPane.getCaretPosition(), 0);
+                    }
+                }
+            }
+            int nameStart = textPane.getCaretPosition() + 1;
+            if (chan.equalsIgnoreCase("all chats")) {
+                doc.insertString(textPane.getCaretPosition(), " " + sender, GUIMain.user);
+                doc.insertString(textPane.getCaretPosition(), " (" + channel.substring(1) + "): ", GUIMain.norm);
+            } else {
+                doc.insertString(textPane.getCaretPosition(), " " + sender + ": ", GUIMain.user);
+            }
+            Utils.handleFaces(doc, nameStart, sender);//if the sender has a custom face that they want instead
+            int messStart;
+            if (isMe) {
+                messStart = textPane.getCaretPosition();
+                doc.insertString(textPane.getCaretPosition(),
+                        message + "\n",
+                        message.toLowerCase().contains(GUIMain.viewer.getMaster()) ? GUIMain.color : GUIMain.user);
+            } else {
+                messStart = textPane.getCaretPosition();
+                doc.insertString(textPane.getCaretPosition(),
+                        message + "\n",
+                        message.toLowerCase().contains(GUIMain.viewer.getMaster()) ? GUIMain.color : GUIMain.norm);
+            }
+            Utils.handleFaces(doc, messStart, message);
+            textPane.setCaretPosition(doc.getLength());
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+        return this;
+    }
+
+    private ImageIcon sizeIcon(URL image) {
+        ImageIcon icon;
+        try {
+            BufferedImage img = ImageIO.read(image);
+            int size = GUIMain.currentSettings.font.getSize();
+            img = Scalr.resize(img, Scalr.Method.QUALITY, size, size, Scalr.OP_ANTIALIAS);
+            icon = new ImageIcon(img);
+            icon.getImage().flush();
+            return icon;
+        } catch (Exception e) {
+            icon = new ImageIcon(image);
+        }
+        return icon;
+    }
+
+    public void insertIcon(StyledDocument doc, int pos, int type) {
+        SimpleAttributeSet attrs = new SimpleAttributeSet();
+        ImageIcon icon;
+        String kind;
+        switch (type) {
+            case 0:
+                icon = sizeIcon(GUIMain.currentSettings.modIcon);
+                kind = "Mod";
+                break;
+            case 1:
+                icon = sizeIcon(GUIMain.currentSettings.broadIcon);
+                kind = "Broadcaster";
+                break;
+            case 2:
+                icon = sizeIcon(GUIMain.currentSettings.adminIcon);
+                kind = "Admin";
+                break;
+            case 3:
+                icon = sizeIcon(GUIMain.currentSettings.staffIcon);
+                kind = "Staff";
+                break;
+            default:
+                icon = sizeIcon(GUIMain.currentSettings.modIcon);
+                kind = "Mod";
+                break;
+        }
+        StyleConstants.setIcon(attrs, icon);
+        try {
+            doc.insertString(pos, " ", null);
+            doc.insertString(pos + 1, kind, attrs);
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    public String getText() {
+        return (textPane != null && textPane.getText() != null) ? textPane.getText() : "";
+    }
+
+    // Source: http://stackoverflow.com/a/4628879
+    // by http://stackoverflow.com/users/131872/camickr & Community
+    //TODO: Transform to action
+    private void cleanupChat() {
+        if (textPane == null || textPane.getParent() == null) return;
+        if (!(textPane.getParent() instanceof JViewport)) {
+            return;
+        }
+        JViewport viewport = ((JViewport) textPane.getParent());
+        Point startPoint = viewport.getViewPosition();
+        // we are not deleting right before the visible area, but one screen behind
+        // for convenience, otherwise flickering.
+        int start = textPane.viewToModel(startPoint);
+        if (start > 0) // not equal zero, because then we don't have to delete anything
+        {
+            Document doc = textPane.getDocument();
+            try {
+                if (GUIMain.currentSettings.cleanupChat) {
+                    if (GUIMain.currentSettings.logChat) {
+                        String[] toremove = doc.getText(0, start).split("\\n");
+                        Utils.logChat(toremove, chan);
+                    }
+                    doc.remove(0, start);
+                    textPane.setCaretPosition(doc.getLength());
+                }
+            } catch (BadLocationException e) {
+                // we cannot do anything here
+                GUIMain.log(e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Creates a pane and adds it to a tab to the main GUI.
+     *
+     * @param channel The channel, also used as the key for the hashmap.
+     */
+    public static void createPane(String channel) {
+        JScrollPane scrollPane = new JScrollPane();
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        JTextPane pane = new JTextPane();
+        pane.setEditorKit(new WrapEditorKit());
+        pane.setEditable(false);
+        pane.setFocusable(false);
+        pane.setMargin(new Insets(0, 0, 0, 0));
+        pane.setBackground(Color.black);
+        pane.setFont(GUIMain.currentSettings.font);
+        scrollPane.setViewportView(pane);
+        GUIMain.channelPane.addTab(channel, scrollPane);
+        GUIMain.chatPanes.put(channel, new ChatPane(channel, pane));
+    }
+
+    public void deletePane() {
+        for (int i = 0; i < GUIMain.channelPane.getTabCount(); i++) {
+            String name = GUIMain.channelPane.getTitleAt(i);
+            if (name != null) {
+                if (name.equalsIgnoreCase("all chats")) continue;//this will most likely be 0 every time
+                if (name.equalsIgnoreCase(chan)) {
+                    if (GUIMain.currentSettings.logChat) {
+                        Utils.logChat(getText().split("\\n"), chan);
+                    }
+                    GUIMain.channelPane.removeTabAt(i);
+                }
+            }
+        }
+    }
+
+    public void log(String message) {
+        String time = GUIMain.format.format(new Date(System.currentTimeMillis()));
+        StyledDocument doc = textPane.getStyledDocument();
+        try {
+            textPane.setCaretPosition(doc.getLength());
+            doc.insertString(textPane.getCaretPosition(), time + " SYS: " + message + "\n", GUIMain.norm);
+            textPane.setCaretPosition(doc.getLength());
+            if (GUIMain.currentSettings.cleanupChat) {
+                cleanupCounter++;
+                if (cleanupCounter > GUIMain.currentSettings.chatMax) {
+                /* cleanup every n messages */
+                    if (GUIMain.doneWithFaces) {
+                        cleanupChat();
+                        cleanupCounter = 0;
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+
+}

@@ -10,12 +10,11 @@ A full example list of commands and such can be found at http://bit.ly/1366RwM.
 TODO:
 - Code the ability to join SRL race chats
 - New-line detection for commands - perhaps typing a special character (like '[' or something) in the message text.
-- Make the Defaults GUI have more options (logging the chat, how many lines before clearing, other fonts for chat, etc.)
-- Make the viewer branch - this will happen when the above is made
+- Make the viewer branch - contemplating this -- just use a viewer account only?
 
 Some useful pieces of advice:
 
-#BLAMETWITCH: If you cannot login (logging in freezes for a long time) on a recently-made account, look at this help topic for the solution: http://help.twitch.tv/customer/portal/questions/1366327-can-t-connect-to-irc-with-new-account-
+BLAMETWITCH: If you cannot login (logging in freezes for a long time) on a recently-made account, try resetting your password for the account, or look at this help topic for the solution: http://help.twitch.tv/customer/portal/questions/1366327-can-t-connect-to-irc-with-new-account-
 
 IN YO FACE: Botnak supports all Twitch faces, including Subscriber faces. He downloads them and puts them in the "Botnak/Face/" folder on a seperate thread. Faces will not work until he's done so, and he will print out "Done downloading faces." in the panel. See: http://puu.sh/40H6D.png
 

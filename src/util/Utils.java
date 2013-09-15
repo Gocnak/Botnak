@@ -9,7 +9,10 @@ import lib.scalr.Scalr;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.text.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -18,6 +21,8 @@ import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import util.Timer;
 
 /**
  * Created with IntelliJ IDEA.
@@ -47,46 +52,31 @@ public class Utils {
         return ext;
     }
 
-    public static String[] loadStreams() {
-        ArrayList<String> streams = new ArrayList<>();
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(GUIMain.streamsFile.toURI().toURL().openStream()));
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (!line.equals("")) {
-                    streams.add(line);
-                }
+    /**
+     * Converts a font to string. Only really used in the Settings GUI.
+     * (Font#toString() was too messy for me, and fuck making a wrapper class.
+     *
+     * @return The name, size, and style of the font.
+     */
+    public static String fontToString(Font f) {
+        String toRet = "";
+        if (f != null) {
+            if (f.isBold()) { //a little bit of recycling
+                toRet = f.isItalic() ? "Bold Italic" : "Bold";
+            } else {
+                toRet = f.isItalic() ? "Italic" : "Plain";
             }
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            StringBuilder sb = new StringBuilder();
+            sb.append(f.getName());
+            sb.append(", ");
+            sb.append(f.getSize());
+            sb.append(", ");
+            sb.append(toRet);
+            toRet = sb.toString();
         }
-        return streams.toArray(new String[streams.size()]);
+        return toRet;
     }
 
-    public static void loadSounds() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(GUIMain.soundsFile.toURI().toURL().openStream()));
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split(",");
-                if (split != null) {
-                    int startIdx = line.indexOf(",", line.indexOf(",", 0) + 1);//name,0,<- bingo
-                    String[] split2add = line.substring(startIdx + 1).split(",");//files
-                    int perm = 0;
-                    try {
-                        perm = Integer.parseInt(split[1]);
-                    } catch (NumberFormatException e) {
-                        GUIMain.log(split[0] + " has a problem. Making it public.");
-                    }
-                    GUIMain.soundMap.put(split[0], new Sound(perm, split2add));
-                }
-            }
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
 
     /**
      * Checks to see if a Pircbot is in a given channel.
@@ -114,7 +104,7 @@ public class Utils {
         for (int i = 0; i < list.getModel().getSize(); i++) {
             String o = list.getModel().getElementAt(i);
             if (o != null) {
-                things.add(o);
+                things.add(o.toLowerCase());
             }
         }
         return things.toArray(new String[things.size()]);
@@ -129,46 +119,6 @@ public class Utils {
         }
     }
 
-    public static void saveStreams() {
-        try {
-            PrintWriter br = new PrintWriter(GUIMain.streamsFile);
-            if (GUIMain.channelMap.size() > 0) {
-                for (String s : GUIMain.channelMap) {
-                    if (s != null) {
-                        br.println(s);
-                    }
-                }
-            }
-            br.flush();
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
-
-    public static void saveSounds() {
-        try {
-            PrintWriter br = new PrintWriter(GUIMain.soundsFile);
-            for (String s : GUIMain.soundMap.keySet()) {
-                if (s != null && GUIMain.soundMap.get(s) != null) {
-                    Sound boii = GUIMain.soundMap.get(s);//you're too young to play that sound, boy
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(s);
-                    sb.append(",");
-                    sb.append(boii.getPermission());
-                    for (String soundboy : boii.getSounds().data) {
-                        sb.append(",");
-                        sb.append(soundboy);
-                    }
-                    br.println(sb.toString());
-                }
-            }
-            br.flush();
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
 
     /**
      * Adds a single string to an array of strings, first checking to see if the array contains it.
@@ -236,93 +186,21 @@ public class Utils {
         return i == files.length;
     }
 
-    public static void loadPropData(int type) {
-        Properties p = new Properties();
-        if (type == 0) {//accounts
-            try {
-                p.load(new FileInputStream(GUIMain.accountsFile));
-                GUIMain.userNorm = p.getProperty("UserNorm").toLowerCase();
-                GUIMain.userNormPass = p.getProperty("UserNormPass");
-                GUIMain.userBot = p.getProperty("UserBot").toLowerCase();
-                GUIMain.userBotPass = p.getProperty("UserBotPass");
-                if (p.getProperty("AutoLog") != null && p.getProperty("AutoLog").equalsIgnoreCase("true")) {
-                    GUIMain.autoLog = true;
+    public static void logChat(String[] message, String channel) {
+        try {
+            PrintWriter out = new PrintWriter(new BufferedWriter(
+                    new FileWriter(new File(GUIMain.currentSettings.sessionLogDir.getAbsolutePath() + File.separator + channel + ".txt"), true)));
+            for (String s : message) {
+                if (s != null && !s.equals("")) {
+                    out.println(s);
                 }
-            } catch (Exception e) {
-                GUIMain.log(e.getMessage());
             }
-        }
-        if (type == 1) { //defaults
-            try {
-                p.load(new FileInputStream(GUIMain.defaultsFile));
-                GUIMain.defaultFaceDir = p.getProperty("FaceDir");
-                GUIMain.defaultSoundDir = p.getProperty("SoundDir");
-                if (p.getProperty("UseMod") != null && p.getProperty("UseMod").equals("true")) {
-                    GUIMain.useMod = true;
-                    try {
-                        GUIMain.modIcon = new URL(p.getProperty("CustomMod"));
-                    } catch (Exception e) {
-                        GUIMain.log(e.getMessage());
-                    }
-                }
-                if (p.getProperty("UseBroad") != null && p.getProperty("UseBroad").equals("true")) {
-                    GUIMain.useBroad = true;
-                    try {
-                        GUIMain.broadIcon = new URL(p.getProperty("CustomBroad"));
-                    } catch (Exception e) {
-                        GUIMain.log(e.getMessage());
-                    }
-                }
-            } catch (Exception e) {
-                GUIMain.log(e.getMessage());
-            }
+            out.close();
+        } catch (IOException e) {
+            GUIMain.log(e.getMessage());
         }
     }
 
-    public static boolean saveDefaults(String face, String sound, boolean useMod, boolean useBroad, String mod, String broad) {
-        Properties p = new Properties();
-        if (face != null) {
-            p.put("FaceDir", face);
-        }
-        if (sound != null) {
-            p.put("SoundDir", sound);
-        }
-        p.put("UseMod", String.valueOf(useMod));
-        if (mod != null) {
-            p.put("CustomMod", mod);
-        }
-        p.put("UseBroad", String.valueOf(useBroad));
-        if (broad != null) {
-            p.put("CustomBroad", broad);
-        }
-        try {
-            p.store(new FileWriter(GUIMain.defaultsFile), "Default Settings");
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    public static boolean saveAccountData() {
-        Properties p = new Properties();
-        if (GUIMain.rememberNorm) {
-            p.put("UserNorm", GUIMain.userNorm);
-            p.put("UserNormPass", GUIMain.userNormPass);
-        }
-        if (GUIMain.rememberBot) {
-            p.put("UserBot", GUIMain.userBot);
-            p.put("UserBotPass", GUIMain.userBotPass);
-        }
-        if (GUIMain.autoLog) {
-            p.put("AutoLog", String.valueOf(GUIMain.autoLog));
-        }
-        try {
-            p.store(new FileWriter(GUIMain.accountsFile), "Account Info");
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
-    }
 
     /**
      * Removes a file extension from a path.
@@ -417,14 +295,14 @@ public class Utils {
         @Override
         public void run() {
             HashSet<StringArray> fromSite = buildMap();
-            if (GUIMain.faceDir != null) {
-                if (GUIMain.faceDir.list().length > 0) {//has (some... all?) files
+            if (GUIMain.currentSettings.faceDir != null) {
+                if (GUIMain.currentSettings.faceDir.list().length > 0) {//has (some... all?) files
                     for (StringArray pick : fromSite) {//check default twitch faces...
                         String regex = pick.data[0];
                         String URL = pick.data[1];
                         String fileTheo = pick.data[2];//theoretically, you should have it
                         boolean flag = false;
-                        String[] files = GUIMain.faceDir.list();
+                        String[] files = GUIMain.currentSettings.faceDir.list();
                         for (String fileActual : files) {
                             if (fileActual.equals(fileTheo)) {//but do you actually have it?
                                 flag = true;//it exists, no need for downloading it
@@ -433,7 +311,7 @@ public class Utils {
                         }
                         if (!flag) { //guess not
                             GUIMain.log("Missing a face, downloading it... ");
-                            downloadFace(URL, GUIMain.faceDir.getAbsolutePath(), fileTheo, regex);
+                            downloadFace(URL, GUIMain.currentSettings.faceDir.getAbsolutePath(), fileTheo, regex);
                         }
                     }
                 } else {//DOWNLOAD THEM ALLLL
@@ -441,7 +319,7 @@ public class Utils {
                         String regex = pick.data[0];
                         String URL = pick.data[1];
                         String filename = pick.data[2];
-                        downloadFace(URL, GUIMain.faceDir.getAbsolutePath(), filename, regex);
+                        downloadFace(URL, GUIMain.currentSettings.faceDir.getAbsolutePath(), filename, regex);
                     }
                 }
                 GUIMain.log("Done downloading faces.");
@@ -532,7 +410,7 @@ public class Utils {
      */
     public static void loadFaces() {
         try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(GUIMain.faceFile.toURI().toURL().openStream()));
+            BufferedReader br = new BufferedReader(new InputStreamReader(GUIMain.currentSettings.faceFile.toURI().toURL().openStream()));
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split(",");
@@ -573,7 +451,12 @@ public class Utils {
                         if (!areFilesGood(GUIMain.faceMap.get(name).getFilePath())) {// the file doesn't exist/didn't download right
                             return;
                         }
-                        StyleConstants.setIcon(attrs, new ImageIcon(GUIMain.faceMap.get(name).getFilePath()));
+                        try {
+                            StyleConstants.setIcon(attrs,//ImageIO here to rid the cached face
+                                    new ImageIcon(ImageIO.read(new File(GUIMain.faceMap.get(name).getFilePath()))));
+                        } catch (Exception e) {
+                            GUIMain.log(e.getMessage());
+                        }
                         //                        find the face V  from either 0 or the next index of it, and removes it\
                         lastFound = message.indexOf((m.group()), lastFound);
                         doc.remove(start + lastFound, m.group().length());
@@ -584,100 +467,6 @@ public class Utils {
             }
         } catch (BadLocationException e1) {
             GUIMain.log(e1.getMessage());
-        }
-    }
-
-    /**
-     * Saves the faces to the given text file.
-     * The map is unique, as the key is the name of the face, which could be the same as the regex
-     * if it was added via !addface and no regex was specified.
-     */
-    public static void saveFaces() {
-        try {
-            PrintWriter br = new PrintWriter(GUIMain.faceFile);
-            for (String s : GUIMain.faceMap.keySet()) {
-                if (s != null && GUIMain.faceMap.get(s) != null) {
-                    Face fa = GUIMain.faceMap.get(s);
-                    br.println(s + "," + fa.getRegex() + "," + fa.getFilePath());
-                }
-            }
-            br.flush();
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
-
-    public static void loadUserColors() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(GUIMain.userColFile.toURI().toURL().openStream()));
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split(",");
-                if (split != null) {
-                    GUIMain.userColMap.put(split[0], new int[]{Integer.parseInt(split[1]), Integer.parseInt(split[2]), Integer.parseInt(split[3])});
-                }                 //user                          r                            g                       b
-            }
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
-
-    public static void saveUserColors() {
-        try {
-            PrintWriter br = new PrintWriter(GUIMain.userColFile);
-            for (String s : GUIMain.userColMap.keySet()) {
-                if (s != null && GUIMain.userColMap.get(s) != null) {
-                    br.println(s + "," + GUIMain.userColMap.get(s)[0] + "," + GUIMain.userColMap.get(s)[1] + "," + GUIMain.userColMap.get(s)[2]);
-                }              //user              R                   G                          B
-            }
-            br.flush();
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
-
-
-    public static void loadCommands() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(GUIMain.commandsFile.toURI().toURL().openStream()));
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split("\\[");
-                if (split != null) {
-                    int time;
-                    try {
-                        time = Integer.parseInt(split[2]);
-                    } catch (Exception e) {
-                        time = 10000;
-                    }
-                    Timer local = new Timer(time);
-                    GUIMain.commandMap.put(new StringArray(new String[]{split[0], split[1]}), local);
-                }
-            }
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
-
-    public static void saveCommands() {
-        try {
-            PrintWriter br = new PrintWriter(GUIMain.commandsFile);
-            for (StringArray next : GUIMain.commandMap.keySet()) {
-                if (next != null && GUIMain.commandMap.get(next) != null) {
-                    String name = next.data[0];
-                    String command = next.data[1];
-                    int time = (int) GUIMain.commandMap.get(next).period;
-                    br.println(name + "[" + command + "[" + time);
-                }
-            }
-            br.flush();
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
         }
     }
 
@@ -942,7 +731,9 @@ public class Utils {
      * @param change True for changing a sound, false for adding.
      */
     public static void handleSound(String s, boolean change) {
-        if (GUIMain.defaultSoundDir != null && !GUIMain.defaultSoundDir.equals("null") && !GUIMain.defaultSoundDir.equals("")) {
+        if (GUIMain.currentSettings.defaultSoundDir != null &&
+                !GUIMain.currentSettings.defaultSoundDir.equals("null") &&
+                !GUIMain.currentSettings.defaultSoundDir.equals("")) {
             try {
                 String[] split = s.split(" ");
                 String name = split[1];//both commands have this in common.
@@ -957,7 +748,7 @@ public class Utils {
                     if (perm == -1) return;
                     if (!files.contains(",")) {//isn't multiple
                         //this can be !addsound sound 0 sound or !changesound sound 0 newsound
-                        String filename = GUIMain.defaultSoundDir + File.separator + files + ".wav";
+                        String filename = GUIMain.currentSettings.defaultSoundDir + File.separator + files + ".wav";
                         if (areFilesGood(filename)) {
                             if (GUIMain.soundMap.containsKey(name)) {//they could technically change the permission here as well
                                 if (!change) {//!addsound
@@ -976,7 +767,7 @@ public class Utils {
                         ArrayList<String> list = new ArrayList<>();
                         String[] filesSplit = files.split(",");
                         for (String str : filesSplit) {
-                            list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
+                            list.add(GUIMain.currentSettings.defaultSoundDir + File.separator + str + ".wav");
                         }             //calls the areFilesGood boolean in it (filters bad files already)
                         filesSplit = checkFiles(list.toArray(new String[list.size()]));
                         list.clear();//recycle time!
@@ -1001,7 +792,7 @@ public class Utils {
                                     GUIMain.soundMap.put(name, new Sound(perm, GUIMain.soundMap.get(name).getSounds().data));//A pretty bad one...
                             }
                         } catch (NumberFormatException e) {//maybe it really is a 1-char-named sound?
-                            String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
+                            String test = GUIMain.currentSettings.defaultSoundDir + File.separator + split[2] + ".wav";
                             if (areFilesGood(test)) { //wow...
                                 if (change) {
                                     GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), test));
@@ -1016,7 +807,7 @@ public class Utils {
                             String[] filesSplit = split[2].split(",");
                             ArrayList<String> list = new ArrayList<>();
                             for (String str : filesSplit) {
-                                list.add(GUIMain.defaultSoundDir + File.separator + str + ".wav");
+                                list.add(GUIMain.currentSettings.defaultSoundDir + File.separator + str + ".wav");
                             }             //calls the areFilesGood boolean in it (filters bad files already)
                             filesSplit = checkFiles(list.toArray(new String[list.size()]));
                             if (!change) {//!addsound soundname more,sounds
@@ -1031,7 +822,7 @@ public class Utils {
                                     GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), filesSplit));
                             }
                         } else {//singular
-                            String test = GUIMain.defaultSoundDir + File.separator + split[2] + ".wav";
+                            String test = GUIMain.currentSettings.defaultSoundDir + File.separator + split[2] + ".wav";
                             if (areFilesGood(test)) {
                                 if (!change) {//!addsound sound newsound
                                     if (GUIMain.soundMap.containsKey(name)) {//getting the old permission/files
@@ -1089,7 +880,9 @@ public class Utils {
      * @param s The string from the chat.
      */
     public static void handleFace(String s) {
-        if (GUIMain.defaultFaceDir == null || GUIMain.defaultFaceDir.equals("") || GUIMain.defaultFaceDir.equals("null"))
+        if (GUIMain.currentSettings.defaultFaceDir == null
+                || GUIMain.currentSettings.defaultFaceDir.equals("")
+                || GUIMain.currentSettings.defaultFaceDir.equals("null"))
             return;
         try {
             String[] split = s.split(" ");
@@ -1107,11 +900,11 @@ public class Utils {
                     if (checkName(name)) return;
                     file = split[3];
                     if (file.startsWith("http")) {//online
-                        downloadFace(file, GUIMain.faceDir.getAbsolutePath(), name + ".png", regex);//save locally
+                        downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), name + ".png", regex);//save locally
                     } else {//local
                         if (checkName(file)) return;
-                        downloadFace(new File(GUIMain.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
-                                GUIMain.faceDir.getAbsolutePath(),
+                        downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
+                                GUIMain.currentSettings.faceDir.getAbsolutePath(),
                                 name + ".png",
                                 regex);
                     }
@@ -1121,12 +914,12 @@ public class Utils {
                     if (!checkRegex(name)) return;
                     if (checkName(name)) return;
                     if (file.startsWith("http")) {//online
-                        downloadFace(file, GUIMain.faceDir.getAbsolutePath(),
+                        downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
                                 name + ".png", name);//name is regex, so case sensitive
                     } else {//local
                         if (checkName(file)) return;
-                        downloadFace(new File(GUIMain.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
-                                GUIMain.faceDir.getAbsolutePath(),
+                        downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
+                                GUIMain.currentSettings.faceDir.getAbsolutePath(),
                                 name + ".png",
                                 name);//<- this will be the regex, so case sensitive
                     }
@@ -1145,11 +938,11 @@ public class Utils {
                         if (checkName(name)) return;
                         file = split[4];
                         if (file.startsWith("http")) {//online
-                            downloadFace(file, GUIMain.faceDir.getAbsolutePath(), (name + ".png"), regex);//save locally
+                            downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), (name + ".png"), regex);//save locally
                         } else {//local
                             if (checkName(file)) return;
-                            downloadFace(new File(GUIMain.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
-                                    GUIMain.faceDir.getAbsolutePath(),
+                            downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
+                                    GUIMain.currentSettings.faceDir.getAbsolutePath(),
                                     (name + ".png"),
                                     regex);//< this will be the regex, so case sensitive
                         }
@@ -1172,11 +965,11 @@ public class Utils {
                             Face face = GUIMain.faceMap.get(name);
                             file = split[3];
                             if (file.startsWith("http")) {//online
-                                downloadFace(file, GUIMain.faceDir.getAbsolutePath(), (name + ".png"), face.getRegex());//save locally
+                                downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), (name + ".png"), face.getRegex());//save locally
                             } else {//local
                                 if (checkName(file)) return;
-                                downloadFace(new File(GUIMain.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
-                                        GUIMain.faceDir.getAbsolutePath(),
+                                downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
+                                        GUIMain.currentSettings.faceDir.getAbsolutePath(),
                                         (name + ".png"),
                                         face.getRegex());
                             }

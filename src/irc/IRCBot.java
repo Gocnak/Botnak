@@ -5,10 +5,7 @@ import lib.chatbot.ChatterBotSession;
 import lib.chatbot.Cleverbot;
 import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
-import util.Sound;
-import util.StringArray;
-import util.Timer;
-import util.Utils;
+import util.*;
 import lib.chatbot.ChatterBot;
 
 import java.net.ConnectException;
@@ -29,12 +26,13 @@ public class IRCBot extends PircBot {
 
 
     public IRCBot(String user, String password) {
-        GUIMain.userBot = user;
-        GUIMain.userBotPass = password;
+        if (GUIMain.currentSettings.bot == null) {
+            GUIMain.currentSettings.bot = new Settings.Account(user, password);
+        }
         setName(user);
         setLogin(user);
-        masterChannel = GUIMain.viewer.getMaster();
-        GUIMain.botUser.setText(user);
+        if (GUIMain.viewer != null) masterChannel = GUIMain.viewer.getMaster();
+        GUIMain.updateTitle();
         try {
             chatBot = Cleverbot.create();
             session = chatBot.createSession();
@@ -58,7 +56,7 @@ public class IRCBot extends PircBot {
         String channelName = "#" + channel;
         if (!isConnected()) {
             try {
-                connect("irc.twitch.tv", 6667, GUIMain.userBotPass);
+                connect("irc.twitch.tv", 6667, GUIMain.currentSettings.bot.getAccountPass());
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
@@ -93,15 +91,14 @@ public class IRCBot extends PircBot {
      * Disconnects from all chats and disposes of the bot.
      */
     public void close(boolean forget) {
-        GUIMain.log("LOGGING OUT BOT: " + GUIMain.userBot);
+        GUIMain.log("LOGGING OUT BOT: " + GUIMain.currentSettings.bot.getAccountName());
         for (String s : getChannels()) {
             doLeave(s.substring(1), false);
         }
         disconnect();
         dispose();
         if (forget) {
-            GUIMain.userBot = null;
-            GUIMain.userBotPass = null;
+            GUIMain.currentSettings.bot = null;
         }
         GUIMain.bot = null;
     }

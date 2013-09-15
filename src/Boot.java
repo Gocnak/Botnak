@@ -1,4 +1,5 @@
 import gui.GUIMain;
+import util.Settings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,7 +23,8 @@ public class Boot {
              */
             private void setLookAndFeel() {
                 try {
-                    UIManager.setLookAndFeel("lib.jtattoo.com.jtattoo.plaf.hifi.HiFiLookAndFeel");
+                    Settings.loadLAF();
+                    UIManager.setLookAndFeel(Settings.lookAndFeel);
                 } catch (UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
                     e.printStackTrace();
                 }

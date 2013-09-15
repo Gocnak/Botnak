@@ -6,7 +6,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
 import java.util.regex.Pattern;
 
-public interface Constants {
+public class Constants {
 
     public static final String[] fontSizeArray = new String[]{"11", "12", "13", "14", "16", "18", "20"};
 

@@ -2,6 +2,7 @@ package irc;
 
 import gui.GUIMain;
 import lib.pircbot.org.jibble.pircbot.PircBot;
+import util.Settings;
 import util.Utils;
 
 import java.awt.*;
@@ -10,7 +11,7 @@ import java.awt.*;
 public class IRCViewer extends PircBot {
 
 
-    public static String name, pass;
+    String name, pass;
 
     public String getMaster() {
         return name;
@@ -21,11 +22,17 @@ public class IRCViewer extends PircBot {
     }
 
     public IRCViewer(String user, String password) {
-        GUIMain.userNorm = name = user;
-        GUIMain.userNormPass = pass = password;
-        setName(name);
-        setLogin(name);
-        GUIMain.normUser.setText(user);
+        if (GUIMain.currentSettings.user == null) {//someone clicked "login"
+            name = user;
+            pass = password;
+            GUIMain.currentSettings.user = new Settings.Account(name, pass);
+        } else {// it was loaded from file
+            name = GUIMain.currentSettings.user.getAccountName();
+            pass = GUIMain.currentSettings.user.getAccountPass();
+        }
+        setName(user);
+        setLogin(user);
+        GUIMain.updateTitle();
         try {
             connect("irc.twitch.tv", 6667, pass);
         } catch (Exception e) {
@@ -100,8 +107,7 @@ public class IRCViewer extends PircBot {
         disconnect();
         dispose();
         if (forget) {
-            GUIMain.userNorm = null;
-            GUIMain.userNormPass = null;
+            GUIMain.currentSettings.user = null;
         }
         GUIMain.viewer = null;
     }

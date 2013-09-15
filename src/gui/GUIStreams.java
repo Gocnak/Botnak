@@ -1,11 +1,11 @@
 package gui;
 
+import util.ChatPane;
 import util.Utils;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.File;
 import java.util.ArrayList;
 
 
@@ -53,11 +53,12 @@ public class GUIStreams extends JFrame {
                 }
             }
             if (GUIMain.viewer != null) {
-                GUIMain.viewer.doLeave(channelToLeave, true);
+                GUIMain.viewer.doLeave(channelToLeave, false);
             }
             if (GUIMain.bot != null) {
-                GUIMain.bot.doLeave(channelToLeave, true);
+                GUIMain.bot.doLeave(channelToLeave, false);
             }
+            GUIMain.chatPanes.get(channelToLeave).deletePane();
         }
         streamList.setModel(listModel);
         removeStream.setEnabled(false);
@@ -69,14 +70,12 @@ public class GUIStreams extends JFrame {
 
     public void saveButtonActionPerformed() {
         String[] channels = Utils.readList(streamList);
-        DefaultListModel<String> d = new DefaultListModel<>();
         if (channels != null) {
             Utils.handleList(channels);
             if (rememberStreams.isSelected()) {
-                Utils.saveStreams();
+                GUIMain.currentSettings.saveStreams();
             }
             for (String s : channels) {
-                d.addElement(s);
                 if (GUIMain.viewer != null && !Utils.isInChannel(GUIMain.viewer, "#" + s)) {
                     GUIMain.viewer.doConnect(s);
                 }
@@ -84,19 +83,13 @@ public class GUIStreams extends JFrame {
                     GUIMain.bot.doConnect(s);
                 }
             }
-            if (d.getSize() > 0) {
-                streamList.setModel(d);
-            }
-            DefaultComboBoxModel<String> c = new DefaultComboBoxModel<>();
-            c.addElement("All Chats");
             for (String s : channels) {
-                c.addElement(s);
+                if (!GUIMain.chatPanes.containsKey(s)) {
+                    ChatPane.createPane(s);
+                }
             }
-            GUIMain.streamList.setModel(c);
         }
-
-        setVisible(false);
-
+        dispose();
     }
 
     public static void streamListMouseClicked() {
@@ -116,6 +109,8 @@ public class GUIStreams extends JFrame {
 
         //======== this ========
         setTitle("Stream List");
+        setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
+        setResizable(false);
         Container contentPane = getContentPane();
 
         //======== scrollPane1 ========
@@ -133,7 +128,7 @@ public class GUIStreams extends JFrame {
         }
 
         //---- addStream ----
-        addStream.setText("Add Streams");
+        addStream.setText("Add a Stream");
         addStream.setFocusable(false);
         addStream.addActionListener(new ActionListener() {
             @Override
@@ -288,7 +283,9 @@ public class GUIStreams extends JFrame {
             cancelButton = new JButton();
 
             //======== this ========
-            setTitle("Add Streams");
+            setTitle("Add a Stream");
+            setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
+            setResizable(false);
             Container contentPane = getContentPane();
 
             //---- label1 ----
