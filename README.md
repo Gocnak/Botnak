@@ -18,13 +18,15 @@ BLAMETWITCH: If you cannot login (logging in freezes for a long time) on a recen
 
 IN YO FACE: Botnak supports all Twitch faces, including Subscriber faces. He downloads them and puts them in the "Botnak/Face/" folder on a seperate thread. Faces will not work until he's done so, and he will print out "Done downloading faces." in the panel. See: http://puu.sh/40H6D.png
 
-YOU NEED STANDARDS: Click the "Defaults Settings" button in the main GUI and set the default face and sound to a Dropbox directory, which is recommended so that you can invite other people to it and they can add faces/sounds while you stream.
+YOU NEED STANDARDS: Click the "Settings" button in the main GUI and set the Default Face and Sount directories to a Dropbox directory, which is recommended so that you can invite other people to it and they can add faces/sounds while you stream.
 
-SIZE MATTERS: Try to keep face images below 26 px in height, with size 18 font it fits well enough. Sound files should not be any longer than 5 seconds unless they're a special case.
+SIZE MATTERS: Faces are automatically scaled to 26 pixels in height when downloaded, and also scaled based on font size. Sound files should not be any longer than 5 seconds unless they're a special case.
 
-AND YOUR FRIENDS, TOO: Botnak supports other channels. Though please note, the drop-down menu of the channels in the main interface is a filter, and will only display the current selected stream's messages.
+AND YOUR FRIENDS, TOO: Botnak supports other channels. Each channel has its own tab, and it is wise to only join a few channels at a time.
 
-KEEPIN' IT CLEAN: Botnak automatically deletes chat history (lines not on screen) after about 100 lines have been logged. As of right now, there is no method in place to save this text elsewhere, but it is certainly coming in the future.
+KEEPIN' IT CLEAN: Botnak is able to delete chat history (lines not on screen) after a specified number of lines have been logged. The minimum clear int is 40 lines, with no maximum. You can set this value in the Settings GUI.
+
+KEEPING RECORDS: Botnak also supports logging the session's chats to file. If selected, Botnak will print the chats to text files in Botnak/Logs/ under the folder session#-dd-mm-yy . If you also have the chat cleared option enabled, don't worry, as Botnak logs the cleared text to file before deleting it.
 
 
 Credits:
