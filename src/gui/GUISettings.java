@@ -118,15 +118,23 @@ public class GUISettings extends JFrame {
         try {
             if (useCustomMod.isSelected()) {
                 GUIMain.currentSettings.modIcon = new URL(customMod.getText());
+            } else {
+                GUIMain.currentSettings.modIcon = GUISettings.class.getResource("/resource/mod.png");
             }
             if (useCustomBroad.isSelected()) {
                 GUIMain.currentSettings.broadIcon = new URL(customBroad.getText());
+            } else {
+                GUIMain.currentSettings.broadIcon = GUISettings.class.getResource("/resource/broad.png");
             }
             if (useCustomAdmin.isSelected()) {
                 GUIMain.currentSettings.adminIcon = new URL(customAdminField.getText());
+            } else {
+                GUIMain.currentSettings.adminIcon = GUISettings.class.getResource("/resource/admin.png");
             }
             if (useCustomStaff.isSelected()) {
                 GUIMain.currentSettings.staffIcon = new URL(customStaffField.getText());
+            } else {
+                GUIMain.currentSettings.staffIcon = GUISettings.class.getResource("/resource/staff.png");
             }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -310,15 +318,22 @@ public class GUISettings extends JFrame {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) soundTree.getLastSelectedPathComponent();
             if (!node.isRoot()) {//don't remove everything silly
                 DefaultTreeModel model = (DefaultTreeModel) soundTree.getModel();
-                if (GUIMain.soundMap.containsKey(node.getUserObject().toString().split("-")[0])) {
-                    GUIMain.soundMap.remove(node.getUserObject().toString().split("-")[0]);
-                }
                 if (node.getChildCount() > 0) { // parent (all the sounds)
+                    GUIMain.soundMap.remove(node.getUserObject().toString().split("-")[0]);
                     node.removeAllChildren();
                     node.removeFromParent();
                     model.reload();
                 } else { //one sound clip
-                    model.removeNodeFromParent(node);
+                    if (node.getParent().getChildCount() == 1) {
+                        //this is one sound clip; they decided to delete the file, so let's delete the parent.
+                        DefaultMutableTreeNode node1 = ((DefaultMutableTreeNode) node.getParent());
+                        GUIMain.soundMap.remove(node1.getUserObject().toString().split("-")[0]);
+                        node1.removeAllChildren();
+                        node1.removeFromParent();
+                        model.reload();
+                    } else {//they're removing just one file.
+                        model.removeNodeFromParent(node);
+                    }
                 }
             }
         }
@@ -1215,7 +1230,8 @@ public class GUISettings extends JFrame {
                 label20.setText("lines");
 
                 //---- clearChatSpinner ----
-                clearChatSpinner.setModel(new SpinnerNumberModel(GUIMain.currentSettings.chatMax, 20, null, 1));
+                if (GUIMain.currentSettings.chatMax < 40) GUIMain.currentSettings.chatMax = 40;
+                clearChatSpinner.setModel(new SpinnerNumberModel(GUIMain.currentSettings.chatMax, 40, null, 1));
                 clearChatSpinner.setFocusable(false);
                 clearChatSpinner.setEnabled(GUIMain.currentSettings.cleanupChat);
 

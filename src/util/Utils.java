@@ -425,6 +425,26 @@ public class Utils {
         }
     }
 
+    private static ImageIcon sizeIcon(URL image) {
+        ImageIcon icon;
+        try {
+            BufferedImage img = ImageIO.read(image);
+            int initSize = img.getHeight();
+            int scale = (20 - GUIMain.currentSettings.font.getSize());//let's shrink it a little bit
+            int size = initSize;
+            if (initSize > 20) {//if it's big
+                size = (initSize - scale);//then we'll scale it
+            }//otherwise it'll stay the same
+            img = Scalr.resize(img, Scalr.Method.QUALITY, Scalr.Mode.FIT_TO_HEIGHT, size, Scalr.OP_ANTIALIAS);
+            icon = new ImageIcon(img);
+            icon.getImage().flush();
+            return icon;
+        } catch (Exception e) {
+            icon = new ImageIcon(image);
+        }
+        return icon;
+    }
+
     /**
      * Adds the faces to the chat, using Regex as keys in the Image Map.
      *
@@ -452,8 +472,8 @@ public class Utils {
                             return;
                         }
                         try {
-                            StyleConstants.setIcon(attrs,//ImageIO here to rid the cached face
-                                    new ImageIcon(ImageIO.read(new File(GUIMain.faceMap.get(name).getFilePath()))));
+                            StyleConstants.setIcon(attrs,
+                                    sizeIcon(new File(GUIMain.faceMap.get(name).getFilePath()).toURI().toURL()));
                         } catch (Exception e) {
                             GUIMain.log(e.getMessage());
                         }
