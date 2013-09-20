@@ -167,13 +167,13 @@ public class Settings {
                 p.load(new FileInputStream(accountsFile));
                 String userNorm = p.getProperty("UserNorm").toLowerCase();
                 String userNormPass = p.getProperty("UserNormPass");
-                if (userNorm != null && !userNorm.equals("") && userNormPass != null && !userNormPass.equals("")) {
+                if (userNorm != null && !userNorm.equals("") && userNormPass != null && !userNormPass.equals("") && userNormPass.contains("oauth")) {
                     user = new Account(userNorm, userNormPass);
                     rememberNorm = true;
                 }
                 String userBot = p.getProperty("UserBot").toLowerCase();
                 String userBotPass = p.getProperty("UserBotPass");
-                if (userBot != null && !userBot.equals("") && userBotPass != null && !userBotPass.equals("")) {
+                if (userBot != null && !userBot.equals("") && userBotPass != null && !userBotPass.equals("") && userBotPass.contains("oauth")) {
                     bot = new Account(userBot, userBotPass);
                     rememberBot = true;
                 }
@@ -216,6 +216,7 @@ public class Settings {
                 cleanupChat = Boolean.parseBoolean(p.getProperty("ClearChat", "true"));
                 logChat = Boolean.parseBoolean(p.getProperty("LogChat", "false"));
                 chatMax = Integer.parseInt(p.getProperty("MaxChat", "100"));
+                font = Utils.stringToFont(p.getProperty("Font", "Calibri, 18, Plain").split(","));
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
@@ -260,6 +261,7 @@ public class Settings {
             p.put("MaxChat", String.valueOf(chatMax));
             p.put("ClearChat", String.valueOf(cleanupChat));
             p.put("LogChat", String.valueOf(logChat));
+            p.put("Font", Utils.fontToString(font));
             try {
                 p.store(new FileWriter(defaultsFile), "Default Settings");
             } catch (IOException e) {

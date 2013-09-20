@@ -42,15 +42,13 @@ public class ChatPane {
      * compared elsewhere (GUIMain). The update happens; it can be a clearing event
      * (if they're clearing the chat), a logging event, and the line is added.
      * <p/>
-     * The changed Pane needs to be returned so it can be updated in the set.
      *
      * @param channel The channel the message was sent in.
      * @param sender  The sender of the message.
      * @param message The message from the chat.
      * @param isMe    Is a /me message.
-     * @return The updated ChatPane to replace in the map.
      */
-    public ChatPane onMessage(String channel, String sender, String message, boolean isMe) {
+    public void onMessage(String channel, String sender, String message, boolean isMe) {
         if (GUIMain.currentSettings.cleanupChat) {
             cleanupCounter++;
             if (cleanupCounter > GUIMain.currentSettings.chatMax) {
@@ -114,7 +112,6 @@ public class ChatPane {
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
-        return this;
     }
 
     private ImageIcon sizeIcon(URL image) {

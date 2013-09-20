@@ -9,7 +9,6 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.filechooser.FileFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeSelectionModel;
@@ -29,9 +28,12 @@ import java.util.ArrayList;
  */
 public class GUISettings extends JFrame {
 
+    GUISounds_2 s2;
+
     public GUISettings() {
         initComponents();
         buildTree();
+        s2 = null;
     }
 
     // builds the sound tree
@@ -53,26 +55,6 @@ public class GUISettings extends JFrame {
         }
     }
 
-    FileFilter wavfiles = new FileFilter() {
-        @Override
-        public boolean accept(File f) {
-            if (f != null) {
-                if (f.isDirectory()) return true;
-                String ext = Utils.getExtension(f);
-                if (ext != null) {
-                    if (ext.equals("wav")) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        @Override
-        public String getDescription() {
-            return ".wav files";
-        }
-    };
 
     void setDir(boolean isFace) {
         JFileChooser jfc = new JFileChooser();
@@ -222,10 +204,16 @@ public class GUISettings extends JFrame {
 
     public void saveButtonActionPerformed() {
         save();
+        GUIMain.settings = null;
+        if (s2 != null) s2.dispose();
+        s2 = null;
         dispose();
     }
 
     public void cancelButtonActionPerformed() {
+        GUIMain.settings = null;
+        if (s2 != null) s2.dispose();
+        s2 = null;
         dispose();
     }
 
@@ -285,8 +273,16 @@ public class GUISettings extends JFrame {
             String normpass = new String(normPass.getPassword());
             if (normus != null && !normus.equals("") && !normus.contains(" ")) {
                 if (!normpass.equals("") && !normpass.contains(" ")) {
-                    GUIMain.viewer = new IRCViewer(normus, normpass);
-                    GUIMain.addStream.setEnabled(true);
+                    if (!normpass.contains("oauth")) {
+                        JOptionPane.showMessageDialog(this,
+                                "The password must be the entire oauth string!" +
+                                        "\n See http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc for more info.",
+                                "Password Needs Oauth", JOptionPane.ERROR_MESSAGE);
+                        normPass.setText("");
+                    } else {
+                        GUIMain.viewer = new IRCViewer(normus, normpass);
+                        GUIMain.addStream.setEnabled(true);
+                    }
                 }
             }
         }
@@ -298,7 +294,15 @@ public class GUISettings extends JFrame {
             String botpass = new String(botPass.getPassword());
             if (botus != null && !botus.equals("") && !botus.contains(" ")) {
                 if (!botpass.equals("") && !botpass.contains(" ")) {
-                    GUIMain.bot = new IRCBot(botus, botpass);
+                    if (!botpass.contains("oauth")) {
+                        JOptionPane.showMessageDialog(this,
+                                "The password must be the entire oauth string!" +
+                                        "\n See http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc for more info.",
+                                "Password Needs Oauth", JOptionPane.ERROR_MESSAGE);
+                        botPass.setText("");
+                    } else {
+                        GUIMain.bot = new IRCBot(botus, botpass);
+                    }
                 }
             }
         }
@@ -309,8 +313,12 @@ public class GUISettings extends JFrame {
     }
 
     public void searchFileActionPerformed() {
-        GUISounds_2 g = new GUISounds_2();
-        g.setVisible(true);
+        if (s2 == null) {
+            s2 = new GUISounds_2();
+        }
+        if (!s2.isVisible()) {
+            s2.setVisible(true);
+        }
     }
 
     public void removeSoundButtonActionPerformed() {
@@ -358,6 +366,7 @@ public class GUISettings extends JFrame {
             if (jfc.getSelectedFont() != null) GUIMain.currentSettings.font = jfc.getSelectedFont();
             GUIMain.setFont();
             currentFontLabel.setText(Utils.fontToString(GUIMain.currentSettings.font));
+            currentFontLabel.setFont(GUIMain.currentSettings.font);
         }
     }
 
@@ -1248,8 +1257,8 @@ public class GUISettings extends JFrame {
                 label27.setText("Current Font:");
 
                 //---- currentFontLabel ----
-                currentFontLabel.setFont(new Font("Tahoma", Font.BOLD, 18));
                 currentFontLabel.setText(Utils.fontToString(GUIMain.currentSettings.font));
+                currentFontLabel.setFont(GUIMain.currentSettings.font);
 
                 //---- changeFontButton ----
                 changeFontButton.setText("Change Font...");
@@ -1559,7 +1568,7 @@ public class GUISettings extends JFrame {
         public void browseButtonActionPerformed() {
             JFileChooser jfc = new JFileChooser();
             jfc.setAcceptAllFileFilterUsed(false);
-            jfc.addChoosableFileFilter(wavfiles);
+            jfc.addChoosableFileFilter(Constants.wavfiles);
             jfc.setMultiSelectionEnabled(true);
             if (!GUIMain.lastSoundDir.equals("")) jfc.setCurrentDirectory(new File(GUIMain.lastSoundDir));
             int returnVal = jfc.showOpenDialog(this);
@@ -1592,10 +1601,12 @@ public class GUISettings extends JFrame {
                     model.insertNodeInto(commandNode, root, root.getChildCount());
                 }
             }
+            s2 = null;
             dispose();
         }
 
         public void cancelButtonActionPerformed() {
+            s2 = null;
             dispose();
         }
 

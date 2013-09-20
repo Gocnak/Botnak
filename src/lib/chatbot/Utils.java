@@ -1,26 +1,12 @@
 package lib.chatbot;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.StringWriter;
+import java.io.*;
 import java.math.BigInteger;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.util.Map;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathFactory;
-
-import org.w3c.dom.Document;
-import org.xml.sax.InputSource;
 
 /*
     chatter-bot-api
@@ -63,7 +49,8 @@ public class Utils {
 
     public static String post(String url, Map<String, String> parameters) throws Exception {
         URLConnection connection = new URL(url).openConnection();
-        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20100101 Firefox/5.0");
+        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64)" +
+                " AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.95 Safari/537.36");
         connection.setDoOutput(true);
         connection.setDoInput(true);
         OutputStreamWriter osw = new OutputStreamWriter(connection.getOutputStream());
@@ -79,14 +66,6 @@ public class Utils {
         }
         r.close();
         return w.toString();
-    }
-
-    public static String xPathSearch(String input, String expression) throws Exception {
-        DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        XPath xPath = XPathFactory.newInstance().newXPath();
-        XPathExpression xPathExpression = xPath.compile(expression);
-        Document document = documentBuilder.parse(new ByteArrayInputStream(input.getBytes("UTF-8")));
-        return (String) xPathExpression.evaluate(document, XPathConstants.STRING);
     }
 
     public static String stringAtIndex(String[] strings, int index) {

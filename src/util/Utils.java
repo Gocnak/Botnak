@@ -77,6 +77,45 @@ public class Utils {
         return toRet;
     }
 
+    /**
+     * Converts a formatted string (@see #fontToString()) into a font.
+     *
+     * @param toFont The string to be turned into a font.
+     * @return The font.
+     */
+    public static Font stringToFont(String[] toFont) {
+        Font f = new Font("Calibri", Font.PLAIN, 18);
+        if (toFont != null && toFont.length == 3) {
+            String name = toFont[0];
+            int size;
+            int type;
+            try {
+                size = Integer.parseInt(toFont[1]);
+            } catch (Exception e) {
+                size = 18;
+            }
+            switch (toFont[2]) {
+                case "Plain":
+                    type = Font.PLAIN;
+                    break;
+                case "Italic":
+                    type = Font.ITALIC;
+                    break;
+                case "Bold Italic":
+                    type = Font.BOLD + Font.ITALIC;
+                    break;
+                case "Bold":
+                    type = Font.BOLD;
+                    break;
+                default:
+                    type = Font.PLAIN;
+                    break;
+            }
+            f = new Font(name, type, size);
+        }
+        return f;
+    }
+
 
     /**
      * Checks to see if a Pircbot is in a given channel.
@@ -171,7 +210,7 @@ public class Utils {
     }
 
     /**
-     * Checks to see if the files are actually existing and non-blank.
+     * Checks to see if the file(s)  is (are) actually existing and non-blank.
      *
      * @param files The path(s) to the file(s) to check.
      * @return true if (all) the file(s) exist(s)
@@ -186,6 +225,12 @@ public class Utils {
         return i == files.length;
     }
 
+    /**
+     * Logs the chat to a file.
+     *
+     * @param message The chat separated by newline characters.
+     * @param channel The channel the chat was in.
+     */
     public static void logChat(String[] message, String channel) {
         try {
             PrintWriter out = new PrintWriter(new BufferedWriter(
@@ -504,9 +549,9 @@ public class Utils {
     }
 
     /**
-     * Checks whether the given nick that sent a message is an Operator or not.
+     * Gets the Pircbot User with the given name/nick.
      *
-     * @param c       The bot that is connected to the channel. Viewer is usually the default.
+     * @param c       The bot that is connected to the channel.
      * @param channel The channel the user is in.
      * @param nick    The nick of the user.
      * @return null if the user cannot be found/args are null, otherwise the specified user.

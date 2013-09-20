@@ -17,10 +17,6 @@ public class IRCViewer extends PircBot {
         return name;
     }
 
-    public String getPass() {
-        return pass;
-    }
-
     public IRCViewer(String user, String password) {
         if (GUIMain.currentSettings.user == null) {//someone clicked "login"
             name = user;

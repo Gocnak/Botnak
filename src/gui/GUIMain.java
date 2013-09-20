@@ -45,6 +45,8 @@ public class GUIMain extends JFrame {
 
     public static IRCBot bot;
     public static IRCViewer viewer;
+    public static GUISettings settings = null;
+    public static GUIStreams streams = null;
 
     public static boolean shutDown = false;
     public static boolean doneWithFaces = false;
@@ -110,6 +112,8 @@ public class GUIMain extends JFrame {
         if (loadedCommands()) {
             log("LOADED COMMANDS");
         }
+        settings = new GUISettings();
+        streams = new GUIStreams();
         addStream.setEnabled(loadedSettingsUser());
     }
 
@@ -267,13 +271,21 @@ public class GUIMain extends JFrame {
     }
 
     public void addStreamActionPerformed() {
-        GUIStreams s = new GUIStreams();
-        s.setVisible(true);
+        if (streams == null) {
+            streams = new GUIStreams();
+        }
+        if (!streams.isVisible()) {
+            streams.setVisible(true);
+        }
     }
 
     public void settingsButtonActionPerformed() {
-        GUISettings s = new GUISettings();
-        s.setVisible(true);
+        if (settings == null) {
+            settings = new GUISettings();
+        }
+        if (!settings.isVisible()) {
+            settings.setVisible(true);
+        }
     }
 
     public void exitButtonActionPerformed() {
@@ -366,7 +378,7 @@ public class GUIMain extends JFrame {
             //---- chatButton ----
             chatButton.setText("Chat");
             chatButton.setFocusable(false);
-            chatButton.setToolTipText("Send a chat message to all of the chats connected.");
+            chatButton.setToolTipText("Send a chat message.");
             chatButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -375,9 +387,9 @@ public class GUIMain extends JFrame {
             });
 
             //---- exitButton ----
-            exitButton.setText("Exit");
+            exitButton.setText("Save & Exit");
             exitButton.setFocusable(false);
-            exitButton.setToolTipText("Gracefully exit all connected streams and shutdown the program.");
+            exitButton.setToolTipText("Gracefully save all settings, exit all connected streams, and shutdown the program.");
             exitButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {

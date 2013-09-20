@@ -9,16 +9,17 @@ A full example list of commands and such can be found at http://bit.ly/1366RwM.
 
 TODO:
 - Code the ability to join SRL race chats
+- Tab/channel combination
 - New-line detection for commands - perhaps typing a special character (like '[' or something) in the message text.
 - Make the viewer branch - contemplating this -- just use a viewer account only?
 
 Some useful pieces of advice:
 
-BLAMETWITCH: If you cannot login (logging in freezes for a long time) on a recently-made account, try resetting your password for the account, or look at this help topic for the solution: http://help.twitch.tv/customer/portal/questions/1366327-can-t-connect-to-irc-with-new-account-
+BLAMETWITCH: LOGGING IN REQUIRES YOU TO USE YOUR OAUTH KEY AS A PASSWORD NOW! You can find your account's OAuth key by going to http://twitch.tv/gocnak?chat_debug=true and finding it in the chat. USE THIS (the entire oauth key, ex: "oauth:blahblahblahblahbl344") FOR YOUR PASSWORD ON BOTNAK! For more information: http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc
 
-IN YO FACE: Botnak supports all Twitch faces, including Subscriber faces. He downloads them and puts them in the "Botnak/Face/" folder on a seperate thread. Faces will not work until he's done so, and he will print out "Done downloading faces." in the panel. See: http://puu.sh/40H6D.png
+IN YO FACE: Botnak supports all Twitch faces, including Subscriber faces. He downloads them and puts them in the "Botnak/Face/" folder on a separate thread. Faces will not work until he's done so, and he will print out "Done downloading faces." in the panel. See: http://puu.sh/40H6D.png
 
-YOU NEED STANDARDS: Click the "Settings" button in the main GUI and set the Default Face and Sount directories to a Dropbox directory, which is recommended so that you can invite other people to it and they can add faces/sounds while you stream.
+YOU NEED STANDARDS: Click the "Settings" button in the main GUI and set the Default Face and Sound directories to a Dropbox directory, which is recommended so that you can invite other people to it and they can add faces/sounds while you stream.
 
 SIZE MATTERS: Faces are automatically scaled to 26 pixels in height when downloaded, and also scaled based on font size. Sound files should not be any longer than 5 seconds unless they're a special case.
 

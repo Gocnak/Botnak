@@ -40,7 +40,7 @@ public class Cleverbot implements ChatterBot {
         private final Map<String, String> vars;
 
         public Session() {
-            vars = new LinkedHashMap<String, String>();
+            vars = new LinkedHashMap<>();
             vars.put("start", "y");
             vars.put("icognoid", "wsf");
             vars.put("fno", "0");
@@ -54,7 +54,7 @@ public class Cleverbot implements ChatterBot {
             vars.put("stimulus", thought.getText());
 
             String formData = Utils.parametersToWWWFormURLEncoded(vars);
-            String formDataToDigest = formData.substring(9, 29);
+            String formDataToDigest = formData.substring(9, 35);
             String formDataDigest = Utils.md5(formDataToDigest);
             vars.put("icognocheck", formDataDigest);
 

@@ -87,11 +87,8 @@ public abstract class PircBot implements ReplyConstants {
      * The onConnect method is called upon success.
      *
      * @param hostname The hostname of the server to connect to.
-     * @throws IOException               if it was not possible to connect to the server.
-     * @throws IrcException              if the server would not let us join it.
-     * @throws NickAlreadyInUseException if our nick is already in use on the server.
      */
-    public final synchronized void connect(String hostname) throws IOException, IrcException {
+    public final synchronized void connect(String hostname) throws IOException {
         connect(hostname, 6667, null);
     }
 
@@ -101,12 +98,9 @@ public abstract class PircBot implements ReplyConstants {
      * The onConnect method is called upon success.
      *
      * @param hostname The hostname of the server to connect to.
-     * @param port     The port number to connect to on the server.
-     * @throws IOException               if it was not possible to connect to the server.
-     * @throws IrcException              if the server would not let us join it.
-     * @throws NickAlreadyInUseException if our nick is already in use on the server.
+     * @param port     The port number to connect to on the server..
      */
-    public final synchronized void connect(String hostname, int port) throws IOException, IrcException {
+    public final synchronized void connect(String hostname, int port) throws IOException {
         connect(hostname, port, null);
     }
 
@@ -119,19 +113,15 @@ public abstract class PircBot implements ReplyConstants {
      * @param hostname The hostname of the server to connect to.
      * @param port     The port number to connect to on the server.
      * @param password The password to use to join the server.
-     * @throws IOException               if it was not possible to connect to the server.
-     * @throws IrcException              if the server would not let us join it.
-     * @throws NickAlreadyInUseException if our nick is already in use on the server.
      */
-    public final synchronized void connect(String hostname, int port, String password) throws IOException, IrcException {
+    public final synchronized void connect(String hostname, int port, String password) throws IOException {
 
+        if (isConnected()) {
+            return;
+        }
         _server = hostname;
         _port = port;
         _password = password;
-
-        if (isConnected()) {
-            throw new IOException("The PircBot is already connected to an IRC server.  Disconnect first.");
-        }
 
         // Don't clear the outqueue - there might be something important in it!
 
@@ -140,6 +130,7 @@ public abstract class PircBot implements ReplyConstants {
 
         // Connect to the server.
         Socket socket = new Socket(hostname, port);
+
         log("*** Connected to server.");
 
         _inetAddress = socket.getLocalAddress();
@@ -192,12 +183,12 @@ public abstract class PircBot implements ReplyConstants {
                     } else {
                         socket.close();
                         _inputThread = null;
-                        throw new NickAlreadyInUseException(line);
+                        //throw new NickAlreadyInUseException(line); not gonna be a problem with twitch
                     }
                 } else if (code.startsWith("5") || code.startsWith("4")) {
                     socket.close();
                     _inputThread = null;
-                    throw new IrcException("Could not log into the IRC server: " + line);
+                    //throw new IrcException("Could not log into the IRC server: " + line); no need to throw it
                 }
             }
             setNick(nick);
@@ -230,13 +221,11 @@ public abstract class PircBot implements ReplyConstants {
      * This method will throw an IrcException if we have never connected
      * to an IRC server previously.
      *
-     * @throws IOException  if it was not possible to connect to the server.
-     * @throws IrcException if the server would not let us join it.
      * @since PircBot 0.9.9
      */
-    public final synchronized void reconnect() throws IOException, IrcException {
-        if (getServer() == null) {
-            throw new IrcException("Cannot reconnect to an IRC server because we were never connected to one previously!");
+    public final synchronized void reconnect() throws IOException {
+        if (getServer() == null || getPassword() == null || getPort() == -1) {
+            return;
         }
         connect(getServer(), getPort(), getPassword());
     }

@@ -11,10 +11,12 @@ import java.util.ArrayList;
 
 public class GUIStreams extends JFrame {
 
+    GUIStreams_2 s2 = null;
 
     public GUIStreams() {
         initComponents();
         makeList();
+        s2 = new GUIStreams_2();
     }
 
     public static void makeList() {
@@ -37,8 +39,12 @@ public class GUIStreams extends JFrame {
     }
 
     public void addStreamActionPerformed() {
-        GUIStreams_2 temp = new GUIStreams_2();
-        temp.setVisible(true);
+        if (s2 == null) {
+            s2 = new GUIStreams_2();
+        }
+        if (!s2.isVisible()) {
+            s2.setVisible(true);
+        }
     }
 
     public void removeStreamActionPerformed() {
@@ -53,18 +59,22 @@ public class GUIStreams extends JFrame {
                 }
             }
             if (GUIMain.viewer != null) {
-                GUIMain.viewer.doLeave(channelToLeave, false);
+                GUIMain.viewer.doLeave(channelToLeave, true);
             }
             if (GUIMain.bot != null) {
-                GUIMain.bot.doLeave(channelToLeave, false);
+                GUIMain.bot.doLeave(channelToLeave, true);
             }
             GUIMain.chatPanes.get(channelToLeave).deletePane();
+            GUIMain.chatPanes.remove(channelToLeave);
         }
         streamList.setModel(listModel);
         removeStream.setEnabled(false);
     }
 
     public void cancelButtonActionPerformed() {
+        GUIMain.streams = null;
+        if (s2 != null) s2.dispose();
+        s2 = null;
         dispose();
     }
 
@@ -89,6 +99,7 @@ public class GUIStreams extends JFrame {
                 }
             }
         }
+        GUIMain.streams = null;
         dispose();
     }
 
@@ -140,7 +151,7 @@ public class GUIStreams extends JFrame {
         //---- removeStream ----
         removeStream.setText("Remove Selected Stream");
         removeStream.setFocusable(false);
-        removeStream.setEnabled(false);
+        removeStream.setEnabled(streamList.getSelectedValue() != null);
         removeStream.setActionCommand("Remove Selected Stream");
         removeStream.addActionListener(new ActionListener() {
             @Override
@@ -236,7 +247,7 @@ public class GUIStreams extends JFrame {
      * ======================================= GUI STREAMS SUB GUI=================================================== *
      */
 
-    static class GUIStreams_2 extends JFrame {
+    class GUIStreams_2 extends JFrame {
 
         public GUIStreams_2() {
             initComponents();
@@ -271,6 +282,7 @@ public class GUIStreams extends JFrame {
         }
 
         public void cancelButtonActionPerformed() {
+            s2 = null;
             dispose();
         }
 
@@ -351,10 +363,10 @@ public class GUIStreams extends JFrame {
 
         // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
         // Generated using JFormDesigner Evaluation license - Nick K
-        public static JLabel label1;
-        public static JTextField userField;
-        public static JButton addButton;
-        public static JButton cancelButton;
+        public JLabel label1;
+        public JTextField userField;
+        public JButton addButton;
+        public JButton cancelButton;
         // JFormDesigner - End of variables declaration  //GEN-END:variables
     }
 

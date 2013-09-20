@@ -22,6 +22,27 @@ public class Constants {
         }
     };
 
+    public static final FileFilter wavfiles = new FileFilter() {
+        @Override
+        public boolean accept(File f) {
+            if (f != null) {
+                if (f.isDirectory()) return true;
+                String ext = Utils.getExtension(f);
+                if (ext != null) {
+                    if (ext.equals("wav")) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public String getDescription() {
+            return ".wav files";
+        }
+    };
+
     public static final FileFilter pictureFilter = new FileNameExtensionFilter("Image files", ImageIO.getReaderFileSuffixes());
 
     public static final Pattern viewerPattern = Pattern.compile("\"viewers_count\":\\s*(\\d+)");

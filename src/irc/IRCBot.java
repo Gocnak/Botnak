@@ -89,6 +89,8 @@ public class IRCBot extends PircBot {
 
     /**
      * Disconnects from all chats and disposes of the bot.
+     *
+     * @param forget True if you are logging out, false if shutting down.
      */
     public void close(boolean forget) {
         GUIMain.log("LOGGING OUT BOT: " + GUIMain.currentSettings.bot.getAccountName());
@@ -133,7 +135,7 @@ public class IRCBot extends PircBot {
                     }
                     //mod
                     User u = Utils.getUser(this, channel, sender);
-                    if (u != null && u.isOp()) {
+                    if (u != null && u.isOp() && !sender.equals(GUIMain.viewer.getMaster())) {
                         handleMod(channel, message.substring(1));
                     }
                     //sound
