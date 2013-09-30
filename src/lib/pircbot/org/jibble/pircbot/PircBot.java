@@ -2982,7 +2982,7 @@ public abstract class PircBot implements ReplyConstants {
     // Connection stuff.
     private InputThread _inputThread = null;
     private OutputThread _outputThread = null;
-    private String _charset = null;
+    private String _charset = "UTF-8";
     private InetAddress _inetAddress = null;
 
     // Details about the last server that we connected to.
