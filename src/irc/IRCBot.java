@@ -323,6 +323,8 @@ public class IRCBot extends PircBot {
                 if (GUIMain.currentSound != null && GUIMain.currentSound.isPlaying()) {
                     GUIMain.currentSound.stop();
                 }
+                soundTimer = new Timer(soundTime);
+                soundBackTimer = new Timer(0);//reset the backup sound timer*/
             }
             if (s.startsWith("togglesound")) {
                 if (GUIMain.currentSound != null && GUIMain.currentSound.isPlaying()) {
