@@ -48,7 +48,7 @@ public class GUIStreams extends JFrame {
     }
 
     public void removeStreamActionPerformed() {
-        String[] channels = Utils.readList(streamList);
+        String[] channels = readList(streamList);
         DefaultListModel<String> listModel = new DefaultListModel<>();
         String channelToLeave = streamList.getSelectedValue();
         if (channelToLeave != null) {
@@ -79,9 +79,9 @@ public class GUIStreams extends JFrame {
     }
 
     public void saveButtonActionPerformed() {
-        String[] channels = Utils.readList(streamList);
+        String[] channels = readList(streamList);
         if (channels != null) {
-            Utils.handleList(channels);
+            handleList(channels);
             if (rememberStreams.isSelected()) {
                 GUIMain.currentSettings.saveStreams();
             }
@@ -101,6 +101,26 @@ public class GUIStreams extends JFrame {
         }
         GUIMain.streams = null;
         dispose();
+    }
+
+    public String[] readList(JList<String> list) {
+        ArrayList<String> things = new ArrayList<>();
+        for (int i = 0; i < list.getModel().getSize(); i++) {
+            String o = list.getModel().getElementAt(i);
+            if (o != null) {
+                things.add(o.toLowerCase());
+            }
+        }
+        return things.toArray(new String[things.size()]);
+    }
+
+    public void handleList(String[] toAdd) {
+        if (GUIMain.channelMap != null && toAdd != null && toAdd.length > 0) {
+            for (String s : toAdd) {
+                if (GUIMain.channelMap.contains(s)) continue;
+                GUIMain.channelMap.add(s);
+            }
+        }
     }
 
     public static void streamListMouseClicked() {

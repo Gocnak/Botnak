@@ -16,8 +16,7 @@ import java.net.ConnectException;
  */
 public class IRCBot extends PircBot {
     public static int soundTime = 5000;
-    public static int chatTime = 5000;
-
+    public static boolean shouldTalk = true;
     public static boolean stopSound = false;
     public static String masterChannel;
     public ChatterBot chatBot;
@@ -40,7 +39,7 @@ public class IRCBot extends PircBot {
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
-        botnakTimer = new Timer(chatTime);
+        botnakTimer = new Timer(5000);
         soundTimer = new Timer(soundTime);
         soundBackTimer = new Timer(0);
         if (GUIMain.loadedStreams()) {
@@ -120,7 +119,7 @@ public class IRCBot extends PircBot {
             if (low.contains("bit.ly/") || low.contains("tinyurl.com/") || low.contains("goo.gl")) {
                 String[] split = message.split(" ");
                 for (String s : split) {
-                    if (s.contains("http")) {
+                    if (s.contains("http") && (low.contains("bit.ly/") || low.contains("tinyurl.com/") || low.contains("goo.gl"))) {
                         sendMessage(channel, Utils.getLongURL(s));
                     }
                 }
@@ -135,7 +134,8 @@ public class IRCBot extends PircBot {
                     }
                     //mod
                     User u = Utils.getUser(this, channel, sender);
-                    if (u != null && u.isOp() && !sender.equals(GUIMain.viewer.getMaster())) {
+                    if (u != null && (u.isOp() || u.isAdmin() || u.isStaff())
+                            && !sender.equals(GUIMain.viewer.getMaster())) {
                         handleMod(channel, message.substring(1));
                     }
                     //sound
@@ -150,8 +150,10 @@ public class IRCBot extends PircBot {
                     }
                     //reply
                     if (content.equals("ask")) {
-                        if (!botnakTimer.isRunning()) {
-                            talkBack(channel, sender, message.substring(4));
+                        if (shouldTalk) {
+                            if (!botnakTimer.isRunning()) {
+                                talkBack(channel, sender, message.substring(4));
+                            }
                         }
                     }
                     //command
@@ -219,7 +221,7 @@ public class IRCBot extends PircBot {
         //set the permission
         int permission = Sound.PERMISSION_ALL;
         User u = Utils.getUser(this, channel, sender);
-        if (u != null && u.isOp()) {
+        if (u != null && (u.isOp() || u.isAdmin() || u.isStaff())) {
             permission = Sound.PERMISSION_MOD;
         }
         if (GUIMain.viewer != null && GUIMain.viewer.getMaster().equals(sender)) {
@@ -265,15 +267,7 @@ public class IRCBot extends PircBot {
     }
 
     public void handleDev(String channel, String s) {
-        if (s.startsWith("setreply")) {
-            try {
-                chatTime = Integer.parseInt(s.split(" ")[1]);
-            } catch (Exception e) {
-                chatTime = (int) botnakTimer.period;
-            }
-            chatTime = Utils.handleInt(chatTime);
-            botnakTimer = new Timer(chatTime);
-        }
+        //TODO think of some more dev commands later, this is pretty bare now
         handleMod(channel, s);
     }
 
@@ -285,6 +279,10 @@ public class IRCBot extends PircBot {
                 if (GUIMain.soundMap.containsKey(remove)) {
                     GUIMain.soundMap.remove(remove);
                 }
+            }
+            if (s.startsWith("togglereply")) {
+                shouldTalk = !shouldTalk;
+                sendMessage(channel, "Replying is now " + (shouldTalk ? "ON." : "OFF."));
             }
             if (s.startsWith("addcommand")) {
                 Utils.addCommands(s);
@@ -320,6 +318,11 @@ public class IRCBot extends PircBot {
                 int delay = soundTime / 1000;
                 sendMessage(channel, "Sound is currently turned " + (stopSound ? "OFF" : "ON") + " with "
                         + (delay < 2 ? (delay == 0 ? "no delay." : "a delay of 1 second.") : ("a delay of " + delay + " seconds.")));
+            }
+            if (s.startsWith("stopsound")) {
+                if (GUIMain.currentSound != null && GUIMain.currentSound.isPlaying()) {
+                    GUIMain.currentSound.stop();
+                }
             }
             if (s.startsWith("togglesound")) {
                 if (GUIMain.currentSound != null && GUIMain.currentSound.isPlaying()) {

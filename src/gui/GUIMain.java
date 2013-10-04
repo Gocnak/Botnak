@@ -112,8 +112,6 @@ public class GUIMain extends JFrame {
         if (loadedCommands()) {
             log("LOADED COMMANDS");
         }
-        settings = new GUISettings();
-        streams = new GUIStreams();
         addStream.setEnabled(loadedSettingsUser());
     }
 

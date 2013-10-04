@@ -138,26 +138,6 @@ public class Utils {
         return false;
     }
 
-    public static String[] readList(JList<String> list) {
-        ArrayList<String> things = new ArrayList<>();
-        for (int i = 0; i < list.getModel().getSize(); i++) {
-            String o = list.getModel().getElementAt(i);
-            if (o != null) {
-                things.add(o.toLowerCase());
-            }
-        }
-        return things.toArray(new String[things.size()]);
-    }
-
-    public static void handleList(String[] toAdd) {
-        if (GUIMain.channelMap != null && toAdd != null && toAdd.length > 0) {
-            for (String s : toAdd) {
-                if (GUIMain.channelMap.contains(s)) continue;
-                GUIMain.channelMap.add(s);
-            }
-        }
-    }
-
 
     /**
      * Adds a single string to an array of strings, first checking to see if the array contains it.
@@ -169,9 +149,7 @@ public class Utils {
     public static String[] addStringsToArray(String[] array, String... toAdd) {
         ArrayList<String> list = new ArrayList<>();
         Collections.addAll(list, array);
-        for (String s : toAdd) {
-            if (!list.contains(s)) list.add(s);//gotta check those repetitives, maaaan.
-        }
+        checkAndAdd(list, toAdd);
         return list.toArray(new String[list.size()]);
     }
 
