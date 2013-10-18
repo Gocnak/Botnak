@@ -103,7 +103,7 @@ public class Settings {
             GUIMain.log("Loading streams...");
             String[] readStreams = loadStreams();
             if (readStreams != null && readStreams.length > 0) {
-                Collections.addAll(GUIMain.channelMap, readStreams);
+                Collections.addAll(GUIMain.channelSet, readStreams);
             }
         }
         if (Utils.areFilesGood(soundsFile.getAbsolutePath())) {
@@ -294,8 +294,8 @@ public class Settings {
     public void saveStreams() {
         try {
             PrintWriter br = new PrintWriter(streamsFile);
-            if (GUIMain.channelMap.size() > 0) {
-                for (String s : GUIMain.channelMap) {
+            if (GUIMain.channelSet.size() > 0) {
+                for (String s : GUIMain.channelSet) {
                     if (s != null) {
                         br.println(s);
                     }
@@ -432,10 +432,10 @@ public class Settings {
                     try {
                         time = Integer.parseInt(split[2]);
                     } catch (Exception e) {
-                        time = 10000;
+                        time = 10;
                     }
-                    Timer local = new Timer(time);
-                    GUIMain.commandMap.put(new StringArray(new String[]{split[0], split[1]}), local);
+                    String[] contents = split[1].split("\\]");
+                    GUIMain.commandSet.add(new Command(split[0], time, contents));
                 }
             }
             br.close();
@@ -447,12 +447,17 @@ public class Settings {
     public void saveCommands() {
         try {
             PrintWriter br = new PrintWriter(commandsFile);
-            for (StringArray next : GUIMain.commandMap.keySet()) {
-                if (next != null && GUIMain.commandMap.get(next) != null) {
-                    String name = next.data[0];
-                    String command = next.data[1];
-                    int time = (int) GUIMain.commandMap.get(next).period;
-                    br.println(name + "[" + command + "[" + time);
+            for (Command next : GUIMain.commandSet) {
+                if (next != null) {
+                    String name = next.getTrigger();
+                    String[] contents = next.getMessage().data;
+                    int time = next.getDelay();
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < contents.length; i++) {
+                        sb.append(contents[i]);
+                        if (i != (contents.length - 1)) sb.append("]");
+                    }
+                    br.println(name + "[" + sb.toString() + "[" + time);
                 }
             }
             br.flush();

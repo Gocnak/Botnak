@@ -13,16 +13,18 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
+import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import util.Timer;
 
 /**
  * Created with IntelliJ IDEA.
@@ -514,6 +516,34 @@ public class Utils {
     }
 
     /**
+     * Finds and tags URLs in the chat so that you can click them.
+     *
+     * @param doc     The document (JTextPane) to search.
+     * @param start   The start index of the message.
+     * @param message The message itself.
+     */
+    public static void handleURLs(StyledDocument doc, int start, String message) {
+        try {
+            SimpleAttributeSet attrs;
+            String[] split = message.split(" ");
+            for (String s : split) {
+                if (s != null) {
+                    if (s.startsWith("http")) {
+                        int index = message.indexOf(s);
+                        attrs = new SimpleAttributeSet(doc.getCharacterElement(index).getAttributes());
+                        StyleConstants.setUnderline(attrs, true);
+                        attrs.addAttribute(HTML.Attribute.HREF, s);
+                        doc.remove(start + index, s.length());
+                        doc.insertString(start + index, s, attrs);
+                    }
+                }
+            }
+        } catch (BadLocationException e) {
+            GUIMain.log((e.getMessage()));
+        }
+    }
+
+    /**
      * Converts a given int to the correct millis form, except for 0.
      *
      * @param given Integer to convert.
@@ -556,7 +586,7 @@ public class Utils {
      */
     public static void addCommands(String s) {
         String[] split = s.split(" ");
-        if (GUIMain.commandMap != null && split != null) {
+        if (GUIMain.commandSet != null && split != null) {
             String name = split[1];//name of the command, [0] is "addcommand"
             int time;//for timer
             try {
@@ -565,14 +595,10 @@ public class Utils {
                 } catch (NumberFormatException e) {
                     return;
                 }
-                int firstspace = s.indexOf(" ");//IGNORE
-                int secondspace = s.indexOf(" ", firstspace + 1);//IGNORE
-                int thirdspace = s.indexOf(" ", secondspace + 1);//IGNORE
-                String message = s.substring(thirdspace + 1);//BINGO
-                time = handleInt(time);
+                int bingo = s.indexOf(" ", s.indexOf(" ", s.indexOf(" ") + 1) + 1);//Third space is the message
+                String[] message = s.substring(bingo + 1).split("\\]");
                 if (time > 0 && name != null && message != null) {
-                    Timer local = new Timer(time);
-                    GUIMain.commandMap.put(new StringArray(new String[]{name, message}), local);
+                    GUIMain.commandSet.add(new Command(name, time, message));
                 }
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
@@ -586,12 +612,10 @@ public class Utils {
      * @param key The !command trigger, or key.
      */
     public static void removeCommands(String key) {
-        if (GUIMain.commandMap != null && key != null) {
-            Set<StringArray> set = GUIMain.commandMap.keySet();
-            for (StringArray next : set) {
-                String name = next.data[0];
-                if (key.equals(name)) {
-                    GUIMain.commandMap.remove(next);
+        if (GUIMain.commandSet != null && key != null) {
+            for (Command c : GUIMain.commandSet) {
+                if (key.equals(c.getTrigger())) {
+                    GUIMain.commandSet.remove(c);
                     return;
                 }
             }
@@ -599,64 +623,20 @@ public class Utils {
     }
 
     /**
-     * Checks to see if a certain string was a key to a command.
-     *
-     * @param s The string in question.
-     * @return True if the string in question was indeed a key for a command; else false.
-     */
-    public static boolean commandTrigger(String s) {
-        if (GUIMain.commandMap != null && s != null) {
-            for (StringArray next : GUIMain.commandMap.keySet()) {
-                String name = next.data[0];
-                if (s.equals(name)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-
-    /**
-     * Get the Message from the !command trigger.
+     * Get the Command from the given !<string> trigger.
      *
      * @param key The !command trigger, or key.
-     * @return The message that the command triggers.
+     * @return The Command that the key relates to, or null if there is no command.
      */
-    public static String getMessage(String key) {
-        String mess = "";
-        if (GUIMain.commandMap != null && key != null) {
-            for (StringArray next : GUIMain.commandMap.keySet()) {
-                String name = next.data[0];
-                if (name != null) {
-                    if (key.equals(name)) {
-                        mess = next.data[1];
-                        break;
-                    }
+    public static Command getCommand(String key) {
+        if (GUIMain.commandSet != null && key != null) {
+            for (Command c1 : GUIMain.commandSet) {
+                if (key.equals(c1.getTrigger())) {
+                    return c1;
                 }
             }
         }
-        return mess;
-    }
-
-    /**
-     * Gets the timer for a command.
-     *
-     * @param key The !command trigger, or key, of the command.
-     * @return The Timer of the command.
-     */
-    public static Timer getTimer(String key) {
-        Timer local = new Timer(10000);
-        for (StringArray next : GUIMain.commandMap.keySet()) {
-            String name = next.data[0];
-            if (name != null) {
-                if (key.equals(name)) {
-                    local = GUIMain.commandMap.get(next);
-                    break;
-                }
-            }
-        }
-        return local;
+        return null;
     }
 
     /**

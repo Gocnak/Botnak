@@ -10,10 +10,6 @@ import lib.chatbot.ChatterBot;
 
 import java.net.ConnectException;
 
-/**
- * //TODO
- * Look into adding newline for commands, for example !keygasm
- */
 public class IRCBot extends PircBot {
     public static int soundTime = 5000;
     public static boolean shouldTalk = true;
@@ -43,7 +39,7 @@ public class IRCBot extends PircBot {
         soundTimer = new Timer(soundTime);
         soundBackTimer = new Timer(0);
         if (GUIMain.loadedStreams()) {
-            for (String s : GUIMain.channelMap) {
+            for (String s : GUIMain.channelSet) {
                 doConnect(s);
             }
         }
@@ -62,7 +58,7 @@ public class IRCBot extends PircBot {
         } else {
             joinChannel(channelName);
             if (Utils.isInChannel(this, channelName)) {
-                if (!GUIMain.channelMap.contains(channel)) GUIMain.channelMap.add(channel);
+                if (!GUIMain.channelSet.contains(channel)) GUIMain.channelSet.add(channel);
             }
         }
     }
@@ -80,8 +76,8 @@ public class IRCBot extends PircBot {
             partChannel(channelName);
         }
         if (forget) {
-            if (GUIMain.channelMap.contains(channel)) {
-                GUIMain.channelMap.remove(channel);
+            if (GUIMain.channelSet.contains(channel)) {
+                GUIMain.channelSet.remove(channel);
             }
         }
     }
@@ -105,12 +101,6 @@ public class IRCBot extends PircBot {
     }
 
 
-    public static String lastChannel = "";
-    public static String lastMessage = "";
-    public static boolean firstTime = true;
-    public static String secondToLastMessage = "";
-
-
     public void onMessage(String channel, String sender, String login, String hostname, String message) {
         if (message != null && channel != null && sender != null && GUIMain.viewer != null) {
             sender = sender.toLowerCase();
@@ -119,7 +109,7 @@ public class IRCBot extends PircBot {
             if (low.contains("bit.ly/") || low.contains("tinyurl.com/") || low.contains("goo.gl")) {
                 String[] split = message.split(" ");
                 for (String s : split) {
-                    if (s.contains("http") && (low.contains("bit.ly/") || low.contains("tinyurl.com/") || low.contains("goo.gl"))) {
+                    if (s.contains("http") && (s.contains("bit.ly/") || s.contains("tinyurl.com/") || s.contains("goo.gl"))) {
                         sendMessage(channel, Utils.getLongURL(s));
                     }
                 }
@@ -157,8 +147,9 @@ public class IRCBot extends PircBot {
                         }
                     }
                     //command
-                    if (Utils.commandTrigger(content)) {
-                        handleMessage(channel, content);
+                    Command c = Utils.getCommand(content);
+                    if (c != null) {
+                        handleCommand(channel, c);
                     }
                 }
             }
@@ -243,25 +234,31 @@ public class IRCBot extends PircBot {
         return false;
     }
 
-    public void handleMessage(String channel, String message) {
-        String cont = Utils.getMessage(message);
-        Timer timer = Utils.getTimer(message);
-        if (!cont.equals("")) {
-            if (!timer.isRunning()) {
-                sendMessage(channel, cont);
+    public static String lastChannel = "";
+    public static Command lastMessage = null;
+    public static boolean firstTime = true;
+    public static Command secondToLastMessage = null;
+
+    public void handleCommand(String channel, Command c) {
+        if (c.getMessage().data.length != 0) {
+            if (!c.getDelayTimer().isRunning()) {
+                for (String s : c.getMessage().data) {
+                    sendMessage(channel, s);
+                }
                 if (channel.equals(lastChannel)) {
-                    if (message.equals(lastMessage) || message.equals(secondToLastMessage)) {
-                        GUIMain.commandMap.put(new StringArray(new String[]{message, cont}), new Timer(timer.period));
+                    if ((lastMessage != null && c.equals(lastMessage)) ||
+                            secondToLastMessage != null && c.equals(secondToLastMessage)) {
+                        c.getDelayTimer().reset();
                     }
                 }
                 if (firstTime) {
                     firstTime = !firstTime;
                 } else {
-                    secondToLastMessage = message;
+                    secondToLastMessage = c;
                     firstTime = !firstTime;
                 }
                 lastChannel = channel;
-                lastMessage = message;
+                lastMessage = c;
             }
         }
     }

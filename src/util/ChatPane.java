@@ -8,10 +8,16 @@ import lib.scalr.Scalr;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.text.*;
+import javax.swing.text.html.HTML;
 import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
+import java.net.URI;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * All channels other than All Chats is stored in this format.
@@ -22,6 +28,7 @@ public class ChatPane {
     private String chan;
     private JTextPane textPane;
     private int cleanupCounter;
+    SimpleDateFormat format = new SimpleDateFormat("[h:mm a]", Locale.getDefault());
 
     /**
      * You initialize this class with the channel it's for, a randomly-made scroll pane,
@@ -58,7 +65,7 @@ public class ChatPane {
             }
         }
         sender = sender.toLowerCase();
-        String time = GUIMain.format.format(new Date(System.currentTimeMillis()));
+        String time = format.format(new Date(System.currentTimeMillis()));
         StyledDocument doc = textPane.getStyledDocument();
         Color c;
         if (GUIMain.userColMap.containsKey(sender)) {
@@ -95,19 +102,18 @@ public class ChatPane {
                 doc.insertString(textPane.getCaretPosition(), " " + sender + ": ", GUIMain.user);
             }
             Utils.handleFaces(doc, nameStart, sender);//if the sender has a custom face that they want instead
-            int messStart;
+            int messStart = textPane.getCaretPosition();
             if (isMe) {
-                messStart = textPane.getCaretPosition();
                 doc.insertString(textPane.getCaretPosition(),
                         message + "\n",
                         message.toLowerCase().contains(GUIMain.viewer.getMaster()) ? GUIMain.color : GUIMain.user);
             } else {
-                messStart = textPane.getCaretPosition();
                 doc.insertString(textPane.getCaretPosition(),
                         message + "\n",
                         message.toLowerCase().contains(GUIMain.viewer.getMaster()) ? GUIMain.color : GUIMain.norm);
             }
             Utils.handleFaces(doc, messStart, message);
+            Utils.handleURLs(doc, messStart, message);
             textPane.setCaretPosition(doc.getLength());
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -215,6 +221,46 @@ public class ChatPane {
         pane.setMargin(new Insets(0, 0, 0, 0));
         pane.setBackground(Color.black);
         pane.setFont(GUIMain.currentSettings.font);
+        pane.addMouseListener(new MouseListener() {
+            public void mouseClicked(MouseEvent e) {
+            }
+
+            public void mousePressed(MouseEvent e) {
+            }
+
+            public void mouseEntered(MouseEvent e) {
+            }
+
+            public void mouseExited(MouseEvent e) {
+            }
+
+            //credit to Fenerista from
+            //http://www.daniweb.com/software-development/java/threads/331500/how-can-i-add-a-clickable-url-in-a-jtextpane#post1422477
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                JTextPane editor = (JTextPane) e.getSource();
+                Point pt = new Point(e.getX(), e.getY());
+                int pos = editor.viewToModel(pt);
+                if (pos >= 0) {
+                    Document doc = editor.getDocument();
+                    if (doc instanceof DefaultStyledDocument) {
+                        DefaultStyledDocument hdoc = (DefaultStyledDocument) doc;
+                        Element el = hdoc.getCharacterElement(pos);
+                        AttributeSet a = el.getAttributes();
+                        String href = (String) a.getAttribute(HTML.Attribute.HREF);
+                        if (href != null) {
+                            try {
+                                Desktop desktop = Desktop.getDesktop();
+                                URI uri = new URI(href);
+                                desktop.browse(uri);
+                            } catch (Exception ev) {
+                                GUIMain.log((ev.getMessage()));
+                            }
+                        }
+                    }
+                }
+            }
+        });
         scrollPane.setViewportView(pane);
         GUIMain.channelPane.addTab(channel, scrollPane);
         GUIMain.chatPanes.put(channel, new ChatPane(channel, pane));
@@ -236,7 +282,7 @@ public class ChatPane {
     }
 
     public void log(String message) {
-        String time = GUIMain.format.format(new Date(System.currentTimeMillis()));
+        String time = format.format(new Date(System.currentTimeMillis()));
         StyledDocument doc = textPane.getStyledDocument();
         try {
             textPane.setCaretPosition(doc.getLength());

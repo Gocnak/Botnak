@@ -24,7 +24,7 @@ public class GUIStreams extends JFrame {
         DefaultListModel<String> defaultListModel = new DefaultListModel<>();
         if (GUIMain.loadedStreams()) {
             rememberStreams.setSelected(true);
-            channels = GUIMain.channelMap.toArray(new String[GUIMain.channelMap.size()]);
+            channels = GUIMain.channelSet.toArray(new String[GUIMain.channelSet.size()]);
         }
         if (channels != null) {
             for (String s : channels) {
@@ -115,10 +115,10 @@ public class GUIStreams extends JFrame {
     }
 
     public void handleList(String[] toAdd) {
-        if (GUIMain.channelMap != null && toAdd != null && toAdd.length > 0) {
+        if (GUIMain.channelSet != null && toAdd != null && toAdd.length > 0) {
             for (String s : toAdd) {
-                if (GUIMain.channelMap.contains(s)) continue;
-                GUIMain.channelMap.add(s);
+                if (GUIMain.channelSet.contains(s)) continue;
+                GUIMain.channelSet.add(s);
             }
         }
     }
