@@ -530,7 +530,10 @@ public class Utils {
                 if (s != null) {
                     if (s.startsWith("http")) {
                         int index = message.indexOf(s);
-                        attrs = new SimpleAttributeSet(doc.getCharacterElement(index).getAttributes());
+                        attrs = new SimpleAttributeSet();
+                        StyleConstants.setForeground(attrs, new Color(43, 162, 235));
+                        StyleConstants.setFontFamily(attrs, GUIMain.currentSettings.font.getFamily());
+                        StyleConstants.setFontSize(attrs, GUIMain.currentSettings.font.getSize());
                         StyleConstants.setUnderline(attrs, true);
                         attrs.addAttribute(HTML.Attribute.HREF, s);
                         doc.remove(start + index, s.length());

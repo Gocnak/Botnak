@@ -517,7 +517,7 @@ public class GUISettings extends JFrame {
                 normUsername.setToolTipText("This is for your normal account for chatting in the client.");
 
                 //---- label6 ----
-                label6.setText("Password:");
+                label6.setText("OAuth Key:");
                 label6.setToolTipText("This is for your normal account for chatting in the client.");
 
                 //---- userLogoutButton ----
@@ -545,7 +545,7 @@ public class GUISettings extends JFrame {
                 label7.setText("Username:");
 
                 //---- label8 ----
-                label8.setText("Password:");
+                label8.setText("OAuth Key:");
 
                 //---- separator3 ----
                 separator3.setOrientation(SwingConstants.VERTICAL);

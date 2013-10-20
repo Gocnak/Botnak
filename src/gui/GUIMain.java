@@ -169,7 +169,7 @@ public class GUIMain extends JFrame {
      * @param message The thing to log.
      */
     public static void log(Object message) {
-        GUIMain.chatPanes.get("All Chats").log(message.toString());
+        if (message != null) GUIMain.chatPanes.get("All Chats").log(message.toString());
     }
 
     //called from IRCViewer
