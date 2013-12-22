@@ -48,7 +48,7 @@ public class User {
      * status in that channel.
      *
      * @return The prefix of the user. If there is no prefix, then an empty
-     *         String is returned.
+     * String is returned.
      */
     public String getPrefix() {
         return _prefix;
@@ -96,6 +96,13 @@ public class User {
      */
     public boolean isStaff() {
         return _prefix.indexOf('s') >= 0;
+    }
+
+    /**
+     * Checks to see if a user has twitch turbo.
+     */
+    public boolean isTurbo() {
+        return _prefix.indexOf('t') >= 0;
     }
 
     /**

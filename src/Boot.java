@@ -1,4 +1,5 @@
 import gui.GUIMain;
+import gui.GUIUpdate;
 import util.Settings;
 
 import javax.swing.*;
@@ -15,6 +16,10 @@ public class Boot {
                 setLookAndFeel();
                 GUIMain g = new GUIMain();
                 g.setVisible(true);
+                if (GUIUpdate.checkForUpdate()) {
+                    GUIUpdate gu = new GUIUpdate();
+                    gu.setVisible(true);
+                }
             }
 
             /**

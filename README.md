@@ -6,11 +6,14 @@ A Java-based IRC chat client with bot capabilities and a focus on Twitch.tv stre
 #Download:
 The latest (pre-compiled) build can be found here: https://www.dropbox.com/s/24jagzp0uyryqd0/Botnak.jar
 
+Just download that and double click it to run it. You need the latest Java version in order to run it.
+
 A full example list of commands and such can be found at http://bit.ly/1366RwM.
 
 TODO:
 - Code the ability to join SRL race chats
 - Tab/channel combination
+- Subscriber detection/support
 
 Some useful pieces of advice:
 
@@ -32,9 +35,11 @@ Botnak supports other channels. Each channel has its own tab, and it is wise to 
 #KEEPIN' IT CLEAN:
 Botnak is able to delete chat history (lines not on screen) after a specified number of lines have been logged. The minimum clear int is 40 lines, with no maximum. You can set this value in the Settings GUI.
 
-#FOR THE RECORD...:
+#FOR THE RECORD...
 Botnak also supports logging the session's chats to file. If selected, Botnak will print the chats to text files in Botnak/Logs/ under the folder session#-dd-mm-yy . If you also have the chat cleared option enabled, don't worry, as Botnak logs the cleared text to file before deleting it.
 
+#UP TO DATE:
+Botnak automatically checks to see if there's a new version available and lets you know!
 
 Credits:
 

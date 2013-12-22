@@ -8,6 +8,24 @@ import java.util.regex.Pattern;
 
 public class Constants {
 
+    public static final double VERSION = 2.1;
+
+    /**
+     * All users may use the sound
+     */
+    public static final int PERMISSION_ALL = 0;
+
+    /**
+     * Only mods and the person running Botnak can use the sound
+     */
+    public static final int PERMISSION_MOD = 1;
+
+    /**
+     * Only the person running Botnak can use the sound
+     */
+    public static final int PERMISSION_DEV = 2;
+
+
     public static final String[] fontSizeArray = new String[]{"11", "12", "13", "14", "16", "18", "20"};
 
     public static final FileFilter folderFilter = new FileFilter() {

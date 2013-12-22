@@ -3,6 +3,7 @@ package gui;
 import irc.IRCBot;
 import irc.IRCViewer;
 import lib.scalr.Scalr;
+import sound.Sound;
 import util.*;
 
 import javax.imageio.ImageIO;
@@ -374,9 +375,9 @@ public class GUISettings extends JFrame {
         try {
             BufferedImage img = ImageIO.read(image);
             if (img.getWidth() > 40) {
-                img = Scalr.resize(img, Scalr.Method.QUALITY, 40, 14, Scalr.OP_ANTIALIAS);
+                img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, 40, 14, Scalr.OP_ANTIALIAS);
             } else {
-                img = Scalr.resize(img, Scalr.Method.QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 14, Scalr.OP_ANTIALIAS);
+                img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 14, Scalr.OP_ANTIALIAS);
             }
             ImageIcon icon = new ImageIcon(img);
             icon.getImage().flush();

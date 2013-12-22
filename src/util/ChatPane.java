@@ -69,7 +69,7 @@ public class ChatPane {
         StyledDocument doc = textPane.getStyledDocument();
         Color c;
         if (GUIMain.userColMap.containsKey(sender)) {
-            c = new Color(GUIMain.userColMap.get(sender)[0], GUIMain.userColMap.get(sender)[1], GUIMain.userColMap.get(sender)[2]);
+            c = GUIMain.userColMap.get(sender);
         } else {
             c = Utils.getColor(sender.hashCode());
         }
@@ -88,8 +88,11 @@ public class ChatPane {
                 if (u.isAdmin()) {
                     insertIcon(doc, textPane.getCaretPosition(), 2);
                 }
+                if (u.isTurbo()) {
+                    insertIcon(doc, textPane.getCaretPosition(), 4);
+                }
                 if (u.isOp()) {
-                    if (!channel.substring(1).equals(sender)) {//not the broadcaster again
+                    if (!channel.substring(1).equals(sender) && !u.isStaff() && !u.isAdmin()) {//not the broadcaster again
                         insertIcon(doc, textPane.getCaretPosition(), 0);
                     }
                 }
@@ -103,16 +106,24 @@ public class ChatPane {
             }
             Utils.handleFaces(doc, nameStart, sender);//if the sender has a custom face that they want instead
             int messStart = textPane.getCaretPosition();
+            SimpleAttributeSet set;
             if (isMe) {
-                doc.insertString(textPane.getCaretPosition(),
-                        message + "\n",
-                        message.toLowerCase().contains(GUIMain.viewer.getMaster()) ? GUIMain.color : GUIMain.user);
+                if (Utils.mentionsKeyword(message)) {
+                    set = Utils.getSetForKeyword(message);
+                } else {
+                    set = GUIMain.user;
+                }
+                doc.insertString(textPane.getCaretPosition(), message + "\n", set);
             } else {
-                doc.insertString(textPane.getCaretPosition(),
-                        message + "\n",
-                        message.toLowerCase().contains(GUIMain.viewer.getMaster()) ? GUIMain.color : GUIMain.norm);
+                if (Utils.mentionsKeyword(message)) {
+                    set = Utils.getSetForKeyword(message);
+                } else {
+                    set = GUIMain.norm;
+                }
+                doc.insertString(textPane.getCaretPosition(), message + "\n", set);
             }
             Utils.handleFaces(doc, messStart, message);
+            Utils.handleTwitchFaces(doc, messStart, message);
             Utils.handleURLs(doc, messStart, message);
             textPane.setCaretPosition(doc.getLength());
         } catch (Exception e) {
@@ -125,7 +136,7 @@ public class ChatPane {
         try {
             BufferedImage img = ImageIO.read(image);
             int size = GUIMain.currentSettings.font.getSize();
-            img = Scalr.resize(img, Scalr.Method.QUALITY, size, size, Scalr.OP_ANTIALIAS);
+            img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, size, size, Scalr.OP_ANTIALIAS);
             icon = new ImageIcon(img);
             icon.getImage().flush();
             return icon;
@@ -156,6 +167,10 @@ public class ChatPane {
                 icon = sizeIcon(GUIMain.currentSettings.staffIcon);
                 kind = "Staff";
                 break;
+            case 4:
+                icon = sizeIcon(GUIMain.currentSettings.turboIcon);
+                kind = "Turbo";
+                break;
             default:
                 icon = sizeIcon(GUIMain.currentSettings.modIcon);
                 kind = "Mod";
@@ -176,7 +191,6 @@ public class ChatPane {
 
     // Source: http://stackoverflow.com/a/4628879
     // by http://stackoverflow.com/users/131872/camickr & Community
-    //TODO: Transform to action
     private void cleanupChat() {
         if (textPane == null || textPane.getParent() == null) return;
         if (!(textPane.getParent() instanceof JViewport)) {

@@ -10,7 +10,6 @@ import java.awt.*;
 
 public class IRCViewer extends PircBot {
 
-
     String name, pass;
 
     public String getMaster() {
@@ -22,6 +21,7 @@ public class IRCViewer extends PircBot {
             name = user;
             pass = password;
             GUIMain.currentSettings.user = new Settings.Account(name, pass);
+            GUIMain.currentSettings.loadKeywords();//set that name keyword
         } else {// it was loaded from file
             name = GUIMain.currentSettings.user.getAccountName();
             pass = GUIMain.currentSettings.user.getAccountPass();
@@ -34,6 +34,7 @@ public class IRCViewer extends PircBot {
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
+        sendRawLineViaQueue("TWITCHCLIENT");
         if (GUIMain.loadedStreams()) {
             for (String s : GUIMain.channelSet) {
                 doConnect(s);
@@ -51,7 +52,7 @@ public class IRCViewer extends PircBot {
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
-        GUIMain.log("LOADED USER: " + name);
+        GUIMain.log("Loaded User: " + name + "!");
         GUIMain.viewer = this;
     }
 
@@ -96,7 +97,7 @@ public class IRCViewer extends PircBot {
      * @param forget If true, will forget the user.
      */
     public void close(boolean forget) {
-        GUIMain.log("LOGGING OUT USER: " + name);
+        GUIMain.log("Logging out of user: " + name);
         for (String s : getChannels()) {
             doLeave(s.substring(1), false);
         }

@@ -1,16 +1,14 @@
 package util;
 
 import gui.GUIMain;
+import sound.Sound;
 
 import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
 import java.io.*;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * This class is the container for every setting Botnak has.
@@ -38,6 +36,7 @@ public class Settings {
     public URL broadIcon;
     public URL adminIcon;
     public URL staffIcon;
+    public URL turboIcon;
     public boolean useMod = false;//"should use a custom mod icon"
     public boolean useBroad = false;
     public boolean useAdmin = false;
@@ -50,6 +49,7 @@ public class Settings {
     public static File defaultDir = new File(FileSystemView.getFileSystemView().getDefaultDirectory().getAbsolutePath()
             + File.separator + "Botnak");
     public File faceDir = new File(defaultDir + File.separator + "Faces");
+    public File twitchFaceDir = new File(defaultDir + File.separator + "TwitchFaces");
     public File logDir = new File(defaultDir + File.separator + "Logs");
     public File sessionLogDir;
     //files
@@ -57,10 +57,13 @@ public class Settings {
     public File streamsFile = new File(defaultDir + File.separator + "streams.txt");
     public File soundsFile = new File(defaultDir + File.separator + "sounds.txt");
     public File faceFile = new File(defaultDir + File.separator + "faces.txt");
+    public File twitchFaceFile = new File(defaultDir + File.separator + "twitchfaces.txt");
     public File userColFile = new File(defaultDir + File.separator + "usercols.txt");
     public File commandsFile = new File(defaultDir + File.separator + "commands.txt");
+    public File ccommandsFile = new File(defaultDir + File.separator + "chatcom.txt");
     public File defaultsFile = new File(defaultDir + File.separator + "defaults.ini");
     public static File lafFile = new File(defaultDir + File.separator + "laf.txt");
+    public File keywordsFile = new File(defaultDir + File.separator + "keywords.txt");
 
     //appearance
     public boolean logChat = false;
@@ -75,6 +78,7 @@ public class Settings {
         broadIcon = Settings.class.getResource("/resource/broad.png");
         adminIcon = Settings.class.getResource("/resource/admin.png");
         staffIcon = Settings.class.getResource("/resource/staff.png");
+        turboIcon = Settings.class.getResource("/resource/turbo.png");
         long time = System.currentTimeMillis();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yy");
         String date = sdf.format(new Date(time));
@@ -85,6 +89,7 @@ public class Settings {
         font = new Font("Calibri", Font.PLAIN, 18);
         defaultDir.mkdirs();
         faceDir.mkdirs();
+        twitchFaceDir.mkdirs();
     }
 
     /**
@@ -115,12 +120,20 @@ public class Settings {
             loadUserColors();
         }
         if (Utils.areFilesGood(commandsFile.getAbsolutePath())) {
-            GUIMain.log("Loading commands...");
+            GUIMain.log("Loading text commands...");
             loadCommands();
         }
-        GUIMain.log("Loading faces...");
+        GUIMain.log("Loading keywords...");
+        loadKeywords();
+        GUIMain.log("Loading console commands...");
+        loadConsoleCommands();
+        GUIMain.log("Loading custom faces...");
         if (Utils.areFilesGood(faceFile.getAbsolutePath())) {
-            Utils.loadFaces();
+            loadFaces();
+        }
+        GUIMain.log("Loading default Twitch faces...");
+        if (Utils.areFilesGood(twitchFaceFile.getAbsolutePath())) {
+            loadDefaultTwitchFaces();
         }
         Utils.loadDefaultFaces();
     }
@@ -134,8 +147,11 @@ public class Settings {
         if (!GUIMain.soundMap.isEmpty()) saveSounds();
         if (GUIMain.loadedStreams()) saveStreams();
         if (!GUIMain.faceMap.isEmpty()) saveFaces();
+        saveTwitchFaces();
         if (!GUIMain.userColMap.isEmpty()) saveUserColors();
         if (GUIMain.loadedCommands()) saveCommands();
+        if (!GUIMain.keywordMap.isEmpty()) saveKeywords();
+        saveConCommands();
         saveLAF();
     }
 
@@ -235,7 +251,7 @@ public class Settings {
                 p.put("UserBotPass", bot.getAccountPass());
             }
             if (autoLogin) {
-                p.put("AutoLog", String.valueOf(autoLogin));
+                p.put("AutoLog", "true");
             }
             try {
                 p.store(new FileWriter(accountsFile), "Account Info");
@@ -318,18 +334,17 @@ public class Settings {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split(",");
-                if (split != null) {
-                    int startIdx = line.indexOf(",", line.indexOf(",", 0) + 1);//name,0,<- bingo
-                    String[] split2add = line.substring(startIdx + 1).split(",");//files
-                    int perm = 0;
-                    try {
-                        perm = Integer.parseInt(split[1]);
-                    } catch (NumberFormatException e) {
-                        GUIMain.log(split[0] + " has a problem. Making it public.");
-                    }
-                    GUIMain.soundMap.put(split[0], new Sound(perm, split2add));
+                int startIdx = line.indexOf(",", line.indexOf(",", 0) + 1);//name,0,<- bingo
+                String[] split2add = line.substring(startIdx + 1).split(",");//files
+                int perm = 0;
+                try {
+                    perm = Integer.parseInt(split[1]);
+                } catch (NumberFormatException e) {
+                    GUIMain.log(split[0] + " has a problem. Making it public.");
                 }
+                GUIMain.soundMap.put(split[0], new Sound(perm, split2add));
             }
+            GUIMain.log("Loaded sounds!");
             br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -370,10 +385,9 @@ public class Settings {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split(",");
-                if (split != null) {
-                    GUIMain.userColMap.put(split[0], new int[]{Integer.parseInt(split[1]), Integer.parseInt(split[2]), Integer.parseInt(split[3])});
-                }                 //user                          r                            g                       b
+                GUIMain.userColMap.put(split[0], new Color(Integer.parseInt(split[1]), Integer.parseInt(split[2]), Integer.parseInt(split[3])));
             }
+            GUIMain.log("Loaded user colors!");
             br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -385,8 +399,11 @@ public class Settings {
             PrintWriter br = new PrintWriter(userColFile);
             for (String s : GUIMain.userColMap.keySet()) {
                 if (s != null && GUIMain.userColMap.get(s) != null) {
-                    br.println(s + "," + GUIMain.userColMap.get(s)[0] + "," + GUIMain.userColMap.get(s)[1] + "," + GUIMain.userColMap.get(s)[2]);
-                }//            user                  R                                  G                                  B
+                    br.println(s + "," +
+                            GUIMain.userColMap.get(s).getRed() + "," +
+                            GUIMain.userColMap.get(s).getGreen() + "," +
+                            GUIMain.userColMap.get(s).getBlue());
+                }
             }
             br.flush();
             br.close();
@@ -417,6 +434,64 @@ public class Settings {
         }
     }
 
+    /**
+     * Saves the default twitch faces.
+     */
+    public void saveTwitchFaces() {
+        try {
+            PrintWriter br = new PrintWriter(twitchFaceFile);
+            for (String s : GUIMain.twitchFaceMap.keySet()) {
+                if (s != null && GUIMain.twitchFaceMap.get(s) != null) {
+                    TwitchFace fa = GUIMain.twitchFaceMap.get(s);
+                    br.println(s + "," + fa.getRegex() + "," + fa.getFilePath() + "," +
+                            Boolean.toString(GUIMain.twitchFaceMap.get(s).isEnabled()));
+                }
+            }
+            br.flush();
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    /**
+     * Loads the face data stored in the faces.txt file. This only gets called
+     * if that file exists.
+     */
+    public void loadFaces() {
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(faceFile.toURI().toURL().openStream()));
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] split = line.split(",");
+                //                    name           name/regex   path
+                GUIMain.faceMap.put(split[0], new Face(split[1], split[2]));
+            }
+            GUIMain.doneWithFaces = true;
+            GUIMain.log("Loaded custom faces!");
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    /**
+     * Loads the default twitch faces already saved on the computer.
+     */
+    public void loadDefaultTwitchFaces() {
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(twitchFaceFile.toURI().toURL().openStream()));
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] split = line.split(",");
+                boolean enabled = Boolean.parseBoolean(split[3]);
+                GUIMain.twitchFaceMap.put(split[0], new TwitchFace(split[1], split[2], enabled));
+            }
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
 
     /**
      * Commands
@@ -427,17 +502,16 @@ public class Settings {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split("\\[");
-                if (split != null) {
-                    int time;
-                    try {
-                        time = Integer.parseInt(split[2]);
-                    } catch (Exception e) {
-                        time = 10;
-                    }
-                    String[] contents = split[1].split("\\]");
-                    GUIMain.commandSet.add(new Command(split[0], time, contents));
+                int time;
+                try {
+                    time = Integer.parseInt(split[2]);
+                } catch (Exception e) {
+                    time = 10;
                 }
+                String[] contents = split[1].split("\\]");
+                GUIMain.commandSet.add(new Command(split[0], time, contents));
             }
+            GUIMain.log("Loaded text commands!");
             br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -467,6 +541,152 @@ public class Settings {
         }
     }
 
+    /**
+     * Console Commands
+     */
+    public void saveConCommands() {
+        try {
+            PrintWriter br = new PrintWriter(ccommandsFile);
+            for (ConsoleCommand next : GUIMain.conCommands) {
+                if (next != null) {
+                    String name = next.getTrigger();
+                    String action = next.getAction().toString();
+                    int classPerm = next.getClassPermission();
+                    String certainPerm = "null";
+                    if (next.getCertainPermissions() != null) {
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < next.getCertainPermissions().length; i++) {
+                            sb.append(next.getCertainPermissions()[i]);
+                            if (i != (next.getCertainPermissions().length - 1)) sb.append(",");
+                        }
+                        certainPerm = sb.toString();
+                    }
+                    br.println(name + "[" + action + "[" + classPerm + "[" + certainPerm);
+                }
+            }
+            br.flush();
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    ConsoleCommand.Action getAction(String key) {
+        ConsoleCommand.Action act = null;
+        for (ConsoleCommand.Action a : ConsoleCommand.Action.values()) {
+            if (a.toString().equalsIgnoreCase(key)) {
+                act = a;
+                break;
+            }
+        }
+        return act;
+    }
+
+    public void loadConsoleCommands() {
+        if (Utils.areFilesGood(ccommandsFile.getAbsolutePath())) {
+            try {
+                BufferedReader br = new BufferedReader(new InputStreamReader(ccommandsFile.toURI().toURL().openStream()));
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] split = line.split("\\[");
+                    ConsoleCommand.Action a = getAction(split[1]);
+                    int classPerm;
+                    try {
+                        classPerm = Integer.parseInt(split[2]);
+                    } catch (Exception e) {
+                        classPerm = -1;
+                    }
+                    String[] customUsers = null;
+                    if (!split[3].equalsIgnoreCase("null")) {
+                        customUsers = split[3].split(",");
+                    }
+                    GUIMain.conCommands.add(new ConsoleCommand(split[0], a, classPerm, customUsers));
+                }
+                br.close();
+            } catch (Exception e) {
+                GUIMain.log(e.getMessage());
+            }
+        } else { //first time boot/reset/deleted file etc.
+            GUIMain.conCommands.add(new ConsoleCommand("addface", ConsoleCommand.Action.ADD_FACE, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("changeface", ConsoleCommand.Action.CHANGE_FACE, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("removeface", ConsoleCommand.Action.REMOVE_FACE, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("toggleface", ConsoleCommand.Action.TOGGLE_FACE, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("addsound", ConsoleCommand.Action.ADD_SOUND, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("changesound", ConsoleCommand.Action.CHANGE_SOUND, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("removesound", ConsoleCommand.Action.REMOVE_SOUND, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("setsound", ConsoleCommand.Action.SET_SOUND_DELAY, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("togglesound", ConsoleCommand.Action.TOGGLE_SOUND, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("togglereply", ConsoleCommand.Action.TOGGLE_REPLY, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("stopsound", ConsoleCommand.Action.STOP_SOUND, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("stopallsounds", ConsoleCommand.Action.STOP_ALL_SOUNDS, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("mod", ConsoleCommand.Action.MOD_USER, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("addkeyword", ConsoleCommand.Action.ADD_KEYWORD, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("removekeyword", ConsoleCommand.Action.REMOVE_KEYWORD, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("setcol", ConsoleCommand.Action.SET_USER_COL, 0, null));
+            GUIMain.conCommands.add(new ConsoleCommand("setpermission", ConsoleCommand.Action.SET_COMMAND_PERMISSION, 2, null));
+            GUIMain.conCommands.add(new ConsoleCommand("addcommand", ConsoleCommand.Action.ADD_TEXT_COMMAND, 1, null));
+            GUIMain.conCommands.add(new ConsoleCommand("removecommand", ConsoleCommand.Action.REMOVE_TEXT_COMMAND, 1, null));
+        }
+        GUIMain.log("Loaded console commands!");
+    }
+
+
+    /**
+     * Keywords
+     */
+    public void loadKeywords() {
+        if (Utils.areFilesGood(keywordsFile.getAbsolutePath())) {
+            try {
+                BufferedReader br = new BufferedReader(new InputStreamReader(keywordsFile.toURI().toURL().openStream()));
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] split = line.split(",");
+                    int r, g, b;
+                    try {
+                        r = Integer.parseInt(split[1]);
+                    } catch (Exception e) {
+                        r = 255;
+                    }
+                    try {
+                        g = Integer.parseInt(split[2]);
+                    } catch (Exception e) {
+                        g = 255;
+                    }
+                    try {
+                        b = Integer.parseInt(split[3]);
+                    } catch (Exception e) {
+                        b = 255;
+                    }
+                    GUIMain.keywordMap.put(split[0], new Color(r, g, b));
+                }
+                br.close();
+            } catch (Exception e) {
+                GUIMain.log(e.getMessage());
+            }
+        } else {
+            if (user != null) {
+                GUIMain.keywordMap.put(user.getAccountName(), Color.orange);
+            }
+        }
+        GUIMain.log("Loaded keywords!");
+    }
+
+    public void saveKeywords() {
+        try {
+            PrintWriter br = new PrintWriter(keywordsFile);
+            Set<String> keys = GUIMain.keywordMap.keySet();
+            for (String word : keys) {
+                if (word != null) {
+                    Color c = GUIMain.keywordMap.get(word);
+                    br.println(word + "," + c.getRed() + "," + c.getGreen() + "," + c.getBlue());
+                }
+            }
+            br.flush();
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
 
     /**
      * Look and Feel

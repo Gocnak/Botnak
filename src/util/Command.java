@@ -1,7 +1,7 @@
 package util;
 
 /**
- * Created to rid the horrendous HashMap that was the commandMap in GUIMain.
+ * Created to cleanup the horrendous HashMap that was the commandMap in GUIMain.
  */
 public class Command {
 

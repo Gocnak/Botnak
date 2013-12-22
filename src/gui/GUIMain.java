@@ -2,6 +2,8 @@ package gui;
 
 import irc.IRCBot;
 import irc.IRCViewer;
+import sound.Sound;
+import sound.SoundEngine;
 import util.*;
 
 import javax.swing.*;
@@ -20,10 +22,11 @@ import java.util.regex.Matcher;
 public class GUIMain extends JFrame {
 
     public static HashMap<String, Sound> soundMap;
-    public static HashMap<String, int[]> userColMap;
+    public static HashMap<String, Color> userColMap;
     public static HashSet<Command> commandSet;
     public static HashSet<String> channelSet;
     public static HashMap<String, ChatPane> chatPanes;
+    public static HashMap<String, Boolean> channelsToReplyIn;
     /**
      * Okay so. The String key is a name for the Face. IT IS NOT THE REGEX.
      * <p/>
@@ -37,6 +40,10 @@ public class GUIMain extends JFrame {
      * tl;dr: NAME (KEY) IS JUST A PLACEHOLDER HERE
      *///                 name    Face(Regex, Path)
     public static HashMap<String, Face> faceMap;
+    public static HashMap<String, TwitchFace> twitchFaceMap;
+    public static HashMap<String, Color> keywordMap;
+
+    public static HashSet<ConsoleCommand> conCommands;
 
     public static IRCBot bot;
     public static IRCViewer viewer;
@@ -45,11 +52,13 @@ public class GUIMain extends JFrame {
 
     public static boolean shutDown = false;
     public static boolean doneWithFaces = false;
+    public static boolean doneWithTwitchFaces = false;
 
 
     public static SimpleAttributeSet norm = new SimpleAttributeSet();
     public static SimpleAttributeSet user = new SimpleAttributeSet();
     public static SimpleAttributeSet color = new SimpleAttributeSet();
+    public static SimpleAttributeSet keyword = new SimpleAttributeSet();
 
     public static void setFont() {
         allChats.setFont(currentSettings.font);
@@ -59,11 +68,11 @@ public class GUIMain extends JFrame {
         StyleConstants.setFontSize(user, currentSettings.font.getSize());
         StyleConstants.setFontFamily(color, currentSettings.font.getFamily());
         StyleConstants.setFontSize(color, currentSettings.font.getSize());
+        StyleConstants.setFontFamily(keyword, currentSettings.font.getFamily());
+        StyleConstants.setFontSize(keyword, currentSettings.font.getSize());
     }
 
     public static String lastSoundDir = "";
-
-    public static Sound currentSound = null;
 
     private static GUIMain instance;
 
@@ -76,6 +85,11 @@ public class GUIMain extends JFrame {
         faceMap = new HashMap<>();
         userColMap = new HashMap<>();
         commandSet = new HashSet<>();
+        channelsToReplyIn = new HashMap<>();
+        twitchFaceMap = new HashMap<>();
+        conCommands = new HashSet<>();
+        keywordMap = new HashMap<>();
+        SoundEngine.init();
         StyleConstants.setForeground(norm, Color.white);
         StyleConstants.setForeground(color, Color.orange);
         initComponents();
@@ -102,10 +116,7 @@ public class GUIMain extends JFrame {
                     ChatPane.createPane(c);
                 }
             }
-            log("LOADED STREAMS");
-        }
-        if (loadedCommands()) {
-            log("LOADED COMMANDS");
+            log("Loaded streams!");
         }
         addStream.setEnabled(loadedSettingsUser());
     }
@@ -223,21 +234,42 @@ public class GUIMain extends JFrame {
 
     public static void updateTitle() {
         StringBuilder stanSB = new StringBuilder();
-        stanSB.append("Botnak | Viewer count: ");
-        stanSB.append(viewerCount);
-        stanSB.append(" (");
-        stanSB.append(viewerPeak);
-        stanSB.append(") | User: ");
-        String userNorm = (currentSettings != null && currentSettings.user != null)
-                ? currentSettings.user.getAccountName() : "<none>";
-        stanSB.append(userNorm);
-        stanSB.append(" | Bot: ");
-        String userBot = (currentSettings != null && currentSettings.bot != null)
-                ? currentSettings.bot.getAccountName() : "<none>";
-        stanSB.append(userBot);
+        stanSB.append("Botnak ");
+        if (isLive()) {
+            stanSB.append("| Viewer count: ");
+            stanSB.append(viewerCount);
+            stanSB.append(" (");
+            stanSB.append(viewerPeak);
+            stanSB.append(") ");
+        }
+        if (currentSettings != null) {
+            if (currentSettings.user != null) {
+                stanSB.append("| User: ");
+                stanSB.append(currentSettings.user.getAccountName());
+            }
+            if (currentSettings.bot != null) {
+                stanSB.append(" | Bot: ");
+                stanSB.append(currentSettings.bot.getAccountName());
+            }
+        }
         instance.setTitle(stanSB.toString());
     }
 
+
+    public static boolean isLive() {
+        boolean isLive = false;
+        try {//this could be parsed with JSON, but patterns work, and if it ain't broke...
+            URL twitch = new URL("http://api.justin.tv/api/stream/list.json?channel=" + currentSettings.user.getAccountName());
+            BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
+            String line;
+            while (!shutDown && (line = br.readLine()) != null) {
+                isLive = !(line.equals("[]"));
+            }
+            br.close();
+        } catch (Exception ignored) {
+        }
+        return isLive;
+    }
 
     public static void countViewers() {
         try {//this could be parsed with JSON, but patterns work, and if it ain't broke...
@@ -321,7 +353,7 @@ public class GUIMain extends JFrame {
             setMinimumSize(new Dimension(680, 380));
             setName("Botnak Control Panel");
             setTitle("Botnak | Viewer Count: 0 | User: <none> | Bot: <none>");
-            setResizable(false);
+            setResizable(true);
             setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
             setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
             Container BotnakContentPane = getContentPane();

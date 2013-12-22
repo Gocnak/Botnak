@@ -71,6 +71,8 @@ public abstract class PircBot implements ReplyConstants {
     private static final int VOICE_REMOVE = 4;
     private static final int ADMIN = 5;
     private static final int STAFF = 6;
+    private static final int TURBO = 7;
+    private static final int SUBSCRIBER = 8;
 
 
     /**
@@ -736,7 +738,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param timeout The number of milliseconds to wait for the recipient to
      *                accept the chat connection (we recommend about 120000).
      * @return a DccChat object that can be used to send and recieve lines of
-     *         text.  Returns <b>null</b> if the connection could not be made.
+     * text.  Returns <b>null</b> if the connection could not be made.
      * @see DccChat
      * @since PircBot 0.9.8
      */
@@ -2448,7 +2450,7 @@ public abstract class PircBot implements ReplyConstants {
      * to a server.
      *
      * @return The name of the last machine we tried to connect to. Returns
-     *         null if no connection attempts have ever been made.
+     * null if no connection attempts have ever been made.
      */
     public final String getServer() {
         return _server;
@@ -2464,7 +2466,7 @@ public abstract class PircBot implements ReplyConstants {
      * to a server.
      *
      * @return The port number of the last IRC server we connected to.
-     *         Returns -1 if no connection attempts have ever been made.
+     * Returns -1 if no connection attempts have ever been made.
      * @since PircBot 0.9.9
      */
     public final int getPort() {
@@ -2480,7 +2482,7 @@ public abstract class PircBot implements ReplyConstants {
      * to a server using a password.
      *
      * @return The last password that we used when connecting to an IRC server.
-     *         Returns null if we have not previously connected using a password.
+     * Returns null if we have not previously connected using a password.
      * @since PircBot 0.9.9
      */
     public final String getPassword() {
@@ -2558,7 +2560,7 @@ public abstract class PircBot implements ReplyConstants {
      * method to change the encoding charset.
      *
      * @return The encoding used to send outgoing messages, or
-     *         null if not set.
+     * null if not set.
      * @since PircBot 1.0.4
      */
     public String getEncoding() {
@@ -2613,7 +2615,7 @@ public abstract class PircBot implements ReplyConstants {
      * If set to null, <i>any</i> free port number will be used.
      *
      * @return An array of port numbers that PircBot can use to send DCC
-     *         transfers, or null if any port is allowed.
+     * transfers, or null if any port is allowed.
      * @since PircBot 1.4.4
      */
     public int[] getDccPorts() {
@@ -2728,7 +2730,7 @@ public abstract class PircBot implements ReplyConstants {
      *
      * @param channel The name of the channel to list.
      * @return An array of User objects. This array is empty if we are not
-     *         in the channel.
+     * in the channel.
      * @see #onUserList(String, User[]) onUserList
      * @since PircBot 1.0.0
      */
@@ -2746,7 +2748,7 @@ public abstract class PircBot implements ReplyConstants {
      * IRC server.
      *
      * @return A String array containing the names of all channels that we
-     *         are in.
+     * are in.
      * @since PircBot 1.0.0
      */
     public final String[] getChannels() {
@@ -2793,6 +2795,12 @@ public abstract class PircBot implements ReplyConstants {
             if (split[2].equalsIgnoreCase("staff")) {
                 updateUser(null, STAFF, user);
             }
+            if (split[2].equalsIgnoreCase("turbo")) {
+                updateUser(null, TURBO, user);
+            }
+            if (split[2].equalsIgnoreCase("subscriber")) {
+                //TODO handle subscribers
+            }
         }
     }
 
@@ -2825,31 +2833,33 @@ public abstract class PircBot implements ReplyConstants {
      * @param nick The nick of the user to be removed.
      */
     private void removeUser(String chnl, String nick) {
-        if (chnl == null) {//all channels
-            String[] channels = _channels.keySet().toArray(new String[_channels.keySet().size()]);
-            for (String channel : channels) {
-                HashSet<User> userSet = _channels.get(channel.toLowerCase());
-                if (userSet != null) {
-                    for (User u : userSet) {
-                        if (u != null) {
-                            if (u.getNick().equalsIgnoreCase(nick)) {
-                                userSet.remove(u);
+        synchronized (_channels) {
+            if (chnl == null) {//all channels
+                String[] channels = _channels.keySet().toArray(new String[_channels.keySet().size()]);
+                for (String channel : channels) {
+                    HashSet<User> userSet = _channels.get(channel.toLowerCase());
+                    if (userSet != null) {
+                        for (User u : userSet) {
+                            if (u != null) {
+                                if (u.getNick().equalsIgnoreCase(nick)) {
+                                    userSet.remove(u);
+                                }
                             }
-                        }
-                    }                                // replaced old map
-                    _channels.put(channel.toLowerCase(), userSet);
-                }
-            }
-        } else {//specified
-            HashSet<User> users = _channels.get(chnl.toLowerCase());
-            for (User u : users) {
-                if (u != null) {
-                    if (u.getNick().equalsIgnoreCase(nick)) {
-                        users.remove(u);
+                        }                                // replaced old map
+                        _channels.put(channel.toLowerCase(), userSet);
                     }
                 }
-            }                                // replaced old map
-            _channels.put(chnl.toLowerCase(), users);
+            } else {//specified
+                HashSet<User> users = _channels.get(chnl.toLowerCase());
+                for (User u : users) {
+                    if (u != null) {
+                        if (u.getNick().equalsIgnoreCase(nick)) {
+                            users.remove(u);
+                        }
+                    }
+                }                                // replaced old map
+                _channels.put(chnl.toLowerCase(), users);
+            }
         }
     }
 
@@ -2918,6 +2928,10 @@ public abstract class PircBot implements ReplyConstants {
                                     if (userMode == STAFF) {
                                         userSet.remove(u);
                                         userSet.add(new User("s" + u.getPrefix(), u.getNick()));
+                                    }
+                                    if (userMode == TURBO) {
+                                        userSet.remove(u);
+                                        userSet.add(new User("t" + u.getPrefix(), u.getNick()));
                                     }
                                 }
                             }
@@ -3013,10 +3027,10 @@ public abstract class PircBot implements ReplyConstants {
     // Default settings for the PircBot.
     private boolean _autoNickChange = false;
     private boolean _verbose = false;
-    private String _name = "PircBot";
+    private String _name = "Botnak";
     private String _nick = _name;
-    private String _login = "PircBot";
-    private String _version = "PircBot " + VERSION + " Java IRC Bot - www.jibble.org";
+    private String _login = "Botnak";
+    private String _version = "Botnak " + VERSION;
     private String _finger = "You ought to be arrested for fingering a bot!";
 
     private String _channelPrefixes = "#&+!";
