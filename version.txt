@@ -1,0 +1,22 @@
+2.2
+
+"Botnak 2 Episode 1"
+
+Added:
+* Turbo icon detection!
+* New sound engine!
+   -> !stopallsounds stops every sound
+   -> !stopsound stops the first sound
+* !togglereply <channel> toggles the reply status for just the given channel
+* !toggleface <twitch face> will toggle the visibility of a twitch face in Botnak
+* Commands that directly modify Botnak are now "ConsoleCommands" and can have custom permissions set for it
+* Smarter title detection (no "Viewer count" if not streaming, no "Bot:" if not logged in, etc)
+* !setpermission <console command trigger> for changing the permission of console commands
+* Keywords!
+   -> !addkeyword word R G B  >>adds a word and makes the entire message that color when that word is said
+   -> !removekeyword word  >>removes word from the list
+* An auto-updater that checks versions on startup and lets you know when there's a new version!
+
+Updated:
+* !soundstate gives more info
+* KappaHD detection
