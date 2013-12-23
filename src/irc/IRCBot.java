@@ -342,31 +342,13 @@ public class IRCBot extends PircBot {
         return false;
     }
 
-    public static String lastChannel = "";
-    public static Command lastMessage = null;
-    public static boolean firstTime = true;
-    public static Command secondToLastMessage = null;
-
     public void handleCommand(String channel, Command c) {
         if (c.getMessage().data.length != 0) {
             if (!c.getDelayTimer().isRunning()) {
                 for (String s : c.getMessage().data) {
                     sendMessage(channel, s);
                 }
-                if (channel.equals(lastChannel)) {
-                    if ((lastMessage != null && c.equals(lastMessage)) ||
-                            secondToLastMessage != null && c.equals(secondToLastMessage)) {
-                        c.getDelayTimer().reset();
-                    }
-                }
-                if (firstTime) {
-                    firstTime = !firstTime;
-                } else {
-                    secondToLastMessage = c;
-                    firstTime = !firstTime;
-                }
-                lastChannel = channel;
-                lastMessage = c;
+                c.getDelayTimer().reset();
             }
         }
     }

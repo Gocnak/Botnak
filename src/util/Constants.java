@@ -8,20 +8,20 @@ import java.util.regex.Pattern;
 
 public class Constants {
 
-    public static final double VERSION = 2.1;
+    public static final double VERSION = 2.11;
 
     /**
-     * All users may use the sound
+     * All users may do it
      */
     public static final int PERMISSION_ALL = 0;
 
     /**
-     * Only mods and the person running Botnak can use the sound
+     * Only mods and the person running Botnak can do it
      */
     public static final int PERMISSION_MOD = 1;
 
     /**
-     * Only the person running Botnak can use the sound
+     * Only the person running Botnak can do it
      */
     public static final int PERMISSION_DEV = 2;
 

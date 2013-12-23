@@ -215,6 +215,18 @@ public class GUIMain extends JFrame {
         }
     }
 
+    public static void onBan(String message) {
+        if (message != null) {
+            if (message.split(" ").length == 2) {
+                String user = message.split(" ")[1];
+                String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
+                for (String chan : keys) {
+                    chatPanes.get(chan).onBan(user);
+                }
+            }
+        }
+    }
+
 
     private static int viewerPeak = 0;
     private static int viewerCount = 0;

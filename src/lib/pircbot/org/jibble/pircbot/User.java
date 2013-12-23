@@ -28,6 +28,7 @@ package lib.pircbot.org.jibble.pircbot;
  */
 public class User {
 
+    private boolean op = false, voice = false, staff = false, admin = false, turbo = false;
 
     /**
      * Constructs a User object with a known prefix and nick.
@@ -64,7 +65,11 @@ public class User {
      * @return true if the user is an operator in the channel.
      */
     public boolean isOp() {
-        return _prefix.indexOf('@') >= 0;
+        return op;
+    }
+
+    public void setOp(boolean newBool) {
+        op = newBool;
     }
 
 
@@ -77,7 +82,11 @@ public class User {
      * @return true if the user has voice in the channel.
      */
     public boolean hasVoice() {
-        return _prefix.indexOf('+') >= 0;
+        return voice;
+    }
+
+    public void setVoice(boolean newBool) {
+        voice = newBool;
     }
 
     /**
@@ -86,7 +95,11 @@ public class User {
      * @return true if they are an admin.
      */
     public boolean isAdmin() {
-        return _prefix.indexOf('a') >= 0;
+        return admin;
+    }
+
+    public void setAdmin(boolean newBool) {
+        admin = newBool;
     }
 
     /**
@@ -95,14 +108,22 @@ public class User {
      * @return true if they are a staff member.
      */
     public boolean isStaff() {
-        return _prefix.indexOf('s') >= 0;
+        return staff;
+    }
+
+    public void setStaff(boolean newBool) {
+        staff = newBool;
     }
 
     /**
      * Checks to see if a user has twitch turbo.
      */
     public boolean isTurbo() {
-        return _prefix.indexOf('t') >= 0;
+        return turbo;
+    }
+
+    public void setTurbo(boolean newBool) {
+        turbo = newBool;
     }
 
     /**
@@ -114,6 +135,10 @@ public class User {
         return _nick;
     }
 
+    public void setNick(String newNick) {
+        _nick = newNick;
+        _lowerNick = _nick.toLowerCase();
+    }
 
     /**
      * Returns the nick of the user complete with their prefix if they

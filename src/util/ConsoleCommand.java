@@ -49,7 +49,7 @@ public class ConsoleCommand {
      *
      * @param trigger           The name of the command; what comes after the !
      * @param act               The action of the console command.
-     * @param classPerm         The class permission (@see Sound.PERMISSION_ s)
+     * @param classPerm         The class permission (@see Constants.PERMISSION_ s)
      * @param certainPermission The certain users able to use the command.
      */
     public ConsoleCommand(String trigger, Action act, int classPerm, String[] certainPermission) {

@@ -128,4 +128,8 @@ public class IRCViewer extends PircBot {
         });
     }
 
+    public void onClearChat(String line) {
+        GUIMain.onBan(line);
+    }
+
 }

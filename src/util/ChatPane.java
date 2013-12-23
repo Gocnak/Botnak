@@ -131,6 +131,26 @@ public class ChatPane {
         }
     }
 
+    public void onBan(String user) {
+        if (GUIMain.currentSettings.cleanupChat) {
+            cleanupCounter++;
+            if (cleanupCounter > GUIMain.currentSettings.chatMax) {
+                /* cleanup every n messages */
+                cleanupChat();
+                cleanupCounter = 0;
+            }
+        }
+        String time = format.format(new Date(System.currentTimeMillis()));
+        StyledDocument doc = textPane.getStyledDocument();
+        try {
+            doc.insertString(textPane.getCaretPosition(), time, GUIMain.norm);
+            textPane.setCaretPosition(doc.getLength());
+            doc.insertString(textPane.getCaretPosition(), " " + user + " has been banned/timed out!\n", GUIMain.norm);
+            textPane.setCaretPosition(doc.getLength());
+        } catch (Exception ignored) {
+        }
+    }
+
     private ImageIcon sizeIcon(URL image) {
         ImageIcon icon;
         try {

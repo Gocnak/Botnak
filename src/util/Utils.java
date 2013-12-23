@@ -801,17 +801,17 @@ public class Utils {
         if (trigger.equalsIgnoreCase("addkeyword")) {
             int r, g, b;
             try {
-                r = Integer.parseInt(split[1]);
+                r = Integer.parseInt(split[2]);
             } catch (Exception e) {
                 r = 255;
             }
             try {
-                g = Integer.parseInt(split[2]);
+                g = Integer.parseInt(split[3]);
             } catch (Exception e) {
                 g = 255;
             }
             try {
-                b = Integer.parseInt(split[3]);
+                b = Integer.parseInt(split[4]);
             } catch (Exception e) {
                 b = 255;
             }
