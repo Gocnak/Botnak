@@ -49,22 +49,32 @@ public class ChannelManager {
             if (u != null) {
                 switch (userMode) {
                     case PircBot.ADMIN:
-                        u.setAdmin(true);
+                        if (!u.isAdmin()) {
+                            u.setAdmin(true);
+                        }
                         break;
                     case PircBot.STAFF:
-                        u.setStaff(true);
+                        if (!u.isStaff()) {
+                            u.setStaff(true);
+                        }
                         break;
                     case PircBot.TURBO:
-                        u.setTurbo(true);
-                        break;
-                    case PircBot.SUBSCRIBER:
-                        //TODO
+                        if (!u.isTurbo()) {
+                            u.setTurbo(true);
+                        }
                         break;
                     default:
                         break;
                 }
+                break;
             }
         }
+    }
+
+    public synchronized void handleSubscriber(String channel, String user) {
+        if (getChannel(channel) == null || getChannel(channel).getUser(user) == null) return;
+        User u = getChannel(channel).getUser(user);
+        if (!u.isSubscriber()) u.setSubscriber(true);
     }
 
     /**
@@ -106,6 +116,13 @@ public class ChannelManager {
         } else {
             addChannel(new Channel(channel, user));
         }
+    }
+
+    public synchronized User getUser(String channel, String nick) {
+        if (getChannel(channel) != null) {
+            return getChannel(channel).getUser(nick);
+        }
+        return null;
     }
 
     /**

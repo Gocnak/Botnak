@@ -1,19 +1,16 @@
-package util;
+package gui;
 
-import gui.GUIMain;
-import gui.WrapEditorKit;
+import gui.listeners.ListenerName;
+import gui.listeners.ListenerURL;
 import lib.pircbot.org.jibble.pircbot.User;
 import lib.scalr.Scalr;
+import util.Utils;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.text.*;
-import javax.swing.text.html.HTML;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
-import java.net.URI;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -80,20 +77,23 @@ public class ChatPane {
             User u = Utils.getUser(GUIMain.viewer, channel, sender);
             if (u != null) {
                 if (channel.substring(1).equals(sender)) {
-                    insertIcon(doc, textPane.getCaretPosition(), 1);
+                    insertIcon(doc, textPane.getCaretPosition(), 1, null);
+                }
+                if (u.isSubscriber()) {
+                    insertIcon(doc, textPane.getCaretPosition(), 5, channel);
                 }
                 if (u.isStaff()) {
-                    insertIcon(doc, textPane.getCaretPosition(), 3);
+                    insertIcon(doc, textPane.getCaretPosition(), 3, null);
                 }
                 if (u.isAdmin()) {
-                    insertIcon(doc, textPane.getCaretPosition(), 2);
+                    insertIcon(doc, textPane.getCaretPosition(), 2, null);
                 }
                 if (u.isTurbo()) {
-                    insertIcon(doc, textPane.getCaretPosition(), 4);
+                    insertIcon(doc, textPane.getCaretPosition(), 4, null);
                 }
                 if (u.isOp()) {
                     if (!channel.substring(1).equals(sender) && !u.isStaff() && !u.isAdmin()) {//not the broadcaster again
-                        insertIcon(doc, textPane.getCaretPosition(), 0);
+                        insertIcon(doc, textPane.getCaretPosition(), 0, null);
                     }
                 }
             }
@@ -102,26 +102,18 @@ public class ChatPane {
                 doc.insertString(textPane.getCaretPosition(), " " + sender, GUIMain.user);
                 doc.insertString(textPane.getCaretPosition(), " (" + channel.substring(1) + "): ", GUIMain.norm);
             } else {
-                doc.insertString(textPane.getCaretPosition(), " " + sender + ": ", GUIMain.user);
+                doc.insertString(textPane.getCaretPosition(), " " + sender + (!isMe ? ": " : " "), GUIMain.user);
             }
+            Utils.handleNames(doc, nameStart, sender, GUIMain.user);
             Utils.handleFaces(doc, nameStart, sender);//if the sender has a custom face that they want instead
             int messStart = textPane.getCaretPosition();
             SimpleAttributeSet set;
-            if (isMe) {
-                if (Utils.mentionsKeyword(message)) {
-                    set = Utils.getSetForKeyword(message);
-                } else {
-                    set = GUIMain.user;
-                }
-                doc.insertString(textPane.getCaretPosition(), message + "\n", set);
+            if (Utils.mentionsKeyword(message)) {
+                set = Utils.getSetForKeyword(message);
             } else {
-                if (Utils.mentionsKeyword(message)) {
-                    set = Utils.getSetForKeyword(message);
-                } else {
-                    set = GUIMain.norm;
-                }
-                doc.insertString(textPane.getCaretPosition(), message + "\n", set);
+                set = (isMe ? GUIMain.user : GUIMain.norm);
             }
+            doc.insertString(textPane.getCaretPosition(), message + "\n", set);
             Utils.handleFaces(doc, messStart, message);
             Utils.handleTwitchFaces(doc, messStart, message);
             Utils.handleURLs(doc, messStart, message);
@@ -131,7 +123,7 @@ public class ChatPane {
         }
     }
 
-    public void onBan(String user) {
+    public void onBan(String message) {
         if (GUIMain.currentSettings.cleanupChat) {
             cleanupCounter++;
             if (cleanupCounter > GUIMain.currentSettings.chatMax) {
@@ -145,7 +137,7 @@ public class ChatPane {
         try {
             doc.insertString(textPane.getCaretPosition(), time, GUIMain.norm);
             textPane.setCaretPosition(doc.getLength());
-            doc.insertString(textPane.getCaretPosition(), " " + user + " has been banned/timed out!\n", GUIMain.norm);
+            doc.insertString(textPane.getCaretPosition(), " " + message + "\n", GUIMain.norm);
             textPane.setCaretPosition(doc.getLength());
         } catch (Exception ignored) {
         }
@@ -166,7 +158,7 @@ public class ChatPane {
         return icon;
     }
 
-    public void insertIcon(StyledDocument doc, int pos, int type) {
+    public void insertIcon(StyledDocument doc, int pos, int type, String channel) {
         SimpleAttributeSet attrs = new SimpleAttributeSet();
         ImageIcon icon;
         String kind;
@@ -190,6 +182,12 @@ public class ChatPane {
             case 4:
                 icon = sizeIcon(GUIMain.currentSettings.turboIcon);
                 kind = "Turbo";
+                break;
+            case 5:
+                URL subIcon = Utils.getSubIcon(channel);
+                if (subIcon == null) return;
+                icon = sizeIcon(subIcon);
+                kind = "Subscriber";
                 break;
             default:
                 icon = sizeIcon(GUIMain.currentSettings.modIcon);
@@ -220,6 +218,7 @@ public class ChatPane {
         Point startPoint = viewport.getViewPosition();
         // we are not deleting right before the visible area, but one screen behind
         // for convenience, otherwise flickering.
+        if (startPoint == null) return;
         int start = textPane.viewToModel(startPoint);
         if (start > 0) // not equal zero, because then we don't have to delete anything
         {
@@ -255,46 +254,8 @@ public class ChatPane {
         pane.setMargin(new Insets(0, 0, 0, 0));
         pane.setBackground(Color.black);
         pane.setFont(GUIMain.currentSettings.font);
-        pane.addMouseListener(new MouseListener() {
-            public void mouseClicked(MouseEvent e) {
-            }
-
-            public void mousePressed(MouseEvent e) {
-            }
-
-            public void mouseEntered(MouseEvent e) {
-            }
-
-            public void mouseExited(MouseEvent e) {
-            }
-
-            //credit to Fenerista from
-            //http://www.daniweb.com/software-development/java/threads/331500/how-can-i-add-a-clickable-url-in-a-jtextpane#post1422477
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                JTextPane editor = (JTextPane) e.getSource();
-                Point pt = new Point(e.getX(), e.getY());
-                int pos = editor.viewToModel(pt);
-                if (pos >= 0) {
-                    Document doc = editor.getDocument();
-                    if (doc instanceof DefaultStyledDocument) {
-                        DefaultStyledDocument hdoc = (DefaultStyledDocument) doc;
-                        Element el = hdoc.getCharacterElement(pos);
-                        AttributeSet a = el.getAttributes();
-                        String href = (String) a.getAttribute(HTML.Attribute.HREF);
-                        if (href != null) {
-                            try {
-                                Desktop desktop = Desktop.getDesktop();
-                                URI uri = new URI(href);
-                                desktop.browse(uri);
-                            } catch (Exception ev) {
-                                GUIMain.log((ev.getMessage()));
-                            }
-                        }
-                    }
-                }
-            }
-        });
+        pane.addMouseListener(new ListenerURL());
+        pane.addMouseListener(new ListenerName());
         scrollPane.setViewportView(pane);
         GUIMain.channelPane.addTab(channel, scrollPane);
         GUIMain.chatPanes.put(channel, new ChatPane(channel, pane));

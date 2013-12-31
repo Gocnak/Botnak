@@ -1,5 +1,8 @@
 package util;
 
+import face.Face;
+import face.SubscriberIcon;
+import face.TwitchFace;
 import gui.GUIMain;
 import sound.Sound;
 
@@ -50,6 +53,7 @@ public class Settings {
             + File.separator + "Botnak");
     public File faceDir = new File(defaultDir + File.separator + "Faces");
     public File twitchFaceDir = new File(defaultDir + File.separator + "TwitchFaces");
+    public File subIconsDir = new File(defaultDir + File.separator + "SubIcons");
     public File logDir = new File(defaultDir + File.separator + "Logs");
     public File sessionLogDir;
     //files
@@ -64,6 +68,7 @@ public class Settings {
     public File defaultsFile = new File(defaultDir + File.separator + "defaults.ini");
     public static File lafFile = new File(defaultDir + File.separator + "laf.txt");
     public File keywordsFile = new File(defaultDir + File.separator + "keywords.txt");
+    public File subIconsFile = new File(defaultDir + File.separator + "subIcons.txt");
 
     //appearance
     public boolean logChat = false;
@@ -90,6 +95,7 @@ public class Settings {
         defaultDir.mkdirs();
         faceDir.mkdirs();
         twitchFaceDir.mkdirs();
+        subIconsDir.mkdirs();
     }
 
     /**
@@ -123,12 +129,18 @@ public class Settings {
             GUIMain.log("Loading text commands...");
             loadCommands();
         }
-        GUIMain.log("Loading keywords...");
-        loadKeywords();
+        if (Utils.areFilesGood(subIconsFile.getAbsolutePath())) {
+            GUIMain.log("Loading subscriber icons...");
+            loadSubIcons();
+        }
+        if (Utils.areFilesGood(keywordsFile.getAbsolutePath())) {
+            GUIMain.log("Loading keywords...");
+            loadKeywords();
+        }
         GUIMain.log("Loading console commands...");
-        loadConsoleCommands();
-        GUIMain.log("Loading custom faces...");
+        loadConsoleCommands();//has to be out of the check for files for first time boot
         if (Utils.areFilesGood(faceFile.getAbsolutePath())) {
+            GUIMain.log("Loading custom faces...");
             loadFaces();
         }
         GUIMain.log("Loading default Twitch faces...");
@@ -151,6 +163,7 @@ public class Settings {
         if (!GUIMain.userColMap.isEmpty()) saveUserColors();
         if (GUIMain.loadedCommands()) saveCommands();
         if (!GUIMain.keywordMap.isEmpty()) saveKeywords();
+        if (!GUIMain.subIconSet.isEmpty()) saveSubIcons();
         saveConCommands();
         saveLAF();
     }
@@ -687,6 +700,36 @@ public class Settings {
             GUIMain.log(e.getMessage());
         }
     }
+
+
+    public void saveSubIcons() {
+        try {
+            PrintWriter br = new PrintWriter(subIconsFile);
+            for (SubscriberIcon i : GUIMain.subIconSet) {
+                br.println(i.getChannel() + "," + i.getFileLoc());
+            }
+            br.flush();
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    public void loadSubIcons() {
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(subIconsFile.toURI().toURL().openStream()));
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] split = line.split(",");
+                GUIMain.subIconSet.add(new SubscriberIcon(split[0], split[1]));
+            }
+            GUIMain.log("Loaded subscriber icons!");
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
 
     /**
      * Look and Feel

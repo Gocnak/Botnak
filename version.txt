@@ -1,12 +1,23 @@
-2.11
+2.2
 
 Added:
-* Crude ban/clearing of the chat detection
-* A new and improved User and Channel system for fixing the
-ConcurrentExceptions, and to aid the Subscriber detection
-in the future.
+* Subscriber icons support
+* A click-enabled popup menu for usernames!
+It has varying options, depending on the current situation
+(if you're mod or broadcaster, if the user is already mod, etc):
+    -> Ban user
+    -> Timeout user
+    -> Mod user
+    -> Un-mod user
+    -> Go to user's channel
+* The bans/timeouts are now on a queue, and will update with
+who has been banned and how many times every 5 seconds, in an
+intelligent manner (if the user is in the chat or not).
 
-Hotfix:
-* Fixed the keyword color parsing.
-* Commands now just reset after being called, instead
-of the horrible "intelligent resetting" I had.
+Fixed:
+* Fixed the /me messages having a ':' in them.
+* Internal fixes/optimizations including making some file movements,
+as well as making individual listeners, etc.
+
+To come:
+* FrankerFaceZ support

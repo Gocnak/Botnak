@@ -1,5 +1,10 @@
 package gui;
 
+import face.Face;
+import face.SubscriberIcon;
+import face.TwitchFace;
+import gui.listeners.ListenerName;
+import gui.listeners.ListenerURL;
 import irc.IRCBot;
 import irc.IRCViewer;
 import sound.Sound;
@@ -7,13 +12,15 @@ import sound.SoundEngine;
 import util.*;
 
 import javax.swing.*;
-import javax.swing.text.*;
-import javax.swing.text.html.HTML;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,6 +32,7 @@ public class GUIMain extends JFrame {
     public static HashMap<String, Color> userColMap;
     public static HashSet<Command> commandSet;
     public static HashSet<String> channelSet;
+    public static HashSet<SubscriberIcon> subIconSet;
     public static HashMap<String, ChatPane> chatPanes;
     public static HashMap<String, Boolean> channelsToReplyIn;
     /**
@@ -42,6 +50,7 @@ public class GUIMain extends JFrame {
     public static HashMap<String, Face> faceMap;
     public static HashMap<String, TwitchFace> twitchFaceMap;
     public static HashMap<String, Color> keywordMap;
+    public static HashMap<String, Integer> banMap;
 
     public static HashSet<ConsoleCommand> conCommands;
 
@@ -89,6 +98,7 @@ public class GUIMain extends JFrame {
         twitchFaceMap = new HashMap<>();
         conCommands = new HashSet<>();
         keywordMap = new HashMap<>();
+        subIconSet = new HashSet<>();
         SoundEngine.init();
         StyleConstants.setForeground(norm, Color.white);
         StyleConstants.setForeground(color, Color.orange);
@@ -202,7 +212,7 @@ public class GUIMain extends JFrame {
     }
 
 
-    private void onMessageAction(String channel, String sender, String message, boolean isMe) {
+    private synchronized void onMessageAction(String channel, String sender, String message, boolean isMe) {
         if (message != null && channel != null && sender != null && GUIMain.viewer != null) {
             String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
             for (String pane : keys) {
@@ -215,13 +225,14 @@ public class GUIMain extends JFrame {
         }
     }
 
-    public static void onBan(String message) {
-        if (message != null) {
-            if (message.split(" ").length == 2) {
-                String user = message.split(" ")[1];
-                String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
-                for (String chan : keys) {
-                    chatPanes.get(chan).onBan(user);
+    public static synchronized void onBan(String message) {
+        if (message != null && viewer != null) {
+            String user = message.split(" ")[0];
+            String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
+            chatPanes.get("All Chats").onBan(message);
+            for (String chan : keys) {
+                if (viewer.getUser("#" + chan, user) != null) {
+                    chatPanes.get(chan).onBan(message);
                 }
             }
         }
@@ -386,46 +397,8 @@ public class GUIMain extends JFrame {
                     allChats.setMargin(new Insets(0, 0, 0, 0));
                     allChats.setFont(new Font("Calibri", Font.PLAIN, 18));
                     allChats.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-                    allChats.addMouseListener(new MouseListener() {
-                        public void mouseClicked(MouseEvent e) {
-                        }
-
-                        public void mousePressed(MouseEvent e) {
-                        }
-
-                        public void mouseEntered(MouseEvent e) {
-                        }
-
-                        public void mouseExited(MouseEvent e) {
-                        }
-
-                        //credit to Fenerista from
-                        //http://www.daniweb.com/software-development/java/threads/331500/how-can-i-add-a-clickable-url-in-a-jtextpane#post1422477
-                        @Override
-                        public void mouseReleased(MouseEvent e) {
-                            JTextPane editor = (JTextPane) e.getSource();
-                            Point pt = new Point(e.getX(), e.getY());
-                            int pos = editor.viewToModel(pt);
-                            if (pos >= 0) {
-                                Document doc = editor.getDocument();
-                                if (doc instanceof DefaultStyledDocument) {
-                                    DefaultStyledDocument hdoc = (DefaultStyledDocument) doc;
-                                    Element el = hdoc.getCharacterElement(pos);
-                                    AttributeSet a = el.getAttributes();
-                                    String href = (String) a.getAttribute(HTML.Attribute.HREF);
-                                    if (href != null) {
-                                        try {
-                                            Desktop desktop = Desktop.getDesktop();
-                                            URI uri = new URI(href);
-                                            desktop.browse(uri);
-                                        } catch (Exception ev) {
-                                            GUIMain.log((ev.getMessage()));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
+                    allChats.addMouseListener(new ListenerURL());
+                    allChats.addMouseListener(new ListenerName());
                     allChatsScroll.setViewportView(allChats);
                 }
                 channelPane.addTab("All Chats", allChatsScroll);

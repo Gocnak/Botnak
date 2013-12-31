@@ -14,12 +14,15 @@ found at http://www.jibble.org/licenses/
 
 package lib.pircbot.org.jibble.pircbot;
 
+import util.Constants;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.StringTokenizer;
 
 @SuppressWarnings("unused")
@@ -829,9 +832,7 @@ public abstract class PircBot implements ReplyConstants {
      * @param line The line to add to the log.
      */
     public void log(String line) {
-        if (_verbose) {
-            System.out.println(System.currentTimeMillis() + " " + line);
-        }
+        if (_verbose) System.out.println(System.currentTimeMillis() + " " + line);
     }
 
 
@@ -844,7 +845,7 @@ public abstract class PircBot implements ReplyConstants {
      *
      * @param line The raw line of text from the server.
      */
-    protected void handleLine(String line) {
+    protected synchronized void handleLine(String line) {
         log(line);
 
         // Check for server pings.
@@ -877,10 +878,8 @@ public abstract class PircBot implements ReplyConstants {
                     int code = -1;
                     try {
                         code = Integer.parseInt(command);
-                    } catch (NumberFormatException e) {
-                        // Keep the existing value.
+                    } catch (NumberFormatException ignored) {
                     }
-
                     if (code != -1) {
                         String response = line.substring(line.indexOf(command, senderInfo.length()) + 4, line.length());
                         processServerResponse(code, response);
@@ -899,7 +898,6 @@ public abstract class PircBot implements ReplyConstants {
                     // Return from the method;
                     return;
                 }
-
             }
         }
 
@@ -944,6 +942,17 @@ public abstract class PircBot implements ReplyConstants {
                 onUnknown(line);
             }
         } else if (command.equals("PRIVMSG") && _channelPrefixes.indexOf(target.charAt(0)) >= 0) {
+            //update subscribers
+            if (subcriberListeners.size() > 0) {
+                for (SubcriberListener sl : subcriberListeners) {
+                    if (sl.getUserName().equalsIgnoreCase(sourceNick)) {
+                        channelManager.getChannel(target).getUser(sourceNick).setSubscriber(true);
+                        sl.interrupt();
+                        subcriberListeners.remove(sl);
+                        break;
+                    }
+                }
+            }
             // This is a normal message to a channel.
             onMessage(target, sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
         } else if (command.equals("PRIVMSG") && line.contains("SPECIALUSER")) {
@@ -1465,13 +1474,11 @@ public abstract class PircBot implements ReplyConstants {
                         if (channelManager.getChannel(target) != null) {
                             channelManager.getChannel(target).getUser(params[2]).setOp(true);
                         }
-                        //updateUser(target, OP_ADD, params[2]);
                         onOp(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     } else {
                         if (channelManager.getChannel(target) != null) {
                             channelManager.getChannel(target).getUser(params[2]).setOp(false);
                         }
-                        //updateUser(target, OP_REMOVE, params[2]);
                         onDeop(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     }
                 } else if (atPos == 'v') {
@@ -1479,13 +1486,11 @@ public abstract class PircBot implements ReplyConstants {
                         if (channelManager.getChannel(target) != null) {
                             channelManager.getChannel(target).getUser(params[2]).setVoice(true);
                         }
-                        //updateUser(target, VOICE_ADD, params[2]);
                         onVoice(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     } else {
                         if (channelManager.getChannel(target) != null) {
                             channelManager.getChannel(target).getUser(params[2]).setVoice(false);
                         }
-                        //updateUser(target, VOICE_REMOVE, params[2]);
                         onDeVoice(target, sourceNick, sourceLogin, sourceHostname, params[2]);
                     }
                 } else if (atPos == 'k') {
@@ -2768,6 +2773,11 @@ public abstract class PircBot implements ReplyConstants {
         return channelManager.getChannel(channel).getUsers();
     }
 
+    public synchronized User getUser(String channel, String user) {
+        if (!channel.contains("#")) channel = "#" + channel;
+        return channelManager.getUser(channel, user);
+    }
+
 
     /**
      * Returns an array of all channels that we are in.  Note that if you
@@ -2782,6 +2792,10 @@ public abstract class PircBot implements ReplyConstants {
      */
     public synchronized final String[] getChannels() {
         return channelManager.getChannelNames();
+    }
+
+    public synchronized Channel getChannel(String name) {
+        return channelManager.getChannel(name);
     }
 
 
@@ -2811,7 +2825,7 @@ public abstract class PircBot implements ReplyConstants {
     }
 
     /**
-     * Determines if a user is admin or staff, and sets their prefix accordingly.
+     * Determines if a user is admin, staff, turbo, or subscriber and sets their prefix accordingly.
      *
      * @param line The line to parse.
      */
@@ -2829,11 +2843,27 @@ public abstract class PircBot implements ReplyConstants {
                 channelManager.updateUser(TURBO, user);
             }
             if (split[2].equalsIgnoreCase("subscriber")) {
-                //TODO handle subscribers
+                handleSubscriber(user);
             }
         }
     }
 
+    HashSet<SubcriberListener> subcriberListeners = new HashSet<>();
+
+    public synchronized void handleSubscriber(String user) {
+        if (subcriberListeners.size() > 0) {
+            for (SubcriberListener sl : subcriberListeners) {
+                if (sl.getUserName().equalsIgnoreCase(user)) {
+                    if (sl.isVerified()) {
+                        channelManager.handleSubscriber(sl.getChannel().getName(), user);
+                        subcriberListeners.remove(sl);
+                        return;
+                    }
+                }
+            }
+        }
+        subcriberListeners.add(new SubcriberListener(user));
+    }
 
     /**
      * Add a user to the specified channel in our memory.
@@ -2883,13 +2913,6 @@ public abstract class PircBot implements ReplyConstants {
     private Queue _outQueue = new Queue();
     private long _messageDelay = 1000;
 
-    /**
-     * A HashMap of the channels as keys with corresponding users in the channels as values.
-     * <p/>
-     * Modified to hopefully make user detection work now.
-     */
-    //private ConcurrentHashMap<String, HashSet<User>> _channels = new ConcurrentHashMap<>();
-
     // A Hashtable to temporarily store channel topics when we join them
     // until we find out who set that topic.
     private HashMap<String, String> _topics = new HashMap<>();
@@ -2905,7 +2928,7 @@ public abstract class PircBot implements ReplyConstants {
     private String _name = "Botnak";
     private String _nick = _name;
     private String _login = "Botnak";
-    private String _version = "Botnak " + VERSION;
+    private String _version = "Botnak " + Constants.VERSION;
     private String _finger = "You ought to be arrested for fingering a bot!";
 
     private String _channelPrefixes = "#&+!";

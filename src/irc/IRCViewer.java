@@ -12,6 +12,8 @@ public class IRCViewer extends PircBot {
 
     String name, pass;
 
+    BanQueue bq = null;
+
     public String getMaster() {
         return name;
     }
@@ -46,6 +48,19 @@ public class IRCViewer extends PircBot {
                 public void run() {
                     if (!GUIMain.viewerCheck.isAlive()) {
                         GUIMain.viewerCheck.start();
+                    }
+                }
+            });
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+        try {
+            EventQueue.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    if (bq == null || !bq.isAlive()) {
+                        bq = new BanQueue();
+                        bq.start();
                     }
                 }
             });
@@ -103,6 +118,8 @@ public class IRCViewer extends PircBot {
         }
         disconnect();
         dispose();
+        if (GUIMain.viewerCheck != null && !GUIMain.viewerCheck.isInterrupted()) GUIMain.viewerCheck.interrupt();
+        if (bq != null && !bq.isInterrupted()) bq.interrupt();
         if (forget) {
             GUIMain.currentSettings.user = null;
         }
@@ -128,8 +145,22 @@ public class IRCViewer extends PircBot {
         });
     }
 
-    public void onClearChat(String line) {
-        GUIMain.onBan(line);
+    public synchronized void onClearChat(String line) {
+        if (line.split(" ").length > 1) {
+            if (bq == null) {
+                bq = new BanQueue();
+                bq.start();
+            }
+            addToMap(line.split(" ")[1]);
+        } else {
+            GUIMain.log("Someone cleared the chat!");
+        }
+    }
+
+    public synchronized void addToMap(String name) {
+        Integer old = GUIMain.banMap.get(name);
+        if (old == null) old = 0;
+        GUIMain.banMap.put(name, (old + 1));
     }
 
 }

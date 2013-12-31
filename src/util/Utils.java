@@ -1,5 +1,8 @@
 package util;
 
+import face.Face;
+import face.SubscriberIcon;
+import face.TwitchFace;
 import gui.GUIMain;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
@@ -300,6 +303,46 @@ public class Utils {
         return Color.getHSBColor(h, s * 0.25f + 0.75f, b * 0.25f + 0.75f);
     }
 
+
+    public static URL getSubIcon(String channel) {
+        for (SubscriberIcon i : GUIMain.subIconSet) {
+            if (i.getChannel().equalsIgnoreCase(channel)) {
+                try {
+                    if (areFilesGood(i.getFileLoc())) {
+                        return new File(i.getFileLoc()).toURI().toURL();
+                    } else {
+                        GUIMain.subIconSet.remove(i);
+                        break;
+                    }
+                } catch (Exception e) {
+                    GUIMain.log(e.getMessage());
+                }
+            }
+        }
+        try {
+            URL toRead = new URL("https://api.twitch.tv/kraken/chat/" + channel.replace("#", "") + "/badges");
+            BufferedReader irs = new BufferedReader(new InputStreamReader(toRead.openStream()));
+            String line;
+            String path = null;
+            while ((line = irs.readLine()) != null) {
+                JSONObject init = new JSONObject(line);
+                JSONObject sub = init.getJSONObject("subscriber");
+                if (!sub.getString("image").equalsIgnoreCase("null")) {
+                    path = downloadIcon(sub.getString("image"), channel);
+                    break;
+                }
+            }
+            irs.close();
+            if (path != null) {
+                GUIMain.subIconSet.add(new SubscriberIcon(channel, path));
+                return new URL(path);
+            }
+        } catch (Exception e) {
+            GUIMain.log(e);
+        }
+        return null;
+    }
+
     /**
      * Loads the default Twitch faces. This downloads to the local folder in
      * <p/>
@@ -393,6 +436,29 @@ public class Utils {
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
+    }
+
+    /**
+     * Downloads the subscriber icon of the specified URL and channel.
+     *
+     * @param url     The url to download the icon from.
+     * @param channel The channel the icon is for.
+     * @return The path of the file of the icon.
+     */
+    public static String downloadIcon(String url, String channel) {
+        try {
+            URL u = new URL(url);
+            BufferedImage image = ImageIO.read(u);//just incase the file is null/it can't read it
+            if (image.getHeight() > 26) {//if it's too big
+                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26, Scalr.OP_ANTIALIAS);//scale it
+            }
+            File tosave = new File(GUIMain.currentSettings.subIconsDir + File.separator + channel.substring(1) + ".png");
+            ImageIO.write(image, "PNG", tosave);//save it
+            return tosave.getAbsolutePath();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+        return null;
     }
 
     /**
@@ -576,6 +642,24 @@ public class Utils {
             }
         } catch (BadLocationException e) {
             GUIMain.log((e.getMessage()));
+        }
+    }
+
+    /**
+     * Inserts the NAME attribute for the popup menus.
+     *
+     * @param doc   The document (JTextPane) to search.
+     * @param start The start index of the user.
+     * @param name  The name of the user.
+     * @param set   The user's set.
+     */
+    public static void handleNames(StyledDocument doc, int start, String name, SimpleAttributeSet set) {
+        try {
+            set.addAttribute(HTML.Attribute.NAME, name);
+            doc.remove(start, name.length());
+            doc.insertString(start, name, set);
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
         }
     }
 

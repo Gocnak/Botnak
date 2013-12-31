@@ -1,4 +1,4 @@
-package util;
+package face;
 
 public class TwitchFace {
 

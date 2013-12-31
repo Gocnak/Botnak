@@ -69,5 +69,14 @@ public class Channel {
         return name;
     }
 
+    /**
+     * Gets the username of the channel.
+     *
+     * @return The name of the channel without the hashtag.
+     */
+    public String getUserName() {
+        return name.substring(1);
+    }
+
 
 }

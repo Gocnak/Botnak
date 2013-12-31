@@ -1,6 +1,5 @@
 package gui;
 
-import util.ChatPane;
 import util.Utils;
 
 import javax.swing.*;

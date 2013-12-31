@@ -1,4 +1,4 @@
-package util;
+package gui;
 
 
 /**
@@ -217,8 +217,8 @@ public class JFontChooser extends JComponent {
      * Get the style of the selected font.
      *
      * @return the style of the selected font.
-     *         <code>Font.PLAIN</code>, <code>Font.BOLD</code>,
-     *         <code>Font.ITALIC</code>, <code>Font.BOLD|Font.ITALIC</code>
+     * <code>Font.PLAIN</code>, <code>Font.BOLD</code>,
+     * <code>Font.ITALIC</code>, <code>Font.BOLD|Font.ITALIC</code>
      * @see java.awt.Font#PLAIN
      * @see java.awt.Font#BOLD
      * @see java.awt.Font#ITALIC

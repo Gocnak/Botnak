@@ -28,7 +28,7 @@ package lib.pircbot.org.jibble.pircbot;
  */
 public class User {
 
-    private boolean op = false, voice = false, staff = false, admin = false, turbo = false;
+    private boolean op = false, voice = false, staff = false, admin = false, turbo = false, subscriber = false;
 
     /**
      * Constructs a User object with a known prefix and nick.
@@ -124,6 +124,27 @@ public class User {
 
     public void setTurbo(boolean newBool) {
         turbo = newBool;
+    }
+
+    /**
+     * Checks to see if the user is a subscriber of the channel.
+     *
+     * @return true if the user is a subscriber of the channel, else false.
+     */
+    public boolean isSubscriber() {
+        return subscriber;
+    }
+
+    ;
+
+    /**
+     * Since the way users are stored, each channel has its own users.
+     * Setting this individually will work.
+     *
+     * @param newBool The new boolean
+     */
+    public void setSubscriber(boolean newBool) {
+        subscriber = newBool;
     }
 
     /**
