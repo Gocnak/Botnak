@@ -1,20 +1,18 @@
 package irc;
 
 import gui.GUIMain;
-import lib.chatbot.ChatterBot;
-import lib.chatbot.ChatterBotSession;
-import lib.chatbot.Cleverbot;
 import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
 import sound.Sound;
 import sound.SoundEngine;
-import sound.SoundThread;
+import sound.SoundEntry;
 import util.*;
 
-import java.rmi.ConnectException;
-import java.util.Set;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 
-public class IRCBot extends PircBot {
+public class IRCBot extends MessageHandler {
 
     public String getMasterChannel() {
         return masterChannel;
@@ -22,28 +20,28 @@ public class IRCBot extends PircBot {
 
     //Sounds
     public static boolean shouldTalk = true;
-    public static boolean stopSound = false;
     public static String masterChannel;
-    public ChatterBot chatBot;
-    public ChatterBotSession session;
-    public static Timer botnakTimer;
+    private PircBot bot;
+
+    public PircBot getBot() {
+        return bot;
+    }
 
     public IRCBot(String user, String password) {
         if (GUIMain.currentSettings.bot == null) {
             GUIMain.currentSettings.bot = new Settings.Account(user, password);
         }
-        setName(user);
-        setLogin(user);
+        bot = new PircBot(this);
+        bot.setNick(user);
         if (GUIMain.viewer != null) masterChannel = GUIMain.viewer.getMaster();
         GUIMain.updateTitle();
         try {
-            chatBot = Cleverbot.create();
-            session = chatBot.createSession();
-            connect("irc.twitch.tv", 6667, password);
+            bot.connect("irc.twitch.tv", 6667, password);
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
-        botnakTimer = new Timer(5000);
+        bot.sendRawLineViaQueue("TWITCHCLIENT 3");
+        bot.setMessageDelay(3000);
         if (GUIMain.loadedStreams()) {
             for (String s : GUIMain.channelSet) {
                 doConnect(s);
@@ -54,17 +52,18 @@ public class IRCBot extends PircBot {
     }
 
     public void doConnect(String channel) {
-        String channelName = "#" + channel;
-        if (!isConnected()) {
+        if (!channel.startsWith("#")) channel = "#" + channel;
+        if (!bot.isConnected()) {
             try {
-                connect("irc.twitch.tv", 6667, GUIMain.currentSettings.bot.getAccountPass());
+                bot.connect("irc.twitch.tv", 6667, GUIMain.currentSettings.bot.getAccountPass());
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
         } else {
-            joinChannel(channelName);
-            GUIMain.channelsToReplyIn.put(channelName, shouldTalk);
-            if (!GUIMain.channelSet.contains(channel)) GUIMain.channelSet.add(channel);
+            if (!bot.isInChannel(channel)) {
+                bot.joinChannel(channel);
+                if (!GUIMain.channelSet.contains(channel.substring(1))) GUIMain.channelSet.add(channel.substring(1));
+            }
         }
     }
 
@@ -73,18 +72,11 @@ public class IRCBot extends PircBot {
      * channel list.
      *
      * @param channel The channel name to leave (# not included).
-     * @param forget  If true, will remove the channel from the channel list.
      */
-    public void doLeave(String channel, boolean forget) {
-        String channelName = "#" + channel;
-        if (Utils.isInChannel(this, channelName)) {
-            partChannel(channelName);
-            GUIMain.channelsToReplyIn.remove(channelName);
-        }
-        if (forget) {
-            if (GUIMain.channelSet.contains(channel)) {
-                GUIMain.channelSet.remove(channel);
-            }
+    public void doLeave(String channel) {
+        String channelName = (channel.startsWith("#") ? channel : "#" + channel);
+        if (bot.isInChannel(channelName)) {
+            bot.partChannel(channelName);
         }
     }
 
@@ -95,31 +87,27 @@ public class IRCBot extends PircBot {
      */
     public void close(boolean forget) {
         GUIMain.log("Logging out of bot: " + GUIMain.currentSettings.bot.getAccountName());
-        for (String s : getChannels()) {
-            doLeave(s.substring(1), false);
+        for (String s : bot.getChannels()) {
+            doLeave(s.substring(1));
         }
-        disconnect();
-        dispose();
+        bot.disconnect();
+        bot.dispose();
         if (forget) {
             GUIMain.currentSettings.bot = null;
         }
+        bot = null;
         GUIMain.bot = null;
     }
 
+    public void onDisconnect() {
+        //TODO create and run the reconnect listener thread if (!GUIMain.shutdown)
+    }
 
-    public void onMessage(String channel, String sender, String login, String hostname, String message) {
+    @Override
+    public void onMessage(String channel, String sender, String message) {
         if (message != null && channel != null && sender != null && GUIMain.viewer != null) {
             sender = sender.toLowerCase();
-            String low = message.toLowerCase();
-            //un-shorten short URLs
-            if (low.contains("bit.ly/") || low.contains("tinyurl.com/") || low.contains("goo.gl")) {
-                String[] split = message.split(" ");
-                for (String s : split) {
-                    if (s.contains("http") && (s.contains("bit.ly/") || s.contains("tinyurl.com/") || s.contains("goo.gl"))) {
-                        sendMessage(channel, Utils.getLongURL(s));
-                    }
-                }
-            }
+            if (sender.equalsIgnoreCase(getBot().getNick())) return;
             //commands
             if (message.startsWith("!")) {
                 String content = message.substring(1).split(" ")[0].toLowerCase();
@@ -128,24 +116,15 @@ public class IRCBot extends PircBot {
                     handleDev(channel, message.substring(1));
                 }*/
                 //mod
-                User u = Utils.getUser(this, channel, sender);
-                if (u != null && (u.isOp() || u.isAdmin() || u.isStaff())
-                        && !sender.equals(GUIMain.viewer.getMaster())) {
+                User u = bot.getUser(channel, sender);
+                if (u != null && (u.isOp() || u.isAdmin() || u.isStaff())) {
                     handleMod(channel, message.substring(1));
                 }
                 //sound
                 if (soundTrigger(content, sender, channel)) {
                     SoundEngine.getEngine().addSound(new Sound(GUIMain.soundMap.get(content)));
                 }
-                //reply
-                if (content.equals("ask")) {
-                    if (shouldTalk) {
-                        if (!botnakTimer.isRunning()) {
-                            talkBack(channel, sender, message.substring(4));
-                        }
-                    }
-                }
-                ConsoleCommand consoleCommand = Utils.getConsoleCommand(content, this, channel, sender);
+                ConsoleCommand consoleCommand = Utils.getConsoleCommand(content, channel, sender);
                 if (consoleCommand != null) {
                     String mess = message.substring(1);
                     switch (consoleCommand.getAction()) {
@@ -186,56 +165,43 @@ public class IRCBot extends PircBot {
                             }
                             soundTime = Utils.handleInt(soundTime);
                             int delay = soundTime / 1000;
-                            sendMessage(channel, "Sound delay " + (delay < 2 ? (delay == 0 ? "off." : "is now 1 second.") : ("is now " + delay + " seconds.")));
+                            bot.sendMessage(channel, "Sound delay " + (delay < 2 ? (delay == 0 ? "off." : "is now 1 second.") : ("is now " + delay + " seconds.")));
                             SoundEngine.getEngine().setDelay(soundTime);
                             break;
                         case TOGGLE_SOUND:
-                            SoundEngine.getEngine().setShouldPlay(!SoundEngine.getEngine().shouldPlay());
-                            sendMessage(channel, "Sound is now turned " + (SoundEngine.getEngine().shouldPlay() ? "ON" : "OFF"));
-                            break;
-                        case TOGGLE_REPLY:
-                            if (mess.split(" ").length == 2) {//specific
-                                String chan = mess.split(" ")[1];
-                                if (!chan.contains("#")) chan = "#" + chan;
-                                Set<String> set = GUIMain.channelsToReplyIn.keySet();
-                                for (String str : set) {
-                                    if (str.equalsIgnoreCase(chan)) {
-                                        boolean current = GUIMain.channelsToReplyIn.get(str);
-                                        GUIMain.channelsToReplyIn.put(str, !current);
-                                        sendMessage(channel, "Replying is now " + (!current ? "on" : "off") + " for the channel " + str);
-                                        break;
-                                    }
+                            String[] check = mess.split(" ");
+                            if (check.length > 1) {
+                                String soundName = check[1];
+                                if (GUIMain.soundMap.containsKey(soundName)) {
+                                    Sound sound = GUIMain.soundMap.get(soundName);
+                                    sound.setEnabled(!sound.isEnabled());
+                                    bot.sendMessage(channel, "The sound " + soundName + " is now turned " + (sound.isEnabled() ? "ON" : "OFF"));
                                 }
-                            } else if (mess.split(" ").length == 1) {//turn it on/off for all channels
-                                shouldTalk = !shouldTalk;
-                                Set<String> set = GUIMain.channelsToReplyIn.keySet();
-                                for (String str1 : set) {
-                                    GUIMain.channelsToReplyIn.put(str1, shouldTalk);
-                                }
-                                sendMessage(channel, "Replying is now " + (shouldTalk ? "ON." : "OFF."));
+                            } else {
+                                SoundEngine.getEngine().setShouldPlay(!SoundEngine.getEngine().shouldPlay());
+                                bot.sendMessage(channel, "Sound is now turned " + (SoundEngine.getEngine().shouldPlay() ? "ON" : "OFF"));
                             }
                             break;
                         case STOP_SOUND:
-                            sendMessage(channel, "Stopping the first sound...");
-                            SoundThread sound = SoundEngine.getEngine().getCurrentPlayingSound();
+                            SoundEntry sound = SoundEngine.getEngine().getCurrentPlayingSound();
                             if (sound != null) {
-                                sound.interrupt();
+                                bot.sendMessage(channel, "Stopping the first sound...");
+                                sound.close();
                             }
                             break;
                         case STOP_ALL_SOUNDS:
-                            sendMessage(channel, "Stopping all currently playing sounds...");
-                            SoundThread[] array = SoundEngine.getEngine().getCurrentPlayingSounds();
-                            if (array != null && array.length > 0) {
-                                for (SoundThread soun : array) {
-                                    soun.interrupt();
+                            Collection<SoundEntry> coll = SoundEngine.getEngine().getCurrentPlayingSounds();
+                            if (coll.size() > 0) {
+                                bot.sendMessage(channel, "Stopping all currently playing sounds...");
+                                for (SoundEntry soun : coll) {
+                                    soun.close();
                                 }
                             }
-                            array = null;
                             break;
                         case MOD_USER:
                             String[] splitBySpace = mess.split(" ");
                             String toMod = splitBySpace[1];
-                            GUIMain.viewer.sendMessage(channel, ".mod " + toMod);
+                            GUIMain.viewer.getViewer().sendMessage(channel, ".mod " + toMod);
                             break;
                         case ADD_KEYWORD:
                             Utils.handleKeyword(mess);
@@ -255,34 +221,67 @@ public class IRCBot extends PircBot {
                         case REMOVE_TEXT_COMMAND:
                             Utils.removeCommands(mess.split(" ")[1]);
                             break;
+                        case ADD_DONATION:
+                            double amount;
+                            try {
+                                amount = Double.parseDouble(mess.split(" ")[2]);
+                            } catch (Exception ignored) {
+                                return;
+                            }
+                            String donator = mess.split(" ")[1];
+                            Donator don = Utils.getDonator(donator);
+                            if (don == null) {
+                                don = new Donator(donator, amount);
+                                GUIMain.donators.add(don);
+                            } else {
+                                don.addDonated(amount);
+                            }
+                            GUIMain.currentSettings.saveDonators();
+                            break;
+                        case SET_SUB_SOUND:
+                            String toParse = mess.split(" ")[1];
+                            String[] toRead = toParse.split(",");
+                            ArrayList<String> ar = new ArrayList<>();
+                            for (String s : toRead) {
+                                String filename = GUIMain.currentSettings.defaultSoundDir + File.separator + Utils.setExtension(s, ".wav");
+                                if (Utils.areFilesGood(filename)) {
+                                    ar.add(filename);
+                                }
+                            }
+                            if (!ar.isEmpty()) {
+                                GUIMain.currentSettings.subSound = new Sound(15, ar.toArray(new String[ar.size()]));
+                                bot.sendMessage(channel, "Sub Sound Set!");
+                            }
+                            break;
+                        case SET_SOUND_PERMISSION:
+                            try {
+                                int perm;
+                                perm = Integer.parseInt(mess.split(" ")[1]);
+                                if (perm > -1 && perm < 5) {
+                                    SoundEngine.getEngine().setPermission(perm);
+                                }
+                            } catch (Exception ignored) {
+                            }
+                            break;
+                        case SET_NAME_FACE:
+                            String URL = mess.split(" ")[1];
+                            if (URL.startsWith("http")) {
+                                Utils.downloadFace(URL, GUIMain.currentSettings.nameFaceDir.getAbsolutePath(),
+                                        Utils.setExtension(sender, ".png"), sender, 2);
+                            }
+                            break;
+                        case REMOVE_NAME_FACE:
+                            if (GUIMain.nameFaceMap.containsKey(sender)) {
+                                GUIMain.nameFaceMap.remove(sender);
+                            }
+                            break;
                     }
                 }
                 //text command
                 Command c = Utils.getCommand(content);
                 if (c != null) {
+                    //TODO add a check to see if people want it only to react in their channel
                     handleCommand(channel, c);
-                }
-            }
-        }
-    }
-
-    public void talkBack(String channel, String sender, String message) {
-        if (channel != null && sender != null && message != null && session != null && chatBot != null) {
-            if (GUIMain.channelsToReplyIn.containsKey(channel)) {
-                if (!botnakTimer.isRunning() && GUIMain.channelsToReplyIn.get(channel)) {
-                    String reply = "";
-                    if (GUIMain.viewer != null && sender.equals(GUIMain.viewer.getMaster())) sender = "Master";
-                    try {
-                        reply = session.think(message);
-                    } catch (Exception e) {
-                        if (e.getCause() instanceof ConnectException) {
-                            session = chatBot.createSession();
-                        }
-                    }
-                    if (!reply.equals("")) {
-                        sendMessage(channel, sender + ", " + reply);
-                        botnakTimer.reset();
-                    }
                 }
             }
         }
@@ -319,7 +318,16 @@ public class IRCBot extends PircBot {
     public boolean soundCheck(String sound, String sender, String channel) {
         //set the permission
         int permission = Constants.PERMISSION_ALL;
-        User u = Utils.getUser(this, channel, sender);
+        User u = bot.getUser(channel, sender);
+        if (u != null && u.isSubscriber()) {
+            permission = Constants.PERMISSION_SUB;
+        }
+        Donator d = Utils.getDonator(sender);
+        if (d != null) {
+            if (d.getDonated() >= 5.00) {
+                permission = Constants.PERMISSION_DONOR;
+            }
+        }
         if (u != null && (u.isOp() || u.isAdmin() || u.isStaff())) {
             permission = Constants.PERMISSION_MOD;
         }
@@ -330,10 +338,12 @@ public class IRCBot extends PircBot {
         for (String s : keys) {
             if (s != null && s.equalsIgnoreCase(sound)) {
                 Sound snd = GUIMain.soundMap.get(s);
-                if (snd != null) {
+                if (snd != null && snd.isEnabled()) {
                     int perm = snd.getPermission();
                     //check permission
-                    if (permission >= perm) {//descending permission, this should work; devs can play mod and all sounds, etc.
+                    if (permission >= perm && permission >= SoundEngine.getEngine().getPermission()) {
+                        //descending permission, this should work; devs can play mod and all sounds, etc.
+                        //this also checks to see if they can even play the sound given the certain circumstance.
                         return true;
                     }
                 }
@@ -342,11 +352,12 @@ public class IRCBot extends PircBot {
         return false;
     }
 
+    //TODO overhaul this shit
     public void handleCommand(String channel, Command c) {
         if (c.getMessage().data.length != 0) {
             if (!c.getDelayTimer().isRunning()) {
                 for (String s : c.getMessage().data) {
-                    sendMessage(channel, s);
+                    bot.sendMessage(channel, s);
                 }
                 c.getDelayTimer().reset();
             }
@@ -362,12 +373,29 @@ public class IRCBot extends PircBot {
         if (GUIMain.viewer == null) return;
         if (channel.substring(1).equals(GUIMain.viewer.getMaster())) {
             if (s.startsWith("soundstate")) {
-                int delay = (int) SoundEngine.getEngine().getSoundTimer().period / 1000;
-                String onOrOff = (stopSound ? "OFF" : "ON");
-                int numSound = SoundEngine.getEngine().getCurrentPlayingSounds().length;
-                String numSounds = (numSound > 0 ? (numSound == 1 ? "one sound" : (numSound + " sounds")) : "no sounds") + " currently playing";
-                String delayS = (delay < 2 ? (delay == 0 ? "no delay." : "a delay of 1 second.") : ("a delay of " + delay + " seconds."));
-                sendMessage(channel, "Sound is currently turned " + onOrOff + " with " + numSounds + " with " + delayS);
+                String[] split = s.split(" ");
+                if (split.length == 1) {
+                    int delay = (int) SoundEngine.getEngine().getSoundTimer().period / 1000;
+                    String onOrOff = (SoundEngine.getEngine().shouldPlay() ? "ON" : "OFF");
+                    int numSound = SoundEngine.getEngine().getCurrentPlayingSounds().size();
+                    int permission = SoundEngine.getEngine().getPermission();
+                    String numSounds = (numSound > 0 ? (numSound == 1 ? "one sound" : (numSound + " sounds")) : "no sounds") + " currently playing";
+                    String delayS = (delay < 2 ? (delay == 0 ? "no delay." : "a delay of 1 second.") : ("a delay of " + delay + " seconds."));
+                    String perm = (permission > 0 ? (permission > 1 ? (permission > 2 ? (permission > 3 ?
+                            "Only the Broadcaster" :
+                            "Only Mods and the Broadcaster") :
+                            "Donators, Mods, and the Broadcaster") :
+                            "Subscribers, Donators, Mods, and the Broadcaster") :
+                            "Everyone")
+                            + " can play sounds.";
+                    bot.sendMessage(channel, "Sound is currently turned " + onOrOff + " with " + numSounds + " with " + delayS + " " + perm);
+                } else if (split.length == 2) {
+                    String soundName = split[1];
+                    if (GUIMain.soundMap.containsKey(soundName)) {
+                        Sound toCheck = GUIMain.soundMap.get(soundName);
+                        bot.sendMessage(channel, "The sound " + soundName + " is currently turned " + (toCheck.isEnabled() ? "ON" : "OFF"));
+                    }
+                }
             }
         }
     }

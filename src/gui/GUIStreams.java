@@ -1,207 +1,119 @@
 package gui;
 
-import util.Utils;
-
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
 
 public class GUIStreams extends JFrame {
 
-    GUIStreams_2 s2 = null;
-
     public GUIStreams() {
         initComponents();
-        makeList();
-        s2 = new GUIStreams_2();
     }
 
-    public static void makeList() {
-        String[] channels = null;
-        DefaultListModel<String> defaultListModel = new DefaultListModel<>();
-        if (GUIMain.loadedStreams()) {
-            rememberStreams.setSelected(true);
-            channels = GUIMain.channelSet.toArray(new String[GUIMain.channelSet.size()]);
-        }
-        if (channels != null) {
-            for (String s : channels) {
-                if (s != null) {
-                    defaultListModel.addElement(s);
-                }
-            }
-        }
-        if (!defaultListModel.isEmpty()) {
-            streamList.setModel(defaultListModel);
-        }
-    }
-
-    public void addStreamActionPerformed() {
-        if (s2 == null) {
-            s2 = new GUIStreams_2();
-        }
-        if (!s2.isVisible()) {
-            s2.setVisible(true);
-        }
-    }
-
-    public void removeStreamActionPerformed() {
-        String[] channels = readList(streamList);
-        DefaultListModel<String> listModel = new DefaultListModel<>();
-        String channelToLeave = streamList.getSelectedValue();
-        if (channelToLeave != null) {
-            if (channels != null && channels.length > 0) {
-                for (String user : channels) {
-                    if (user.equals(channelToLeave)) continue;
-                    listModel.addElement(user);
-                }
-            }
-            if (GUIMain.viewer != null) {
-                GUIMain.viewer.doLeave(channelToLeave, true);
-            }
-            if (GUIMain.bot != null) {
-                GUIMain.bot.doLeave(channelToLeave, true);
-            }
-            GUIMain.chatPanes.get(channelToLeave).deletePane();
-            GUIMain.chatPanes.remove(channelToLeave);
-        }
-        streamList.setModel(listModel);
-        removeStream.setEnabled(false);
-    }
-
-    public void cancelButtonActionPerformed() {
-        GUIMain.streams = null;
-        if (s2 != null) s2.dispose();
-        s2 = null;
+    public void doneButtonActionPerformed() {
+        GUIMain.channelPane.setSelectedIndex(GUIMain.channelPane.getTabCount() - 2);
         dispose();
     }
 
-    public void saveButtonActionPerformed() {
-        String[] channels = readList(streamList);
-        if (channels != null) {
-            handleList(channels);
-            if (rememberStreams.isSelected()) {
-                GUIMain.currentSettings.saveStreams();
-            }
-            for (String s : channels) {
-                if (GUIMain.viewer != null && !Utils.isInChannel(GUIMain.viewer, "#" + s)) {
-                    GUIMain.viewer.doConnect(s);
+    public void addStreamButtonActionPerformed() {
+        String text = newChannel.getText();
+        if (!text.equals("") && !text.trim().equals("")) {
+            if (text.contains(",")) {
+                String[] channels = text.split(",");
+                ArrayList<ChatPane> panes = new ArrayList<>();
+                for (String channel : channels) {
+                    channel = channel.trim().toLowerCase();
+                    if (channel.equals("")) continue;
+                    //create the ChatPane but do not add to the tabbed pane
+                    if (GUIMain.chatPanes.containsKey(channel)) {
+                        //if the pane exists just use it, no need to create multiple
+                        panes.add(GUIMain.chatPanes.get(channel));
+                        //note: since they're adding the combined tab and the tab
+                        //already exists, they know full well that it does, so
+                        //we're not removing/setting visible to false for the tab
+                    } else {
+                        ChatPane cp = ChatPane.createPane(channel);
+                        //the tab will not be added to the tabbed pane and therefore invisible
+                        cp.setTabVisible(false);
+                        if (GUIMain.viewer != null) GUIMain.viewer.doConnect(channel);
+                        if (GUIMain.bot != null) GUIMain.bot.doConnect(channel);
+                        GUIMain.channelSet.add(channel);
+                        GUIMain.chatPanes.put(cp.getChannel(), cp);
+                        panes.add(cp);
+                    }
                 }
-                if (GUIMain.bot != null && !Utils.isInChannel(GUIMain.bot, "#" + s)) {
-                    GUIMain.bot.doConnect(s);
-                }
-            }
-            for (String s : channels) {
-                if (!GUIMain.chatPanes.containsKey(s)) {
-                    ChatPane.createPane(s);
+                CombinedChatPane ccp = CombinedChatPane.createCombinedChatPane(panes.toArray(new ChatPane[panes.size()]));
+                GUIMain.channelPane.insertTab(ccp.getTabTitle(), null, ccp.getScrollPane(), null, GUIMain.channelPane.getTabCount() - 1);
+                GUIMain.combinedChatPanes.add(ccp);
+            } else {
+                String channel = text.trim().toLowerCase();
+                if (!channel.equals("") && !channel.contains(" ") && !GUIMain.chatPanes.containsKey(channel)) {
+                    ChatPane cp = ChatPane.createPane(channel);
+                    if (GUIMain.viewer != null) GUIMain.viewer.doConnect(channel);
+                    if (GUIMain.bot != null) GUIMain.bot.doConnect(channel);
+                    GUIMain.chatPanes.put(cp.getChannel(), cp);
+                    GUIMain.channelSet.add(channel);
+                    GUIMain.channelPane.insertTab(cp.getChannel(), null, cp.getScrollPane(), null, cp.getIndex());
                 }
             }
         }
-        GUIMain.streams = null;
-        dispose();
-    }
-
-    public String[] readList(JList<String> list) {
-        ArrayList<String> things = new ArrayList<>();
-        for (int i = 0; i < list.getModel().getSize(); i++) {
-            String o = list.getModel().getElementAt(i);
-            if (o != null) {
-                things.add(o.toLowerCase());
-            }
-        }
-        return things.toArray(new String[things.size()]);
-    }
-
-    public void handleList(String[] toAdd) {
-        if (GUIMain.channelSet != null && toAdd != null && toAdd.length > 0) {
-            for (String s : toAdd) {
-                if (GUIMain.channelSet.contains(s)) continue;
-                GUIMain.channelSet.add(s);
-            }
-        }
-    }
-
-    public static void streamListMouseClicked() {
-        removeStream.setEnabled(streamList.getSelectedValue() != null);
+        GUIMain.channelPane.updateIndexes();
+        newChannel.setText("");
     }
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner Evaluation license - Nick K
-        scrollPane1 = new JScrollPane();
-        streamList = new JList<>();
-        addStream = new JButton();
-        removeStream = new JButton();
-        rememberStreams = new JCheckBox();
-        cancelButton = new JButton();
-        saveButton = new JButton();
+        doneButton = new JButton();
+        newChannel = new JTextField();
+        addStreamButton = new JButton();
+        scrollPane2 = new JScrollPane();
+        label1 = new JTextArea();
 
         //======== this ========
-        setTitle("Stream List");
+        setTitle("Add Streams");
         setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
         setResizable(false);
         Container contentPane = getContentPane();
 
-        //======== scrollPane1 ========
+        //---- doneButton ----
+        doneButton.setText("Done");
+        doneButton.setFocusable(false);
+        doneButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                doneButtonActionPerformed();
+            }
+        });
+
+        //---- newChannel ----
+        newChannel.setFont(new Font("Tahoma", Font.PLAIN, 12));
+
+        //---- addStreamButton ----
+        addStreamButton.setText("Add");
+        addStreamButton.setFocusable(false);
+        addStreamButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                addStreamButtonActionPerformed();
+            }
+        });
+
+        //======== scrollPane2 ========
         {
 
-            //---- streamList ----
-            streamList.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    streamListMouseClicked();
-                }
-            });
-            streamList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-            scrollPane1.setViewportView(streamList);
+            //---- label1 ----
+            label1.setText("Enter the username of the Twitch user that you want to join.  \nYou may separate multiple names by commas to create a combined chat panel.\n\nEx: \n\"gocnak\" creates a tab for Gocnak's chat.\n\n\"gocnak,botnak,tduva\" creates a combined tab with the chats of \nGocnak, Botnak, and TDuva.");
+            label1.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+            label1.setFocusable(false);
+            label1.setEditable(false);
+            label1.setFont(new Font("Arial", Font.PLAIN, 12));
+            label1.setOpaque(false);
+            scrollPane2.setViewportView(label1);
         }
-
-        //---- addStream ----
-        addStream.setText("Add a Stream");
-        addStream.setFocusable(false);
-        addStream.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                addStreamActionPerformed();
-            }
-        });
-
-        //---- removeStream ----
-        removeStream.setText("Remove Selected Stream");
-        removeStream.setFocusable(false);
-        removeStream.setEnabled(streamList.getSelectedValue() != null);
-        removeStream.setActionCommand("Remove Selected Stream");
-        removeStream.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                removeStreamActionPerformed();
-            }
-        });
-
-        //---- rememberStreams ----
-        rememberStreams.setText("Remember these streams");
-        rememberStreams.setFocusable(false);
-
-        //---- cancelButton ----
-        cancelButton.setText("Cancel");
-        cancelButton.setFocusable(false);
-        cancelButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cancelButtonActionPerformed();
-            }
-        });
-
-        //---- saveButton ----
-        saveButton.setText("Save");
-        saveButton.setFocusable(false);
-        saveButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                saveButtonActionPerformed();
-            }
-        });
 
         GroupLayout contentPaneLayout = new GroupLayout(contentPane);
         contentPane.setLayout(contentPaneLayout);
@@ -210,40 +122,28 @@ public class GUIStreams extends JFrame {
                         .addGroup(contentPaneLayout.createSequentialGroup()
                                 .addContainerGap()
                                 .addGroup(contentPaneLayout.createParallelGroup()
-                                        .addComponent(scrollPane1, GroupLayout.DEFAULT_SIZE, 369, Short.MAX_VALUE)
                                         .addGroup(contentPaneLayout.createSequentialGroup()
-                                                .addGroup(contentPaneLayout.createParallelGroup()
-                                                        .addComponent(rememberStreams)
-                                                        .addGroup(contentPaneLayout.createSequentialGroup()
-                                                                .addComponent(addStream)
-                                                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                                                                .addComponent(removeStream)))
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 32, Short.MAX_VALUE)
-                                                .addGroup(contentPaneLayout.createParallelGroup()
-                                                        .addGroup(contentPaneLayout.createSequentialGroup()
-                                                                .addGap(5, 5, 5)
-                                                                .addComponent(saveButton))
-                                                        .addComponent(cancelButton))))
+                                                .addComponent(newChannel)
+                                                .addGap(18, 18, 18)
+                                                .addComponent(addStreamButton)
+                                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                                                .addComponent(doneButton))
+                                        .addGroup(GroupLayout.Alignment.TRAILING, contentPaneLayout.createSequentialGroup()
+                                                .addGap(0, 0, Short.MAX_VALUE)
+                                                .addComponent(scrollPane2, GroupLayout.PREFERRED_SIZE, 459, GroupLayout.PREFERRED_SIZE)))
                                 .addContainerGap())
         );
         contentPaneLayout.setVerticalGroup(
                 contentPaneLayout.createParallelGroup()
                         .addGroup(contentPaneLayout.createSequentialGroup()
-                                .addContainerGap()
-                                .addComponent(scrollPane1, GroupLayout.PREFERRED_SIZE, 224, GroupLayout.PREFERRED_SIZE)
+                                .addGap(8, 8, 8)
+                                .addComponent(scrollPane2, GroupLayout.PREFERRED_SIZE, 130, GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(contentPaneLayout.createParallelGroup()
-                                        .addGroup(contentPaneLayout.createSequentialGroup()
-                                                .addGroup(contentPaneLayout.createParallelGroup()
-                                                        .addComponent(removeStream)
-                                                        .addComponent(addStream))
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                                                .addComponent(rememberStreams))
-                                        .addGroup(contentPaneLayout.createSequentialGroup()
-                                                .addComponent(saveButton)
-                                                .addGap(7, 7, 7)
-                                                .addComponent(cancelButton)))
-                                .addContainerGap(5, Short.MAX_VALUE))
+                                .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                        .addComponent(addStreamButton, GroupLayout.PREFERRED_SIZE, 28, GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(doneButton, GroupLayout.DEFAULT_SIZE, 29, Short.MAX_VALUE)
+                                        .addComponent(newChannel, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE))
+                                .addGap(28, 28, 28))
         );
         pack();
         setLocationRelativeTo(getOwner());
@@ -252,141 +152,11 @@ public class GUIStreams extends JFrame {
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
     // Generated using JFormDesigner Evaluation license - Nick K
-    public static JScrollPane scrollPane1;
-    public static JList<String> streamList;
-    public static JButton addStream;
-    public static JButton removeStream;
-    public static JCheckBox rememberStreams;
-    public static JButton cancelButton;
-    public static JButton saveButton;
-
-
-    /**
-     * *\
-     * ======================================= GUI STREAMS SUB GUI=================================================== *
-     */
-
-    class GUIStreams_2 extends JFrame {
-
-        public GUIStreams_2() {
-            initComponents();
-        }
-
-        public void addButtonActionPerformed() {
-            if (userField.getText() == null || userField.getText().equals("") || userField.getText().contains(" "))
-                return;
-            String userToAdd = userField.getText().toLowerCase();
-            ArrayList<String> things = new ArrayList<>();
-            if (streamList.getModel().getSize() > 0) {
-                for (int i = 0; i < streamList.getModel().getSize(); i++) {
-                    Object o = streamList.getModel().getElementAt(i);
-                    if (o != null) {
-                        things.add(o.toString());
-                    }
-                }
-            } else {
-                things.add(userToAdd);
-            }
-            DefaultListModel<String> listModel = new DefaultListModel<>();
-            if (!things.isEmpty()) {
-                for (String user : things) {
-                    listModel.addElement(user);
-                }
-                if (!listModel.contains(userToAdd)) {
-                    listModel.addElement(userToAdd);
-                }
-            }
-            streamList.setModel(listModel);
-            userField.setText("");
-        }
-
-        public void cancelButtonActionPerformed() {
-            s2 = null;
-            dispose();
-        }
-
-        private void initComponents() {
-            // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
-            // Generated using JFormDesigner Evaluation license - Nick K
-            label1 = new JLabel();
-            userField = new JTextField();
-            addButton = new JButton();
-            cancelButton = new JButton();
-
-            //======== this ========
-            setTitle("Add a Stream");
-            setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
-            setResizable(false);
-            Container contentPane = getContentPane();
-
-            //---- label1 ----
-            label1.setText("Streamer Username:");
-            label1.setToolTipText("The name of the desired Twitch user.");
-
-            //---- addButton ----
-            addButton.setText("Add");
-            addButton.setFocusable(false);
-            addButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    addButtonActionPerformed();
-                }
-            });
-
-            //---- cancelButton ----
-            cancelButton.setText("Done");
-            cancelButton.setFocusable(false);
-            cancelButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    cancelButtonActionPerformed();
-                }
-            });
-
-            GroupLayout contentPaneLayout = new GroupLayout(contentPane);
-            contentPane.setLayout(contentPaneLayout);
-            contentPaneLayout.setHorizontalGroup(
-                    contentPaneLayout.createParallelGroup()
-                            .addGroup(contentPaneLayout.createSequentialGroup()
-                                    .addGroup(contentPaneLayout.createParallelGroup()
-                                            .addGroup(contentPaneLayout.createSequentialGroup()
-                                                    .addContainerGap()
-                                                    .addComponent(label1)
-                                                    .addGap(10, 10, 10)
-                                                    .addComponent(userField, GroupLayout.DEFAULT_SIZE, 115, Short.MAX_VALUE))
-                                            .addGroup(contentPaneLayout.createSequentialGroup()
-                                                    .addGap(74, 74, 74)
-                                                    .addComponent(addButton)
-                                                    .addGap(18, 18, 18)
-                                                    .addComponent(cancelButton)
-                                                    .addGap(0, 26, Short.MAX_VALUE)))
-                                    .addContainerGap())
-            );
-            contentPaneLayout.setVerticalGroup(
-                    contentPaneLayout.createParallelGroup()
-                            .addGroup(contentPaneLayout.createSequentialGroup()
-                                    .addContainerGap()
-                                    .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                                            .addComponent(label1)
-                                            .addComponent(userField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-                                    .addGap(18, 18, 18)
-                                    .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                                            .addComponent(cancelButton)
-                                            .addComponent(addButton))
-                                    .addContainerGap(12, Short.MAX_VALUE))
-            );
-            pack();
-            setLocationRelativeTo(getOwner());
-            // JFormDesigner - End of component initialization  //GEN-END:initComponents
-        }
-
-        // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
-        // Generated using JFormDesigner Evaluation license - Nick K
-        public JLabel label1;
-        public JTextField userField;
-        public JButton addButton;
-        public JButton cancelButton;
-        // JFormDesigner - End of variables declaration  //GEN-END:variables
-    }
+    public static JButton doneButton;
+    public static JTextField newChannel;
+    public static JButton addStreamButton;
+    public static JScrollPane scrollPane2;
+    public static JTextArea label1;
+    // JFormDesigner - End of variables declaration  //GEN-END:variables
 
 }

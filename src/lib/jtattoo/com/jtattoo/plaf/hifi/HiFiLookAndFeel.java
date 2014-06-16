@@ -24,7 +24,6 @@
 package lib.jtattoo.com.jtattoo.plaf.hifi;
 
 import lib.jtattoo.com.jtattoo.plaf.*;
-import lib.jtattoo.com.jtattoo.plaf.AbstractLookAndFeel;
 
 import javax.swing.*;
 import java.util.ArrayList;
@@ -38,8 +37,8 @@ public class HiFiLookAndFeel extends AbstractLookAndFeel {
 
     private static HiFiDefaultTheme myTheme = null;
 
-    private static final ArrayList themesList = new ArrayList();
-    private static final HashMap themesMap = new HashMap();
+    private static final ArrayList<String> themesList = new ArrayList<>();
+    private static final HashMap<String, Properties> themesMap = new HashMap<>();
     private static final Properties defaultProps = new Properties();
     private static final Properties smallFontProps = new Properties();
     private static final Properties largeFontProps = new Properties();
@@ -83,18 +82,18 @@ public class HiFiLookAndFeel extends AbstractLookAndFeel {
     }
 
     public static Properties getThemeProperties(String name) {
-        return ((Properties) themesMap.get(name));
+        return themesMap.get(name);
     }
 
     public static void setTheme(String name) {
-        setTheme((Properties) themesMap.get(name));
+        setTheme(themesMap.get(name));
         if (myTheme != null) {
             AbstractTheme.setInternalName(name);
         }
     }
 
     public static void setTheme(String name, String licenseKey, String logoString) {
-        Properties props = (Properties) themesMap.get(name);
+        Properties props = themesMap.get(name);
         if (props != null) {
             props.put("licenseKey", licenseKey);
             props.put("logoString", logoString);
@@ -109,7 +108,7 @@ public class HiFiLookAndFeel extends AbstractLookAndFeel {
         if (myTheme == null) {
             myTheme = new HiFiDefaultTheme();
         }
-        if ((myTheme != null) && (themesProps != null)) {
+        if ((themesProps != null)) {
             myTheme.setUpColor();
             myTheme.setProperties(themesProps);
             myTheme.setUpColorArrs();
@@ -158,8 +157,8 @@ public class HiFiLookAndFeel extends AbstractLookAndFeel {
 
     protected void initComponentDefaults(UIDefaults table) {
         super.initComponentDefaults(table);
-        table.put("ScrollBar.incrementButtonGap", new Integer(-1));
-        table.put("ScrollBar.decrementButtonGap", new Integer(-1));
+        table.put("ScrollBar.incrementButtonGap", -1);
+        table.put("ScrollBar.decrementButtonGap", -1);
     }
 
     protected void initClassDefaults(UIDefaults table) {

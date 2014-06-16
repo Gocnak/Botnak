@@ -72,6 +72,7 @@ public class GUIUpdate extends JFrame {
         updateText.setFocusable(false);
         updateText.setEditorKit(new WrapEditorKit());
         updateText.setText(text);
+        updateText.setCaretPosition(0);
         downloadButton = new JButton();
         skipButton = new JButton();
 

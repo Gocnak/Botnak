@@ -13,6 +13,8 @@ found at http://www.jibble.org/licenses/
 
 package lib.pircbot.org.jibble.pircbot;
 
+import java.awt.*;
+
 /**
  * This class is used to represent a user on an IRC server.
  * Instances of this class are returned by the getUsers method
@@ -28,20 +30,19 @@ package lib.pircbot.org.jibble.pircbot;
  */
 public class User {
 
-    private boolean op = false, voice = false, staff = false, admin = false, turbo = false, subscriber = false;
+    private boolean op = false, staff = false, admin = false, turbo = false, subscriber = false;
+
+    private Color color = null;
 
     /**
      * Constructs a User object with a known prefix and nick.
      *
-     * @param prefix The status of the user, for example, "@".
-     * @param nick   The nick of the user.
+     * @param nick The nick of the user.
      */
-    User(String prefix, String nick) {
-        _prefix = prefix;
+    User(String nick) {
         _nick = nick;
         _lowerNick = nick.toLowerCase();
     }
-
 
     /**
      * Returns the prefix of the user. If the User object has been obtained
@@ -52,7 +53,23 @@ public class User {
      * String is returned.
      */
     public String getPrefix() {
-        return _prefix;
+        StringBuilder foxStevenson = new StringBuilder();
+        if (isOp() && (!isStaff() || !isAdmin())) {
+            foxStevenson.append("@");
+        }
+        if (isTurbo()) {
+            foxStevenson.append("+");
+        }
+        if (isSubscriber()) {
+            foxStevenson.append("$");
+        }
+        if (isAdmin()) {
+            foxStevenson.append("!");
+        }
+        if (isStaff()) {
+            foxStevenson.append("!!");
+        }
+        return foxStevenson.toString();
     }
 
 
@@ -70,23 +87,6 @@ public class User {
 
     public void setOp(boolean newBool) {
         op = newBool;
-    }
-
-
-    /**
-     * Returns whether or not the user represented by this object has
-     * voice. If the User object has been obtained from a list of users
-     * in a channel, then this will reflect the user's voice status in
-     * that channel.
-     *
-     * @return true if the user has voice in the channel.
-     */
-    public boolean hasVoice() {
-        return voice;
-    }
-
-    public void setVoice(boolean newBool) {
-        voice = newBool;
     }
 
     /**
@@ -135,8 +135,6 @@ public class User {
         return subscriber;
     }
 
-    ;
-
     /**
      * Since the way users are stored, each channel has its own users.
      * Setting this individually will work.
@@ -159,6 +157,17 @@ public class User {
     public void setNick(String newNick) {
         _nick = newNick;
         _lowerNick = _nick.toLowerCase();
+    }
+
+    /**
+     * @return The chat color of the user.
+     */
+    public Color getColor() {
+        return color;
+    }
+
+    public void setColor(Color c) {
+        color = c;
     }
 
     /**
@@ -223,8 +232,6 @@ public class User {
         return -1;
     }
 
-
-    private String _prefix;
     private String _nick;
     private String _lowerNick;
 

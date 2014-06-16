@@ -12,6 +12,12 @@ public class Face {
 
     private final String regex, filePath;
 
+    public Face() {
+        regex = "";
+        filePath = "";
+    }
+
+
     /**
      * This custom class was made to make Face storing a lot easier for Botnak.
      *

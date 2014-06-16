@@ -32,7 +32,6 @@ public class ConsoleCommand {
         REMOVE_SOUND,
         SET_SOUND_DELAY,
         TOGGLE_SOUND,
-        TOGGLE_REPLY,
         STOP_SOUND,
         STOP_ALL_SOUNDS,
         MOD_USER,
@@ -41,7 +40,12 @@ public class ConsoleCommand {
         SET_USER_COL,
         SET_COMMAND_PERMISSION,
         ADD_TEXT_COMMAND,
-        REMOVE_TEXT_COMMAND
+        REMOVE_TEXT_COMMAND,
+        ADD_DONATION,
+        SET_SUB_SOUND,
+        SET_SOUND_PERMISSION,
+        SET_NAME_FACE,
+        REMOVE_NAME_FACE
     }
 
     /**
