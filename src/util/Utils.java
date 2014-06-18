@@ -42,6 +42,9 @@ import java.util.regex.Pattern;
  */
 public class Utils {
 
+	static final int DOWNLOAD_MAX_FACE_HEIGHT = 26;
+	static final int DOWNLOAD_MAX_ICON_HEIGHT = 26;
+
     static Random r = new Random();
 
     /**
@@ -526,8 +529,8 @@ public class Utils {
             BufferedImage image;
             URL URL = new URL(url);//bad URL or something
             image = ImageIO.read(URL);//just incase the file is null/it can't read it
-            if (image.getHeight() > 26) {//if it's too big
-                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26);//scale it
+            if (image.getHeight() > DOWNLOAD_MAX_FACE_HEIGHT) {//if it's too big
+                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_FACE_HEIGHT);//scale it
             }
             File tosave = new File(directory + File.separator + name);
             ImageIO.write(image, "PNG", tosave);//save it
@@ -560,8 +563,8 @@ public class Utils {
         try {
             URL u = new URL(url);
             BufferedImage image = ImageIO.read(u);//just incase the file is null/it can't read it
-            if (image.getHeight() > 26) {//if it's too big
-                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26);//scale it
+            if (image.getHeight() > DOWNLOAD_MAX_ICON_HEIGHT) {//if it's too big
+                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_ICON_HEIGHT);//scale it
             }
             File tosave = new File(GUIMain.currentSettings.subIconsDir + File.separator + setExtension(channel.substring(1), ".png"));
             ImageIO.write(image, "PNG", tosave);//save it
@@ -622,13 +625,12 @@ public class Utils {
         ImageIcon icon;
         try {
             BufferedImage img = ImageIO.read(image);
-            int initSize = img.getHeight();
-            int scale = (20 - GUIMain.currentSettings.font.getSize());//let's shrink it a little bit
-            int size = initSize;
-            if (initSize > 20) {//if it's big
-                size = (initSize - scale);//then we'll scale it
-            }//otherwise it'll stay the same
-            img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, size);
+
+            // Scale the icon if it's too big.
+            int maxHeight = GUIMain.currentSettings.faceMaxHeight;
+            if (img.getHeight() > maxHeight)
+                img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, maxHeight);
+
             icon = new ImageIcon(img);
             icon.getImage().flush();
             return icon;
@@ -654,12 +656,10 @@ public class Utils {
                 if (!checkRegex(regex)) continue;
                 Pattern p = Pattern.compile(regex);
                 Matcher m = p.matcher(message);
-                int lastFound = -1;
                 while (m.find() && !GUIMain.shutDown) {
-                    lastFound++;//makes the index +1, 0 for start, rids having indexOf(lastFound + 1) later on in this code
                     final SimpleAttributeSet attrs = new SimpleAttributeSet(
                             //finds the index of the face while not replacing the old V ones
-                            doc.getCharacterElement(start + message.indexOf(m.group(), lastFound)).getAttributes());
+                            doc.getCharacterElement(start + m.start()).getAttributes());
                     if (!areFilesGood(GUIMain.faceMap.get(name).getFilePath())) {// the file doesn't exist/didn't download right
                         return;
                     }
@@ -669,11 +669,10 @@ public class Utils {
                     } catch (Exception e) {
                         GUIMain.log(e.getMessage());
                     }
-                    //                        find the face V  from either 0 or the next index of it, and removes it\
-                    lastFound = message.indexOf((m.group()), lastFound);
-                    doc.remove(start + lastFound, m.group().length());
-                    //            sets the index to the last index found, and adds the icon with the face text
-                    doc.insertString(start + lastFound, m.group(), attrs);
+                    // Remove the face text.
+                    doc.remove(start + m.start(), m.group().length());
+                    // Insert the icon.
+                    doc.insertString(start + m.start(), m.group(), attrs);
                 }
             }
         } catch (BadLocationException e1) {
