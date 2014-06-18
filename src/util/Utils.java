@@ -621,13 +621,11 @@ public class Utils {
     private static ImageIcon sizeIcon(URL image) {
         ImageIcon icon;
         try {
+	        int maxHeight = GUIMain.currentSettings.faceMaxHeight;
             BufferedImage img = ImageIO.read(image);
+	        // Scale the icon if it's too big.
             int initSize = img.getHeight();
-            int scale = (20 - GUIMain.currentSettings.font.getSize());//let's shrink it a little bit
-            int size = initSize;
-            if (initSize > 20) {//if it's big
-                size = (initSize - scale);//then we'll scale it
-            }//otherwise it'll stay the same
+            int size = Math.min(initSize, maxHeight);
             img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, size);
             icon = new ImageIcon(img);
             icon.getImage().flush();
