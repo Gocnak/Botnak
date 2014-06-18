@@ -42,6 +42,9 @@ import java.util.regex.Pattern;
  */
 public class Utils {
 
+	static final int DOWNLOAD_MAX_FACE_HEIGHT = 26;
+	static final int DOWNLOAD_MAX_ICON_HEIGHT = 26;
+
     static Random r = new Random();
 
     /**
@@ -526,8 +529,8 @@ public class Utils {
             BufferedImage image;
             URL URL = new URL(url);//bad URL or something
             image = ImageIO.read(URL);//just incase the file is null/it can't read it
-            if (image.getHeight() > 26) {//if it's too big
-                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26);//scale it
+            if (image.getHeight() > DOWNLOAD_MAX_FACE_HEIGHT) {//if it's too big
+                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_FACE_HEIGHT);//scale it
             }
             File tosave = new File(directory + File.separator + name);
             ImageIO.write(image, "PNG", tosave);//save it
@@ -560,8 +563,8 @@ public class Utils {
         try {
             URL u = new URL(url);
             BufferedImage image = ImageIO.read(u);//just incase the file is null/it can't read it
-            if (image.getHeight() > 26) {//if it's too big
-                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26);//scale it
+            if (image.getHeight() > DOWNLOAD_MAX_ICON_HEIGHT) {//if it's too big
+                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_ICON_HEIGHT);//scale it
             }
             File tosave = new File(GUIMain.currentSettings.subIconsDir + File.separator + setExtension(channel.substring(1), ".png"));
             ImageIO.write(image, "PNG", tosave);//save it
@@ -621,12 +624,13 @@ public class Utils {
     private static ImageIcon sizeIcon(URL image) {
         ImageIcon icon;
         try {
-            int maxHeight = GUIMain.currentSettings.faceMaxHeight;
             BufferedImage img = ImageIO.read(image);
+
             // Scale the icon if it's too big.
-            int initSize = img.getHeight();
-            int size = Math.min(initSize, maxHeight);
-            img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, size);
+	        int maxHeight = GUIMain.currentSettings.faceMaxHeight;
+	        if (img.getHeight() > maxHeight)
+                img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, maxHeight);
+
             icon = new ImageIcon(img);
             icon.getImage().flush();
             return icon;
