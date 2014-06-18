@@ -627,8 +627,8 @@ public class Utils {
             BufferedImage img = ImageIO.read(image);
 
             // Scale the icon if it's too big.
-	        int maxHeight = GUIMain.currentSettings.faceMaxHeight;
-	        if (img.getHeight() > maxHeight)
+            int maxHeight = GUIMain.currentSettings.faceMaxHeight;
+            if (img.getHeight() > maxHeight)
                 img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, maxHeight);
 
             icon = new ImageIcon(img);
