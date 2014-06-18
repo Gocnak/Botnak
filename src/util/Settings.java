@@ -85,7 +85,7 @@ public class Settings {
     public int chatMax = 100;
     public boolean cleanupChat = true;
     public static String lookAndFeel = "lib.jtattoo.com.jtattoo.plaf.hifi.HiFiLookAndFeel";
-	public int faceMaxHeight = 20;
+    public int faceMaxHeight = 20;
     //Graphite = "lib.jtattoo.com.jtattoo.plaf.graphite.GraphiteLookAndFeel"
 
 
@@ -273,7 +273,7 @@ public class Settings {
                 cleanupChat = Boolean.parseBoolean(p.getProperty("ClearChat", "true"));
                 logChat = Boolean.parseBoolean(p.getProperty("LogChat", "false"));
                 chatMax = Integer.parseInt(p.getProperty("MaxChat", "100"));
-	            faceMaxHeight = Integer.parseInt(p.getProperty("FaceMaxHeight", "20"));
+                faceMaxHeight = Integer.parseInt(p.getProperty("FaceMaxHeight", "20"));
                 font = Utils.stringToFont(p.getProperty("Font", "Calibri, 18, Plain").split(","));
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
@@ -317,7 +317,7 @@ public class Settings {
             p.put("UseStaff", String.valueOf(useStaff));
             p.put("CustomStaff", staffIcon.toString());
             p.put("MaxChat", String.valueOf(chatMax));
-	        p.put("FaceMaxHeight", String.valueOf(faceMaxHeight));
+            p.put("FaceMaxHeight", String.valueOf(faceMaxHeight));
             p.put("ClearChat", String.valueOf(cleanupChat));
             p.put("LogChat", String.valueOf(logChat));
             p.put("Font", Utils.fontToString(font));
