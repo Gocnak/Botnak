@@ -14,10 +14,7 @@ found at http://www.jibble.org/licenses/
 
 package lib.pircbot.org.jibble.pircbot;
 
-import lib.pircbot.org.jibble.pircbot.PircBot;
-
-import java.io.*;
-import java.net.*;
+import java.io.BufferedWriter;
 
 /**
  * A Thread which is responsible for sending messages to the IRC server.
@@ -42,33 +39,31 @@ public class OutputThread extends Thread {
      * @param bot      The underlying PircBot instance.
      * @param outQueue The Queue from which we will obtain our messages.
      */
-    OutputThread(PircBot bot, Queue outQueue) {
+    OutputThread(PircBot bot, Queue outQueue, BufferedWriter bufferedWriter) {
         _bot = bot;
         _outQueue = outQueue;
+        bwriter = bufferedWriter;
         this.setName(this.getClass() + "-Thread");
     }
 
+    public static final int MAX_LINE_LENGTH = 512;
 
     /**
      * A static method to write a line to a BufferedOutputStream and then pass
      * the line to the log method of the supplied PircBot instance.
      *
-     * @param bot     The underlying PircBot instance.
-     * @param bwriter The BufferedWriter to write to.
-     * @param line    The line to be written. "\r\n" is appended to the end.
+     * @param line The line to be written. "\r\n" is appended to the end.
      */
-    static void sendRawLine(PircBot bot, BufferedWriter bwriter, String line) {
-        if (line.length() > bot.getMaxLineLength() - 2) {
-            line = line.substring(0, bot.getMaxLineLength() - 2);
+    public synchronized void sendRawLine(String line) {
+        if (line.length() > MAX_LINE_LENGTH - 2) {
+            line = line.substring(0, MAX_LINE_LENGTH - 2);
         }
-        synchronized (bwriter) {
-            try {
-                bwriter.write(line + "\r\n");
-                bwriter.flush();
-                bot.log(">>>" + line);
-            } catch (Exception e) {
-                // Silent response - just lose the line.
-            }
+        try {
+            bwriter.write(line + "\r\n");
+            bwriter.flush();
+            _bot.log(">>>" + line);
+        } catch (Exception e) {
+            // Silent response - just lose the line.
         }
     }
 
@@ -98,5 +93,6 @@ public class OutputThread extends Thread {
 
     private PircBot _bot = null;
     private Queue _outQueue = null;
+    private BufferedWriter bwriter = null;
 
 }

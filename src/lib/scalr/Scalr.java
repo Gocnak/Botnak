@@ -192,6 +192,7 @@ import java.awt.image.*;
  * @author Riyad Kalla (software@thebuzzmedia.com)
  * @since 1.1
  */
+@SuppressWarnings("unused")
 public class Scalr {
     /**
      * System property name used to define the debug boolean flag.
@@ -302,7 +303,8 @@ public class Scalr {
      */
     public static final ConvolveOp OP_ANTIALIAS = new ConvolveOp(
             new Kernel(3, 3, new float[]{.0f, .08f, .0f, .08f, .68f, .08f,
-                    .0f, .08f, .0f}), ConvolveOp.EDGE_NO_OP, null);
+                    .0f, .08f, .0f}), ConvolveOp.EDGE_NO_OP, null
+    );
 
     /**
      * A {@link RescaleOp} used to make any input image 10% darker.
@@ -403,7 +405,7 @@ public class Scalr {
          * jagged with some of the other {@link Method}s (even
          * {@link Method#QUALITY}).
          */
-        ULTRA_QUALITY;
+        ULTRA_QUALITY
     }
 
     /**
@@ -447,7 +449,7 @@ public class Scalr {
          * dimensions for the resultant image that best-fit within the given
          * height, regardless of the orientation of the image.
          */
-        FIT_TO_HEIGHT;
+        FIT_TO_HEIGHT
     }
 
     /**
@@ -499,7 +501,7 @@ public class Scalr {
          * but the top and bottom sides flip. This is different than a standard
          * rotation where the left and right would also have been flipped.
          */
-        FLIP_VERT;
+        FLIP_VERT
     }
 
     /**
@@ -578,7 +580,7 @@ public class Scalr {
      * @param src The image that will have the ops applied to it.
      * @param ops <code>1</code> or more ops to apply to the image.
      * @return a new {@link BufferedImage} that represents the <code>src</code>
-     *         with all the given operations applied to it.
+     * with all the given operations applied to it.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>ops</code> is <code>null</code> or empty.
      * @throws ImagingOpException       if one of the given {@link BufferedImageOp}s fails to apply.
@@ -593,7 +595,9 @@ public class Scalr {
      */
     public static BufferedImage apply(BufferedImage src, BufferedImageOp... ops)
             throws IllegalArgumentException, ImagingOpException {
-        long t = System.currentTimeMillis();
+        long t = -1;
+        if (DEBUG)
+            t = System.currentTimeMillis();
 
         if (src == null)
             throw new IllegalArgumentException("src cannot be null");
@@ -636,36 +640,36 @@ public class Scalr {
 
         boolean hasReassignedSrc = false;
 
-        for (int i = 0; i < ops.length; i++) {
+        for (BufferedImageOp op1 : ops) {
             long subT = System.currentTimeMillis();
-            BufferedImageOp op = ops[i];
 
             // Skip null ops instead of throwing an exception.
-            if (op == null)
+            if (op1 == null)
                 continue;
 
             if (DEBUG)
                 log(1, "Applying BufferedImageOp [class=%s, toString=%s]...",
-                        op.getClass(), op.toString());
+                        op1.getClass(), op1.toString());
 
 			/*
-			 * Must use op.getBounds instead of src.getWidth and src.getHeight
+             * Must use op.getBounds instead of src.getWidth and src.getHeight
 			 * because we are trying to create an image big enough to hold the
 			 * result of this operation (which may be to scale the image
 			 * smaller), in that case the bounds reported by this op and the
 			 * bounds reported by the source image will be different.
 			 */
-            Rectangle2D resultBounds = op.getBounds2D(src);
+            Rectangle2D resultBounds = op1.getBounds2D(src);
 
             // Watch out for flaky/misbehaving ops that fail to work right.
             if (resultBounds == null)
                 throw new ImagingOpException(
                         "BufferedImageOp ["
-                                + op.toString()
-                                + "] getBounds2D(src) returned null bounds for the target image; this should not happen and indicates a problem with application of this type of op.");
+                                + op1.toString()
+                                + "] getBounds2D(src) returned null bounds for the target image; this should not happen and indicates a problem with application of this type of op."
+                );
 
 			/*
-			 * We must manually create the target image; we cannot rely on the
+             * We must manually create the target image; we cannot rely on the
 			 * null-destination filter() method to create a valid destination
 			 * for us thanks to this JDK bug that has been filed for almost a
 			 * decade:
@@ -676,10 +680,10 @@ public class Scalr {
                     (int) Math.round(resultBounds.getHeight()));
 
             // Perform the operation, update our result to return.
-            BufferedImage result = op.filter(src, dest);
+            BufferedImage result = op1.filter(src, dest);
 
 			/*
-			 * Flush the 'src' image ONLY IF it is one of our interim temporary
+             * Flush the 'src' image ONLY IF it is one of our interim temporary
 			 * images being used when applying 2 or more operations back to
 			 * back. We never want to flush the original image passed in.
 			 */
@@ -687,7 +691,7 @@ public class Scalr {
                 src.flush();
 
 			/*
-			 * Incase there are more operations to perform, update what we
+             * Incase there are more operations to perform, update what we
 			 * consider the 'src' reference to our last result so on the next
 			 * iteration the next op is applied to this result and not back
 			 * against the original src passed in.
@@ -695,7 +699,7 @@ public class Scalr {
             src = result;
 
 			/*
-			 * Keep track of when we re-assign 'src' to an interim temporary
+             * Keep track of when we re-assign 'src' to an interim temporary
 			 * image, so we know when we can explicitly flush it and clean up
 			 * references on future iterations.
 			 */
@@ -733,8 +737,8 @@ public class Scalr {
      *               <code>null</code> or empty then <code>src</code> is return
      *               unmodified.
      * @return a new {@link BufferedImage} representing the cropped region of
-     *         the <code>src</code> image with any optional operations applied
-     *         to it.
+     * the <code>src</code> image with any optional operations applied
+     * to it.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if any coordinates of the bounding crop box is invalid within
      *                                  the bounds of the <code>src</code> image (e.g. negative or
@@ -776,8 +780,8 @@ public class Scalr {
      *               <code>null</code> or empty then <code>src</code> is return
      *               unmodified.
      * @return a new {@link BufferedImage} representing the cropped region of
-     *         the <code>src</code> image with any optional operations applied
-     *         to it.
+     * the <code>src</code> image with any optional operations applied
+     * to it.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if any coordinates of the bounding crop box is invalid within
      *                                  the bounds of the <code>src</code> image (e.g. negative or
@@ -795,7 +799,9 @@ public class Scalr {
     public static BufferedImage crop(BufferedImage src, int x, int y,
                                      int width, int height, BufferedImageOp... ops)
             throws IllegalArgumentException, ImagingOpException {
-        long t = System.currentTimeMillis();
+        long t = -1;
+        if (DEBUG)
+            t = System.currentTimeMillis();
 
         if (src == null)
             throw new IllegalArgumentException("src cannot be null");
@@ -810,12 +816,14 @@ public class Scalr {
         if ((x + width) > srcWidth)
             throw new IllegalArgumentException(
                     "Invalid crop bounds: x + width [" + (x + width)
-                            + "] must be <= src.getWidth() [" + srcWidth + "]");
+                            + "] must be <= src.getWidth() [" + srcWidth + "]"
+            );
         if ((y + height) > srcHeight)
             throw new IllegalArgumentException(
                     "Invalid crop bounds: y + height [" + (y + height)
                             + "] must be <= src.getHeight() [" + srcHeight
-                            + "]");
+                            + "]"
+            );
 
         if (DEBUG)
             log(0,
@@ -827,7 +835,7 @@ public class Scalr {
         Graphics g = result.getGraphics();
 
 		/*
-		 * Render the region specified by our crop bounds from the src image
+         * Render the region specified by our crop bounds from the src image
 		 * directly into our result image (which is the exact size of the crop
 		 * region).
 		 */
@@ -871,7 +879,7 @@ public class Scalr {
      *                <code>null</code> or empty then <code>src</code> is return
      *                unmodified.
      * @return a new {@link BufferedImage} representing <code>src</code> with
-     *         the given padding applied to it.
+     * the given padding applied to it.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>padding</code> is &lt; <code>1</code>.
      * @throws ImagingOpException       if one of the given {@link BufferedImageOp}s fails to apply.
@@ -918,7 +926,7 @@ public class Scalr {
      *                <code>null</code> or empty then <code>src</code> is return
      *                unmodified.
      * @return a new {@link BufferedImage} representing <code>src</code> with
-     *         the given padding applied to it.
+     * the given padding applied to it.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>padding</code> is &lt; <code>1</code>.
      * @throws IllegalArgumentException if <code>color</code> is <code>null</code>.
@@ -935,7 +943,9 @@ public class Scalr {
     public static BufferedImage pad(BufferedImage src, int padding,
                                     Color color, BufferedImageOp... ops)
             throws IllegalArgumentException, ImagingOpException {
-        long t = System.currentTimeMillis();
+        long t = -1;
+        if (DEBUG)
+            t = System.currentTimeMillis();
 
         if (src == null)
             throw new IllegalArgumentException("src cannot be null");
@@ -1030,7 +1040,7 @@ public class Scalr {
      *                   sharpen, blur, etc.) that can be applied to the final result
      *                   before returning the image.
      * @return a new {@link BufferedImage} representing the scaled
-     *         <code>src</code> image.
+     * <code>src</code> image.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>targetSize</code> is &lt; 0.
      * @throws ImagingOpException       if one of the given {@link BufferedImageOp}s fails to apply.
@@ -1073,7 +1083,7 @@ public class Scalr {
      *                      sharpen, blur, etc.) that can be applied to the final result
      *                      before returning the image.
      * @return a new {@link BufferedImage} representing the scaled
-     *         <code>src</code> image.
+     * <code>src</code> image.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>scalingMethod</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>targetSize</code> is &lt; 0.
@@ -1126,7 +1136,7 @@ public class Scalr {
      *                   sharpen, blur, etc.) that can be applied to the final result
      *                   before returning the image.
      * @return a new {@link BufferedImage} representing the scaled
-     *         <code>src</code> image.
+     * <code>src</code> image.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>resizeMode</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>targetSize</code> is &lt; 0.
@@ -1179,7 +1189,7 @@ public class Scalr {
      *                      sharpen, blur, etc.) that can be applied to the final result
      *                      before returning the image.
      * @return a new {@link BufferedImage} representing the scaled
-     *         <code>src</code> image.
+     * <code>src</code> image.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>scalingMethod</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>resizeMode</code> is <code>null</code>.
@@ -1229,7 +1239,7 @@ public class Scalr {
      *                     sharpen, blur, etc.) that can be applied to the final result
      *                     before returning the image.
      * @return a new {@link BufferedImage} representing the scaled
-     *         <code>src</code> image.
+     * <code>src</code> image.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>targetWidth</code> is &lt; 0 or if
      *                                  <code>targetHeight</code> is &lt; 0.
@@ -1277,7 +1287,7 @@ public class Scalr {
      *                      sharpen, blur, etc.) that can be applied to the final result
      *                      before returning the image.
      * @return a new {@link BufferedImage} representing the scaled
-     *         <code>src</code> image.
+     * <code>src</code> image.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>scalingMethod</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>targetWidth</code> is &lt; 0 or if
@@ -1334,7 +1344,7 @@ public class Scalr {
      *                     sharpen, blur, etc.) that can be applied to the final result
      *                     before returning the image.
      * @return a new {@link BufferedImage} representing the scaled
-     *         <code>src</code> image.
+     * <code>src</code> image.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>resizeMode</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>targetWidth</code> is &lt; 0 or if
@@ -1393,7 +1403,7 @@ public class Scalr {
      *                      sharpen, blur, etc.) that can be applied to the final result
      *                      before returning the image.
      * @return a new {@link BufferedImage} representing the scaled
-     *         <code>src</code> image.
+     * <code>src</code> image.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>scalingMethod</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>resizeMode</code> is <code>null</code>.
@@ -1415,7 +1425,9 @@ public class Scalr {
                                        Mode resizeMode, int targetWidth, int targetHeight,
                                        BufferedImageOp... ops) throws IllegalArgumentException,
             ImagingOpException {
-        long t = System.currentTimeMillis();
+        long t = -1;
+        if (DEBUG)
+            t = System.currentTimeMillis();
 
         if (src == null)
             throw new IllegalArgumentException("src cannot be null");
@@ -1597,7 +1609,7 @@ public class Scalr {
      *                 etc.) that can be applied to the final result before returning
      *                 the image.
      * @return a new {@link BufferedImage} representing <code>src</code> rotated
-     *         by the given amount and any optional ops applied to it.
+     * by the given amount and any optional ops applied to it.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      * @throws IllegalArgumentException if <code>rotation</code> is <code>null</code>.
      * @throws ImagingOpException       if one of the given {@link BufferedImageOp}s fails to apply.
@@ -1614,7 +1626,9 @@ public class Scalr {
     public static BufferedImage rotate(BufferedImage src, Rotation rotation,
                                        BufferedImageOp... ops) throws IllegalArgumentException,
             ImagingOpException {
-        long t = System.currentTimeMillis();
+        long t = -1;
+        if (DEBUG)
+            t = System.currentTimeMillis();
 
         if (src == null)
             throw new IllegalArgumentException("src cannot be null");
@@ -1709,7 +1723,7 @@ public class Scalr {
 
         // Create our target image we will render the rotated result to.
         BufferedImage result = createOptimalImage(src, newWidth, newHeight);
-        Graphics2D g2d = (Graphics2D) result.createGraphics();
+        Graphics2D g2d = result.createGraphics();
 
 		/*
 		 * Render the resultant image to our new rotatedImage buffer, applying
@@ -1787,13 +1801,13 @@ public class Scalr {
      * @param src The source image that will be analyzed to determine the most
      *            optimal image type it can be rendered into.
      * @return a new {@link BufferedImage} representing the most optimal target
-     *         image type that <code>src</code> can be rendered into.
+     * image type that <code>src</code> can be rendered into.
      * @see <a
-     *      href="http://www.mail-archive.com/java2d-interest@capra.eng.sun.com/msg05621.html">How
-     *      Java2D handles poorly supported image types</a>
+     * href="http://www.mail-archive.com/java2d-interest@capra.eng.sun.com/msg05621.html">How
+     * Java2D handles poorly supported image types</a>
      * @see <a
-     *      href="http://code.google.com/p/java-image-scaling/source/browse/trunk/src/main/java/com/mortennobel/imagescaling/MultiStepRescaleOp.java">Thanks
-     *      to Morten Nobel for implementation hint</a>
+     * href="http://code.google.com/p/java-image-scaling/source/browse/trunk/src/main/java/com/mortennobel/imagescaling/MultiStepRescaleOp.java">Thanks
+     * to Morten Nobel for implementation hint</a>
      */
     protected static BufferedImage createOptimalImage(BufferedImage src) {
         return createOptimalImage(src, src.getWidth(), src.getHeight());
@@ -1822,14 +1836,14 @@ public class Scalr {
      * @param width  The width of the newly created resulting image.
      * @param height The height of the newly created resulting image.
      * @return a new {@link BufferedImage} representing the most optimal target
-     *         image type that <code>src</code> can be rendered into.
+     * image type that <code>src</code> can be rendered into.
      * @throws IllegalArgumentException if <code>width</code> or <code>height</code> are &lt; 0.
      * @see <a
-     *      href="http://www.mail-archive.com/java2d-interest@capra.eng.sun.com/msg05621.html">How
-     *      Java2D handles poorly supported image types</a>
+     * href="http://www.mail-archive.com/java2d-interest@capra.eng.sun.com/msg05621.html">How
+     * Java2D handles poorly supported image types</a>
      * @see <a
-     *      href="http://code.google.com/p/java-image-scaling/source/browse/trunk/src/main/java/com/mortennobel/imagescaling/MultiStepRescaleOp.java">Thanks
-     *      to Morten Nobel for implementation hint</a>
+     * href="http://code.google.com/p/java-image-scaling/source/browse/trunk/src/main/java/com/mortennobel/imagescaling/MultiStepRescaleOp.java">Thanks
+     * to Morten Nobel for implementation hint</a>
      */
     protected static BufferedImage createOptimalImage(BufferedImage src,
                                                       int width, int height) throws IllegalArgumentException {
@@ -1841,7 +1855,8 @@ public class Scalr {
                 width,
                 height,
                 (src.getTransparency() == Transparency.OPAQUE ? BufferedImage.TYPE_INT_RGB
-                        : BufferedImage.TYPE_INT_ARGB));
+                        : BufferedImage.TYPE_INT_ARGB)
+        );
     }
 
     /**
@@ -1865,8 +1880,8 @@ public class Scalr {
      * @param src The image to copy (if necessary) into an optimally typed
      *            {@link BufferedImage}.
      * @return a representation of the <code>src</code> image in an optimally
-     *         typed {@link BufferedImage}, otherwise <code>src</code> if it was
-     *         already of an optimal type.
+     * typed {@link BufferedImage}, otherwise <code>src</code> if it was
+     * already of an optimal type.
      * @throws IllegalArgumentException if <code>src</code> is <code>null</code>.
      */
     protected static BufferedImage copyToOptimalImage(BufferedImage src)
@@ -1909,7 +1924,7 @@ public class Scalr {
      *                     selected to test if it is greater than or less than a
      *                     particular threshold.
      * @return the fastest {@link Method} suited for scaling the image to the
-     *         specified dimensions while maintaining a good-looking result.
+     * specified dimensions while maintaining a good-looking result.
      */
     protected static Method determineScalingMethod(int targetWidth,
                                                    int targetHeight, float ratio) {
@@ -1946,7 +1961,7 @@ public class Scalr {
      *                               indicate the method that {@link Graphics2D} should use when
      *                               scaling the image.
      * @return the result of scaling the original <code>src</code> to the given
-     *         dimensions using the given interpolation method.
+     * dimensions using the given interpolation method.
      */
     protected static BufferedImage scaleImage(BufferedImage src,
                                               int targetWidth, int targetHeight, Object interpolationHintValue) {
@@ -1988,7 +2003,7 @@ public class Scalr {
      *                               indicate the method that {@link Graphics2D} should use when
      *                               scaling the image.
      * @return an image scaled to the given dimensions using the given rendering
-     *         hint.
+     * hint.
      */
     protected static BufferedImage scaleImageIncrementally(BufferedImage src,
                                                            int targetWidth, int targetHeight, Method scalingMethod,

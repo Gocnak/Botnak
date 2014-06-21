@@ -2,7 +2,9 @@ package sound;
 
 import util.Constants;
 import util.StringArray;
+import util.Utils;
 
+import java.io.File;
 import java.util.Arrays;
 
 /**
@@ -14,6 +16,7 @@ public class Sound {
 
     private final int userPermission;
     private final StringArray filePaths;
+    private boolean isEnabled = true;
 
     /**
      * Construct the sounds here. The Sound info itself should be stored here.
@@ -37,6 +40,15 @@ public class Sound {
     }
 
     /**
+     * Gets one of the sounds in the array.
+     *
+     * @return One of the sounds in the array.
+     */
+    public File getFile() {
+        return new File(filePaths.data[Utils.nextInt(filePaths.data.length)]);
+    }
+
+    /**
      * Constructs a sound with default PERMISSION_ALL.
      *
      * @param files The file path(s) of the sound(s).
@@ -45,6 +57,13 @@ public class Sound {
         this(Constants.PERMISSION_ALL, files);
     }
 
+    public void setEnabled(boolean newBool) {
+        isEnabled = newBool;
+    }
+
+    public boolean isEnabled() {
+        return isEnabled;
+    }
 
     public StringArray getSounds() {
         return filePaths;
@@ -73,6 +92,7 @@ public class Sound {
         sb.append(" WITH FILES: ");
         for (String s : getSounds().data) {
             sb.append(s);
+            sb.append(" ");
         }
         return sb.toString();
     }

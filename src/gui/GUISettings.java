@@ -4,12 +4,15 @@ import irc.IRCBot;
 import irc.IRCViewer;
 import lib.scalr.Scalr;
 import sound.Sound;
-import util.*;
+import util.Constants;
+import util.Settings;
+import util.Utils;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.text.StyleConstants;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeSelectionModel;
@@ -365,7 +368,8 @@ public class GUISettings extends JFrame {
         jfc.setSelectedFont(GUIMain.currentSettings.font);
         if (jfc.showDialog(this) == JFontChooser.OK_OPTION) {
             if (jfc.getSelectedFont() != null) GUIMain.currentSettings.font = jfc.getSelectedFont();
-            GUIMain.setFont();
+            StyleConstants.setFontFamily(GUIMain.norm, GUIMain.currentSettings.font.getFamily());
+            StyleConstants.setFontSize(GUIMain.norm, GUIMain.currentSettings.font.getSize());
             currentFontLabel.setText(Utils.fontToString(GUIMain.currentSettings.font));
             currentFontLabel.setFont(GUIMain.currentSettings.font);
         }
@@ -375,9 +379,9 @@ public class GUISettings extends JFrame {
         try {
             BufferedImage img = ImageIO.read(image);
             if (img.getWidth() > 40) {
-                img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, 40, 14, Scalr.OP_ANTIALIAS);
+                img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, 40, 14);
             } else {
-                img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 14, Scalr.OP_ANTIALIAS);
+                img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 14);
             }
             ImageIcon icon = new ImageIcon(img);
             icon.getImage().flush();

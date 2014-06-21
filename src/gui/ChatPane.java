@@ -2,12 +2,16 @@ package gui;
 
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
+import irc.Donator;
+import irc.Message;
 import lib.pircbot.org.jibble.pircbot.User;
 import lib.scalr.Scalr;
 import util.Utils;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.text.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -17,26 +21,128 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * All channels other than All Chats is stored in this format.
+ * All channels are stored in this format.
  */
 public class ChatPane {
 
+    public boolean shouldPulse() {
+        return shouldPulse;
+    }
+
+    private boolean shouldPulse = true;
+
+    public void setShouldPulse(boolean newBool) {
+        shouldPulse = newBool;
+    }
+
+    //credit to http://stackoverflow.com/a/4047794 for the below
+    public boolean isScrollBarFullyExtended(JScrollBar vScrollBar) {
+        BoundedRangeModel model = vScrollBar.getModel();
+        return (model.getExtent() + model.getValue()) == model.getMaximum();
+    }
+
+    public void scrollToBottom() {
+        Rectangle visibleRect = textPane.getVisibleRect();
+        visibleRect.y = textPane.getHeight() - visibleRect.height;
+        textPane.scrollRectToVisible(visibleRect);
+    }
+
+    // ScrollingDocumentListener takes care of re-scrolling when appropriate
+    class ScrollingDocumentListener implements DocumentListener {
+        public void changedUpdate(DocumentEvent e) {
+            maybeScrollToBottom();
+        }
+
+        public void insertUpdate(DocumentEvent e) {
+            maybeScrollToBottom();
+        }
+
+        public void removeUpdate(DocumentEvent e) {
+            maybeScrollToBottom();
+        }
+
+        private void maybeScrollToBottom() {
+            JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
+            boolean scrollBarAtBottom = isScrollBarFullyExtended(scrollBar);
+            if (scrollBarAtBottom) {
+                // Push the call to "scrollToBottom" back TWO PLACES on the
+                // AWT-EDT queue so that it runs *after* Swing has had an
+                // opportunity to "react" to the appending of new text:
+                // this ensures that we "scrollToBottom" only after a new
+                // bottom has been recalculated during the natural
+                // revalidation of the GUI that occurs after having
+                // appending new text to the JTextArea.
+                EventQueue.invokeLater(new Runnable() {
+                    public void run() {
+                        EventQueue.invokeLater(new Runnable() {
+                            public void run() {
+                                scrollToBottom();
+                            }
+                        });
+                    }
+                });
+            }
+        }
+    }
 
     private String chan;
+
+    public String getChannel() {
+        return chan;
+    }
+
+    private int index;
+
+    public void setIndex(int newIndex) {
+        index = newIndex;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
     private JTextPane textPane;
+
+    public JTextPane getTextPane() {
+        return textPane;
+    }
+
+    private JScrollPane scrollPane;
+
+    public JScrollPane getScrollPane() {
+        return scrollPane;
+    }
+
+
+    private boolean isTabVisible = true;
+
+    public boolean isTabVisible() {
+        return isTabVisible;
+    }
+
+    public void setTabVisible(boolean newBool) {
+        isTabVisible = newBool;
+    }
+
     private int cleanupCounter;
-    SimpleDateFormat format = new SimpleDateFormat("[h:mm a]", Locale.getDefault());
+    final SimpleDateFormat format = new SimpleDateFormat("[h:mm a]", Locale.getDefault());
 
     /**
-     * You initialize this class with the channel it's for, a randomly-made scroll pane,
-     * and the text pane you'll be editing.
+     * You initialize this class with the channel it's for and the text pane you'll be editing.
      *
-     * @param channel The channel ("name") of this chat pane. Ex: "All Chats" or "#gocnak"
-     * @param pane    The text pane that shows the messages for the given channel.
+     * @param channel    The channel ("name") of this chat pane. Ex: "All Chats" or "#gocnak"
+     * @param scrollPane The scroll pane for the tab.
+     * @param pane       The text pane that shows the messages for the given channel.
+     * @param index      The index of the pane in the main GUI.
      */
-    public ChatPane(String channel, JTextPane pane) {
+    public ChatPane(String channel, JScrollPane scrollPane, JTextPane pane, int index) {
         chan = channel;
         textPane = pane;
+        ((DefaultCaret) textPane.getCaret()).setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
+        this.index = index;
+        this.scrollPane = scrollPane;
+        textPane.getDocument().addDocumentListener(new ScrollingDocumentListener());
+        textPane.getStyledDocument().addDocumentListener(new ScrollingDocumentListener());
         cleanupCounter = 0;
     }
 
@@ -47,99 +153,138 @@ public class ChatPane {
      * (if they're clearing the chat), a logging event, and the line is added.
      * <p/>
      *
-     * @param channel The channel the message was sent in.
-     * @param sender  The sender of the message.
      * @param message The message from the chat.
-     * @param isMe    Is a /me message.
      */
-    public void onMessage(String channel, String sender, String message, boolean isMe) {
-        if (GUIMain.currentSettings.cleanupChat) {
-            cleanupCounter++;
-            if (cleanupCounter > GUIMain.currentSettings.chatMax) {
-                /* cleanup every n messages */
-                cleanupChat();
-                cleanupCounter = 0;
-            }
-        }
-        sender = sender.toLowerCase();
+    public void onMessage(Message message) {
+        SimpleAttributeSet user = new SimpleAttributeSet();
+        StyleConstants.setFontFamily(user, GUIMain.currentSettings.font.getFamily());
+        StyleConstants.setFontSize(user, GUIMain.currentSettings.font.getSize());
+        String sender = message.getSender().toLowerCase();
+        String channel = message.getChannel();
+        String mess = message.getContent();
+        boolean isMe = (message.getType() == Message.MessageType.ACTION_MESSAGE);
         String time = format.format(new Date(System.currentTimeMillis()));
         StyledDocument doc = textPane.getStyledDocument();
-        Color c;
-        if (GUIMain.userColMap.containsKey(sender)) {
-            c = GUIMain.userColMap.get(sender);
-        } else {
-            c = Utils.getColor(sender.hashCode());
-        }
-        StyleConstants.setForeground(GUIMain.user, c);
         try {
-            textPane.setCaretPosition(doc.getLength());
-            doc.insertString(textPane.getCaretPosition(), time, GUIMain.norm);
-            User u = Utils.getUser(GUIMain.viewer, channel, sender);
+            doc.insertString(doc.getLength(), "\n" + time, GUIMain.norm);
+            User u = GUIMain.viewer.getViewer().getUser(channel, sender);
             if (u != null) {
+                Color c;
+                if (u.getColor() != null) {
+                    if (GUIMain.userColMap.containsKey(sender)) {
+                        c = GUIMain.userColMap.get(sender);
+                    } else {
+                        c = u.getColor();
+                        if (!Utils.checkColor(c)) {
+                            c = Utils.getColorFromHashcode(sender.hashCode());
+                        }
+                    }
+                } else {//temporarily assign their color as randomly generated
+                    c = Utils.getColorFromHashcode(sender.hashCode());
+                }
+                StyleConstants.setForeground(user, c);
                 if (channel.substring(1).equals(sender)) {
-                    insertIcon(doc, textPane.getCaretPosition(), 1, null);
-                }
-                if (u.isSubscriber()) {
-                    insertIcon(doc, textPane.getCaretPosition(), 5, channel);
-                }
-                if (u.isStaff()) {
-                    insertIcon(doc, textPane.getCaretPosition(), 3, null);
-                }
-                if (u.isAdmin()) {
-                    insertIcon(doc, textPane.getCaretPosition(), 2, null);
-                }
-                if (u.isTurbo()) {
-                    insertIcon(doc, textPane.getCaretPosition(), 4, null);
+                    insertIcon(doc, doc.getLength(), 1, null);
                 }
                 if (u.isOp()) {
                     if (!channel.substring(1).equals(sender) && !u.isStaff() && !u.isAdmin()) {//not the broadcaster again
-                        insertIcon(doc, textPane.getCaretPosition(), 0, null);
+                        insertIcon(doc, doc.getLength(), 0, null);
                     }
                 }
+                Donator d = Utils.getDonator(u.getNick());
+                if (d != null) {
+                    insertIcon(doc, doc.getLength(), d.getDonationStatus(), null);
+                }
+                if (u.isStaff()) {
+                    insertIcon(doc, doc.getLength(), 3, null);
+                }
+                if (u.isAdmin()) {
+                    insertIcon(doc, doc.getLength(), 2, null);
+                }
+                if (u.isSubscriber()) {
+                    insertIcon(doc, doc.getLength(), 5, channel);
+                }
+                if (u.isTurbo()) {
+                    insertIcon(doc, doc.getLength(), 4, null);
+                }
             }
-            int nameStart = textPane.getCaretPosition() + 1;
+            int nameStart = doc.getLength() + 1;
             if (chan.equalsIgnoreCase("all chats")) {
-                doc.insertString(textPane.getCaretPosition(), " " + sender, GUIMain.user);
-                doc.insertString(textPane.getCaretPosition(), " (" + channel.substring(1) + "): ", GUIMain.norm);
+                doc.insertString(doc.getLength(), " " + sender, user);
+                doc.insertString(doc.getLength(), " (" + channel.substring(1) + "): ", GUIMain.norm);
             } else {
-                doc.insertString(textPane.getCaretPosition(), " " + sender + (!isMe ? ": " : " "), GUIMain.user);
+                doc.insertString(doc.getLength(), " " + sender + (!isMe ? ": " : " "), user);
             }
-            Utils.handleNames(doc, nameStart, sender, GUIMain.user);
-            Utils.handleFaces(doc, nameStart, sender);//if the sender has a custom face that they want instead
-            int messStart = textPane.getCaretPosition();
+            Utils.handleNames(doc, nameStart, sender, user);
+            Utils.handleNameFaces(doc, nameStart, sender);
+            //Utils.handleFaces(doc, nameStart, sender);//if the sender has a custom face that they want instead
+            int messStart = doc.getLength();
             SimpleAttributeSet set;
-            if (Utils.mentionsKeyword(message)) {
-                set = Utils.getSetForKeyword(message);
+            if (Utils.mentionsKeyword(mess)) {
+                set = Utils.getSetForKeyword(mess);
             } else {
-                set = (isMe ? GUIMain.user : GUIMain.norm);
+                set = (isMe ? user : GUIMain.norm);
             }
-            doc.insertString(textPane.getCaretPosition(), message + "\n", set);
-            Utils.handleFaces(doc, messStart, message);
-            Utils.handleTwitchFaces(doc, messStart, message);
-            Utils.handleURLs(doc, messStart, message);
-            textPane.setCaretPosition(doc.getLength());
+            doc.insertString(doc.getLength(), mess, set);
+            Utils.handleFaces(doc, messStart, mess);
+            Utils.handleTwitchFaces(doc, messStart, mess);
+            Utils.handleURLs(doc, messStart, mess);
+            if (GUIMain.currentSettings.cleanupChat) {
+                cleanupCounter++;
+                if (cleanupCounter > GUIMain.currentSettings.chatMax) {
+                /* cleanup every n messages */
+                    if (cleanupChat())
+                        cleanupCounter = 0;
+                }
+            }
+            if (index != 0 && isTabVisible && shouldPulse)
+                GUIMain.instance.pulseTab(index);
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
     }
 
     public void onBan(String message) {
+        String time = format.format(new Date(System.currentTimeMillis()));
+        StyledDocument doc = textPane.getStyledDocument();
+        try {
+            doc.insertString(doc.getLength(), "\n" + time, GUIMain.norm);
+            doc.insertString(doc.getLength(), " " + message, GUIMain.norm);
+        } catch (Exception ignored) {
+        }
         if (GUIMain.currentSettings.cleanupChat) {
             cleanupCounter++;
             if (cleanupCounter > GUIMain.currentSettings.chatMax) {
                 /* cleanup every n messages */
-                cleanupChat();
-                cleanupCounter = 0;
+                if (cleanupChat()) {
+                    cleanupCounter = 0;
+                }
             }
         }
-        String time = format.format(new Date(System.currentTimeMillis()));
+    }
+
+    public void onSub(Message message) {
         StyledDocument doc = textPane.getStyledDocument();
         try {
-            doc.insertString(textPane.getCaretPosition(), time, GUIMain.norm);
-            textPane.setCaretPosition(doc.getLength());
-            doc.insertString(textPane.getCaretPosition(), " " + message + "\n", GUIMain.norm);
-            textPane.setCaretPosition(doc.getLength());
+            doc.insertString(doc.getLength(), "\n", GUIMain.norm);
+            for (int i = 0; i < 5; i++) {
+                insertIcon(doc, doc.getLength(), 5, message.getChannel());
+            }
+            //TODO make a setting for the color for the sub message
+            doc.insertString(doc.getLength(), message.getContent(), GUIMain.norm);
+            for (int i = 0; i < 5; i++) {
+                insertIcon(doc, doc.getLength(), 5, message.getChannel());
+            }
         } catch (Exception ignored) {
+        }
+        if (GUIMain.currentSettings.cleanupChat) {
+            cleanupCounter++;
+            if (cleanupCounter > GUIMain.currentSettings.chatMax) {
+                /* cleanup every n messages */
+                if (cleanupChat()) {
+                    cleanupCounter = 0;
+                }
+            }
         }
     }
 
@@ -148,7 +293,7 @@ public class ChatPane {
         try {
             BufferedImage img = ImageIO.read(image);
             int size = GUIMain.currentSettings.font.getSize();
-            img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, size, size, Scalr.OP_ANTIALIAS);
+            img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, size, size);
             icon = new ImageIcon(img);
             icon.getImage().flush();
             return icon;
@@ -163,6 +308,8 @@ public class ChatPane {
         ImageIcon icon;
         String kind;
         switch (type) {
+            case -1:
+                return;
             case 0:
                 icon = sizeIcon(GUIMain.currentSettings.modIcon);
                 kind = "Mod";
@@ -189,6 +336,26 @@ public class ChatPane {
                 icon = sizeIcon(subIcon);
                 kind = "Subscriber";
                 break;
+            case 6://donation normal
+                icon = sizeIcon(ChatPane.class.getResource("/resource/green.png"));
+                kind = "Donator";
+                break;
+            case 7:
+                icon = sizeIcon(ChatPane.class.getResource("/resource/bronze.png"));
+                kind = "Donator";
+                break;
+            case 8:
+                icon = sizeIcon(ChatPane.class.getResource("/resource/silver.png"));
+                kind = "Donator";
+                break;
+            case 9:
+                icon = sizeIcon(ChatPane.class.getResource("/resource/gold.png"));
+                kind = "Donator";
+                break;
+            case 10:
+                icon = sizeIcon(ChatPane.class.getResource("/resource/diamond.png"));
+                kind = "Donator";
+                break;
             default:
                 icon = sizeIcon(GUIMain.currentSettings.modIcon);
                 kind = "Mod";
@@ -209,42 +376,47 @@ public class ChatPane {
 
     // Source: http://stackoverflow.com/a/4628879
     // by http://stackoverflow.com/users/131872/camickr & Community
-    private void cleanupChat() {
-        if (textPane == null || textPane.getParent() == null) return;
-        if (!(textPane.getParent() instanceof JViewport)) {
-            return;
-        }
-        JViewport viewport = ((JViewport) textPane.getParent());
-        Point startPoint = viewport.getViewPosition();
-        // we are not deleting right before the visible area, but one screen behind
-        // for convenience, otherwise flickering.
-        if (startPoint == null) return;
-        int start = textPane.viewToModel(startPoint);
-        if (start > 0) // not equal zero, because then we don't have to delete anything
-        {
-            Document doc = textPane.getDocument();
-            try {
-                if (GUIMain.currentSettings.cleanupChat) {
-                    if (GUIMain.currentSettings.logChat) {
-                        String[] toremove = doc.getText(0, start).split("\\n");
-                        Utils.logChat(toremove, chan);
+    private boolean cleanupChat() {
+        if (EventQueue.isDispatchThread()) {
+            if (textPane == null || textPane.getParent() == null) return false;
+            if (!(textPane.getParent() instanceof JViewport)) {
+                return false;
+            }
+            JViewport viewport = ((JViewport) textPane.getParent());
+            Point startPoint = viewport.getViewPosition();
+            // we are not deleting right before the visible area, but one screen behind
+            // for convenience, otherwise flickering.
+            if (startPoint == null) return false;
+            int start = textPane.viewToModel(startPoint);
+            if (start > 0) // not equal zero, because then we don't have to delete anything
+            {
+                StyledDocument doc = textPane.getStyledDocument();
+                try {
+                    if (GUIMain.currentSettings.cleanupChat) {
+                        if (GUIMain.currentSettings.logChat) {
+                            String[] toRemove = doc.getText(0, start).split("\\n");
+                            Utils.logChat(toRemove, chan, 1);
+                        }
+                        doc.remove(0, start);
+                        return true;
                     }
-                    doc.remove(0, start);
-                    textPane.setCaretPosition(doc.getLength());
+                } catch (BadLocationException e) {
+                    // we cannot do anything here
+                    GUIMain.log(e.getMessage());
+                    return false;
                 }
-            } catch (BadLocationException e) {
-                // we cannot do anything here
-                GUIMain.log(e.getMessage());
             }
         }
+        return false;
     }
 
     /**
-     * Creates a pane and adds it to a tab to the main GUI.
+     * Creates a pane of the given channel.
      *
      * @param channel The channel, also used as the key for the hashmap.
+     * @return The created ChatPane.
      */
-    public static void createPane(String channel) {
+    public static ChatPane createPane(String channel) {
         JScrollPane scrollPane = new JScrollPane();
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         JTextPane pane = new JTextPane();
@@ -257,45 +429,37 @@ public class ChatPane {
         pane.addMouseListener(new ListenerURL());
         pane.addMouseListener(new ListenerName());
         scrollPane.setViewportView(pane);
-        GUIMain.channelPane.addTab(channel, scrollPane);
-        GUIMain.chatPanes.put(channel, new ChatPane(channel, pane));
+        return new ChatPane(channel, scrollPane, pane, GUIMain.channelPane.getTabCount() - 1);
     }
 
+    /**
+     * Deletes the pane and removes the tab from the tabbed pane.
+     */
     public void deletePane() {
-        for (int i = 0; i < GUIMain.channelPane.getTabCount(); i++) {
-            String name = GUIMain.channelPane.getTitleAt(i);
-            if (name != null) {
-                if (name.equalsIgnoreCase("all chats")) continue;//this will most likely be 0 every time
-                if (name.equalsIgnoreCase(chan)) {
-                    if (GUIMain.currentSettings.logChat) {
-                        Utils.logChat(getText().split("\\n"), chan);
-                    }
-                    GUIMain.channelPane.removeTabAt(i);
-                }
-            }
+        if (GUIMain.currentSettings.logChat) {
+            Utils.logChat(getText().split("\\n"), chan, 2);
         }
+        GUIMain.channelPane.removeTabAt(index);
+        GUIMain.channelPane.setSelectedIndex(index - 1);
     }
 
     public void log(String message) {
         String time = format.format(new Date(System.currentTimeMillis()));
         StyledDocument doc = textPane.getStyledDocument();
         try {
-            textPane.setCaretPosition(doc.getLength());
-            doc.insertString(textPane.getCaretPosition(), time + " SYS: " + message + "\n", GUIMain.norm);
-            textPane.setCaretPosition(doc.getLength());
+            doc.insertString(doc.getLength(), "\n" + time + " SYS: " + message, GUIMain.norm);
             if (GUIMain.currentSettings.cleanupChat) {
                 cleanupCounter++;
                 if (cleanupCounter > GUIMain.currentSettings.chatMax) {
                 /* cleanup every n messages */
-                    if (GUIMain.doneWithFaces) {
-                        cleanupChat();
-                        cleanupCounter = 0;
+                    if (GUIMain.doneWithTwitchFaces) {
+                        if (cleanupChat()) {
+                            cleanupCounter = 0;
+                        }
                     }
                 }
             }
         } catch (Exception ignored) {
         }
     }
-
-
 }

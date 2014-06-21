@@ -3,7 +3,12 @@ package util;
 import face.Face;
 import face.SubscriberIcon;
 import face.TwitchFace;
+import gui.ChatPane;
+import gui.CombinedChatPane;
 import gui.GUIMain;
+import irc.Donator;
+import irc.IRCBot;
+import irc.IRCViewer;
 import sound.Sound;
 
 import javax.swing.filechooser.FileSystemView;
@@ -34,6 +39,9 @@ public class Settings {
     public String defaultSoundDir = "";
     public String defaultFaceDir = "";
 
+    //custom sound
+    public Sound subSound = null;
+
     //icons
     public URL modIcon;
     public URL broadIcon;
@@ -52,13 +60,13 @@ public class Settings {
     public static File defaultDir = new File(FileSystemView.getFileSystemView().getDefaultDirectory().getAbsolutePath()
             + File.separator + "Botnak");
     public File faceDir = new File(defaultDir + File.separator + "Faces");
+    public File nameFaceDir = new File(defaultDir + File.separator + "NameFaces");
     public File twitchFaceDir = new File(defaultDir + File.separator + "TwitchFaces");
     public File subIconsDir = new File(defaultDir + File.separator + "SubIcons");
     public File logDir = new File(defaultDir + File.separator + "Logs");
-    public File sessionLogDir;
     //files
     public File accountsFile = new File(defaultDir + File.separator + "acc.ini");
-    public File streamsFile = new File(defaultDir + File.separator + "streams.txt");
+    public File tabsFile = new File(defaultDir + File.separator + "tabs.txt");
     public File soundsFile = new File(defaultDir + File.separator + "sounds.txt");
     public File faceFile = new File(defaultDir + File.separator + "faces.txt");
     public File twitchFaceFile = new File(defaultDir + File.separator + "twitchfaces.txt");
@@ -69,14 +77,19 @@ public class Settings {
     public static File lafFile = new File(defaultDir + File.separator + "laf.txt");
     public File keywordsFile = new File(defaultDir + File.separator + "keywords.txt");
     public File subIconsFile = new File(defaultDir + File.separator + "subIcons.txt");
+    public File donatorsFile = new File(defaultDir + File.separator + "donators.txt");
+    public File namefaceFile = new File(defaultDir + File.separator + "namefaces.txt");
 
     //appearance
     public boolean logChat = false;
     public int chatMax = 100;
     public boolean cleanupChat = true;
     public static String lookAndFeel = "lib.jtattoo.com.jtattoo.plaf.hifi.HiFiLookAndFeel";
+    public int faceMaxHeight = 20;
     //Graphite = "lib.jtattoo.com.jtattoo.plaf.graphite.GraphiteLookAndFeel"
 
+
+    public String date;
 
     public Settings() {//default account
         modIcon = Settings.class.getResource("/resource/mod.png");
@@ -86,14 +99,12 @@ public class Settings {
         turboIcon = Settings.class.getResource("/resource/turbo.png");
         long time = System.currentTimeMillis();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yy");
-        String date = sdf.format(new Date(time));
+        date = sdf.format(new Date(time));
         logDir.mkdirs();
-        String name = (logDir.getAbsolutePath() + File.separator + (logDir.list().length + 1) + "-" + date);
-        sessionLogDir = new File(name);
-        sessionLogDir.mkdirs();
         font = new Font("Calibri", Font.PLAIN, 18);
         defaultDir.mkdirs();
         faceDir.mkdirs();
+        nameFaceDir.mkdirs();
         twitchFaceDir.mkdirs();
         subIconsDir.mkdirs();
     }
@@ -110,12 +121,9 @@ public class Settings {
             GUIMain.log("Loading defaults...");
             loadPropData(1);
         }
-        if (Utils.areFilesGood(streamsFile.getAbsolutePath())) {
-            GUIMain.log("Loading streams...");
-            String[] readStreams = loadStreams();
-            if (readStreams != null && readStreams.length > 0) {
-                Collections.addAll(GUIMain.channelSet, readStreams);
-            }
+        if (Utils.areFilesGood(tabsFile.getAbsolutePath())) {
+            GUIMain.log("Loading tabs...");
+            loadTabState();
         }
         if (Utils.areFilesGood(soundsFile.getAbsolutePath())) {
             GUIMain.log("Loading sounds...");
@@ -125,6 +133,10 @@ public class Settings {
             GUIMain.log("Loading user colors...");
             loadUserColors();
         }
+        if (Utils.areFilesGood(donatorsFile.getAbsolutePath())) {
+            GUIMain.log("Loading donators...");
+            loadDonators();
+        }
         if (Utils.areFilesGood(commandsFile.getAbsolutePath())) {
             GUIMain.log("Loading text commands...");
             loadCommands();
@@ -133,10 +145,12 @@ public class Settings {
             GUIMain.log("Loading subscriber icons...");
             loadSubIcons();
         }
-        if (Utils.areFilesGood(keywordsFile.getAbsolutePath())) {
-            GUIMain.log("Loading keywords...");
-            loadKeywords();
+        if (Utils.areFilesGood(namefaceFile.getAbsolutePath())) {
+            GUIMain.log("Loading Subscriber name faces...");
+            loadNameFaces();
         }
+        GUIMain.log("Loading keywords...");
+        loadKeywords();//first time boot adds the username
         GUIMain.log("Loading console commands...");
         loadConsoleCommands();//has to be out of the check for files for first time boot
         if (Utils.areFilesGood(faceFile.getAbsolutePath())) {
@@ -157,13 +171,15 @@ public class Settings {
         if (rememberBot || rememberNorm) savePropData(0);
         savePropData(1);
         if (!GUIMain.soundMap.isEmpty()) saveSounds();
-        if (GUIMain.loadedStreams()) saveStreams();
         if (!GUIMain.faceMap.isEmpty()) saveFaces();
         saveTwitchFaces();
+        saveTabState();
         if (!GUIMain.userColMap.isEmpty()) saveUserColors();
         if (GUIMain.loadedCommands()) saveCommands();
         if (!GUIMain.keywordMap.isEmpty()) saveKeywords();
         if (!GUIMain.subIconSet.isEmpty()) saveSubIcons();
+        if (!GUIMain.donators.isEmpty()) saveDonators();
+        if (!GUIMain.nameFaceMap.isEmpty()) saveNameFaces();
         saveConCommands();
         saveLAF();
     }
@@ -209,6 +225,14 @@ public class Settings {
                 if (p.getProperty("AutoLog") != null && p.getProperty("AutoLog").equalsIgnoreCase("true")) {
                     autoLogin = true;
                 }
+                if (autoLogin) {
+                    if (user != null) {
+                        GUIMain.viewer = new IRCViewer(user.getAccountName(), user.getAccountPass());
+                    }
+                    if (bot != null) {
+                        GUIMain.bot = new IRCBot(bot.getAccountName(), bot.getAccountPass());
+                    }
+                }
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
@@ -219,6 +243,10 @@ public class Settings {
                 defaultFaceDir = p.getProperty("FaceDir", "");
                 defaultSoundDir = p.getProperty("SoundDir", "");
                 useMod = Boolean.parseBoolean(p.getProperty("UseMod", "false"));
+                String files = p.getProperty("SubSound", "null");
+                if (!files.equalsIgnoreCase("null")) {
+                    subSound = new Sound(15, files.split(","));
+                }
                 try {
                     modIcon = new URL(p.getProperty("CustomMod", modIcon.toString()));
                 } catch (Exception e) {
@@ -245,6 +273,7 @@ public class Settings {
                 cleanupChat = Boolean.parseBoolean(p.getProperty("ClearChat", "true"));
                 logChat = Boolean.parseBoolean(p.getProperty("LogChat", "false"));
                 chatMax = Integer.parseInt(p.getProperty("MaxChat", "100"));
+                faceMaxHeight = Integer.parseInt(p.getProperty("FaceMaxHeight", "20"));
                 font = Utils.stringToFont(p.getProperty("Font", "Calibri, 18, Plain").split(","));
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
@@ -288,52 +317,25 @@ public class Settings {
             p.put("UseStaff", String.valueOf(useStaff));
             p.put("CustomStaff", staffIcon.toString());
             p.put("MaxChat", String.valueOf(chatMax));
+            p.put("FaceMaxHeight", String.valueOf(faceMaxHeight));
             p.put("ClearChat", String.valueOf(cleanupChat));
             p.put("LogChat", String.valueOf(logChat));
             p.put("Font", Utils.fontToString(font));
+            if (subSound != null) {
+                String toPut = "";
+                for (int i = 0; i < subSound.getSounds().data.length; i++) {
+                    toPut = toPut + subSound.getSounds().data[i];
+                    if (i != subSound.getSounds().data.length - 1) toPut = toPut + ",";
+                }
+                p.put("SubSound", toPut);
+            } else {
+                p.put("SubSound", "null");
+            }
             try {
                 p.store(new FileWriter(defaultsFile), "Default Settings");
             } catch (IOException e) {
                 GUIMain.log(e.getMessage());
             }
-        }
-    }
-
-
-    /**
-     * Streams
-     */
-    public String[] loadStreams() {
-        ArrayList<String> streams = new ArrayList<>();
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(streamsFile.toURI().toURL().openStream()));
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (!line.equals("")) {
-                    streams.add(line);
-                }
-            }
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-        return streams.toArray(new String[streams.size()]);
-    }
-
-    public void saveStreams() {
-        try {
-            PrintWriter br = new PrintWriter(streamsFile);
-            if (GUIMain.channelSet.size() > 0) {
-                for (String s : GUIMain.channelSet) {
-                    if (s != null) {
-                        br.println(s);
-                    }
-                }
-            }
-            br.flush();
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
         }
     }
 
@@ -596,6 +598,31 @@ public class Settings {
     }
 
     public void loadConsoleCommands() {
+        HashSet<ConsoleCommand> hardcoded = new HashSet<>();
+        hardcoded.add(new ConsoleCommand("addface", ConsoleCommand.Action.ADD_FACE, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("changeface", ConsoleCommand.Action.CHANGE_FACE, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("removeface", ConsoleCommand.Action.REMOVE_FACE, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("toggleface", ConsoleCommand.Action.TOGGLE_FACE, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("addsound", ConsoleCommand.Action.ADD_SOUND, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("changesound", ConsoleCommand.Action.CHANGE_SOUND, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("removesound", ConsoleCommand.Action.REMOVE_SOUND, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("setsound", ConsoleCommand.Action.SET_SOUND_DELAY, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("togglesound", ConsoleCommand.Action.TOGGLE_SOUND, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("stopsound", ConsoleCommand.Action.STOP_SOUND, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("stopallsounds", ConsoleCommand.Action.STOP_ALL_SOUNDS, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("mod", ConsoleCommand.Action.MOD_USER, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("addkeyword", ConsoleCommand.Action.ADD_KEYWORD, Constants.PERMISSION_DEV, null));
+        hardcoded.add(new ConsoleCommand("removekeyword", ConsoleCommand.Action.REMOVE_KEYWORD, Constants.PERMISSION_DEV, null));
+        hardcoded.add(new ConsoleCommand("setcol", ConsoleCommand.Action.SET_USER_COL, Constants.PERMISSION_ALL, null));
+        hardcoded.add(new ConsoleCommand("setpermission", ConsoleCommand.Action.SET_COMMAND_PERMISSION, Constants.PERMISSION_DEV, null));
+        hardcoded.add(new ConsoleCommand("addcommand", ConsoleCommand.Action.ADD_TEXT_COMMAND, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("removecommand", ConsoleCommand.Action.REMOVE_TEXT_COMMAND, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("adddonation", ConsoleCommand.Action.ADD_DONATION, Constants.PERMISSION_DEV, null));
+        hardcoded.add(new ConsoleCommand("setsubsound", ConsoleCommand.Action.SET_SUB_SOUND, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("setsoundperm", ConsoleCommand.Action.SET_SOUND_PERMISSION, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("setnameface", ConsoleCommand.Action.SET_NAME_FACE, Constants.PERMISSION_SUB, null));
+        hardcoded.add(new ConsoleCommand("removenameface", ConsoleCommand.Action.REMOVE_NAME_FACE, Constants.PERMISSION_SUB, null));
+
         if (Utils.areFilesGood(ccommandsFile.getAbsolutePath())) {
             try {
                 BufferedReader br = new BufferedReader(new InputStreamReader(ccommandsFile.toURI().toURL().openStream()));
@@ -616,29 +643,28 @@ public class Settings {
                     GUIMain.conCommands.add(new ConsoleCommand(split[0], a, classPerm, customUsers));
                 }
                 br.close();
+                if (GUIMain.conCommands.size() != hardcoded.size()) { //something's not right...
+                    for (ConsoleCommand hard : hardcoded) {
+                        boolean isAdded = false;
+                        for (ConsoleCommand loaded : GUIMain.conCommands) {
+                            if (hard.getTrigger().equalsIgnoreCase(loaded.getTrigger())) {
+                                isAdded = true;
+                                //this ensures every hard coded ConCommand is loaded for Botnak
+                                break;
+                            }
+                        }
+                        if (!isAdded) {//if it isn't in the file, add it
+                            GUIMain.conCommands.add(hard);
+                        }
+                    }
+                }
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
         } else { //first time boot/reset/deleted file etc.
-            GUIMain.conCommands.add(new ConsoleCommand("addface", ConsoleCommand.Action.ADD_FACE, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("changeface", ConsoleCommand.Action.CHANGE_FACE, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("removeface", ConsoleCommand.Action.REMOVE_FACE, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("toggleface", ConsoleCommand.Action.TOGGLE_FACE, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("addsound", ConsoleCommand.Action.ADD_SOUND, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("changesound", ConsoleCommand.Action.CHANGE_SOUND, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("removesound", ConsoleCommand.Action.REMOVE_SOUND, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("setsound", ConsoleCommand.Action.SET_SOUND_DELAY, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("togglesound", ConsoleCommand.Action.TOGGLE_SOUND, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("togglereply", ConsoleCommand.Action.TOGGLE_REPLY, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("stopsound", ConsoleCommand.Action.STOP_SOUND, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("stopallsounds", ConsoleCommand.Action.STOP_ALL_SOUNDS, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("mod", ConsoleCommand.Action.MOD_USER, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("addkeyword", ConsoleCommand.Action.ADD_KEYWORD, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("removekeyword", ConsoleCommand.Action.REMOVE_KEYWORD, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("setcol", ConsoleCommand.Action.SET_USER_COL, 0, null));
-            GUIMain.conCommands.add(new ConsoleCommand("setpermission", ConsoleCommand.Action.SET_COMMAND_PERMISSION, 2, null));
-            GUIMain.conCommands.add(new ConsoleCommand("addcommand", ConsoleCommand.Action.ADD_TEXT_COMMAND, 1, null));
-            GUIMain.conCommands.add(new ConsoleCommand("removecommand", ConsoleCommand.Action.REMOVE_TEXT_COMMAND, 1, null));
+            for (ConsoleCommand c : hardcoded) {
+                GUIMain.conCommands.add(c);
+            }
         }
         GUIMain.log("Loaded console commands!");
     }
@@ -701,7 +727,9 @@ public class Settings {
         }
     }
 
-
+    /**
+     * Sub icons
+     */
     public void saveSubIcons() {
         try {
             PrintWriter br = new PrintWriter(subIconsFile);
@@ -724,6 +752,191 @@ public class Settings {
                 GUIMain.subIconSet.add(new SubscriberIcon(split[0], split[1]));
             }
             GUIMain.log("Loaded subscriber icons!");
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    /**
+     * Donators
+     */
+    public void loadDonators() {
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(donatorsFile.toURI().toURL().openStream()));
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] split = line.split(",");
+                double amount;
+                try {
+                    amount = Double.parseDouble(split[1]);
+                } catch (Exception e) {
+                    amount = 0.0;
+                }
+                GUIMain.donators.add(new Donator(split[0], amount));
+            }
+            GUIMain.log("Loaded Donators!");
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+
+    }
+
+
+    public void saveDonators() {
+        try {
+            PrintWriter br = new PrintWriter(donatorsFile);
+            for (Donator d : GUIMain.donators) {
+                br.println(d.getName() + "," + d.getDonated());
+            }
+            br.flush();
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+
+    /**
+     * Subscribers of your own channel
+     */
+    //TODO save each subscriber with the first date Botnak meets them
+    //and each month check to see if they're still subbed, if not, make them donator
+    //with (months subbed * $2.50) as their amount.
+
+    /**
+     * Tab State
+     * <p/>
+     * This is for opening back up to the correct tab, with the correct pane showing.
+     * This also handles saving the combined tabs.
+     * Format:
+     * <p/>
+     * Single:
+     * bool      bool     string
+     * single[  selected[ name
+     * <p/>
+     * Combined:
+     * bool    boolean    String         String     String[] (split(","))
+     * single[ selected[ activeChannel[  title[ every,channel,in,it,separated,by,commas
+     * <p/>
+     * No spaces though.
+     * <p/>
+     * Single tabs can be invisible if they are in a combined tab.
+     */
+    public void saveTabState() {
+        try {
+            PrintWriter br = new PrintWriter(tabsFile);
+            int currentSelectedIndex = GUIMain.channelPane.getSelectedIndex();
+            for (int i = 1; i < GUIMain.channelPane.getTabCount() - 1; i++) {
+                ChatPane current = Utils.getChatPane(i);
+                if (current != null) {
+                    if (current.isTabVisible()) {
+                        boolean selected = current.getIndex() == currentSelectedIndex;
+                        br.println("true[" + String.valueOf(selected) + "[" + current.getChannel());
+                    }
+                } else {
+                    CombinedChatPane cc = Utils.getCombinedChatPane(i);
+                    if (cc != null) {
+                        //all the panes in them should be set to false
+                        //their indexes are technically going to be -1
+                        boolean selected = cc.getIndex() == currentSelectedIndex;
+                        br.print("false[" + String.valueOf(selected) + "[" + cc.getActiveChannel() + "[" + cc.getTabTitle() + "[");
+                        String[] chans = cc.getChannels();
+                        for (int s = 0; s < chans.length; s++) {
+                            String toPrint = chans[s];
+                            br.print(toPrint);
+                            if (s != chans.length - 1) br.print(",");
+                        }
+                        br.println();
+                    }
+                }
+            }
+            br.flush();
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    public void loadTabState() {
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(tabsFile.toURI().toURL().openStream()));
+            String line;
+            int index = 0;
+            while ((line = br.readLine()) != null) {
+                String[] split = line.split("\\[");
+                boolean isSingle = Boolean.parseBoolean(split[0]);
+                boolean isSelected = Boolean.parseBoolean(split[1]);
+                if (isSingle) {
+                    String channel = split[2];
+                    //todo join the channel here? or pass it to the accountmanager which is on heartbeat thread?
+                    if (GUIMain.viewer != null) GUIMain.viewer.doConnect(channel);
+                    if (GUIMain.bot != null) GUIMain.bot.doConnect(channel);
+                    ChatPane cp = ChatPane.createPane(channel);
+                    GUIMain.chatPanes.put(cp.getChannel(), cp);
+                    GUIMain.channelPane.insertTab(cp.getChannel(), null, cp.getScrollPane(), null, cp.getIndex());
+                    if (isSelected) index = cp.getIndex();
+                } else {
+                    String activeChannel = split[2];
+                    String title = split[3];
+                    String[] channels = split[4].split(",");
+                    ArrayList<ChatPane> cps = new ArrayList<>();
+                    for (String c : channels) {
+                        //todo join the channel here? or pass it to the accountmanager which is on heartbeat thread?
+                        if (GUIMain.viewer != null) GUIMain.viewer.doConnect(c);
+                        if (GUIMain.bot != null) GUIMain.bot.doConnect(c);
+                        ChatPane cp = ChatPane.createPane(c);
+                        GUIMain.chatPanes.put(cp.getChannel(), cp);
+                        cps.add(cp);
+                    }
+                    CombinedChatPane ccp = CombinedChatPane.createCombinedChatPane(cps.toArray(new ChatPane[cps.size()]));
+                    GUIMain.channelPane.insertTab(ccp.getTabTitle(), null, ccp.getScrollPane(), null, ccp.getIndex());
+                    ccp.setCustomTitle(title);
+                    if (isSelected) index = ccp.getIndex();
+                    if (!activeChannel.equalsIgnoreCase("all")) {
+                        ccp.setActiveChannel(activeChannel);
+                        ccp.setActiveScrollPane(activeChannel);
+                    }
+                    GUIMain.combinedChatPanes.add(ccp);
+                }
+            }
+            GUIMain.channelPane.setSelectedIndex(index);
+            GUIMain.log("Loaded Channels and Tabs!");
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+
+    /**
+     * Name faces
+     */
+    public void loadNameFaces() {
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(namefaceFile.toURI().toURL().openStream()));
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] split = line.split(",");
+                GUIMain.nameFaceMap.put(split[0], new Face(split[0], split[1]));
+            }
+            GUIMain.log("Loaded Namefaces!");
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    public void saveNameFaces() {
+        try {
+            PrintWriter br = new PrintWriter(namefaceFile);
+            Set<String> keys = GUIMain.nameFaceMap.keySet();
+            for (String s : keys) {
+                Face toPrint = GUIMain.nameFaceMap.get(s);
+                br.println(s + "," + toPrint.getFilePath());
+            }
+            br.flush();
             br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());

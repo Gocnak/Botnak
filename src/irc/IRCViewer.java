@@ -8,11 +8,16 @@ import util.Utils;
 import java.awt.*;
 
 
-public class IRCViewer extends PircBot {
+public class IRCViewer extends MessageHandler {
 
     String name, pass;
 
     BanQueue bq = null;
+    private PircBot viewer;
+
+    public PircBot getViewer() {
+        return viewer;
+    }
 
     public String getMaster() {
         return name;
@@ -28,15 +33,26 @@ public class IRCViewer extends PircBot {
             name = GUIMain.currentSettings.user.getAccountName();
             pass = GUIMain.currentSettings.user.getAccountPass();
         }
-        setName(user);
-        setLogin(user);
+        viewer = new PircBot(this);
+        viewer.setVerbose(true);//TODO remove dis
+        viewer.setNick(user);
         GUIMain.updateTitle();
         try {
-            connect("irc.twitch.tv", 6667, pass);
+            /*
+            TODO
+            put this in a ConnectThread, which will handle all (re)connections
+            for the PircBot.
+
+            it's changed to a boolean now, so we can rid the try{}catch block and use
+            the outcome of the boolean to determine a reconnect
+
+            also I should make a cancel listener for that
+             */
+            viewer.connect("irc.twitch.tv", 6667, pass);
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
-        sendRawLineViaQueue("TWITCHCLIENT");
+        viewer.sendRawLineViaQueue("TWITCHCLIENT 3");
         if (GUIMain.loadedStreams()) {
             for (String s : GUIMain.channelSet) {
                 doConnect(s);
@@ -73,16 +89,18 @@ public class IRCViewer extends PircBot {
 
     public void doConnect(String channel) {
         String channelName = "#" + channel;
-        if (!isConnected()) {
+        if (!viewer.isConnected()) {
             try {
-                connect("irc.twitch.tv", 6667, pass);
+                //TODO see the todo above in the constructor
+                viewer.connect("irc.twitch.tv", 6667, pass);
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
         } else {
-            joinChannel(channelName);
-            if (Utils.isInChannel(this, channelName)) {
-                if (!GUIMain.channelSet.contains(channel)) GUIMain.channelSet.add(channel);
+            if (!viewer.isInChannel(channelName)) {
+                viewer.joinChannel(channelName);
+                GUIMain.channelSet.add(channel);
+                if (GUIMain.currentSettings.logChat) Utils.logChat(null, channel, 0);
             }
         }
     }
@@ -92,17 +110,11 @@ public class IRCViewer extends PircBot {
      * channel list.
      *
      * @param channel The channel name to leave (# not included).
-     * @param forget  If true, will remove the channel from the channel list.
      */
-    public void doLeave(String channel, boolean forget) {
-        String channelName = "#" + channel;
-        if (Utils.isInChannel(this, channelName)) {
-            partChannel(channelName);
-        }
-        if (forget) {
-            if (GUIMain.channelSet.contains(channel)) {
-                GUIMain.channelSet.remove(channel);
-            }
+    public void doLeave(String channel) {
+        if (!channel.startsWith("#")) channel = "#" + channel;
+        if (viewer.isInChannel(channel)) {
+            viewer.partChannel(channel);
         }
     }
 
@@ -111,56 +123,97 @@ public class IRCViewer extends PircBot {
      *
      * @param forget If true, will forget the user.
      */
-    public void close(boolean forget) {
+    public synchronized void close(boolean forget) {
         GUIMain.log("Logging out of user: " + name);
-        for (String s : getChannels()) {
-            doLeave(s.substring(1), false);
+        for (String s : viewer.getChannels()) {
+            doLeave(s);
         }
-        disconnect();
-        dispose();
+        viewer.disconnect();
+        viewer.dispose();
         if (GUIMain.viewerCheck != null && !GUIMain.viewerCheck.isInterrupted()) GUIMain.viewerCheck.interrupt();
         if (bq != null && !bq.isInterrupted()) bq.interrupt();
         if (forget) {
             GUIMain.currentSettings.user = null;
         }
+        viewer = null;
         GUIMain.viewer = null;
     }
 
-
-    public void onMessage(final String channel, final String sender, final String login, final String hostname, final String message) {
+    @Override
+    public void onMessage(final String channel, final String sender, final String message) {
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                GUIMain.onMessage(channel, sender, message, false);
+                GUIMain.onMessage(new Message(channel, sender, message, false));
             }
         });
     }
 
-    public void onAction(final String sender, final String login, final String hostname, final String target, final String action) {
+    @Override
+    public void onAction(final String sender, final String channel, final String action) {
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                GUIMain.onMessage(target, sender, action, true);
+                GUIMain.onMessage(new Message(channel, sender, action, true));
             }
         });
     }
 
-    public synchronized void onClearChat(String line) {
+    @Override
+    public void onOp(String channel, String recepient) {
+        //TODO if they have GUIMain.currentSettings.showModGrants, print out who gets modded as a log.
+        //update the viewer list to re-organize, and put the name at the top.
+    }
+
+    @Override
+    public void onJoin(String channel, String userNick) {
+       /*TODO
+         if they have user stats on, start to accumulate the time they're in the channel
+         if they have GUIMain.currentSettings.showUserJoins, log the join message
+         update the viewer list for the channel
+       */
+    }
+
+    @Override
+    public void onPart(String channel, String userNick) {
+       /*
+        TODO
+        if they have user stats on, accumulate the time they were in the channel
+        if they have GUIMain.currentSettings.showUserParts on, log the part message
+        update the viewer list
+         */
+    }
+
+    @Override
+    public void onNewSubscriber(final String channel, final String newSub) {
+        EventQueue.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                GUIMain.onMessage(new Message(channel, newSub));
+            }
+        });
+    }
+
+    @Override
+    public void onDeop(String channel, String recipient) {
+        //TODO if they have GUIMain.currentSettings.showModGrants, print out who gets de-modded as a log.
+        //update the viewer list to re-organize, and put the name at the top.
+    }
+
+    public void onDisconnect() {
+        //TODO create and run the reconnect listener thread  if (!GUIMain.shutdown)
+    }
+
+    public synchronized void onClearChat(String channel, String line) {
         if (line.split(" ").length > 1) {
             if (bq == null) {
                 bq = new BanQueue();
                 bq.start();
             }
-            addToMap(line.split(" ")[1]);
+            bq.addToMap(channel, line.split(" ")[1]);
         } else {
-            GUIMain.log("Someone cleared the chat!");
+            GUIMain.onBan(channel, "The chat was cleared by a moderator (Prevented by Botnak)");
         }
-    }
-
-    public synchronized void addToMap(String name) {
-        Integer old = GUIMain.banMap.get(name);
-        if (old == null) old = 0;
-        GUIMain.banMap.put(name, (old + 1));
     }
 
 }

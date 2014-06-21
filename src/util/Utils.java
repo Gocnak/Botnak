@@ -3,10 +3,12 @@ package util;
 import face.Face;
 import face.SubscriberIcon;
 import face.TwitchFace;
+import gui.ChatPane;
+import gui.CombinedChatPane;
 import gui.GUIMain;
+import irc.Donator;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
-import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
 import lib.scalr.Scalr;
 import sound.Sound;
@@ -21,7 +23,6 @@ import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -32,36 +33,78 @@ import java.util.regex.Pattern;
  * User: Nick
  * Date: 6/3/13
  * Time: 7:46 PM
- * To change this template use File | Settings | File Templates.
+ * <p/>
+ * <p/>
+ * This class is literally a clusterfuck of useful snippets of code I found myself
+ * using in various other classes. Some of these are horrendously sloppy and I plan
+ * to clean up half of these methods someday. But until then, enjoy Botnak's biggest
+ * homebrew class file!
  */
 public class Utils {
+
+	static final int DOWNLOAD_MAX_FACE_HEIGHT = 26;
+	static final int DOWNLOAD_MAX_ICON_HEIGHT = 26;
 
     static Random r = new Random();
 
     /**
      * Returns a random number from 0 to the specified.
      *
-     * @
+     * @param param The max number to choose.
      */
     public static int nextInt(int param) {
         return r.nextInt(param);
     }
 
     /**
-     * Gets the extension of a file.
+     * Calls the #getExtension(String) method using the file name of the file.
      *
-     * @param f File to get the extension of.
-     * @return The file's extension.
+     * @param f The file to get the extension of.
+     * @return The extension of the file, or null if there is none.
      */
     public static String getExtension(File f) {
-        String ext = null;
-        String s = f.getName();
-        int i = s.lastIndexOf('.');
+        return getExtension(f.getName());
+    }
 
-        if (i > 0 && i < s.length() - 1) {
-            ext = s.substring(i + 1).toLowerCase();
+    /**
+     * Gets the extension of a file.
+     *
+     * @param fileName Name of the file to get the extension of.
+     * @return The file's extension (ex: ".png" or ".wav"), or null if there is none.
+     */
+    public static String getExtension(String fileName) {
+        String ext = null;
+        int i = fileName.lastIndexOf('.');
+
+        if (i > 0 && i < fileName.length() - 1) {
+            ext = fileName.substring(i).toLowerCase();
         }
         return ext;
+    }
+
+    /**
+     * Sets the extension of a file to the specified extension.
+     * <p/>
+     * This can also be used as an assurance that the extension of the
+     * file is the specified extension.
+     * <p/>
+     * It's expected that this method will be called before any file saving is
+     * done.
+     *
+     * @param fileName  The name of the file to change the extension of.
+     * @param extension The extension (ex: ".png" or ".wav") for the file.
+     * @return The filename with the new extension.
+     */
+    public static String setExtension(String fileName, String extension) {
+        String ext = getExtension(fileName);
+        if (ext != null) {
+            if (!ext.equalsIgnoreCase(extension)) {
+                fileName = fileName.substring(0, fileName.indexOf(ext)) + extension;
+            }
+        } else {
+            fileName = fileName + extension;
+        }
+        return fileName;
     }
 
     /**
@@ -78,13 +121,7 @@ public class Utils {
             } else {
                 toRet = f.isItalic() ? "Italic" : "Plain";
             }
-            StringBuilder sb = new StringBuilder();
-            sb.append(f.getName());
-            sb.append(", ");
-            sb.append(f.getSize());
-            sb.append(", ");
-            sb.append(toRet);
-            toRet = sb.toString();
+            toRet = f.getName() + ", " + f.getSize() + ", " + toRet;
         }
         return toRet;
     }
@@ -126,27 +163,6 @@ public class Utils {
             f = new Font(name, type, size);
         }
         return f;
-    }
-
-    /**
-     * Checks to see if a Pircbot is in a given channel.
-     *
-     * @param v       The Pircbot to check.
-     * @param channel The channel in question.
-     * @return true if in the channel, otherwise false.
-     */
-    public static boolean isInChannel(PircBot v, String channel) {
-        if (v == null) return false;
-        if (!channel.startsWith("#")) channel = "#" + channel;
-        String[] channels = v.getChannels();
-        if (channels != null) {
-            for (String s : channels) {
-                if (s.equalsIgnoreCase(channel)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
 
@@ -219,20 +235,86 @@ public class Utils {
      *
      * @param message The chat separated by newline characters.
      * @param channel The channel the chat was in.
+     * @param type    The int that determines what the logger should do.
+     *                0 = boot
+     *                1 = append (clear chat)
+     *                2 = shutdown
      */
-    public static void logChat(String[] message, String channel) {
+    public static void logChat(String[] message, String channel, int type) {
         try {
             PrintWriter out = new PrintWriter(new BufferedWriter(
-                    new FileWriter(new File(GUIMain.currentSettings.sessionLogDir.getAbsolutePath() + File.separator + channel + ".txt"), true)));
-            for (String s : message) {
-                if (s != null && !s.equals("")) {
-                    out.println(s);
+                    new FileWriter(new File(GUIMain.currentSettings.logDir.getAbsolutePath() + File.separator + channel + ".txt"), true)));
+            if (type == 0) {
+                out.println("====================== " + GUIMain.currentSettings.date + " ======================");
+            }
+            if (message != null && !(message.length == 0 || (message.length == 1 && message[0].equalsIgnoreCase("")))) {
+                for (String s : message) {
+                    if (s != null && !s.equals("") && !s.equals("\n")) {
+                        out.println(s);
+                    }
                 }
+            }
+            if (type == 2) {
+                out.println("====================== End of " + GUIMain.currentSettings.date + " ======================");
             }
             out.close();
         } catch (IOException e) {
             GUIMain.log(e.getMessage());
         }
+    }
+
+
+    /**
+     * Checks a channel to see if it's live (streaming).
+     *
+     * @param channelName The name of the channel to check.
+     * @return true if the specified channel is live and streaming, else false.
+     */
+    public static boolean isChannelLive(String channelName) {
+        boolean isLive = false;
+        try {
+            URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName);
+            BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
+            String line;
+            while (!GUIMain.shutDown && (line = br.readLine()) != null) {
+                JSONObject jsonObject = new JSONObject(line);
+                JSONObject stream = jsonObject.getJSONObject("stream");
+                isLive = !stream.isNull("preview");
+            }
+            br.close();
+        } catch (Exception ignored) {
+        }
+        return isLive;
+    }
+
+
+    /**
+     * Gets the amount of viewers for a channel.
+     *
+     * @param channelName The name of the channel to check.
+     * @return The int amount of viewers watching the given channel.
+     */
+    public static int countViewers(String channelName) {
+        int count = 0;
+        try {//this could be parsed with JSON, but patterns work, and if it ain't broke...
+            URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName);
+            BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
+            String line;
+            while (!GUIMain.shutDown && (line = br.readLine()) != null) {
+                Matcher m = Constants.viewerTwitchPattern.matcher(line);
+                if (m.find()) {
+                    try {
+                        count = Integer.parseInt(m.group(1));
+                        break;
+                    } catch (Exception ignored) {
+                    }//bad Int parsing
+                }
+            }
+            br.close();
+        } catch (Exception e) {
+            count = 0;
+        }
+        return count;
     }
 
 
@@ -243,12 +325,9 @@ public class Utils {
      * @return The file/path name without the extension.
      */
     public static String removeExt(String s) {
-        if (s != null) {
-            int pos = s.lastIndexOf(".");
-            if (pos == -1) return s;
-            return s.substring(0, pos);
-        }
-        return s;
+        int pos = s.lastIndexOf(".");
+        if (pos == -1) return s;
+        return s.substring(0, pos);
     }
 
     /**
@@ -280,7 +359,7 @@ public class Utils {
      * @param seed The Hashcode of the object you want dynamic color for.
      * @return The Color of the object's hash.
      */
-    public static Color getColor(final int seed) {
+    public static Color getColorFromHashcode(final int seed) {
         /* We do some bit hacks here
            hashCode has 32 bit, we use every bit as a random source */
         final int HUE_BITS = 12, HUE_MASK = ((1 << HUE_BITS) - 1);
@@ -304,6 +383,13 @@ public class Utils {
     }
 
 
+    /**
+     * Gets the subscriber icon for the given channel from either cache or downloads
+     * it if you do not have it already.
+     *
+     * @param channel The channel the icon is for.
+     * @return The URL of the subscriber icon.
+     */
     public static URL getSubIcon(String channel) {
         for (SubscriberIcon i : GUIMain.subIconSet) {
             if (i.getChannel().equalsIgnoreCase(channel)) {
@@ -324,7 +410,7 @@ public class Utils {
             BufferedReader irs = new BufferedReader(new InputStreamReader(toRead.openStream()));
             String line;
             String path = null;
-            while ((line = irs.readLine()) != null) {
+            while (!GUIMain.shutDown && (line = irs.readLine()) != null) {
                 JSONObject init = new JSONObject(line);
                 JSONObject sub = init.getJSONObject("subscriber");
                 if (!sub.getString("image").equalsIgnoreCase("null")) {
@@ -335,10 +421,10 @@ public class Utils {
             irs.close();
             if (path != null) {
                 GUIMain.subIconSet.add(new SubscriberIcon(channel, path));
-                return new URL(path);
+                return getSubIcon(channel);
             }
         } catch (Exception e) {
-            GUIMain.log(e);
+            GUIMain.log(e.getMessage());
         }
         return null;
     }
@@ -354,12 +440,20 @@ public class Utils {
      */
     public static void loadDefaultFaces() {
         try {
-            EventQueue.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    faceCheck.start();
-                }
-            });
+            File f = GUIMain.currentSettings.twitchFaceFile;
+            Date d = new Date(f.lastModified());
+            //If it's been 6+ hours, check the faces.
+            if (d.before(new Date(System.currentTimeMillis() - 21600000))) {
+                EventQueue.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        faceCheck.start();
+                    }
+                });
+            } else {
+                GUIMain.log("Loaded Twitch faces!");
+                GUIMain.doneWithTwitchFaces = true;
+            }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -370,6 +464,7 @@ public class Utils {
         public void run() {
             HashSet<StringArray> fromSite = buildMap();
             if (GUIMain.currentSettings.twitchFaceDir != null) {
+                int count = 0;
                 if (GUIMain.currentSettings.twitchFaceDir.list().length > 0) {//has (some... all?) files
                     for (StringArray pick : fromSite) {//check default twitch faces...
                         String regex = pick.data[0];
@@ -379,13 +474,23 @@ public class Utils {
                         String[] files = GUIMain.currentSettings.twitchFaceDir.list();
                         for (String fileActual : files) {
                             if (fileActual.equals(fileTheo)) {//but do you actually have it?
-                                flag = true;//it exists, no need for downloading it
-                                break;
+                                TwitchFace face = GUIMain.twitchFaceMap.get(removeExt(fileTheo));
+                                if (face != null) {
+                                    if (face.getRegex().equals(regex)) {//is the regex right?
+                                        flag = true;//it's fine, no need to do anything
+                                        break;
+                                    } else {//replace the existing with the new regex face
+                                        GUIMain.twitchFaceMap.put(removeExt(fileTheo), new TwitchFace(regex, face.getFilePath(), face.isEnabled()));
+                                        flag = true;
+                                        break;
+                                    }
+                                }
                             }
                         }
+
                         if (!flag) { //guess not
-                            GUIMain.log("Missing a face, downloading it... ");
-                            downloadFace(URL, GUIMain.currentSettings.twitchFaceDir.getAbsolutePath(), fileTheo, regex, true);
+                            downloadFace(URL, GUIMain.currentSettings.twitchFaceDir.getAbsolutePath(), fileTheo, regex, 0);
+                            count++;
                         }
                     }
                 } else {//DOWNLOAD THEM ALLLL
@@ -393,11 +498,15 @@ public class Utils {
                         String regex = pick.data[0];
                         String URL = pick.data[1];
                         String filename = pick.data[2];
-                        downloadFace(URL, GUIMain.currentSettings.twitchFaceDir.getAbsolutePath(), filename, regex, true);
+                        downloadFace(URL, GUIMain.currentSettings.twitchFaceDir.getAbsolutePath(), filename, regex, 0);
+                        count++;
                     }
                 }
+                if (count != 0)
+                    GUIMain.log("Downloaded " + count + " missing Twitch face" + (count > 1 ? "s" : "") + "!");
                 GUIMain.log("Loaded Twitch faces!");
                 GUIMain.doneWithTwitchFaces = true;
+                GUIMain.currentSettings.saveTwitchFaces();
             }
         }
     });
@@ -412,26 +521,31 @@ public class Utils {
      * @param directory The directory to save the face in.
      * @param name      The name of the file for the face, including the extension.
      * @param regex     The regex pattern ("name") of the face.
+     * @param type      What type of face it is. 0 = twitch, 1 = custom face, 2 = name face
      */
-    public static void downloadFace(String url, String directory, String name, String regex, boolean defaultT) {
+    public static void downloadFace(String url, String directory, String name, String regex, int type) {
         if (directory == null || name == null || directory.equals("") || name.equals("")) return;
         try {
             BufferedImage image;
             URL URL = new URL(url);//bad URL or something
             image = ImageIO.read(URL);//just incase the file is null/it can't read it
-            if (image.getHeight() > 26) {//if it's too big
-                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26, Scalr.OP_ANTIALIAS);//scale it
+            if (image.getHeight() > DOWNLOAD_MAX_FACE_HEIGHT) {//if it's too big
+                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_FACE_HEIGHT);//scale it
             }
             File tosave = new File(directory + File.separator + name);
             ImageIO.write(image, "PNG", tosave);//save it
-            if (defaultT) {
+            if (type == 0) {
                 TwitchFace faec = new TwitchFace(regex, tosave.getAbsolutePath(), true);
                 name = removeExt(name);
                 GUIMain.twitchFaceMap.put(name, faec);
-            } else {
+            } else if (type == 1) {
                 Face faec = new Face(regex, tosave.getAbsolutePath());
                 name = removeExt(name);
                 GUIMain.faceMap.put(name, faec);//put it
+            } else if (type == 2) {
+                Face faec = new Face(regex, tosave.getAbsolutePath());
+                name = removeExt(name);
+                GUIMain.nameFaceMap.put(name, faec);
             }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -449,10 +563,10 @@ public class Utils {
         try {
             URL u = new URL(url);
             BufferedImage image = ImageIO.read(u);//just incase the file is null/it can't read it
-            if (image.getHeight() > 26) {//if it's too big
-                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, 26, Scalr.OP_ANTIALIAS);//scale it
+            if (image.getHeight() > DOWNLOAD_MAX_ICON_HEIGHT) {//if it's too big
+                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_ICON_HEIGHT);//scale it
             }
-            File tosave = new File(GUIMain.currentSettings.subIconsDir + File.separator + channel.substring(1) + ".png");
+            File tosave = new File(GUIMain.currentSettings.subIconsDir + File.separator + setExtension(channel.substring(1), ".png"));
             ImageIO.write(image, "PNG", tosave);//save it
             return tosave.getAbsolutePath();
         } catch (Exception e) {
@@ -496,7 +610,7 @@ public class Utils {
                         String regex = emote.getString("regex").replaceAll("&lt\\\\;", "<").replaceAll("&gt\\\\;", ">");
                         if (imageStuff != null) {//split("-")[4] is the filename
                             String uRL = imageStuff.getString("url");
-                            set.add(new StringArray(new String[]{regex, uRL, (uRL.split("-")[4] + ".png")}));
+                            set.add(new StringArray(new String[]{regex, uRL, setExtension(uRL.split("-")[4], ".png")}));
                         }
                     }
                 }
@@ -511,13 +625,12 @@ public class Utils {
         ImageIcon icon;
         try {
             BufferedImage img = ImageIO.read(image);
-            int initSize = img.getHeight();
-            int scale = (20 - GUIMain.currentSettings.font.getSize());//let's shrink it a little bit
-            int size = initSize;
-            if (initSize > 20) {//if it's big
-                size = (initSize - scale);//then we'll scale it
-            }//otherwise it'll stay the same
-            img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, size, Scalr.OP_ANTIALIAS);
+
+            // Scale the icon if it's too big.
+            int maxHeight = GUIMain.currentSettings.faceMaxHeight;
+            if (img.getHeight() > maxHeight)
+                img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, maxHeight);
+
             icon = new ImageIcon(img);
             icon.getImage().flush();
             return icon;
@@ -543,12 +656,10 @@ public class Utils {
                 if (!checkRegex(regex)) continue;
                 Pattern p = Pattern.compile(regex);
                 Matcher m = p.matcher(message);
-                int lastFound = -1;
                 while (m.find() && !GUIMain.shutDown) {
-                    lastFound++;//makes the index +1, 0 for start, rids having indexOf(lastFound + 1) later on in this code
                     final SimpleAttributeSet attrs = new SimpleAttributeSet(
                             //finds the index of the face while not replacing the old V ones
-                            doc.getCharacterElement(start + message.indexOf(m.group(), lastFound)).getAttributes());
+                            doc.getCharacterElement(start + m.start()).getAttributes());
                     if (!areFilesGood(GUIMain.faceMap.get(name).getFilePath())) {// the file doesn't exist/didn't download right
                         return;
                     }
@@ -558,11 +669,41 @@ public class Utils {
                     } catch (Exception e) {
                         GUIMain.log(e.getMessage());
                     }
-                    //                        find the face V  from either 0 or the next index of it, and removes it\
-                    lastFound = message.indexOf((m.group()), lastFound);
-                    doc.remove(start + lastFound, m.group().length());
-                    //            sets the index to the last index found, and adds the icon with the face text
-                    doc.insertString(start + lastFound, m.group(), attrs);
+                    // Remove the face text.
+                    doc.remove(start + m.start(), m.group().length());
+                    // Insert the icon.
+                    doc.insertString(start + m.start(), m.group(), attrs);
+                }
+            }
+        } catch (BadLocationException e1) {
+            GUIMain.log(e1.getMessage());
+        }
+    }
+
+    /**
+     * Handles adding the name faces to the users.
+     *
+     * @param doc   The document (JTextPane) to search.
+     * @param start The start index of the user.
+     * @param name  The name of the user.
+     */
+    public static void handleNameFaces(StyledDocument doc, int start, String name) {
+        try {
+            Set<String> names = GUIMain.nameFaceMap.keySet();
+            for (String s : names) {
+                if (name.equalsIgnoreCase(s)) {
+                    final SimpleAttributeSet attrs = new SimpleAttributeSet(
+                            //finds the index of the face while not replacing the old V ones
+                            doc.getCharacterElement(start).getAttributes());
+                    try {
+                        StyleConstants.setIcon(attrs,
+                                sizeIcon(new File(GUIMain.nameFaceMap.get(s).getFilePath()).toURI().toURL()));
+                    } catch (Exception e) {
+                        GUIMain.log(e.getMessage());
+                    }
+                    doc.remove(start, name.length());
+                    doc.insertString(start, name, attrs);
+                    break;
                 }
             }
         } catch (BadLocationException e1) {
@@ -677,26 +818,6 @@ public class Utils {
     }
 
     /**
-     * Gets the Pircbot User with the given name/nick.
-     *
-     * @param c       The bot that is connected to the channel.
-     * @param channel The channel the user is in.
-     * @param nick    The nick of the user.
-     * @return null if the user cannot be found/args are null, otherwise the specified user.
-     */
-    public static User getUser(PircBot c, String channel, String nick) {
-        if (c == null || channel == null || nick == null) return null;
-        for (User u : c.getUsers(channel)) {
-            if (u != null) {
-                if (u.getNick().equalsIgnoreCase(nick)) {
-                    return u;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
      * Adds a command to the command map.
      * <p/>
      * To do this in chat, simply type !addcommand command time message
@@ -706,7 +827,7 @@ public class Utils {
      */
     public static void addCommands(String s) {
         String[] split = s.split(" ");
-        if (GUIMain.commandSet != null && split != null) {
+        if (GUIMain.commandSet != null && split.length == 4) {
             String name = split[1];//name of the command, [0] is "addcommand"
             int time;//for timer
             try {
@@ -717,7 +838,7 @@ public class Utils {
                 }
                 int bingo = s.indexOf(" ", s.indexOf(" ", s.indexOf(" ") + 1) + 1);//Third space is the message
                 String[] message = s.substring(bingo + 1).split("\\]");
-                if (time > 0 && name != null && message != null) {
+                if (time > 0 && name != null) {
                     GUIMain.commandSet.add(new Command(name, time, message));
                 }
             } catch (Exception e) {
@@ -743,6 +864,74 @@ public class Utils {
     }
 
     /**
+     * Gets the donator of the given name, if they exist.
+     *
+     * @param name The name of the donator.
+     * @return The donator if they exist, else null.
+     */
+    public static Donator getDonator(String name) {
+        if (!GUIMain.donators.isEmpty()) {
+            for (Donator d : GUIMain.donators) {
+                if (d.getName().equalsIgnoreCase(name)) {
+                    return d;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Checks to see if a chat pane tab of a given name is visible.
+     *
+     * @param name The name of the chat pane.
+     * @return True if the tab is visible in the TabbedPane, else false.
+     */
+    public static boolean isTabVisible(String name) {
+        if (!GUIMain.chatPanes.isEmpty()) {
+            Set<String> keys = GUIMain.chatPanes.keySet();
+            for (String s : keys) {
+                ChatPane cp = GUIMain.chatPanes.get(s);
+                if (cp.getChannel().equalsIgnoreCase(name)) {
+                    return cp.isTabVisible();
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gets a chat pane of the given index.
+     *
+     * @param index The index of the tab.
+     * @return The chat pane if it exists on the index, or null.
+     */
+    public static ChatPane getChatPane(int index) {
+        if (GUIMain.chatPanes != null && !GUIMain.chatPanes.isEmpty()) {
+            Set<String> keys = GUIMain.chatPanes.keySet();
+            for (String s : keys) {
+                ChatPane cp = GUIMain.chatPanes.get(s);
+                if (cp.isTabVisible() && cp.getIndex() == index) return cp;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Gets the combined chat pane of the given index.
+     *
+     * @param index The index of the tab.
+     * @return The combined chat pane if it exists, or null.
+     */
+    public static CombinedChatPane getCombinedChatPane(int index) {
+        if (!GUIMain.combinedChatPanes.isEmpty()) {
+            for (CombinedChatPane cp : GUIMain.combinedChatPanes) {
+                if (cp.getIndex() == index) return cp;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Get the Command from the given !<string> trigger.
      *
      * @param key The !command trigger, or key.
@@ -763,27 +952,37 @@ public class Utils {
      * Gets the console command if the user met the trigger and permission of it.
      *
      * @param key     The name of the command.
-     * @param v       The irc bot to use (mostly viewer).
      * @param channel The channel the user is in.
      * @param user    The user name that requested the command.
      * @return The console command, or null if the user didn't meet the requirements.
      */
-    public static ConsoleCommand getConsoleCommand(String key, PircBot v, String channel, String user) {
+    public static ConsoleCommand getConsoleCommand(String key, String channel, String user) {
         if (!channel.contains(GUIMain.viewer.getMaster())) return null;
-        User u = getUser(v, channel, user);
+        User u = GUIMain.viewer.getViewer().getUser(channel, user);
         if (u != null) {
             for (ConsoleCommand c : GUIMain.conCommands) {
                 if (key.equalsIgnoreCase(c.getTrigger())) {
                     int conPerm = c.getClassPermission();
                     String[] certainPerms = c.getCertainPermissions();
                     if (conPerm == -1) {
-                        for (String s : certainPerms) {//specified name permission
-                            if (s.equalsIgnoreCase(u.getNick())) {
-                                return c;
+                        if (certainPerms != null) {
+                            for (String s : certainPerms) {//specified name permission
+                                if (s.equalsIgnoreCase(u.getNick())) {
+                                    return c;
+                                }
                             }
                         }
                     } else {//int class permission
                         int permission = Constants.PERMISSION_ALL;
+                        if (u.isSubscriber()) {
+                            permission = Constants.PERMISSION_SUB;
+                        }
+                        Donator d = getDonator(user);
+                        if (d != null) {
+                            if (d.getDonated() >= 5.00) {
+                                permission = Constants.PERMISSION_DONOR;
+                            }
+                        }
                         if (u.isOp() || u.isAdmin() || u.isStaff()) {
                             permission = Constants.PERMISSION_MOD;
                         }
@@ -883,24 +1082,10 @@ public class Utils {
         String trigger = split[0];
         String word = split[1];
         if (trigger.equalsIgnoreCase("addkeyword")) {
-            int r, g, b;
-            try {
-                r = Integer.parseInt(split[2]);
-            } catch (Exception e) {
-                r = 255;
-            }
-            try {
-                g = Integer.parseInt(split[3]);
-            } catch (Exception e) {
-                g = 255;
-            }
-            try {
-                b = Integer.parseInt(split[4]);
-            } catch (Exception e) {
-                b = 255;
-            }
-            if (checkInts(r, g, b)) {
-                GUIMain.keywordMap.put(word, new Color(r, g, b));
+            String color = mess.substring(mess.indexOf(" ", mess.indexOf(" ") + 1) + 1);
+            Color c = getColor(color, null);
+            if (!c.equals(Color.white)) {
+                GUIMain.keywordMap.put(word, c);
             }
         } else if (trigger.equalsIgnoreCase("removekeyword")) {
             Set<String> keys = GUIMain.keywordMap.keySet();
@@ -913,6 +1098,67 @@ public class Utils {
         }
     }
 
+    /**
+     * Generates a pseudo-random color that works for Botnak.
+     *
+     * @return The randomly generated color.
+     */
+    public static Color getRandomColor() {
+        return new Color(random(100, 256), random(100, 256), random(100, 256));
+    }
+
+    /**
+     * Gets the color from the given string. Supports hexadecimal, RGB, and color
+     * name.
+     *
+     * @param message  The message to dissect.
+     * @param fallback The fallback color to set to if the parsing failed. Defaults to white if null.
+     * @return The parsed color from the message, or the fallback color if parsing failed.
+     */
+    public static Color getColor(String message, Color fallback) {
+        Color toRet = (fallback == null ? new Color(255, 255, 255) : fallback);
+        String[] split = message.split(" ");
+        if (split.length > 1) { //R G B
+            int R;
+            int G;
+            int B;
+            try {
+                R = Integer.parseInt(split[1]);
+            } catch (NumberFormatException e) {
+                R = 0;
+            }
+            try {
+                G = Integer.parseInt(split[2]);
+            } catch (NumberFormatException e) {
+                G = 0;
+            }
+            try {
+                B = Integer.parseInt(split[3]);
+            } catch (NumberFormatException e) {
+                B = 0;
+            }
+            if (checkInts(R, G, B)) toRet = new Color(R, G, B);
+        } else {
+            try {
+                //this is for hexadecimal
+                Color toCheck = Color.decode(split[0]);
+                if (checkColor(toCheck)) toRet = toCheck;
+            } catch (Exception e) {
+                //didn't parse it right, so it may be a name of a color
+                for (NamedColor nc : Constants.namedColors) {
+                    if (split[0].equalsIgnoreCase(nc.getName())) {
+                        toRet = nc.getColor();
+                        break;
+                    }
+                }
+                if (split[0].equalsIgnoreCase("random")) {
+                    toRet = getRandomColor();
+                }
+            }
+        }
+        return toRet;
+    }
+
 
     /**
      * Sets a color to the user based on either a R G B value in their message
@@ -923,63 +1169,26 @@ public class Utils {
      */
     public static void handleColor(String user, String mess) {
         if (user != null && mess != null) {
-            Color usercolor = getColor(user.hashCode());
-            String[] split = mess.split(" ");
-            if (split.length > 2) { //contains R, G, B
-                int R;
-                int G;
-                int B;
-                try {
-                    R = Integer.parseInt(split[1]);
-                } catch (NumberFormatException e) {
-                    R = 0;
-                }
-                try {
-                    G = Integer.parseInt(split[2]);
-                } catch (NumberFormatException e) {
-                    G = 0;
-                }
-                try {
-                    B = Integer.parseInt(split[3]);
-                } catch (NumberFormatException e) {
-                    B = 0;
-                }
-                if (!checkInts(R, G, B)) {//see if at least one is > 99
-                    GUIMain.userColMap.put(user, new Color(usercolor.getRed(), usercolor.getGreen(), usercolor.getBlue()));
-                } else {
-                    GUIMain.userColMap.put(user, new Color(R, G, B));
-                }
-            } else {
-                if (split.length == 2) { //contains String colorname
-                    Color color = usercolor;
-                    try {
-                        Field[] fields = Color.class.getFields();
-                        for (Field f : fields) {
-                            if (f != null) {
-                                String name = f.getName();
-                                if (name.equalsIgnoreCase(split[1])) {
-                                    color = (Color) f.get(null);
-                                    break;
-                                }
-                            }
-                        }
-                    } catch (Exception ignored) {
-                    }
-                    int R = color.getRed();
-                    int G = color.getGreen();
-                    int B = color.getBlue();
-                    if (!checkInts(R, G, B)) {
-                        GUIMain.userColMap.put(user, new Color(usercolor.getRed(), usercolor.getGreen(), usercolor.getBlue()));
-                    } else {
-                        GUIMain.userColMap.put(user, new Color(R, G, B));
-                    }
-                }
-            }
+            //mess = "!setcol r g b" or "!setcol #cd4fd5"
+            //so let's send just the second part.
+            Color newColor = getColor(mess.substring(mess.indexOf(" ") + 1), getColorFromHashcode(user.hashCode()));
+            GUIMain.userColMap.put(user, newColor);
         }
     }
 
     /**
-     * Checks the red, green, and blue in order to show up in Botnak.
+     * Checks a color to see if it will show up in botnak.
+     *
+     * @param c The color to check.
+     * @return True if the color is not null, and shows up in botnak.
+     */
+    public static boolean checkColor(Color c) {
+        return c != null && checkInts(c.getRed(), c.getGreen(), c.getBlue());
+    }
+
+    /**
+     * Checks if the red, green, and blue show up in Botnak,
+     * using the standard Luminance formula.
      *
      * @param r Red value
      * @param g Green value
@@ -987,39 +1196,8 @@ public class Utils {
      * @return true if the Integers meet the specification.
      */
     public static boolean checkInts(int r, int g, int b) {
-        if (r < 100) {
-            if (g > 100 && g < 256 || b > 100 && b < 256) return true;
-        } else { //r IS > 99
-            if (r < 256) return true;
-        }
-        return false;
-    }
-
-    /**
-     * Using the API that is generously free on unshorten.it, we can unshorten those sneaky short links.
-     *
-     * @param url The shortened URL to un-shortify.
-     * @return The long URL (hopefully).
-     */
-    public static String getLongURL(String url) {
-        String longUrl = "Cannot get full URL. Click with caution.";
-        try {
-            URL bitly = new URL("http://api.unshorten.it?shortURL=" + url + "&apiKey=58b389e3c442211daf2b34f537c01977");
-            BufferedReader br = new BufferedReader(new InputStreamReader(bitly.openStream()));
-            String line;
-            while (!GUIMain.shutDown && (line = br.readLine()) != null) {
-                if (!line.contains("error (")) {//resolved successfully
-                    String woo = line.replaceAll("\\.", ",").substring(8);//make it non-clickable with http(s):// removed
-                    String wooback = woo.substring(0, 25);
-                    longUrl = "Shortened URL -> " + (woo.length() > 20 ? wooback + "[...]" + woo.substring(woo.length() - 5) : woo);
-                    break;
-                }
-            }
-            br.close();
-        } catch (Exception e) {
-            return longUrl;
-        }
-        return longUrl;
+        double luma = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+        return luma > 40;
     }
 
     /**
@@ -1046,7 +1224,7 @@ public class Utils {
                     if (perm == -1) return;
                     if (!files.contains(",")) {//isn't multiple
                         //this can be !addsound sound 0 sound or !changesound sound 0 newsound
-                        String filename = GUIMain.currentSettings.defaultSoundDir + File.separator + files + ".wav";
+                        String filename = GUIMain.currentSettings.defaultSoundDir + File.separator + setExtension(files, ".wav");
                         if (areFilesGood(filename)) {
                             if (GUIMain.soundMap.containsKey(name)) {//they could technically change the permission here as well
                                 if (!change) {//!addsound
@@ -1065,7 +1243,7 @@ public class Utils {
                         ArrayList<String> list = new ArrayList<>();
                         String[] filesSplit = files.split(",");
                         for (String str : filesSplit) {
-                            list.add(GUIMain.currentSettings.defaultSoundDir + File.separator + str + ".wav");
+                            list.add(GUIMain.currentSettings.defaultSoundDir + File.separator + setExtension(str, ".wav"));
                         }             //calls the areFilesGood boolean in it (filters bad files already)
                         filesSplit = checkFiles(list.toArray(new String[list.size()]));
                         list.clear();//recycle time!
@@ -1090,7 +1268,7 @@ public class Utils {
                                     GUIMain.soundMap.put(name, new Sound(perm, GUIMain.soundMap.get(name).getSounds().data));//A pretty bad one...
                             }
                         } catch (NumberFormatException e) {//maybe it really is a 1-char-named sound?
-                            String test = GUIMain.currentSettings.defaultSoundDir + File.separator + split[2] + ".wav";
+                            String test = GUIMain.currentSettings.defaultSoundDir + File.separator + setExtension(split[2], ".wav");
                             if (areFilesGood(test)) { //wow...
                                 if (change) {
                                     GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), test));
@@ -1105,7 +1283,7 @@ public class Utils {
                             String[] filesSplit = split[2].split(",");
                             ArrayList<String> list = new ArrayList<>();
                             for (String str : filesSplit) {
-                                list.add(GUIMain.currentSettings.defaultSoundDir + File.separator + str + ".wav");
+                                list.add(GUIMain.currentSettings.defaultSoundDir + File.separator + setExtension(str, ".wav"));
                             }             //calls the areFilesGood boolean in it (filters bad files already)
                             filesSplit = checkFiles(list.toArray(new String[list.size()]));
                             if (!change) {//!addsound soundname more,sounds
@@ -1120,7 +1298,7 @@ public class Utils {
                                     GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), filesSplit));
                             }
                         } else {//singular
-                            String test = GUIMain.currentSettings.defaultSoundDir + File.separator + split[2] + ".wav";
+                            String test = GUIMain.currentSettings.defaultSoundDir + File.separator + setExtension(split[2], ".wav");
                             if (areFilesGood(test)) {
                                 if (!change) {//!addsound sound newsound
                                     if (GUIMain.soundMap.containsKey(name)) {//getting the old permission/files
@@ -1209,7 +1387,6 @@ public class Utils {
             return;
         try {
             String[] split = s.split(" ");
-            if (split == null) return;
             String command = split[0];
             String name = split[1];//name of the face, used for file name, and if regex isn't supplied, becomes the regex
             String regex;
@@ -1223,13 +1400,13 @@ public class Utils {
                     if (checkName(name)) return;
                     file = split[3];
                     if (file.startsWith("http")) {//online
-                        downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), name + ".png", regex, false);//save locally
+                        downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), setExtension(name, ".png"), regex, 1);//save locally
                     } else {//local
                         if (checkName(file)) return;
                         downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
                                 GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                name + ".png",
-                                regex, false);
+                                setExtension(name, ".png"),
+                                regex, 1);
                     }
                 }
                 if (split.length == 3) {//!addface <name> <URL or file> (name will be the regex, case sensitive)
@@ -1238,14 +1415,14 @@ public class Utils {
                     if (checkName(name)) return;
                     if (file.startsWith("http")) {//online
                         downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                name + ".png", name, false);//name is regex, so case sensitive
+                                setExtension(name, ".png"), name, 1);//name is regex, so case sensitive
                     } else {//local
                         if (checkName(file)) return;
                         downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
                                 GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                name + ".png",
+                                setExtension(name, ".png"),
                                 name, //<- this will be the regex, so case sensitive
-                                false);
+                                1);
                     }
                 }
             }
@@ -1262,14 +1439,14 @@ public class Utils {
                         if (checkName(name)) return;
                         file = split[4];
                         if (file.startsWith("http")) {//online
-                            downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), (name + ".png"), regex, false);//save locally
+                            downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), setExtension(name, ".png"), regex, 1);//save locally
                         } else {//local
                             if (checkName(file)) return;
                             downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
                                     GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                    (name + ".png"),
+                                    setExtension(name, ".png"),
                                     regex, //< this will be the regex, so case sensitive
-                                    false);
+                                    1);
                         }
                     }
                     if (split.length == 4) {//!changeface <name> <numb> <newregex>|<new URL or file>
@@ -1290,13 +1467,13 @@ public class Utils {
                             Face face = GUIMain.faceMap.get(name);
                             file = split[3];
                             if (file.startsWith("http")) {//online
-                                downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), (name + ".png"), face.getRegex(), false);//save locally
+                                downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), setExtension(name, ".png"), face.getRegex(), 1);//save locally
                             } else {//local
                                 if (checkName(file)) return;
                                 downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
                                         GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                        (name + ".png"),
-                                        face.getRegex(), false);
+                                        setExtension(name, ".png"),
+                                        face.getRegex(), 1);
                             }
                         }
                     }
