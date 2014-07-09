@@ -52,8 +52,8 @@ public class GUIUpdate extends JFrame {
 
     public void downloadButtonActionPerformed() {
         try {
-            Desktop desktop = Desktop.getDesktop();
-            URI uri = new URL("https://www.dropbox.com/s/24jagzp0uyryqd0/Botnak.jar").toURI();
+            Desktop desktop = Desktop.getDesktop();//TODO update this to support master version
+            URI uri = new URL("https://www.dropbox.com/s/vbi96scjutlrgzx/Botnak.jar").toURI();
             desktop.browse(uri);
         } catch (Exception ev) {
             GUIMain.log((ev.getMessage()));
