@@ -23,8 +23,8 @@ public class GUIUpdate extends JFrame {
     public static String text = "";
 
     public static boolean checkForUpdate() {
-        try {
-            final URL url = new URL("https://raw.github.com/Gocnak/Botnak/master/version.txt");
+        try {//TODO change the URL to support the master branch on Episode 2's release
+            final URL url = new URL("https://raw.githubusercontent.com/Gocnak/Botnak/dev/version.txt");
             final BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
             String line;
             StringBuilder stanSB = new StringBuilder();
@@ -33,6 +33,7 @@ public class GUIUpdate extends JFrame {
                 try {
                     version = Double.parseDouble(line);
                     if (Constants.VERSION >= version) {
+                        reader.close();
                         return false;
                     }
                 } catch (Exception ignored) {
