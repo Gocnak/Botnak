@@ -34,14 +34,19 @@ import java.util.Vector;
  *         <a href="http://www.jibble.org/">http://www.jibble.org/</a>
  * @version 1.5.0 (Build time: Mon Dec 14 20:07:17 2009)
  */
-public class Queue {
+public class Queue<T> {
 
+    private Vector<T> _queue;
 
     /**
-     * Constructs a Queue object of unlimited size.
+     * Constructs a Queue object of size 10.
      */
     public Queue() {
+        _queue = new Vector<>();
+    }
 
+    public Queue(int capacity) {
+        _queue = new Vector<>(capacity);
     }
 
 
@@ -50,7 +55,7 @@ public class Queue {
      *
      * @param o The Object to be added to the Queue.
      */
-    public void add(Object o) {
+    public void add(T o) {
         synchronized (_queue) {
             _queue.addElement(o);
             _queue.notify();
@@ -63,7 +68,7 @@ public class Queue {
      *
      * @param o The Object to be added to the Queue.
      */
-    public void addFront(Object o) {
+    public void addFront(T o) {
         synchronized (_queue) {
             _queue.insertElementAt(o, 0);
             _queue.notify();
@@ -79,9 +84,8 @@ public class Queue {
      *
      * @return The next item from the front of the queue.
      */
-    public Object next() {
-
-        Object o = null;
+    public T next() {
+        T o = null;
 
         // Block if the Queue is empty.
         synchronized (_queue) {
@@ -137,8 +141,5 @@ public class Queue {
     public int size() {
         return _queue.size();
     }
-
-
-    private Vector _queue = new Vector();
 
 }

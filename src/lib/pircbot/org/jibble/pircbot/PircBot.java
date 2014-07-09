@@ -216,7 +216,6 @@ public class PircBot implements ReplyConstants {
                         // We're connected to the server.
                         break;
                     } else if (code.equals("433")) {
-                        System.out.println("443");
                         socket.close();
                         _inputThread = null;
                         return false;
@@ -395,9 +394,7 @@ public class PircBot implements ReplyConstants {
      * @param line The raw line to send to the IRC server.
      */
     public final synchronized void sendRawLineViaQueue(String line) {
-        if (line == null) {
-            throw new NullPointerException("Cannot send null messages to server");
-        }
+        if (line == null) return;
         if (isConnected()) {
             _outQueue.add(line);
         }
@@ -1354,7 +1351,7 @@ public class PircBot implements ReplyConstants {
     private String _password = null;
 
     // Outgoing message stuff.
-    private Queue _outQueue = new Queue();
+    private Queue<String> _outQueue = new Queue<>();
     private long _messageDelay = 1000;
 
     // Default settings for the PircBot.

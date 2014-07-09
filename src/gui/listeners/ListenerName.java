@@ -44,7 +44,7 @@ public class ListenerName extends MouseAdapter implements ActionListener {
                 String name = (String) a.getAttribute(HTML.Attribute.NAME);
                 if (name != null) {
                     JPopupMenu popupMenu = new JPopupMenu();
-                    if (!(channel.equals("") || channel.equalsIgnoreCase("all") || channel.equalsIgnoreCase("all chats"))) {
+                    if (!(channel.equals("") || channel.equalsIgnoreCase("all"))) {
                         if (GUIMain.viewer != null) {
                             User u = GUIMain.viewer.getViewer().getUser("#" + channel, name);//get the user in question
                             User main = GUIMain.viewer.getViewer().getUser("#" + channel, GUIMain.viewer.getMaster());//get yourself
@@ -99,23 +99,23 @@ public class ListenerName extends MouseAdapter implements ActionListener {
             String user = text.split(" ")[1];
             String channel = "#" + GUIMain.channelPane.getTitleAt(GUIMain.channelPane.getSelectedIndex());
             if (text.startsWith("Ban")) {
-                if (GUIMain.viewer != null && !channel.equalsIgnoreCase("all chats")) {
+                if (GUIMain.viewer != null) {
                     GUIMain.viewer.getViewer().sendMessage(channel, ".ban " + user);
                 }
             } else if (text.startsWith("Purge")) {
-                if (GUIMain.viewer != null && !channel.equalsIgnoreCase("all chats")) {
+                if (GUIMain.viewer != null) {
                     GUIMain.viewer.getViewer().sendMessage(channel, ".timeout " + user + " 1");
                 }
             } else if (text.startsWith("Timeout")) {
-                if (GUIMain.viewer != null && !channel.equalsIgnoreCase("all chats")) {
+                if (GUIMain.viewer != null) {
                     GUIMain.viewer.getViewer().sendMessage(channel, ".timeout " + user);
                 }
             } else if (text.startsWith("Mod")) {
-                if (GUIMain.viewer != null && !channel.equalsIgnoreCase("all chats")) {
+                if (GUIMain.viewer != null) {
                     GUIMain.viewer.getViewer().sendMessage(channel, ".mod " + user);
                 }
             } else if (text.startsWith("Un-mod")) {
-                if (GUIMain.viewer != null && !channel.equalsIgnoreCase("all chats")) {
+                if (GUIMain.viewer != null) {
                     GUIMain.viewer.getViewer().sendMessage(channel, ".unmod " + user);
                 }
             } else if (text.startsWith("Go to")) {

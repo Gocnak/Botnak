@@ -295,7 +295,7 @@ public class Utils {
      * @return The int amount of viewers watching the given channel.
      */
     public static int countViewers(String channelName) {
-        int count = 0;
+        int count = -1;
         try {//this could be parsed with JSON, but patterns work, and if it ain't broke...
             URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName);
             BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
@@ -312,7 +312,7 @@ public class Utils {
             }
             br.close();
         } catch (Exception e) {
-            count = 0;
+            count = -1;
         }
         return count;
     }
@@ -337,7 +337,7 @@ public class Utils {
      * @return The given input if it checks out, otherwise nothing.
      */
     public static String checkText(String input) {
-        return input != null && input.length() > 0 && input.trim().length() > 0 ? input : "";
+        return (input != null && input.length() > 0 && input.trim().length() > 0) ? input : "";
     }
 
     /**
@@ -827,10 +827,11 @@ public class Utils {
      */
     public static void addCommands(String s) {
         String[] split = s.split(" ");
-        if (GUIMain.commandSet != null && split.length == 4) {
-            String name = split[1];//name of the command, [0] is "addcommand"
-            int time;//for timer
+        if (GUIMain.commandSet != null && split.length >= 4) {
             try {
+                String name = split[1];//name of the command, [0] is "addcommand"
+                if (name.startsWith("!")) name = name.substring(1);
+                int time;//for timer
                 try {
                     time = Integer.parseInt(split[2]);
                 } catch (NumberFormatException e) {
@@ -838,7 +839,7 @@ public class Utils {
                 }
                 int bingo = s.indexOf(" ", s.indexOf(" ", s.indexOf(" ") + 1) + 1);//Third space is the message
                 String[] message = s.substring(bingo + 1).split("\\]");
-                if (time > 0 && name != null) {
+                if (time > 0) {
                     GUIMain.commandSet.add(new Command(name, time, message));
                 }
             } catch (Exception e) {

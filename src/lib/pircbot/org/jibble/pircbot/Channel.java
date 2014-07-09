@@ -36,7 +36,7 @@ public class Channel {
     }
 
     public void addUser(User u) {
-        if (u != null && !users.contains(u)) {
+        if (u != null && (getUser(u.getNick()) == null)) {
             users.add(u);
         }
     }

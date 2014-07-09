@@ -12,6 +12,9 @@ import irc.IRCViewer;
 import irc.Message;
 import sound.Sound;
 import sound.SoundEngine;
+import thread.TabPulse;
+import thread.heartbeat.Heartbeat;
+import thread.heartbeat.ViewerCount;
 import util.*;
 
 import javax.swing.*;
@@ -19,6 +22,7 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -49,6 +53,9 @@ public class GUIMain extends JFrame {
     public static HashMap<String, Color> keywordMap;
     public static HashSet<Donator> donators;
 
+    private static int userResponsesIndex = 0;
+    public static ArrayList<String> userResponses;
+
     public static HashSet<ConsoleCommand> conCommands;
 
     public static IRCBot bot;
@@ -70,7 +77,7 @@ public class GUIMain extends JFrame {
 
     public static HashSet<TabPulse> tabPulses;
 
-    public static int subCount = 0;
+    public static Heartbeat heartbeat;
 
     public GUIMain() {
         instance = this;
@@ -87,16 +94,20 @@ public class GUIMain extends JFrame {
         tabPulses = new HashSet<>();
         donators = new HashSet<>();
         combinedChatPanes = new HashSet<>();
+        userResponses = new ArrayList<>();
         SoundEngine.init();
         StyleConstants.setForeground(norm, Color.white);
         initComponents();
         chatPanes = new HashMap<>();
-        chatPanes.put("All Chats", new ChatPane("All Chats", allChatsScroll, allChats, 0));
+        chatPanes.put("System Logs", new ChatPane("System Logs", allChatsScroll, allChats, 0));
         currentSettings = new Settings();
         currentSettings.load();
         StyleConstants.setFontFamily(norm, currentSettings.font.getFamily());
         StyleConstants.setFontSize(norm, currentSettings.font.getSize());
         addStream.setEnabled(loadedSettingsUser());
+        heartbeat = new Heartbeat();
+        heartbeat.addHeartbeatThread(new ViewerCount());
+        heartbeat.start();
     }
 
 
@@ -118,7 +129,29 @@ public class GUIMain extends JFrame {
 
 
     public void keyTypedEvent(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_ENTER) chatButtonActionPerformed();
+        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+            chatButtonActionPerformed();
+        }
+        if (e.getKeyCode() == KeyEvent.VK_UP) {
+            if (userChat.getText().equals("")) {
+                userResponsesIndex = userResponses.size() - 1;
+                userChat.setText(userResponses.get(userResponsesIndex));
+            } else if (userResponses.contains(userChat.getText())) {
+                if (userResponsesIndex == 0) userResponsesIndex = userResponses.size() - 1;
+                else userResponsesIndex--;
+                userChat.setText(userResponses.get(userResponsesIndex));
+            }
+        }
+        if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+            if (userChat.getText().equals("")) {
+                userResponsesIndex = 0;
+                userChat.setText(userResponses.get(userResponsesIndex));
+            } else if (userResponses.contains(userChat.getText())) {
+                if (userResponsesIndex == userResponses.size() - 1) userResponsesIndex = 0;
+                else userResponsesIndex++;
+                userChat.setText(userResponses.get(userResponsesIndex));
+            }
+        }
     }
 
 
@@ -126,30 +159,27 @@ public class GUIMain extends JFrame {
         if (GUIMain.viewer == null) return;
         String channel = channelPane.getTitleAt(channelPane.getSelectedIndex());
         String userInput = userChat.getText().replaceAll("\n", "");
-        if (channel != null) {
-            boolean allChats = channel.equalsIgnoreCase("all chats");
+        if (channel != null && !channel.equalsIgnoreCase("system logs")) {
             CombinedChatPane ccp = Utils.getCombinedChatPane(channelPane.getSelectedIndex());
             boolean comboExists = ccp != null;
-            if (allChats || comboExists) {
+            if (comboExists) {
                 String[] channels;
-                if (comboExists) {
-                    if (!ccp.getActiveChannel().equalsIgnoreCase("All")) {
-                        channels = new String[]{ccp.getActiveChannel()};
-                    } else {
-                        channels = ccp.getChannels();
-                    }
+                if (!ccp.getActiveChannel().equalsIgnoreCase("All")) {
+                    channels = new String[]{ccp.getActiveChannel()};
                 } else {
-                    channels = channelSet.toArray(new String[channelSet.size()]);
+                    channels = ccp.getChannels();
                 }
                 if (!Utils.checkText(userInput).equals("")) {
                     for (String c : channels) {
                         viewer.getViewer().sendMessage("#" + c, userInput);
                     }
-                    userChat.setText("");
+                    if (!userResponses.contains(userInput)) userResponses.add(userInput);
                 }
+                userChat.setText("");
             } else {
                 if (!Utils.checkText(userInput).equals("")) {
                     viewer.getViewer().sendMessage("#" + channel, userInput);
+                    if (!userResponses.contains(userInput)) userResponses.add(userInput);
                 }
                 userChat.setText("");
             }
@@ -184,7 +214,6 @@ public class GUIMain extends JFrame {
         } else {
             try {
                 EventQueue.invokeLater(handler);
-                //EventQueue.invokeAndWait(handler);
             } catch (Exception e) {
                 log(e.getMessage());
             }
@@ -195,15 +224,16 @@ public class GUIMain extends JFrame {
     private synchronized void onMessageAction(Message mess) {
         if (mess != null && mess.getType() != null && GUIMain.viewer != null) {
             if (mess.getType() == Message.MessageType.LOG_MESSAGE) {
-                chatPanes.get("All Chats").log(mess.getContent());
+                chatPanes.get("System Logs").log(mess.getContent());
             }
             if (mess.getType() == Message.MessageType.NORMAL_MESSAGE ||
                     mess.getType() == Message.MessageType.ACTION_MESSAGE) {
                 if (!combinedChatPanes.isEmpty()) {
                     for (CombinedChatPane cc : combinedChatPanes) {
                         for (String chan : cc.getChannels()) {
-                            if (mess.getChannel().contains(chan)) {
-                                cc.onMessage(mess);
+                            if (mess.getChannel().substring(1).equalsIgnoreCase(chan)) {
+                                //TODO a "dont show channel source" setting?
+                                cc.onMessage(mess, true);
                                 break;
                             }
                         }
@@ -211,19 +241,20 @@ public class GUIMain extends JFrame {
                 }
                 String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
                 for (String pane : keys) {
-                    if (mess.getChannel().contains(pane)) {
-                        chatPanes.get(pane).onMessage(mess);
+                    if (mess.getChannel().substring(1).equalsIgnoreCase(pane)) {
+
+                        chatPanes.get(pane).onMessage(mess, false);
                         break;
                     }
                 }
-                chatPanes.get("All Chats").onMessage(mess);
+                //chatPanes.get("System Logs").onMessage(mess, true);
             }
             if (mess.getType() == Message.MessageType.SUB_NOTIFY) {
                 String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
+                //TODO differentiate a sub by making a special case for CombinedChatPanes
                 for (String chan : keys) {
-                    if (mess.getChannel().contains(chan)) {
+                    if (mess.getChannel().substring(1).equalsIgnoreCase(chan)) {
                         chatPanes.get(chan).onSub(mess);
-                        subCount++;
                         if (chan.equalsIgnoreCase(GUIMain.viewer.getMaster()) && currentSettings.subSound != null) {
                             SoundEngine.getEngine().playSubSound();
                         }
@@ -240,38 +271,17 @@ public class GUIMain extends JFrame {
     public static synchronized void onBan(String channel, String message) {
         if (message != null && viewer != null) {
             channel = channel.substring(1);
-            chatPanes.get("All Chats").onBan(message);
+            //chatPanes.get("All Chats").onBan(message);
             chatPanes.get(channel).onBan(message);
             //TODO make this implement respect to the selected tab component for combined tabs
         }
     }
 
-
-    private static int viewerPeak = 0;
-    private static int viewerCount = 0;
-    public static Thread viewerCheck = new Thread(new Runnable() {
-        @Override
-        public void run() {
-            while (!shutDown) {
-                countViewers();
-                updateTitle();
-                try {
-                    Thread.sleep(5000);
-                } catch (Exception ignored) {
-                }
-            }
-        }
-    });
-
-    public static void updateTitle() {
+    public static void updateTitle(String viewerCount) {
         StringBuilder stanSB = new StringBuilder();
         stanSB.append("Botnak ");
-        if (isLive()) {
-            stanSB.append("| Viewer count: ");
+        if (viewerCount != null) {
             stanSB.append(viewerCount);
-            stanSB.append(" (");
-            stanSB.append(viewerPeak);
-            stanSB.append(") ");
         }
         if (currentSettings != null) {
             if (currentSettings.user != null) { //TODO check logged-in status
@@ -284,19 +294,6 @@ public class GUIMain extends JFrame {
             }
         }
         instance.setTitle(stanSB.toString());
-    }
-
-
-    public static boolean isLive() {
-        return !(currentSettings == null || currentSettings.user == null) && Utils.isChannelLive(currentSettings.user.getAccountName());
-    }
-
-
-    public static void countViewers() {
-        if (currentSettings == null || currentSettings.user == null) return;
-        int count = Utils.countViewers(currentSettings.user.getAccountName());
-        if (count >= viewerPeak) viewerPeak = count;
-        viewerCount = count;
     }
 
 
@@ -329,7 +326,7 @@ public class GUIMain extends JFrame {
         for (TabPulse tabPulse : tabPulses) tabPulse.interrupt();
         tabPulses.clear();
         currentSettings.save();
-        if (viewerCheck != null && viewerCheck.isAlive()) viewerCheck.interrupt();
+        heartbeat.interrupt();
         if (Utils.faceCheck != null && Utils.faceCheck.isAlive()) Utils.faceCheck.interrupt();
         String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
         if (currentSettings.logChat) {
@@ -408,7 +405,7 @@ public class GUIMain extends JFrame {
                     allChats.addMouseListener(new ListenerName());
                     allChatsScroll.setViewportView(allChats);
                 }
-                channelPane.addTab("All Chats", allChatsScroll);
+                channelPane.addTab("System Logs", allChatsScroll);
             }
 
             {

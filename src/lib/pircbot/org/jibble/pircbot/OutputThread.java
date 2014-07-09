@@ -39,7 +39,7 @@ public class OutputThread extends Thread {
      * @param bot      The underlying PircBot instance.
      * @param outQueue The Queue from which we will obtain our messages.
      */
-    OutputThread(PircBot bot, Queue outQueue, BufferedWriter bufferedWriter) {
+    OutputThread(PircBot bot, Queue<String> outQueue, BufferedWriter bufferedWriter) {
         _bot = bot;
         _outQueue = outQueue;
         bwriter = bufferedWriter;
@@ -79,7 +79,7 @@ public class OutputThread extends Thread {
                 // Small delay to prevent spamming of the channel
                 Thread.sleep(_bot.getMessageDelay());
 
-                String line = (String) _outQueue.next();
+                String line = _outQueue.next();
                 if (line != null) {
                     _bot.sendRawLine(line);
                 } else {
@@ -92,7 +92,7 @@ public class OutputThread extends Thread {
     }
 
     private PircBot _bot = null;
-    private Queue _outQueue = null;
+    private Queue<String> _outQueue = null;
     private BufferedWriter bwriter = null;
 
 }

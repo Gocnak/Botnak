@@ -34,7 +34,7 @@ public class IRCBot extends MessageHandler {
         bot = new PircBot(this);
         bot.setNick(user);
         if (GUIMain.viewer != null) masterChannel = GUIMain.viewer.getMaster();
-        GUIMain.updateTitle();
+        GUIMain.updateTitle(null);
         try {
             bot.connect("irc.twitch.tv", 6667, password);
         } catch (Exception e) {

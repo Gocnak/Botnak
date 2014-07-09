@@ -63,7 +63,7 @@ public class ChannelManager {
     }
 
     /**
-     * Updates a user to have a special tag (admin/staff/turbo/sub).
+     * Updates a user to have a global special tag (admin/staff/turbo).
      * This will apply to all channels.
      *
      * @param userMode The usermode that took place.

@@ -75,6 +75,7 @@ public class Settings {
     public File ccommandsFile = new File(defaultDir + File.separator + "chatcom.txt");
     public File defaultsFile = new File(defaultDir + File.separator + "defaults.ini");
     public static File lafFile = new File(defaultDir + File.separator + "laf.txt");
+    public static File windowFile = new File(defaultDir + File.separator + "window.txt");
     public File keywordsFile = new File(defaultDir + File.separator + "keywords.txt");
     public File subIconsFile = new File(defaultDir + File.separator + "subIcons.txt");
     public File donatorsFile = new File(defaultDir + File.separator + "donators.txt");
@@ -113,6 +114,7 @@ public class Settings {
      * This void loads everything Botnak will use, and sets the appropriate settings.
      */
     public void load() {
+        loadWindow();
         if (Utils.areFilesGood(accountsFile.getAbsolutePath())) {
             GUIMain.log("Loading accounts...");
             loadPropData(0);
@@ -168,6 +170,7 @@ public class Settings {
      * This handles saving all the settings that need saved.
      */
     public void save() {
+        saveWindow();
         if (rememberBot || rememberNorm) savePropData(0);
         savePropData(1);
         if (!GUIMain.soundMap.isEmpty()) saveSounds();
@@ -967,6 +970,48 @@ public class Settings {
         try {
             PrintWriter pr = new PrintWriter(lafFile);
             pr.println(lookAndFeel);
+            pr.flush();
+            pr.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    /**
+     * Window Properties (location and size)
+     */
+    public static void loadWindow() {
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(windowFile.toURI().toURL().openStream()));
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("p")) {
+                    try {
+                        int x = Integer.parseInt(line.substring(1).split(",")[0]);
+                        int y = Integer.parseInt(line.substring(1).split(",")[1]);
+                        GUIMain.instance.setLocation(x, y);
+                    } catch (Exception ignored) {
+                    }
+                }
+                if (line.startsWith("s")) {
+                    try {
+                        double w = Integer.parseInt(line.substring(1).split(",")[0]);
+                        double h = Integer.parseInt(line.substring(1).split(",")[0]);
+                        GUIMain.instance.setSize((int) w, (int) h);
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+            br.close();
+        } catch (Exception e) {
+        }
+    }
+
+    public void saveWindow() {
+        try {
+            PrintWriter pr = new PrintWriter(windowFile);
+            pr.println("p" + GUIMain.instance.getLocationOnScreen().x + "," + GUIMain.instance.getLocationOnScreen().y);
+            pr.println("s" + GUIMain.instance.getSize().getWidth() + "," + GUIMain.instance.getSize().getHeight());
             pr.flush();
             pr.close();
         } catch (Exception e) {

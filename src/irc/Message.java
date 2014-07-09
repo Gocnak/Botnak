@@ -1,7 +1,5 @@
 package irc;
 
-import gui.GUIMain;
-
 /**
  * Created by Nick on 3/21/2014.
  */
@@ -40,7 +38,7 @@ public class Message {
      * @param newSub  The new sub's name.
      */
     public Message(String channel, String newSub) {
-        content = " " + newSub + " has just subscribed! (" + (GUIMain.subCount + 1) + ")";
+        content = " " + newSub + " has just subscribed!";
         this.channel = channel;
         sender = newSub;
         type = MessageType.SUB_NOTIFY;

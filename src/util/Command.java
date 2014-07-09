@@ -14,7 +14,7 @@ public class Command {
         this.contents = new StringArray(contents);
         this.delay = Utils.handleInt(delay);
         trigger = name;
-        delayTimer = new Timer(delay);
+        delayTimer = new Timer(this.delay);
     }
 
     public String getTrigger() {

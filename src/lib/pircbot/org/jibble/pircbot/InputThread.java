@@ -14,6 +14,8 @@ found at http://www.jibble.org/licenses/
 
 package lib.pircbot.org.jibble.pircbot;
 
+import gui.GUIMain;
+
 import java.io.BufferedReader;
 import java.io.InterruptedIOException;
 import java.io.PrintWriter;
@@ -88,7 +90,7 @@ public class InputThread extends Thread {
             while (running) {
                 try {
                     String line;
-                    while ((line = _breader.readLine()) != null) {
+                    while (((line = _breader.readLine()) != null) && !GUIMain.shutDown) {
                         try {
                             _bot.handleLine(line);
                         } catch (Throwable t) {

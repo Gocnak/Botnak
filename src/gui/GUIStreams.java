@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 
 
@@ -91,6 +93,14 @@ public class GUIStreams extends JFrame {
 
         //---- newChannel ----
         newChannel.setFont(new Font("Tahoma", Font.PLAIN, 12));
+        newChannel.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    addStreamButtonActionPerformed();
+                }
+            }
+        });
 
         //---- addStreamButton ----
         addStreamButton.setText("Add");

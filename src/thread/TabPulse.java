@@ -1,4 +1,4 @@
-package util;
+package thread;
 
 import gui.GUIMain;
 import lib.jtattoo.com.jtattoo.plaf.ColorHelper;

@@ -29,6 +29,25 @@ public class ChatPane {
         return shouldPulse;
     }
 
+    private int subCount = 0;
+
+    private int viewerCount = 0;
+    private int viewerPeak = 0;
+
+
+    public int getViewerPeak() {
+        return viewerPeak;
+    }
+
+    public int getViewerCount() {
+        return viewerCount;
+    }
+
+    public void setViewerCount(int newCount) {
+        if (newCount > viewerPeak) viewerPeak = newCount;
+        viewerCount = newCount;
+    }
+
     private boolean shouldPulse = true;
 
     public void setShouldPulse(boolean newBool) {
@@ -41,10 +60,14 @@ public class ChatPane {
         return (model.getExtent() + model.getValue()) == model.getMaximum();
     }
 
-    public void scrollToBottom() {
-        Rectangle visibleRect = textPane.getVisibleRect();
-        visibleRect.y = textPane.getHeight() - visibleRect.height;
-        textPane.scrollRectToVisible(visibleRect);
+    public void doScrollToBottom() {
+        if (textPane.isVisible()) {
+            Rectangle visibleRect = textPane.getVisibleRect();
+            visibleRect.y = textPane.getHeight() - visibleRect.height;
+            textPane.scrollRectToVisible(visibleRect);
+        } else {
+            textPane.setCaretPosition(textPane.getDocument().getLength());
+        }
     }
 
     // ScrollingDocumentListener takes care of re-scrolling when appropriate
@@ -65,24 +88,28 @@ public class ChatPane {
             JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
             boolean scrollBarAtBottom = isScrollBarFullyExtended(scrollBar);
             if (scrollBarAtBottom) {
-                // Push the call to "scrollToBottom" back TWO PLACES on the
-                // AWT-EDT queue so that it runs *after* Swing has had an
-                // opportunity to "react" to the appending of new text:
-                // this ensures that we "scrollToBottom" only after a new
-                // bottom has been recalculated during the natural
-                // revalidation of the GUI that occurs after having
-                // appending new text to the JTextArea.
+                scrollToBottom();
+            }
+        }
+    }
+
+    public void scrollToBottom() {
+        // Push the call to "scrollToBottom" back TWO PLACES on the
+        // AWT-EDT queue so that it runs *after* Swing has had an
+        // opportunity to "react" to the appending of new text:
+        // this ensures that we "scrollToBottom" only after a new
+        // bottom has been recalculated during the natural
+        // revalidation of the GUI that occurs after having
+        // appending new text to the JTextArea.
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
                 EventQueue.invokeLater(new Runnable() {
                     public void run() {
-                        EventQueue.invokeLater(new Runnable() {
-                            public void run() {
-                                scrollToBottom();
-                            }
-                        });
+                        doScrollToBottom();
                     }
                 });
             }
-        }
+        });
     }
 
     private String chan;
@@ -101,13 +128,13 @@ public class ChatPane {
         return index;
     }
 
-    private JTextPane textPane;
+    public JTextPane textPane;
 
     public JTextPane getTextPane() {
         return textPane;
     }
 
-    private JScrollPane scrollPane;
+    public JScrollPane scrollPane;
 
     public JScrollPane getScrollPane() {
         return scrollPane;
@@ -124,13 +151,15 @@ public class ChatPane {
         isTabVisible = newBool;
     }
 
-    private int cleanupCounter;
+    private int cleanupCounter = 0;
+
+    //TODO make this be in 24 hour if they want
     final SimpleDateFormat format = new SimpleDateFormat("[h:mm a]", Locale.getDefault());
 
     /**
      * You initialize this class with the channel it's for and the text pane you'll be editing.
      *
-     * @param channel    The channel ("name") of this chat pane. Ex: "All Chats" or "#gocnak"
+     * @param channel    The channel ("name") of this chat pane. Ex: "System Logs" or "#gocnak"
      * @param scrollPane The scroll pane for the tab.
      * @param pane       The text pane that shows the messages for the given channel.
      * @param index      The index of the pane in the main GUI.
@@ -143,7 +172,10 @@ public class ChatPane {
         this.scrollPane = scrollPane;
         textPane.getDocument().addDocumentListener(new ScrollingDocumentListener());
         textPane.getStyledDocument().addDocumentListener(new ScrollingDocumentListener());
-        cleanupCounter = 0;
+    }
+
+    public ChatPane() {
+
     }
 
     /**
@@ -155,7 +187,7 @@ public class ChatPane {
      *
      * @param message The message from the chat.
      */
-    public void onMessage(Message message) {
+    public void onMessage(Message message, boolean showChannel) {
         SimpleAttributeSet user = new SimpleAttributeSet();
         StyleConstants.setFontFamily(user, GUIMain.currentSettings.font.getFamily());
         StyleConstants.setFontSize(user, GUIMain.currentSettings.font.getSize());
@@ -209,15 +241,14 @@ public class ChatPane {
                 }
             }
             int nameStart = doc.getLength() + 1;
-            if (chan.equalsIgnoreCase("all chats")) {
+            if (showChannel) {
                 doc.insertString(doc.getLength(), " " + sender, user);
-                doc.insertString(doc.getLength(), " (" + channel.substring(1) + "): ", GUIMain.norm);
+                doc.insertString(doc.getLength(), " (" + channel.substring(1) + ")" + (isMe ? " " : ": "), GUIMain.norm);
             } else {
                 doc.insertString(doc.getLength(), " " + sender + (!isMe ? ": " : " "), user);
             }
             Utils.handleNames(doc, nameStart, sender, user);
             Utils.handleNameFaces(doc, nameStart, sender);
-            //Utils.handleFaces(doc, nameStart, sender);//if the sender has a custom face that they want instead
             int messStart = doc.getLength();
             SimpleAttributeSet set;
             if (Utils.mentionsKeyword(mess)) {
@@ -245,44 +276,49 @@ public class ChatPane {
     }
 
     public void onBan(String message) {
-        String time = format.format(new Date(System.currentTimeMillis()));
-        StyledDocument doc = textPane.getStyledDocument();
-        try {
-            doc.insertString(doc.getLength(), "\n" + time, GUIMain.norm);
-            doc.insertString(doc.getLength(), " " + message, GUIMain.norm);
-        } catch (Exception ignored) {
-        }
-        if (GUIMain.currentSettings.cleanupChat) {
-            cleanupCounter++;
-            if (cleanupCounter > GUIMain.currentSettings.chatMax) {
-                /* cleanup every n messages */
-                if (cleanupChat()) {
-                    cleanupCounter = 0;
+        if (EventQueue.isDispatchThread()) {
+            String time = format.format(new Date(System.currentTimeMillis()));
+            StyledDocument doc = textPane.getStyledDocument();
+            try {
+                doc.insertString(doc.getLength(), "\n" + time, GUIMain.norm);
+                doc.insertString(doc.getLength(), " " + message, GUIMain.norm);
+            } catch (Exception ignored) {
+            }
+            if (GUIMain.currentSettings.cleanupChat) {
+                cleanupCounter++;
+                if (cleanupCounter > GUIMain.currentSettings.chatMax) {
+                    /* cleanup every n messages */
+                    if (cleanupChat()) {
+                        cleanupCounter = 0;
+                    }
                 }
             }
         }
     }
 
     public void onSub(Message message) {
-        StyledDocument doc = textPane.getStyledDocument();
-        try {
-            doc.insertString(doc.getLength(), "\n", GUIMain.norm);
-            for (int i = 0; i < 5; i++) {
-                insertIcon(doc, doc.getLength(), 5, message.getChannel());
+        if (EventQueue.isDispatchThread()) {
+            StyledDocument doc = textPane.getStyledDocument();
+            try {
+                doc.insertString(doc.getLength(), "\n", GUIMain.norm);
+                for (int i = 0; i < 5; i++) {
+                    insertIcon(doc, doc.getLength(), 5, message.getChannel());
+                }
+                //TODO make a setting for the color for the sub message
+                doc.insertString(doc.getLength(), message.getContent() + " (" + (subCount + 1) + ")", GUIMain.norm);
+                for (int i = 0; i < 5; i++) {
+                    insertIcon(doc, doc.getLength(), 5, message.getChannel());
+                }
+            } catch (Exception ignored) {
             }
-            //TODO make a setting for the color for the sub message
-            doc.insertString(doc.getLength(), message.getContent(), GUIMain.norm);
-            for (int i = 0; i < 5; i++) {
-                insertIcon(doc, doc.getLength(), 5, message.getChannel());
-            }
-        } catch (Exception ignored) {
-        }
-        if (GUIMain.currentSettings.cleanupChat) {
-            cleanupCounter++;
-            if (cleanupCounter > GUIMain.currentSettings.chatMax) {
-                /* cleanup every n messages */
-                if (cleanupChat()) {
-                    cleanupCounter = 0;
+            subCount++;
+            if (GUIMain.currentSettings.cleanupChat) {
+                cleanupCounter++;
+                if (cleanupCounter > GUIMain.currentSettings.chatMax) {
+                    /* cleanup every n messages */
+                    if (cleanupChat()) {
+                        cleanupCounter = 0;
+                    }
                 }
             }
         }
@@ -393,7 +429,7 @@ public class ChatPane {
                 StyledDocument doc = textPane.getStyledDocument();
                 try {
                     if (GUIMain.currentSettings.cleanupChat) {
-                        if (GUIMain.currentSettings.logChat) {
+                        if (GUIMain.currentSettings.logChat && chan != null) {
                             String[] toRemove = doc.getText(0, start).split("\\n");
                             Utils.logChat(toRemove, chan, 1);
                         }
@@ -444,22 +480,24 @@ public class ChatPane {
     }
 
     public void log(String message) {
-        String time = format.format(new Date(System.currentTimeMillis()));
-        StyledDocument doc = textPane.getStyledDocument();
-        try {
-            doc.insertString(doc.getLength(), "\n" + time + " SYS: " + message, GUIMain.norm);
-            if (GUIMain.currentSettings.cleanupChat) {
-                cleanupCounter++;
-                if (cleanupCounter > GUIMain.currentSettings.chatMax) {
-                /* cleanup every n messages */
-                    if (GUIMain.doneWithTwitchFaces) {
-                        if (cleanupChat()) {
-                            cleanupCounter = 0;
+        if (EventQueue.isDispatchThread()) {
+            String time = format.format(new Date(System.currentTimeMillis()));
+            StyledDocument doc = textPane.getStyledDocument();
+            try {
+                doc.insertString(doc.getLength(), "\n" + time + " SYS: " + message, GUIMain.norm);
+                if (GUIMain.currentSettings.cleanupChat) {
+                    cleanupCounter++;
+                    if (cleanupCounter > GUIMain.currentSettings.chatMax) {
+                    /* cleanup every n messages */
+                        if (GUIMain.doneWithTwitchFaces) {
+                            if (cleanupChat()) {
+                                cleanupCounter = 0;
+                            }
                         }
                     }
                 }
+            } catch (Exception ignored) {
             }
-        } catch (Exception ignored) {
         }
     }
 }

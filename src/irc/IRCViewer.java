@@ -36,7 +36,6 @@ public class IRCViewer extends MessageHandler {
         viewer = new PircBot(this);
         viewer.setVerbose(true);//TODO remove dis
         viewer.setNick(user);
-        GUIMain.updateTitle();
         try {
             /*
             TODO
@@ -52,23 +51,11 @@ public class IRCViewer extends MessageHandler {
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
-        viewer.sendRawLineViaQueue("TWITCHCLIENT 3");
+        viewer.sendRawLine("TWITCHCLIENT 3");
         if (GUIMain.loadedStreams()) {
             for (String s : GUIMain.channelSet) {
                 doConnect(s);
             }
-        }
-        try {
-            EventQueue.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    if (!GUIMain.viewerCheck.isAlive()) {
-                        GUIMain.viewerCheck.start();
-                    }
-                }
-            });
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
         }
         try {
             EventQueue.invokeLater(new Runnable() {
@@ -130,7 +117,6 @@ public class IRCViewer extends MessageHandler {
         }
         viewer.disconnect();
         viewer.dispose();
-        if (GUIMain.viewerCheck != null && !GUIMain.viewerCheck.isInterrupted()) GUIMain.viewerCheck.interrupt();
         if (bq != null && !bq.isInterrupted()) bq.interrupt();
         if (forget) {
             GUIMain.currentSettings.user = null;
@@ -212,7 +198,7 @@ public class IRCViewer extends MessageHandler {
             }
             bq.addToMap(channel, line.split(" ")[1]);
         } else {
-            GUIMain.onBan(channel, "The chat was cleared by a moderator (Prevented by Botnak)");
+            GUIMain.onBan(channel, "The chat was cleared by a moderator. (Prevented by Botnak)");
         }
     }
 
