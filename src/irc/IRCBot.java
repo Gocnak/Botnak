@@ -275,6 +275,17 @@ public class IRCBot extends MessageHandler {
                                 GUIMain.nameFaceMap.remove(sender);
                             }
                             break;
+                        case SET_STREAM_TITLE:
+
+
+                            break;
+                        case SET_STREAM_GAME:
+
+
+                            break;
+                        case PLAY_ADVERT:
+
+                            break;
                     }
                 }
                 //text command

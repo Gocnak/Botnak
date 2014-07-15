@@ -45,7 +45,10 @@ public class ConsoleCommand {
         SET_SUB_SOUND,
         SET_SOUND_PERMISSION,
         SET_NAME_FACE,
-        REMOVE_NAME_FACE
+        REMOVE_NAME_FACE,
+        SET_STREAM_TITLE,
+        SET_STREAM_GAME,
+        PLAY_ADVERT
     }
 
     /**

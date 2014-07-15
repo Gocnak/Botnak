@@ -661,7 +661,7 @@ public class Utils {
                             //finds the index of the face while not replacing the old V ones
                             doc.getCharacterElement(start + m.start()).getAttributes());
                     if (!areFilesGood(GUIMain.faceMap.get(name).getFilePath())) {// the file doesn't exist/didn't download right
-                        return;
+                        break;
                     }
                     try {
                         StyleConstants.setIcon(attrs,
@@ -726,16 +726,15 @@ public class Utils {
                 String regex = GUIMain.twitchFaceMap.get(name).getRegex();
                 if (!checkRegex(regex)) continue;
                 if (!GUIMain.twitchFaceMap.get(name).isEnabled()) continue;
+                regex = "\\b" + regex + "\\b";
                 Pattern p = Pattern.compile(regex);
                 Matcher m = p.matcher(message);
-                int lastFound = -1;
                 while (m.find() && !GUIMain.shutDown) {
-                    lastFound++;//makes the index +1, 0 for start, rids having indexOf(lastFound + 1) later on in this code
                     final SimpleAttributeSet attrs = new SimpleAttributeSet(
                             //finds the index of the face while not replacing the old V ones
-                            doc.getCharacterElement(start + message.indexOf(m.group(), lastFound)).getAttributes());
+                            doc.getCharacterElement(start + m.start()).getAttributes());
                     if (!areFilesGood(GUIMain.twitchFaceMap.get(name).getFilePath())) {// the file doesn't exist/didn't download right
-                        return;
+                        break;
                     }
                     try {
                         StyleConstants.setIcon(attrs,
@@ -743,11 +742,9 @@ public class Utils {
                     } catch (Exception e) {
                         GUIMain.log(e.getMessage());
                     }
-                    //                        find the face V  from either 0 or the next index of it, and removes it\
-                    lastFound = message.indexOf((m.group()), lastFound);
-                    doc.remove(start + lastFound, m.group().length());
+                    doc.remove(start + m.start(), m.group().length());
                     //            sets the index to the last index found, and adds the icon with the face text
-                    doc.insertString(start + lastFound, m.group(), attrs);
+                    doc.insertString(start + m.start(), m.group(), attrs);
                 }
             }
         } catch (BadLocationException e1) {
