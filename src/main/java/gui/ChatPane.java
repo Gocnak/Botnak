@@ -373,23 +373,23 @@ public class ChatPane {
                 kind = "Subscriber";
                 break;
             case 6://donation normal
-                icon = sizeIcon(ChatPane.class.getResource("/resource/green.png"));
+                icon = sizeIcon(ChatPane.class.getResource("/images/green.png"));
                 kind = "Donator";
                 break;
             case 7:
-                icon = sizeIcon(ChatPane.class.getResource("/resource/bronze.png"));
+                icon = sizeIcon(ChatPane.class.getResource("/images/bronze.png"));
                 kind = "Donator";
                 break;
             case 8:
-                icon = sizeIcon(ChatPane.class.getResource("/resource/silver.png"));
+                icon = sizeIcon(ChatPane.class.getResource("/images/silver.png"));
                 kind = "Donator";
                 break;
             case 9:
-                icon = sizeIcon(ChatPane.class.getResource("/resource/gold.png"));
+                icon = sizeIcon(ChatPane.class.getResource("/images/gold.png"));
                 kind = "Donator";
                 break;
             case 10:
-                icon = sizeIcon(ChatPane.class.getResource("/resource/diamond.png"));
+                icon = sizeIcon(ChatPane.class.getResource("/images/diamond.png"));
                 kind = "Donator";
                 break;
             default:

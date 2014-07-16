@@ -380,7 +380,7 @@ public class GUIMain extends JFrame {
             setTitle("Botnak | User: <none> | Bot: <none>");
             setResizable(true);
             setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-            setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
+            setIconImage(new ImageIcon(getClass().getResource("/images/icon.png")).getImage());
             Container BotnakContentPane = getContentPane();
 
             //======== channelPane ========

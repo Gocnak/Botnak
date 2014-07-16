@@ -78,7 +78,7 @@ public class GUIUpdate extends JFrame {
         skipButton = new JButton();
 
         //======== this ========
-        setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
+        setIconImage(new ImageIcon(getClass().getResource("/images/icon.png")).getImage());
         setTitle("A new version of Botnak is available!");
         setResizable(false);
         Container contentPane = getContentPane();

@@ -77,7 +77,7 @@ public class GUIStreams extends JFrame {
 
         //======== this ========
         setTitle("Add Streams");
-        setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
+        setIconImage(new ImageIcon(getClass().getResource("/images/icon.png")).getImage());
         setResizable(false);
         Container contentPane = getContentPane();
 
