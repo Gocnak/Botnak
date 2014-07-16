@@ -105,22 +105,22 @@ public class GUISettings extends JFrame {
             if (useCustomMod.isSelected()) {
                 GUIMain.currentSettings.modIcon = new URL(customMod.getText());
             } else {
-                GUIMain.currentSettings.modIcon = GUISettings.class.getResource("/resource/mod.png");
+                GUIMain.currentSettings.modIcon = GUISettings.class.getResource("/images/mod.png");
             }
             if (useCustomBroad.isSelected()) {
                 GUIMain.currentSettings.broadIcon = new URL(customBroad.getText());
             } else {
-                GUIMain.currentSettings.broadIcon = GUISettings.class.getResource("/resource/broad.png");
+                GUIMain.currentSettings.broadIcon = GUISettings.class.getResource("/images/broad.png");
             }
             if (useCustomAdmin.isSelected()) {
                 GUIMain.currentSettings.adminIcon = new URL(customAdminField.getText());
             } else {
-                GUIMain.currentSettings.adminIcon = GUISettings.class.getResource("/resource/admin.png");
+                GUIMain.currentSettings.adminIcon = GUISettings.class.getResource("/images/admin.png");
             }
             if (useCustomStaff.isSelected()) {
                 GUIMain.currentSettings.staffIcon = new URL(customStaffField.getText());
             } else {
-                GUIMain.currentSettings.staffIcon = GUISettings.class.getResource("/resource/staff.png");
+                GUIMain.currentSettings.staffIcon = GUISettings.class.getResource("/images/staff.png");
             }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -499,7 +499,7 @@ public class GUISettings extends JFrame {
         setTitle("Settings");
         setResizable(false);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
+        setIconImage(new ImageIcon(getClass().getResource("/images/icon.png")).getImage());
         Container contentPane = getContentPane();
 
         //======== tabbedPane1 ========
@@ -1292,10 +1292,10 @@ public class GUISettings extends JFrame {
                 graphiteButton.setActionCommand("Graphite");
 
                 //---- label31 ----
-                label31.setIcon(new ImageIcon(getClass().getResource("/resource/graphite.png")));
+                label31.setIcon(new ImageIcon(getClass().getResource("/images/graphite.png")));
 
                 //---- label30 ----
-                label30.setIcon(new ImageIcon(getClass().getResource("/resource/hifi.png")));
+                label30.setIcon(new ImageIcon(getClass().getResource("/images/hifi.png")));
 
                 //---- hifiButton ----
                 hifiButton.setText("HiFi");
@@ -1630,7 +1630,7 @@ public class GUISettings extends JFrame {
             //======== this ========
             setResizable(false);
             setTitle("Add Sound(s)");
-            setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
+            setIconImage(new ImageIcon(getClass().getResource("/images/icon.png")).getImage());
             Container contentPane = getContentPane();
 
             //---- label2 ----

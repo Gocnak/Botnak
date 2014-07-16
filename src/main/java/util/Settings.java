@@ -93,11 +93,11 @@ public class Settings {
     public String date;
 
     public Settings() {//default account
-        modIcon = Settings.class.getResource("/resource/mod.png");
-        broadIcon = Settings.class.getResource("/resource/broad.png");
-        adminIcon = Settings.class.getResource("/resource/admin.png");
-        staffIcon = Settings.class.getResource("/resource/staff.png");
-        turboIcon = Settings.class.getResource("/resource/turbo.png");
+        modIcon = Settings.class.getResource("/images/mod.png");
+        broadIcon = Settings.class.getResource("/images/broad.png");
+        adminIcon = Settings.class.getResource("/images/admin.png");
+        staffIcon = Settings.class.getResource("/images/staff.png");
+        turboIcon = Settings.class.getResource("/images/turbo.png");
         long time = System.currentTimeMillis();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yy");
         date = sdf.format(new Date(time));
