@@ -62,6 +62,7 @@ public class GUIMain extends JFrame {
     public static IRCViewer viewer;
     public static GUISettings settings = null;
     public static GUIStreams streams = null;
+    public static AuthorizeAccountGUI accountGUI = null;
 
     public static boolean shutDown = false;
     public static boolean doneWithFaces = false;
@@ -104,7 +105,6 @@ public class GUIMain extends JFrame {
         currentSettings.load();
         StyleConstants.setFontFamily(norm, currentSettings.font.getFamily());
         StyleConstants.setFontSize(norm, currentSettings.font.getSize());
-        addStream.setEnabled(loadedSettingsUser());
         heartbeat = new Heartbeat();
         heartbeat.addHeartbeatThread(new ViewerCount());
         heartbeat.start();
@@ -112,15 +112,11 @@ public class GUIMain extends JFrame {
 
 
     public static boolean loadedSettingsUser() {
-        return currentSettings != null && currentSettings.user != null;
+        return currentSettings != null && currentSettings.accountManager.getUserAccount() != null;
     }
 
     public static boolean loadedSettingsBot() {
-        return currentSettings != null && currentSettings.bot != null;
-    }
-
-    public static boolean loadedStreams() {
-        return !channelSet.isEmpty();
+        return currentSettings != null && currentSettings.accountManager.getBotAccount() != null;
     }
 
     public static boolean loadedCommands() {
@@ -132,31 +128,38 @@ public class GUIMain extends JFrame {
         if (e.getKeyCode() == KeyEvent.VK_ENTER) {
             chatButtonActionPerformed();
         }
-        if (e.getKeyCode() == KeyEvent.VK_UP) {
-            if (userChat.getText().equals("")) {
-                userResponsesIndex = userResponses.size() - 1;
-                userChat.setText(userResponses.get(userResponsesIndex));
-            } else if (userResponses.contains(userChat.getText())) {
-                if (userResponsesIndex == 0) userResponsesIndex = userResponses.size() - 1;
-                else userResponsesIndex--;
-                userChat.setText(userResponses.get(userResponsesIndex));
+        int initial = userResponsesIndex;
+        if (!userResponses.isEmpty()) {
+            if (e.getKeyCode() == KeyEvent.VK_UP) {
+                if (userChat.getText().equals("")) {
+                    userResponsesIndex = userResponses.size() - 1;
+                } else if (userResponses.contains(userChat.getText())) {
+                    if (userResponsesIndex == 0) userResponsesIndex = userResponses.size() - 1;
+                    else userResponsesIndex--;
+                }
+            }
+            if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+                if (userChat.getText().equals("")) {
+                    userResponsesIndex = 0;
+                } else if (userResponses.contains(userChat.getText())) {
+                    if (userResponsesIndex == userResponses.size() - 1) userResponsesIndex = 0;
+                    else userResponsesIndex++;
+                }
             }
         }
-        if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-            if (userChat.getText().equals("")) {
-                userResponsesIndex = 0;
-                userChat.setText(userResponses.get(userResponsesIndex));
-            } else if (userResponses.contains(userChat.getText())) {
-                if (userResponsesIndex == userResponses.size() - 1) userResponsesIndex = 0;
-                else userResponsesIndex++;
-                userChat.setText(userResponses.get(userResponsesIndex));
-            }
+        if (initial != userResponsesIndex) {
+            EventQueue.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    userChat.setText(userResponses.get(userResponsesIndex));
+                }
+            });
         }
     }
 
 
     public void chatButtonActionPerformed() {
-        if (GUIMain.viewer == null) return;
+        if (GUIMain.currentSettings.accountManager.getViewer() == null) return;
         String channel = channelPane.getTitleAt(channelPane.getSelectedIndex());
         String userInput = userChat.getText().replaceAll("\n", "");
         if (channel != null && !channel.equalsIgnoreCase("system logs")) {
@@ -171,14 +174,14 @@ public class GUIMain extends JFrame {
                 }
                 if (!Utils.checkText(userInput).equals("")) {
                     for (String c : channels) {
-                        viewer.getViewer().sendMessage("#" + c, userInput);
+                        GUIMain.currentSettings.accountManager.getViewer().sendMessage("#" + c, userInput);
                     }
                     if (!userResponses.contains(userInput)) userResponses.add(userInput);
                 }
                 userChat.setText("");
             } else {
                 if (!Utils.checkText(userInput).equals("")) {
-                    viewer.getViewer().sendMessage("#" + channel, userInput);
+                    GUIMain.currentSettings.accountManager.getViewer().sendMessage("#" + channel, userInput);
                     if (!userResponses.contains(userInput)) userResponses.add(userInput);
                 }
                 userChat.setText("");
@@ -222,7 +225,7 @@ public class GUIMain extends JFrame {
 
 
     private synchronized void onMessageAction(Message mess) {
-        if (mess != null && mess.getType() != null && GUIMain.viewer != null) {
+        if (mess != null && mess.getType() != null) {
             if (mess.getType() == Message.MessageType.LOG_MESSAGE) {
                 chatPanes.get("System Logs").log(mess.getContent());
             }
@@ -232,48 +235,35 @@ public class GUIMain extends JFrame {
                     for (CombinedChatPane cc : combinedChatPanes) {
                         for (String chan : cc.getChannels()) {
                             if (mess.getChannel().substring(1).equalsIgnoreCase(chan)) {
-                                //TODO a "dont show channel source" setting?
+                                //TODO a "don't show channel source" setting?
                                 cc.onMessage(mess, true);
                                 break;
                             }
                         }
                     }
                 }
-                String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
-                for (String pane : keys) {
-                    if (mess.getChannel().substring(1).equalsIgnoreCase(pane)) {
-
-                        chatPanes.get(pane).onMessage(mess, false);
-                        break;
-                    }
-                }
-                //chatPanes.get("System Logs").onMessage(mess, true);
+                chatPanes.get(mess.getChannel().substring(1)).onMessage(mess, false);
             }
             if (mess.getType() == Message.MessageType.SUB_NOTIFY) {
-                String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
-                //TODO differentiate a sub by making a special case for CombinedChatPanes
-                for (String chan : keys) {
-                    if (mess.getChannel().substring(1).equalsIgnoreCase(chan)) {
-                        chatPanes.get(chan).onSub(mess);
-                        if (chan.equalsIgnoreCase(GUIMain.viewer.getMaster()) && currentSettings.subSound != null) {
-                            SoundEngine.getEngine().playSubSound();
-                        }
-                        break;
-                    }
+                chatPanes.get(mess.getChannel().substring(1)).onSub(mess);
+                if (mess.getChannel().substring(1).equalsIgnoreCase(
+                        GUIMain.currentSettings.accountManager.getUserAccount().getName())
+                        && currentSettings.subSound != null) {
+                    SoundEngine.getEngine().playSubSound();
                 }
                 //TODO add the sub as a monthly donator
                 //that is; keep track of how many months they are subbed,
                 //and once they lose sub have their donor status instead.
+            }
+            if (mess.getType() == Message.MessageType.BAN_NOTIFY) {
+                chatPanes.get(mess.getChannel().substring(1)).onBan(mess.getContent());
             }
         }
     }
 
     public static synchronized void onBan(String channel, String message) {
         if (message != null && viewer != null) {
-            channel = channel.substring(1);
-            //chatPanes.get("All Chats").onBan(message);
-            chatPanes.get(channel).onBan(message);
-            //TODO make this implement respect to the selected tab component for combined tabs
+            onMessage(new Message(channel, null, Message.MessageType.BAN_NOTIFY, message));
         }
     }
 
@@ -284,25 +274,25 @@ public class GUIMain extends JFrame {
             stanSB.append(viewerCount);
         }
         if (currentSettings != null) {
-            if (currentSettings.user != null) { //TODO check logged-in status
+            if (currentSettings.accountManager.getUserAccount() != null) {
                 stanSB.append("| User: ");
-                stanSB.append(currentSettings.user.getAccountName());
+                stanSB.append(currentSettings.accountManager.getUserAccount().getName());
             }
-            if (currentSettings.bot != null) {
+            if (currentSettings.accountManager.getBotAccount() != null) {
                 stanSB.append(" | Bot: ");
-                stanSB.append(currentSettings.bot.getAccountName());
+                stanSB.append(currentSettings.accountManager.getBotAccount().getName());
             }
         }
         instance.setTitle(stanSB.toString());
     }
 
 
-    public void addStreamActionPerformed() {
-        if (streams == null) {
-            streams = new GUIStreams();
+    public void manageAccountActionPerformed() {
+        if (accountGUI == null) {
+            accountGUI = new AuthorizeAccountGUI();
         }
-        if (!streams.isVisible()) {
-            streams.setVisible(true);
+        if (!accountGUI.isVisible()) {
+            accountGUI.setVisible(true);
         }
     }
 
@@ -371,7 +361,7 @@ public class GUIMain extends JFrame {
         chatButton = new JButton();
         exitButton = new JButton();
         loginsButton = new JButton();
-        addStream = new JButton();
+        manageAccount = new JButton();
 
         //======== Botnak ========
         {
@@ -470,15 +460,16 @@ public class GUIMain extends JFrame {
                 }
             });
 
-            //---- addStream ----
-            addStream.setText("Add/Remove a Stream Chat");
-            addStream.setFocusable(false);
-            addStream.setFocusPainted(false);
-            addStream.setToolTipText("Add (or remove) a stream to (not) get their chat's messages.");
-            addStream.addActionListener(new ActionListener() {
+            //---- manageAccount ----
+            manageAccount.setText("Manage Accounts");
+            manageAccount.setFocusable(false);
+            manageAccount.setFocusPainted(false);
+            manageAccount.setEnabled(false);
+            manageAccount.setToolTipText("Use the setting GUI to manage accounts.");
+            manageAccount.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    addStreamActionPerformed();
+                    manageAccountActionPerformed();
                 }
             });
 
@@ -493,7 +484,7 @@ public class GUIMain extends JFrame {
                                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addGroup(BotnakContentPaneLayout.createParallelGroup()
                                             .addComponent(loginsButton, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 229, GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(addStream, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 229, GroupLayout.PREFERRED_SIZE)
+                                            .addComponent(manageAccount, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 229, GroupLayout.PREFERRED_SIZE)
                                             .addComponent(exitButton, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 229, GroupLayout.PREFERRED_SIZE))
                                     .addContainerGap())
                             .addComponent(channelPane)
@@ -508,7 +499,7 @@ public class GUIMain extends JFrame {
                                                     .addGap(18, 18, 18)
                                                     .addComponent(loginsButton)
                                                     .addGap(18, 18, 18)
-                                                    .addComponent(addStream))
+                                                    .addComponent(manageAccount))
                                             .addComponent(scrollPane1, GroupLayout.PREFERRED_SIZE, 118, GroupLayout.PREFERRED_SIZE)
                                             .addComponent(chatButton, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 57, GroupLayout.PREFERRED_SIZE))
                                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
@@ -546,6 +537,6 @@ public class GUIMain extends JFrame {
     public static JButton chatButton;
     public static JButton exitButton;
     public static JButton loginsButton;
-    public static JButton addStream;
+    public static JButton manageAccount;
     // JFormDesigner - End of variables declaration  //GEN-END:variables
 }

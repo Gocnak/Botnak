@@ -1,7 +1,8 @@
 package gui;
 
-import irc.IRCBot;
-import irc.IRCViewer;
+import irc.Account;
+import irc.Oauth;
+import irc.Task;
 import lib.scalr.Scalr;
 import sound.Sound;
 import util.Constants;
@@ -33,11 +34,13 @@ import java.util.ArrayList;
 public class GUISettings extends JFrame {
 
     GUISounds_2 s2;
+    AuthorizeAccountGUI mainAccGUI;
 
     public GUISettings() {
         initComponents();
         buildTree();
         s2 = null;
+        mainAccGUI = null;
     }
 
     // builds the sound tree
@@ -88,9 +91,7 @@ public class GUISettings extends JFrame {
 
     void save() {
         //accounts
-        GUIMain.currentSettings.autoLogin = autoLoginCheck.isSelected();
-        GUIMain.currentSettings.rememberNorm = rememberNormLogin.isSelected();
-        GUIMain.currentSettings.rememberBot = rememberBotLogin.isSelected();
+        //handled by manager
 
         //directories
         GUIMain.currentSettings.defaultFaceDir = faceDir.getText();
@@ -135,7 +136,7 @@ public class GUISettings extends JFrame {
             if (child != null && child.getUserObject() != null) {// gaben-0
                 String[] split = child.getUserObject().toString().split("-");
                 String command = split[0];
-                int perm = 0;
+                int perm;
                 try {
                     perm = Integer.parseInt(split[1]);
                 } catch (Exception e) {
@@ -209,6 +210,8 @@ public class GUISettings extends JFrame {
     public void saveButtonActionPerformed() {
         save();
         GUIMain.settings = null;
+        if (mainAccGUI != null) mainAccGUI.dispose();
+        mainAccGUI = null;
         if (s2 != null) s2.dispose();
         s2 = null;
         dispose();
@@ -216,6 +219,8 @@ public class GUISettings extends JFrame {
 
     public void cancelButtonActionPerformed() {
         GUIMain.settings = null;
+        if (mainAccGUI != null) mainAccGUI.dispose();
+        mainAccGUI = null;
         if (s2 != null) s2.dispose();
         s2 = null;
         dispose();
@@ -256,7 +261,6 @@ public class GUISettings extends JFrame {
             GUIMain.viewer.close(true);
             normUser.setText("");
             normPass.setText("");
-            rememberNormLogin.setSelected(false);
             userLogoutButton.setEnabled(false);
         }
     }
@@ -266,16 +270,19 @@ public class GUISettings extends JFrame {
             GUIMain.bot.close(true);
             botUser.setText("");
             botPass.setText("");
-            rememberBotLogin.setSelected(false);
             botLogoutButton.setEnabled(false);
         }
     }
 
     public void userLoginButtonActionPerformed() {
+        //TODO
         if (GUIMain.viewer == null) {
-            String normus = normUser.getText().toLowerCase();
+            if (mainAccGUI == null) mainAccGUI = new AuthorizeAccountGUI();
+            mainAccGUI.setVisible(true);
+
+            /*String normus = normUser.getText().toLowerCase();
             String normpass = new String(normPass.getPassword());
-            if (normus != null && !normus.equals("") && !normus.contains(" ")) {
+            if (!normus.equals("") && !normus.contains(" ")) {
                 if (!normpass.equals("") && !normpass.contains(" ")) {
                     if (!normpass.contains("oauth")) {
                         JOptionPane.showMessageDialog(this,
@@ -283,12 +290,12 @@ public class GUISettings extends JFrame {
                                         "\n See http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc for more info.",
                                 "Password Needs Oauth", JOptionPane.ERROR_MESSAGE);
                         normPass.setText("");
-                    } else {
-                        GUIMain.viewer = new IRCViewer(normus, normpass);
-                        GUIMain.addStream.setEnabled(true);
+                    } else {//TODO make the Account GUI
+                        //GUIMain.viewer = new IRCViewer(normus, normpass);
+                        //GUIMain.manageAccount.setEnabled(true);
                     }
                 }
-            }
+            }*/
         }
     }
 
@@ -296,7 +303,7 @@ public class GUISettings extends JFrame {
         if (GUIMain.bot == null) {
             String botus = botUser.getText().toLowerCase();
             String botpass = new String(botPass.getPassword());
-            if (botus != null && !botus.equals("") && !botus.contains(" ")) {
+            if (!botus.equals("") && !botus.contains(" ")) {
                 if (!botpass.equals("") && !botpass.contains(" ")) {
                     if (!botpass.contains("oauth")) {
                         JOptionPane.showMessageDialog(this,
@@ -304,8 +311,9 @@ public class GUISettings extends JFrame {
                                         "\n See http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc for more info.",
                                 "Password Needs Oauth", JOptionPane.ERROR_MESSAGE);
                         botPass.setText("");
-                    } else {
-                        GUIMain.bot = new IRCBot(botus, botpass);
+                    } else {//TODO make the account GUI
+                        GUIMain.currentSettings.accountManager.setBotAccount(new Account(botus, new Oauth(botpass, false, false)));
+                        GUIMain.currentSettings.accountManager.addTask(new Task(null, Task.Type.CREATE_BOT_ACCOUNT, null));
                     }
                 }
             }
@@ -537,7 +545,7 @@ public class GUISettings extends JFrame {
                 });
 
                 //---- userLoginButton ----
-                userLoginButton.setText("Login");
+                userLoginButton.setText("Setup User Account");
                 userLoginButton.setFocusable(false);
                 userLoginButton.addActionListener(new ActionListener() {
                     @Override
@@ -558,17 +566,20 @@ public class GUISettings extends JFrame {
                 //---- rememberBotLogin ----
                 rememberBotLogin.setText("Remember Me");
                 rememberBotLogin.setFocusable(false);
+                rememberBotLogin.setEnabled(false);
 
                 //---- rememberNormLogin ----
                 rememberNormLogin.setText("Remember Me");
                 rememberNormLogin.setFocusable(false);
+                rememberNormLogin.setEnabled(false);
 
                 //---- autoLoginCheck ----
-                autoLoginCheck.setText("Log In Automatically (on Start)");
+                autoLoginCheck.setText("To be updated!");
                 autoLoginCheck.setFocusable(false);
+                autoLoginCheck.setEnabled(false);
 
                 //---- label11 ----
-                label11.setText("(This applies for both accounts!)");
+                label11.setText("(To be updated!)");
 
                 //---- botLoginButton ----
                 botLoginButton.setText("Login");
@@ -590,17 +601,16 @@ public class GUISettings extends JFrame {
                         botLogoutButtonActionPerformed();
                     }
                 });
-                if (GUIMain.loadedSettingsUser()) { //they could have not auto-logged in
-                    rememberNormLogin.setSelected(GUIMain.currentSettings.rememberNorm);
-                    normUser.setText(GUIMain.currentSettings.user.getAccountName());
-                    normPass.setText(GUIMain.currentSettings.user.getAccountPass());
-                    autoLoginCheck.setSelected(GUIMain.currentSettings.autoLogin);
+                normUser.setEnabled(false);
+                normPass.setEnabled(false);
+                if (GUIMain.loadedSettingsUser()) {
+                    normUser.setText(GUIMain.currentSettings.accountManager.getUserAccount().getName());
+                    normPass.setText(GUIMain.currentSettings.accountManager.getUserAccount().getKey().getKey());
                     userLogoutButton.setEnabled(true);
                 }
                 if (GUIMain.loadedSettingsBot()) {
-                    rememberBotLogin.setSelected(GUIMain.currentSettings.rememberBot);
-                    botUser.setText(GUIMain.currentSettings.bot.getAccountName());
-                    botPass.setText(GUIMain.currentSettings.bot.getAccountPass());
+                    botUser.setText(GUIMain.currentSettings.accountManager.getBotAccount().getName());
+                    botPass.setText(GUIMain.currentSettings.accountManager.getBotAccount().getKey().getKey());
                     botLogoutButton.setEnabled(true);
                 }
 

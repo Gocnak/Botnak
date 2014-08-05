@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 
 public class Constants {
 
-    public static final double VERSION = 2.22;
+    public static final double VERSION = 2.23;
 
     /**
      * All users may do it
@@ -82,7 +82,6 @@ public class Constants {
 
     //Credit TDuva from his Chatty bot for some of theses, as well as the
     //"namedcolor" class idea.
-    //TODO add more if people want them
     public static final NamedColor[] namedColors = {
             new NamedColor("Red", 255, 0, 0),
             new NamedColor("Blue", 0, 0, 255),

@@ -13,7 +13,7 @@ import java.util.HashSet;
  * 2. Points for Users (TODO)
  * 3. Viewer count
  * 4. Emote downloads
- * 3. TODO: increse this list
+ * 5. TODO: increse this list
  */
 public class Heartbeat extends Thread {
 
@@ -58,7 +58,6 @@ public class Heartbeat extends Thread {
 
     @Override
     public void interrupt() {
-
         super.interrupt();
     }
 }

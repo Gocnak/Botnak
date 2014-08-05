@@ -179,11 +179,7 @@ public class ChatPane {
     }
 
     /**
-     * In order to update one pane that isn't hard coded requires a bit of trickery.
-     * We'll have a set of these, but the channel will be the trigger, which is
-     * compared elsewhere (GUIMain). The update happens; it can be a clearing event
-     * (if they're clearing the chat), a logging event, and the line is added.
-     * <p/>
+     * This is the main message method when somebody sends a message to the channel.
      *
      * @param message The message from the chat.
      */
@@ -199,7 +195,7 @@ public class ChatPane {
         StyledDocument doc = textPane.getStyledDocument();
         try {
             doc.insertString(doc.getLength(), "\n" + time, GUIMain.norm);
-            User u = GUIMain.viewer.getViewer().getUser(channel, sender);
+            User u = GUIMain.currentSettings.accountManager.getViewer().getUser(channel, sender);
             if (u != null) {
                 Color c;
                 if (u.getColor() != null) {

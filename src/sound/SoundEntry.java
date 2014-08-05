@@ -41,13 +41,6 @@ public class SoundEntry implements Closeable {
         //sector.incrementAndGet(); TODO look into implementing a counter for how many of each sound is played
     }
 
-    public void closePrevious() {
-        if (previous != null) {
-            previous.close();
-            previous = null;
-        }
-    }
-
     @Override
     public void close() {
         if (this.clip.isActive()) {

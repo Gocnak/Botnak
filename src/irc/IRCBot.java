@@ -14,21 +14,17 @@ import java.util.Collection;
 
 public class IRCBot extends MessageHandler {
 
-    public String getMasterChannel() {
-        return masterChannel;
-    }
-
     //Sounds
-    public static boolean shouldTalk = true;
-    public static String masterChannel;
-    private PircBot bot;
 
     public PircBot getBot() {
-        return bot;
+        return GUIMain.currentSettings.accountManager.getBot();
     }
 
-    public IRCBot(String user, String password) {
-        if (GUIMain.currentSettings.bot == null) {
+    public ArrayList<String> winners = new ArrayList<>();
+    public ArrayList<Raffle> raffles = new ArrayList<>();
+
+    public IRCBot() {
+        /*if (GUIMain.currentSettings.accountManager.getBotAccount() == null) {
             GUIMain.currentSettings.bot = new Settings.Account(user, password);
         }
         bot = new PircBot(this);
@@ -48,23 +44,20 @@ public class IRCBot extends MessageHandler {
             }
         }
         GUIMain.log("Loaded Bot: " + user + "!");
-        GUIMain.bot = this;
+        GUIMain.bot = this;*/
+    }
+
+    @Override
+    public void onConnect() {
+        if (GUIMain.currentSettings.accountManager.getUserAccount() != null)
+            doConnect(GUIMain.currentSettings.accountManager.getUserAccount().getName());
+        GUIMain.updateTitle(null);
     }
 
     public void doConnect(String channel) {
-        if (!channel.startsWith("#")) channel = "#" + channel;
-        if (!bot.isConnected()) {
-            try {
-                bot.connect("irc.twitch.tv", 6667, GUIMain.currentSettings.bot.getAccountPass());
-            } catch (Exception e) {
-                GUIMain.log(e.getMessage());
-            }
-        } else {
-            if (!bot.isInChannel(channel)) {
-                bot.joinChannel(channel);
-                if (!GUIMain.channelSet.contains(channel.substring(1))) GUIMain.channelSet.add(channel.substring(1));
-            }
-        }
+        String channelName = "#" + channel;
+        GUIMain.currentSettings.accountManager.addTask(
+                new Task(GUIMain.currentSettings.accountManager.getBot(), Task.Type.JOIN_CHANNEL, channelName));
     }
 
     /**
@@ -74,10 +67,9 @@ public class IRCBot extends MessageHandler {
      * @param channel The channel name to leave (# not included).
      */
     public void doLeave(String channel) {
-        String channelName = (channel.startsWith("#") ? channel : "#" + channel);
-        if (bot.isInChannel(channelName)) {
-            bot.partChannel(channelName);
-        }
+        if (!channel.startsWith("#")) channel = "#" + channel;
+        GUIMain.currentSettings.accountManager.addTask(
+                new Task(GUIMain.currentSettings.accountManager.getBot(), Task.Type.LEAVE_CHANNEL, channel));
     }
 
     /**
@@ -86,16 +78,12 @@ public class IRCBot extends MessageHandler {
      * @param forget True if you are logging out, false if shutting down.
      */
     public void close(boolean forget) {
-        GUIMain.log("Logging out of bot: " + GUIMain.currentSettings.bot.getAccountName());
-        for (String s : bot.getChannels()) {
-            doLeave(s.substring(1));
-        }
-        bot.disconnect();
-        bot.dispose();
+        GUIMain.log("Logging out of bot: " + GUIMain.currentSettings.accountManager.getBotAccount().getName());
+        GUIMain.currentSettings.accountManager.addTask(
+                new Task(GUIMain.currentSettings.accountManager.getBot(), Task.Type.DISCONNECT, null));
         if (forget) {
-            GUIMain.currentSettings.bot = null;
+            GUIMain.currentSettings.accountManager.setBotAccount(null);
         }
-        bot = null;
         GUIMain.bot = null;
     }
 
@@ -105,26 +93,80 @@ public class IRCBot extends MessageHandler {
 
     @Override
     public void onMessage(String channel, String sender, String message) {
-        if (message != null && channel != null && sender != null && GUIMain.viewer != null) {
+        if (message != null && channel != null && sender != null && GUIMain.currentSettings.accountManager.getViewer() != null) {
             sender = sender.toLowerCase();
             if (sender.equalsIgnoreCase(getBot().getNick())) return;
+
+            //raffles
+            User u = getBot().getUser(channel, sender);
+            if (u != null) {
+                if (!raffles.isEmpty()) {
+                    if (!winners.contains(u.getNick().toLowerCase())) {
+                        Donator d = Utils.getDonator(u.getNick());
+                        for (Raffle r : raffles) {
+                            if (r.isDone()) {
+                                continue;
+                            }
+                            String key = r.getKeyword();
+                            if (message.contains(key)) {
+                                int permBase = r.getPermission();
+                                int permission = Constants.PERMISSION_ALL;
+                                if (u.isSubscriber()) {
+                                    permission = Constants.PERMISSION_SUB;
+                                }
+                                if (d != null) {
+                                    if (d.getDonated() >= 2.50) {
+                                        permission = Constants.PERMISSION_DONOR;
+                                    }
+                                }
+                                if ((u.isOp() || u.isAdmin() || u.isStaff())) {
+                                    permission = Constants.PERMISSION_MOD;
+                                }
+                                if (GUIMain.currentSettings.accountManager.getUserAccount() != null &&
+                                        GUIMain.currentSettings.accountManager.getUserAccount().getName().equalsIgnoreCase(sender)) {
+                                    permission = Constants.PERMISSION_DEV;
+                                }
+                                if (permission >= permBase) {
+                                    r.addUser(u.getNick());
+                                }
+                            }
+                        }
+                    }
+                    ArrayList<Raffle> toRemove = new ArrayList<>();
+                    for (Raffle r : raffles) {
+                        if (r.isDone()) {
+                            winners.add(r.getWinner());
+                            toRemove.add(r);
+                        }
+                    }
+                    if (!toRemove.isEmpty()) {
+                        for (Raffle r : toRemove) {
+                            raffles.remove(r);
+                        }
+                        toRemove.clear();
+                    }
+                }
+            }
+            Oauth key = GUIMain.currentSettings.accountManager.getUserAccount().getKey();
+            String[] split = message.split(" ");
+            String first = "";
+            if (split.length > 1) first = split[1];
             //commands
             if (message.startsWith("!")) {
-                String content = message.substring(1).split(" ")[0].toLowerCase();
+                String trigger = message.substring(1).split(" ")[0].toLowerCase();
                 /*//dev
                 if (sender.equals(GUIMain.viewer.getMaster())) {
                     handleDev(channel, message.substring(1));
                 }*/
                 //mod
-                User u = bot.getUser(channel, sender);
                 if (u != null && (u.isOp() || u.isAdmin() || u.isStaff())) {
                     handleMod(channel, message.substring(1));
                 }
                 //sound
-                if (soundTrigger(content, sender, channel)) {
-                    SoundEngine.getEngine().addSound(new Sound(GUIMain.soundMap.get(content)));
+                if (soundTrigger(trigger, sender, channel)) {
+                    SoundEngine.getEngine().addSound(new Sound(GUIMain.soundMap.get(trigger)));
                 }
-                ConsoleCommand consoleCommand = Utils.getConsoleCommand(content, channel, sender);
+                ConsoleCommand consoleCommand = Utils.getConsoleCommand(trigger, channel, sender);
                 if (consoleCommand != null) {
                     String mess = message.substring(1);
                     switch (consoleCommand.getAction()) {
@@ -135,14 +177,12 @@ public class IRCBot extends MessageHandler {
                             Utils.handleFace(mess);
                             break;
                         case REMOVE_FACE:
-                            String[] split = mess.split(" ");
-                            String toremove = split[1];
-                            if (GUIMain.faceMap.containsKey(toremove)) {
-                                Utils.removeFace(toremove);
+                            if (GUIMain.faceMap.containsKey(first)) {
+                                Utils.removeFace(first);
                             }
                             break;
                         case TOGGLE_FACE:
-                            Utils.toggleFace(mess.split(" ")[1]);
+                            Utils.toggleFace(first);
                             break;
                         case ADD_SOUND:
                             Utils.handleSound(mess, false);
@@ -151,57 +191,53 @@ public class IRCBot extends MessageHandler {
                             Utils.handleSound(mess, true);
                             break;
                         case REMOVE_SOUND:
-                            String remove = mess.split(" ")[1];
-                            if (GUIMain.soundMap.containsKey(remove)) {
-                                GUIMain.soundMap.remove(remove);
+                            if (GUIMain.soundMap.containsKey(first)) {
+                                GUIMain.soundMap.remove(first);
                             }
                             break;
                         case SET_SOUND_DELAY:
                             int soundTime;
                             try {
-                                soundTime = Integer.parseInt(mess.split(" ")[1]);
+                                soundTime = Integer.parseInt(first);
                             } catch (Exception e) {
                                 return;
                             }
+                            if (soundTime < 0) return;
                             soundTime = Utils.handleInt(soundTime);
                             int delay = soundTime / 1000;
-                            bot.sendMessage(channel, "Sound delay " + (delay < 2 ? (delay == 0 ? "off." : "is now 1 second.") : ("is now " + delay + " seconds.")));
+                            getBot().sendMessage(channel, "Sound delay " + (delay < 2 ? (delay == 0 ? "off." : "is now 1 second.") : ("is now " + delay + " seconds.")));
                             SoundEngine.getEngine().setDelay(soundTime);
                             break;
                         case TOGGLE_SOUND:
-                            String[] check = mess.split(" ");
-                            if (check.length > 1) {
-                                String soundName = check[1];
-                                if (GUIMain.soundMap.containsKey(soundName)) {
-                                    Sound sound = GUIMain.soundMap.get(soundName);
+                            if (split.length > 1) {
+                                if (GUIMain.soundMap.containsKey(first)) {
+                                    Sound sound = GUIMain.soundMap.get(first);
                                     sound.setEnabled(!sound.isEnabled());
-                                    bot.sendMessage(channel, "The sound " + soundName + " is now turned " + (sound.isEnabled() ? "ON" : "OFF"));
+                                    getBot().sendMessage(channel, "The sound " + first + " is now turned " + (sound.isEnabled() ? "ON" : "OFF"));
                                 }
                             } else {
                                 SoundEngine.getEngine().setShouldPlay(!SoundEngine.getEngine().shouldPlay());
-                                bot.sendMessage(channel, "Sound is now turned " + (SoundEngine.getEngine().shouldPlay() ? "ON" : "OFF"));
+                                getBot().sendMessage(channel, "Sound is now turned " + (SoundEngine.getEngine().shouldPlay() ? "ON" : "OFF"));
                             }
                             break;
                         case STOP_SOUND:
                             SoundEntry sound = SoundEngine.getEngine().getCurrentPlayingSound();
                             if (sound != null) {
-                                bot.sendMessage(channel, "Stopping the first sound...");
+                                getBot().sendMessage(channel, "Stopping the first sound...");
                                 sound.close();
                             }
                             break;
                         case STOP_ALL_SOUNDS:
                             Collection<SoundEntry> coll = SoundEngine.getEngine().getCurrentPlayingSounds();
                             if (coll.size() > 0) {
-                                bot.sendMessage(channel, "Stopping all currently playing sounds...");
+                                getBot().sendMessage(channel, "Stopping all currently playing sounds...");
                                 for (SoundEntry soun : coll) {
                                     soun.close();
                                 }
                             }
                             break;
                         case MOD_USER:
-                            String[] splitBySpace = mess.split(" ");
-                            String toMod = splitBySpace[1];
-                            GUIMain.viewer.getViewer().sendMessage(channel, ".mod " + toMod);
+                            GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".mod " + first);
                             break;
                         case ADD_KEYWORD:
                             Utils.handleKeyword(mess);
@@ -214,24 +250,26 @@ public class IRCBot extends MessageHandler {
                             break;
                         case SET_COMMAND_PERMISSION:
                             Utils.setCommandPermission(mess);
+                            GUIMain.currentSettings.saveConCommands();
                             break;
                         case ADD_TEXT_COMMAND:
                             Utils.addCommands(mess);
+                            GUIMain.currentSettings.saveCommands();
                             break;
                         case REMOVE_TEXT_COMMAND:
-                            Utils.removeCommands(mess.split(" ")[1]);
+                            Utils.removeCommands(first);
+                            GUIMain.currentSettings.saveCommands();
                             break;
                         case ADD_DONATION:
                             double amount;
                             try {
-                                amount = Double.parseDouble(mess.split(" ")[2]);
+                                amount = Double.parseDouble(split[2]);
                             } catch (Exception ignored) {
                                 return;
                             }
-                            String donator = mess.split(" ")[1];
-                            Donator don = Utils.getDonator(donator);
+                            Donator don = Utils.getDonator(first);
                             if (don == null) {
-                                don = new Donator(donator, amount);
+                                don = new Donator(first, amount);
                                 GUIMain.donators.add(don);
                             } else {
                                 don.addDonated(amount);
@@ -239,8 +277,7 @@ public class IRCBot extends MessageHandler {
                             GUIMain.currentSettings.saveDonators();
                             break;
                         case SET_SUB_SOUND:
-                            String toParse = mess.split(" ")[1];
-                            String[] toRead = toParse.split(",");
+                            String[] toRead = first.split(",");
                             ArrayList<String> ar = new ArrayList<>();
                             for (String s : toRead) {
                                 String filename = GUIMain.currentSettings.defaultSoundDir + File.separator + Utils.setExtension(s, ".wav");
@@ -250,13 +287,13 @@ public class IRCBot extends MessageHandler {
                             }
                             if (!ar.isEmpty()) {
                                 GUIMain.currentSettings.subSound = new Sound(15, ar.toArray(new String[ar.size()]));
-                                bot.sendMessage(channel, "Sub Sound Set!");
+                                getBot().sendMessage(channel, "Sub Sound Set!");
                             }
                             break;
                         case SET_SOUND_PERMISSION:
                             try {
                                 int perm;
-                                perm = Integer.parseInt(mess.split(" ")[1]);
+                                perm = Integer.parseInt(first);
                                 if (perm > -1 && perm < 5) {
                                     SoundEngine.getEngine().setPermission(perm);
                                 }
@@ -264,32 +301,121 @@ public class IRCBot extends MessageHandler {
                             }
                             break;
                         case SET_NAME_FACE:
-                            String URL = mess.split(" ")[1];
-                            if (URL.startsWith("http")) {
-                                Utils.downloadFace(URL, GUIMain.currentSettings.nameFaceDir.getAbsolutePath(),
+                            if (first.startsWith("http")) {
+                                Utils.downloadFace(first, GUIMain.currentSettings.nameFaceDir.getAbsolutePath(),
                                         Utils.setExtension(sender, ".png"), sender, 2);
+                                GUIMain.currentSettings.saveNameFaces();
                             }
                             break;
                         case REMOVE_NAME_FACE:
                             if (GUIMain.nameFaceMap.containsKey(sender)) {
                                 GUIMain.nameFaceMap.remove(sender);
+                                GUIMain.currentSettings.saveNameFaces();
                             }
                             break;
                         case SET_STREAM_TITLE:
-
-
+                            if (key != null) {
+                                if (key.canSetTitle()) {
+                                    //TODO set the title
+                                }
+                            }
                             break;
                         case SET_STREAM_GAME:
-
-
+                            if (key != null) {
+                                if (key.canSetTitle()) {
+                                    //TODO set the game
+                                }
+                            }
                             break;
                         case PLAY_ADVERT:
+                            if (key != null) {
+                                if (key.canPlayAd()) {
+                                    //TODO play ad
+                                }
+                            }
+                            break;
+                        case START_RAFFLE:
+                            try {
+                                String timeString = split[2];
+                                try {
+                                    int time;
+                                    if (timeString.contains("m")) {//!startraffle <key> Xmin ?
+                                        timeString = timeString.substring(0, timeString.indexOf("m"));
+                                        time = Integer.parseInt(timeString) * 60;
+                                    } else {
+                                        time = Integer.parseInt(timeString);
+                                    }
+                                    int perm = 0;
+                                    //TODO select a parameter in Settings GUI that defines the default raffle
+                                    if (split.length == 4) {
+                                        //because right now it just "Everyone" unless specified with the int param
+                                        perm = Integer.parseInt(split[3]);
+                                    }
+
+                                    Raffle r = new Raffle(getBot(), first, time, channel, perm);
+                                    r.start();
+                                    raffles.add(r);
+                                    //print the blarb
+                                    getBot().sendMessage(channel, r.getStartMessage());
+                                    getBot().sendMessage(channel, "NOTE: This is a promotion from " + channel.substring(1) +
+                                            ". Twitch does not sponsor or endorse broadcaster promotions and is not responsible for them.");
+                                } catch (Exception e) {
+                                    break;
+                                }
+                            } catch (Exception e) {
+                                GUIMain.log(e.getMessage());
+                            }
 
                             break;
+                        case ADD_RAFFLE_WINNER:
+                            if (!winners.contains(first)) {
+                                winners.add(first);
+                                getBot().sendMessage(channel, "The user " + first + " has been added to the winners pool!");
+                            } else {
+                                getBot().sendMessage(channel, "The user " + first + " is already in the winners pool!");
+                            }
+                            break;
+                        case STOP_RAFFLE:
+                            Raffle toRemove = null;
+                            for (Raffle r : raffles) {
+                                if (r.getKeyword().equalsIgnoreCase(first)) {
+                                    r.setDone(true);
+                                    r.interrupt();
+                                    toRemove = r;
+                                    getBot().sendMessage(channel, "The raffle with key " + first + " has been stopped!");
+                                }
+                            }
+                            if (toRemove != null) {
+                                raffles.remove(toRemove);
+                            }
+                            break;
+                        case REMOVE_RAFFLE_WINNER:
+                            if (winners.contains(first)) {
+                                if (winners.remove(first)) {
+                                    getBot().sendMessage(channel, "The user " + first + " was removed from the winners pool!");
+                                }
+                            } else {
+                                getBot().sendMessage(channel, "The user " + first + " is not in the winners pool!");
+                            }
+                            break;
+                        case SEE_WINNERS:
+                            if (!winners.isEmpty()) {
+                                StringBuilder stanSB = new StringBuilder();
+                                stanSB.append("The current raffle winners are: ");
+                                for (String name : winners) {
+                                    stanSB.append(name);
+                                    stanSB.append(", ");
+                                }
+                                getBot().sendMessage(channel, stanSB.toString().substring(0, stanSB.length() - 2) + " .");
+                            } else {
+                                getBot().sendMessage(channel, "There are no recorded winners!");
+                            }
+                            break;
+
                     }
                 }
                 //text command
-                Command c = Utils.getCommand(content);
+                Command c = Utils.getCommand(trigger);
                 if (c != null) {
                     //TODO add a check to see if people want it only to react in their channel
                     handleCommand(channel, c);
@@ -310,7 +436,7 @@ public class IRCBot extends MessageHandler {
      */
     public boolean soundTrigger(String s, String send, String channel) {
         if (SoundEngine.getEngine().shouldPlay()) {//sound not turned off
-            if (channel.equalsIgnoreCase("#" + masterChannel)) {//is in main channel
+            if (channel.equalsIgnoreCase("#" + GUIMain.currentSettings.accountManager.getUserAccount().getName())) {//is in main channel
                 if (soundCheck(s, send, channel)) {//let's check the existence/permission
                     return true;//HIT THAT SHIT
                 }
@@ -329,20 +455,21 @@ public class IRCBot extends MessageHandler {
     public boolean soundCheck(String sound, String sender, String channel) {
         //set the permission
         int permission = Constants.PERMISSION_ALL;
-        User u = bot.getUser(channel, sender);
+        User u = getBot().getUser(channel, sender);
         if (u != null && u.isSubscriber()) {
             permission = Constants.PERMISSION_SUB;
         }
         Donator d = Utils.getDonator(sender);
         if (d != null) {
-            if (d.getDonated() >= 5.00) {
+            if (d.getDonated() >= 2.50) {
                 permission = Constants.PERMISSION_DONOR;
             }
         }
         if (u != null && (u.isOp() || u.isAdmin() || u.isStaff())) {
             permission = Constants.PERMISSION_MOD;
         }
-        if (GUIMain.viewer != null && GUIMain.viewer.getMaster().equals(sender)) {
+        if (GUIMain.currentSettings.accountManager.getUserAccount() != null &&
+                GUIMain.currentSettings.accountManager.getUserAccount().getName().equalsIgnoreCase(sender)) {
             permission = Constants.PERMISSION_DEV;
         }
         String[] keys = GUIMain.soundMap.keySet().toArray(new String[GUIMain.soundMap.keySet().size()]);
@@ -368,7 +495,7 @@ public class IRCBot extends MessageHandler {
         if (c.getMessage().data.length != 0) {
             if (!c.getDelayTimer().isRunning()) {
                 for (String s : c.getMessage().data) {
-                    bot.sendMessage(channel, s);
+                    getBot().sendMessage(channel, s);
                 }
                 c.getDelayTimer().reset();
             }
@@ -381,8 +508,8 @@ public class IRCBot extends MessageHandler {
     }*/
 
     public void handleMod(String channel, String s) {
-        if (GUIMain.viewer == null) return;
-        if (channel.substring(1).equals(GUIMain.viewer.getMaster())) {
+        if (GUIMain.currentSettings.accountManager.getUserAccount() == null) return;
+        if (channel.substring(1).equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
             if (s.startsWith("soundstate")) {
                 String[] split = s.split(" ");
                 if (split.length == 1) {
@@ -399,12 +526,12 @@ public class IRCBot extends MessageHandler {
                             "Subscribers, Donators, Mods, and the Broadcaster") :
                             "Everyone")
                             + " can play sounds.";
-                    bot.sendMessage(channel, "Sound is currently turned " + onOrOff + " with " + numSounds + " with " + delayS + " " + perm);
+                    getBot().sendMessage(channel, "Sound is currently turned " + onOrOff + " with " + numSounds + " with " + delayS + " " + perm);
                 } else if (split.length == 2) {
                     String soundName = split[1];
                     if (GUIMain.soundMap.containsKey(soundName)) {
                         Sound toCheck = GUIMain.soundMap.get(soundName);
-                        bot.sendMessage(channel, "The sound " + soundName + " is currently turned " + (toCheck.isEnabled() ? "ON" : "OFF"));
+                        getBot().sendMessage(channel, "The sound " + soundName + " is currently turned " + (toCheck.isEnabled() ? "ON" : "OFF"));
                     }
                 }
             }

@@ -26,7 +26,7 @@ public class Channel {
      * @param nick The nick of the user.
      * @return The user, or null if not found.
      */
-    public User getUser(String nick) {
+    public synchronized User getUser(String nick) {
         for (User u : users) {
             if (u.getNick().equalsIgnoreCase(nick)) {
                 return u;

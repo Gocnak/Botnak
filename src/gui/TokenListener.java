@@ -2,7 +2,6 @@ package gui;
 
 import util.Timer;
 
-import java.awt.*;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,15 +35,6 @@ public class TokenListener extends Thread {
                 String token = inputLine.replace("GET /token/", "").split(" ")[0];
                 if (token.length() > 5) {
                     field.oAuthField.setText(token);
-                    EventQueue.invokeLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            field.setState(Frame.ICONIFIED);
-                            field.setState(Frame.NORMAL);
-                            field.toFront();
-                            field.repaint();
-                        }
-                    });
                     s.getOutputStream().write(makeResponse().getBytes("UTF-8"));
                     s.close();
                     so.close();

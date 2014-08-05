@@ -17,7 +17,7 @@ public class SoundEngine {
         return engine;
     }
 
-    private int delay = 10000;
+    private int delay = 10000;//default to 10 seconds
     private int permission = 1;//default to sub+ permission
     private boolean soundToggle = true;
     private Timer soundTimer = new Timer(delay);

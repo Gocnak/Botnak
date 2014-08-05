@@ -6,9 +6,7 @@ import face.TwitchFace;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.GUIMain;
-import irc.Donator;
-import irc.IRCBot;
-import irc.IRCViewer;
+import irc.*;
 import sound.Sound;
 
 import javax.swing.filechooser.FileSystemView;
@@ -29,11 +27,7 @@ import java.util.*;
 public class Settings {
 
     //accounts
-    public Account user = null;
-    public Account bot = null;
-    public boolean autoLogin = false;
-    public boolean rememberNorm = false;
-    public boolean rememberBot = false;
+    public AccountManager accountManager = null;
 
     //custom directories
     public String defaultSoundDir = "";
@@ -63,6 +57,7 @@ public class Settings {
     public File nameFaceDir = new File(defaultDir + File.separator + "NameFaces");
     public File twitchFaceDir = new File(defaultDir + File.separator + "TwitchFaces");
     public File subIconsDir = new File(defaultDir + File.separator + "SubIcons");
+    public File subSoundDir = new File(defaultDir + File.separator + "SubSounds");
     public File logDir = new File(defaultDir + File.separator + "Logs");
     //files
     public File accountsFile = new File(defaultDir + File.separator + "acc.ini");
@@ -108,6 +103,7 @@ public class Settings {
         nameFaceDir.mkdirs();
         twitchFaceDir.mkdirs();
         subIconsDir.mkdirs();
+        subSoundDir.mkdirs();
     }
 
     /**
@@ -115,6 +111,8 @@ public class Settings {
      */
     public void load() {
         loadWindow();
+        accountManager = new AccountManager();
+        accountManager.start();
         if (Utils.areFilesGood(accountsFile.getAbsolutePath())) {
             GUIMain.log("Loading accounts...");
             loadPropData(0);
@@ -130,6 +128,10 @@ public class Settings {
         if (Utils.areFilesGood(soundsFile.getAbsolutePath())) {
             GUIMain.log("Loading sounds...");
             loadSounds();
+        }
+        if (subSoundDir.exists() && subSoundDir.list().length > 0) {
+            GUIMain.log("Loading sub sounds...");
+            loadSubSounds();
         }
         if (Utils.areFilesGood(userColFile.getAbsolutePath())) {
             GUIMain.log("Loading user colors...");
@@ -170,8 +172,9 @@ public class Settings {
      * This handles saving all the settings that need saved.
      */
     public void save() {
+        saveLAF();
         saveWindow();
-        if (rememberBot || rememberNorm) savePropData(0);
+        if (accountManager.getUserAccount() != null || accountManager.getBotAccount() != null) savePropData(0);
         savePropData(1);
         if (!GUIMain.soundMap.isEmpty()) saveSounds();
         if (!GUIMain.faceMap.isEmpty()) saveFaces();
@@ -184,25 +187,6 @@ public class Settings {
         if (!GUIMain.donators.isEmpty()) saveDonators();
         if (!GUIMain.nameFaceMap.isEmpty()) saveNameFaces();
         saveConCommands();
-        saveLAF();
-    }
-
-    public static class Account {
-        String name, pass;
-
-        public Account(String name, String pass) {
-            this.name = name;
-            this.pass = pass;
-        }
-
-        public String getAccountName() {
-            return name;
-        }
-
-        public String getAccountPass() {
-            return pass;
-        }
-
     }
 
     /**
@@ -213,28 +197,25 @@ public class Settings {
         if (type == 0) {//accounts
             try {
                 p.load(new FileInputStream(accountsFile));
-                String userNorm = p.getProperty("UserNorm").toLowerCase();
-                String userNormPass = p.getProperty("UserNormPass");
-                if (userNorm != null && !userNorm.equals("") && userNormPass != null && !userNormPass.equals("") && userNormPass.contains("oauth")) {
-                    user = new Account(userNorm, userNormPass);
-                    rememberNorm = true;
+                String userNorm = p.getProperty("UserNorm", "").toLowerCase();
+                String userNormPass = p.getProperty("UserNormPass", "");
+                String status = p.getProperty("CanStatus", "false");
+                String commercial = p.getProperty("CanCommercial", "false");
+                if (!userNorm.equals("") && !userNormPass.equals("") && userNormPass.contains("oauth")) {
+                    boolean stat = Boolean.parseBoolean(status);
+                    boolean ad = Boolean.parseBoolean(commercial);
+                    accountManager.setUserAccount(new Account(userNorm, new Oauth(userNormPass, stat, ad)));
                 }
-                String userBot = p.getProperty("UserBot").toLowerCase();
-                String userBotPass = p.getProperty("UserBotPass");
-                if (userBot != null && !userBot.equals("") && userBotPass != null && !userBotPass.equals("") && userBotPass.contains("oauth")) {
-                    bot = new Account(userBot, userBotPass);
-                    rememberBot = true;
+                String userBot = p.getProperty("UserBot", "").toLowerCase();
+                String userBotPass = p.getProperty("UserBotPass", "");
+                if (!userBot.equals("") && !userBotPass.equals("") && userBotPass.contains("oauth")) {
+                    accountManager.setBotAccount(new Account(userBot, new Oauth(userBotPass, false, false)));
                 }
-                if (p.getProperty("AutoLog") != null && p.getProperty("AutoLog").equalsIgnoreCase("true")) {
-                    autoLogin = true;
+                if (accountManager.getUserAccount() != null) {
+                    accountManager.addTask(new Task(null, Task.Type.CREATE_VIEWER_ACCOUNT, null));
                 }
-                if (autoLogin) {
-                    if (user != null) {
-                        GUIMain.viewer = new IRCViewer(user.getAccountName(), user.getAccountPass());
-                    }
-                    if (bot != null) {
-                        GUIMain.bot = new IRCBot(bot.getAccountName(), bot.getAccountPass());
-                    }
+                if (accountManager.getBotAccount() != null) {
+                    accountManager.addTask(new Task(null, Task.Type.CREATE_BOT_ACCOUNT, null));
                 }
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
@@ -246,10 +227,6 @@ public class Settings {
                 defaultFaceDir = p.getProperty("FaceDir", "");
                 defaultSoundDir = p.getProperty("SoundDir", "");
                 useMod = Boolean.parseBoolean(p.getProperty("UseMod", "false"));
-                String files = p.getProperty("SubSound", "null");
-                if (!files.equalsIgnoreCase("null")) {
-                    subSound = new Sound(15, files.split(","));
-                }
                 try {
                     modIcon = new URL(p.getProperty("CustomMod", modIcon.toString()));
                 } catch (Exception e) {
@@ -278,6 +255,7 @@ public class Settings {
                 chatMax = Integer.parseInt(p.getProperty("MaxChat", "100"));
                 faceMaxHeight = Integer.parseInt(p.getProperty("FaceMaxHeight", "20"));
                 font = Utils.stringToFont(p.getProperty("Font", "Calibri, 18, Plain").split(","));
+                GUIMain.log("Loaded defaults!");
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
@@ -287,16 +265,19 @@ public class Settings {
     public void savePropData(int type) {
         Properties p = new Properties();
         if (type == 0) {//account data
-            if (rememberNorm) {
-                p.put("UserNorm", user.getAccountName());
-                p.put("UserNormPass", user.getAccountPass());
+            Account user = accountManager.getUserAccount();
+            Account bot = accountManager.getBotAccount();
+            if (user != null) {
+                Oauth key = user.getKey();
+                p.put("UserNorm", user.getName());
+                p.put("UserNormPass", key.getKey());
+                p.put("CanStatus", String.valueOf(key.canSetTitle()));
+                p.put("CanCommercial", String.valueOf(key.canPlayAd()));
             }
-            if (rememberBot) {
-                p.put("UserBot", bot.getAccountName());
-                p.put("UserBotPass", bot.getAccountPass());
-            }
-            if (autoLogin) {
-                p.put("AutoLog", "true");
+            if (bot != null) {
+                Oauth key = bot.getKey();
+                p.put("UserBot", bot.getName());
+                p.put("UserBotPass", key.getKey());
             }
             try {
                 p.store(new FileWriter(accountsFile), "Account Info");
@@ -324,16 +305,6 @@ public class Settings {
             p.put("ClearChat", String.valueOf(cleanupChat));
             p.put("LogChat", String.valueOf(logChat));
             p.put("Font", Utils.fontToString(font));
-            if (subSound != null) {
-                String toPut = "";
-                for (int i = 0; i < subSound.getSounds().data.length; i++) {
-                    toPut = toPut + subSound.getSounds().data[i];
-                    if (i != subSound.getSounds().data.length - 1) toPut = toPut + ",";
-                }
-                p.put("SubSound", toPut);
-            } else {
-                p.put("SubSound", "null");
-            }
             try {
                 p.store(new FileWriter(defaultsFile), "Default Settings");
             } catch (IOException e) {
@@ -372,7 +343,8 @@ public class Settings {
     public void saveSounds() {
         try {
             PrintWriter br = new PrintWriter(soundsFile);
-            for (String s : GUIMain.soundMap.keySet()) {
+            Set<String> keys = GUIMain.soundMap.keySet();
+            for (String s : keys) {
                 if (s != null && GUIMain.soundMap.get(s) != null) {
                     Sound boii = GUIMain.soundMap.get(s);//you're too young to play that sound, boy
                     StringBuilder sb = new StringBuilder();
@@ -388,6 +360,22 @@ public class Settings {
             }
             br.flush();
             br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    public void loadSubSounds() {
+        try {
+            File[] files = subSoundDir.listFiles();
+            if (files != null && files.length > 0) {
+                ArrayList<String> temp = new ArrayList<>();
+                for (File f : files) {
+                    temp.add(f.getAbsolutePath());
+                }
+                subSound = new Sound(5, temp.toArray(new String[temp.size()]));
+                GUIMain.log("Loaded sub sounds!");
+            }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -628,6 +616,11 @@ public class Settings {
         hardcoded.add(new ConsoleCommand("playad", ConsoleCommand.Action.PLAY_ADVERT, Constants.PERMISSION_DEV, null));
         hardcoded.add(new ConsoleCommand("settitle", ConsoleCommand.Action.SET_STREAM_TITLE, Constants.PERMISSION_MOD, null));
         hardcoded.add(new ConsoleCommand("setgame", ConsoleCommand.Action.SET_STREAM_GAME, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("startraffle", ConsoleCommand.Action.START_RAFFLE, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("addrafflewinner", ConsoleCommand.Action.ADD_RAFFLE_WINNER, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("stopraffle", ConsoleCommand.Action.STOP_RAFFLE, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("removerafflewinner", ConsoleCommand.Action.REMOVE_RAFFLE_WINNER, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("winners", ConsoleCommand.Action.SEE_WINNERS, Constants.PERMISSION_MOD, null));
 
         if (Utils.areFilesGood(ccommandsFile.getAbsolutePath())) {
             try {
@@ -709,8 +702,8 @@ public class Settings {
                 GUIMain.log(e.getMessage());
             }
         } else {
-            if (user != null) {
-                GUIMain.keywordMap.put(user.getAccountName(), Color.orange);
+            if (accountManager.getUserAccount() != null) {
+                GUIMain.keywordMap.put(accountManager.getUserAccount().getName(), Color.orange);
             }
         }
         GUIMain.log("Loaded keywords!");
@@ -781,7 +774,7 @@ public class Settings {
                 }
                 GUIMain.donators.add(new Donator(split[0], amount));
             }
-            GUIMain.log("Loaded Donators!");
+            GUIMain.log("Loaded donators!");
             br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -876,9 +869,10 @@ public class Settings {
                 boolean isSelected = Boolean.parseBoolean(split[1]);
                 if (isSingle) {
                     String channel = split[2];
-                    //todo join the channel here? or pass it to the accountmanager which is on heartbeat thread?
-                    if (GUIMain.viewer != null) GUIMain.viewer.doConnect(channel);
-                    if (GUIMain.bot != null) GUIMain.bot.doConnect(channel);
+                    if (GUIMain.currentSettings.accountManager.getUserAccount() != null) {
+                        String channelName = "#" + channel;
+                        GUIMain.channelSet.add(channelName);
+                    }
                     ChatPane cp = ChatPane.createPane(channel);
                     GUIMain.chatPanes.put(cp.getChannel(), cp);
                     GUIMain.channelPane.insertTab(cp.getChannel(), null, cp.getScrollPane(), null, cp.getIndex());
@@ -889,9 +883,10 @@ public class Settings {
                     String[] channels = split[4].split(",");
                     ArrayList<ChatPane> cps = new ArrayList<>();
                     for (String c : channels) {
-                        //todo join the channel here? or pass it to the accountmanager which is on heartbeat thread?
-                        if (GUIMain.viewer != null) GUIMain.viewer.doConnect(c);
-                        if (GUIMain.bot != null) GUIMain.bot.doConnect(c);
+                        if (GUIMain.currentSettings.accountManager.getUserAccount() != null) {
+                            String channelName = "#" + c;
+                            GUIMain.channelSet.add(channelName);
+                        }
                         ChatPane cp = ChatPane.createPane(c);
                         GUIMain.chatPanes.put(cp.getChannel(), cp);
                         cps.add(cp);
@@ -908,7 +903,7 @@ public class Settings {
                 }
             }
             GUIMain.channelPane.setSelectedIndex(index);
-            GUIMain.log("Loaded Channels and Tabs!");
+            GUIMain.log("Loaded tabs!");
             br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());

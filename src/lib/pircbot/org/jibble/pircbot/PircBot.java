@@ -14,6 +14,7 @@ found at http://www.jibble.org/licenses/
 
 package lib.pircbot.org.jibble.pircbot;
 
+import gui.GUIMain;
 import irc.MessageHandler;
 import util.Constants;
 
@@ -100,35 +101,13 @@ public class PircBot implements ReplyConstants {
         isSlave = true;
         this.parent = parent;
         setNick(parent.getNick());
+        setPassword(parent.getPassword());
         System.out.println("CREATED CHILD ACCOUNT");
     }
 
     private PircBot parent = null;
     private PircBot child = null;
     private boolean isSlave = false;
-
-    /**
-     * Attempt to connect to the specified IRC server.
-     * The onConnect method is called upon success.
-     *
-     * @param hostname The hostname of the server to connect to.
-     */
-    public final synchronized void connect(String hostname) throws IOException {
-        connect(hostname, 6667, null);
-    }
-
-    //TODO THESE TWO MAY BE NEEDED FOR SRL
-
-    /**
-     * Attempt to connect to the specified IRC server and port number.
-     * The onConnect method is called upon success.
-     *
-     * @param hostname The hostname of the server to connect to.
-     * @param port     The port number to connect to on the server..
-     */
-    public final synchronized void connect(String hostname, int port) throws IOException {
-        connect(hostname, port, null);
-    }
 
 
     /**
@@ -138,16 +117,15 @@ public class PircBot implements ReplyConstants {
      *
      * @param hostname The hostname of the server to connect to.
      * @param port     The port number to connect to on the server.
-     * @param password The password to use to join the server.
      */
-    public final synchronized boolean connect(String hostname, int port, String password) {
+    public final synchronized boolean connect(String hostname, int port) {
 
         if (isConnected()) {
             return false;
         }
         _server = hostname;
         _port = port;
-        _password = password;
+        if (_password == null || "".equals(_password)) return false;
 
         // Don't clear the outqueue - there might be something important in it!
 
@@ -163,6 +141,7 @@ public class PircBot implements ReplyConstants {
             socketIn = socket.getInputStream();
             socketOut = socket.getOutputStream();
         } catch (Exception e) {
+            GUIMain.log(e.getMessage());
             return false;
         }
 
@@ -190,9 +169,7 @@ public class PircBot implements ReplyConstants {
         BufferedWriter bwriter = new BufferedWriter(outputStreamWriter);
         _outputThread = new OutputThread(this, _outQueue, bwriter);
         // Attempt to join the server.
-        if (password != null && !password.equals("")) {
-            _outputThread.sendRawLine("PASS " + password);
-        }
+        _outputThread.sendRawLine("PASS " + _password);
         _outputThread.sendRawLine("NICK " + getNick());
 
         _inputThread = new InputThread(this, socket, breader);
@@ -250,11 +227,11 @@ public class PircBot implements ReplyConstants {
 
         // Now start the outputThread that will be used to send all messages.
         _outputThread.start();
-        onConnect();
+        getHandler().onConnect();
         if (!isSlave && child == null) {
             child = new PircBot(this);
             // if (!child.getNick().contains("bot")) child.setVerbose(true);
-            if (child.connect(hostname, port, password)) {
+            if (child.connect(hostname, port)) {
                 System.out.println("CHILD HAS CONNECTED!");
             }
         }
@@ -274,7 +251,7 @@ public class PircBot implements ReplyConstants {
         if (getServer() == null || getPassword() == null || getPort() == -1) {
             return;
         }
-        connect(getServer(), getPort(), getPassword());
+        connect(getServer(), getPort());
     }
 
 
@@ -294,45 +271,12 @@ public class PircBot implements ReplyConstants {
 
 
     /**
-     * Starts an ident server (Identification Protocol Server, RFC 1413).
-     * <p/>
-     * Most IRC servers attempt to contact the ident server on connecting
-     * hosts in order to determine the user's identity.  A few IRC servers
-     * will not allow you to connect unless this information is provided.
-     * <p/>
-     * So when a PircBot is run on a machine that does not run an ident server,
-     * it may be necessary to call this method to start one up.
-     * <p/>
-     * Calling this method starts up an ident server which will respond with
-     * the login provided by calling getLogin() and then shut down immediately.
-     * It will also be shut down if it has not been contacted within 60 seconds
-     * of creation.
-     * <p/>
-     * If you require an ident response, then the correct procedure is to start
-     * the ident server and then connect to the IRC server.  The IRC server may
-     * then contact the ident server to get the information it needs.
-     * <p/>
-     * The ident server will fail to start if there is already an ident server
-     * running on port 113, or if you are running as an unprivileged user who
-     * is unable to create a server socket on that port number.
-     * <p/>
-     * If it is essential for you to use an ident server when connecting to an
-     * IRC server, then make sure that port 113 on your machine is visible to
-     * the IRC server so that it may contact the ident server.
-     *
-     * @since PircBot 0.9c
-     */
-    //public final void startIdentServer() {
-    //    new IdentServer(this, getLogin()); //TODO may be needed for SRL!
-    //}
-
-
-    /**
      * Joins a channel.
      *
      * @param channel The name of the channel to join (eg "#cs").
      */
     public synchronized final void joinChannel(String channel) {
+        if (isInChannel(channel)) return;
         sendRawLine("JOIN " + channel);
         if (child != null) child.joinChannel(channel);
         if (channelManager != null) channelManager.addChannel(new Channel(channel, new User(getNick())));
@@ -345,6 +289,7 @@ public class PircBot implements ReplyConstants {
      * @param channel The name of the channel to leave.
      */
     public synchronized final void partChannel(String channel) {
+        if (!isInChannel(channel)) return;
         sendRawLine("PART " + channel);
         if (child != null) child.partChannel(channel);
         if (channelManager != null) channelManager.removeChannel(channel);
@@ -418,7 +363,6 @@ public class PircBot implements ReplyConstants {
      *
      * @param target  The name of the channel or user nick to send to.
      * @param message The message to send.
-     * @see Colors
      */
     public final void sendMessage(String target, String message) {
         _outQueue.add("PRIVMSG " + target + " :" + message);
@@ -643,42 +587,6 @@ public class PircBot implements ReplyConstants {
         }
 
     }
-
-
-    /**
-     * This method is called once the PircBot has successfully connected to
-     * the IRC server.
-     * <p/>
-     * The implementation of this method in the PircBot abstract class
-     * performs no actions and may be overridden as required.
-     *
-     * @since PircBot 0.9.6
-     */
-    protected void onConnect() {
-    }
-
-
-    /**
-     * This method carries out the actions to be performed when the PircBot
-     * gets disconnected.  This may happen if the PircBot quits from the
-     * server, or if the connection is unexpectedly lost.
-     * <p/>
-     * Disconnection from the IRC server is detected immediately if either
-     * we or the server close the connection normally. If the connection to
-     * the server is lost, but neither we nor the server have explicitly closed
-     * the connection, then it may take a few minutes to detect (this is
-     * commonly referred to as a "ping timeout").
-     * <p/>
-     * If you wish to get your IRC bot to automatically rejoin a server after
-     * the connection has been lost, then this is probably the ideal method to
-     * override to implement such functionality.
-     * <p/>
-     * The implementation of this method in the PircBot abstract class
-     * performs no actions and may be overridden as required.
-     */
-    protected void onDisconnect() {
-    }
-
 
     /**
      * This method is called by the PircBot when a numeric response
@@ -911,6 +819,10 @@ public class PircBot implements ReplyConstants {
         _nick = nick;
     }
 
+    public void setPassword(String password) {
+        _password = password;
+    }
+
 
     /**
      * Sets the internal version of the Bot.  This should be set before joining
@@ -1130,10 +1042,9 @@ public class PircBot implements ReplyConstants {
      * @since PircBot 0.9.9
      */
     public boolean equals(Object o) {
-        // This probably has the same effect as Object.equals, but that may change...
         if (o instanceof PircBot) {
             PircBot other = (PircBot) o;
-            return other == this;
+            return this.getNick().equals(other.getNick()) && this.getPassword().equals(other.getPassword());
         }
         return false;
     }
@@ -1206,12 +1117,12 @@ public class PircBot implements ReplyConstants {
      * @since PircBot 1.0.0
      */
     public synchronized final User[] getUsers(String channel) {
-        return channelManager.getChannel(channel).getUsers();
+        return isInChannel(channel) ? channelManager.getChannel(channel).getUsers() : new User[]{};
     }
 
     public synchronized User getUser(String channel, String user) {
         if (!channel.contains("#")) channel = "#" + channel;
-        return channelManager.getUser(channel, user);
+        return getChannelManager().getUser(channel, user);
     }
 
 
@@ -1237,7 +1148,8 @@ public class PircBot implements ReplyConstants {
      * @return The channel object or null if it doesn't exist.
      */
     public synchronized Channel getChannel(String name) {
-        return channelManager.getChannel(name);
+        if (channelManager == null) return null;
+        else return channelManager.getChannel(name);
     }
 
     public synchronized boolean isInChannel(String channel) {
@@ -1297,8 +1209,9 @@ public class PircBot implements ReplyConstants {
 
     public synchronized void handleColor(String channel, String line) {
         if (channel != null && line != null) {
-            String user = line.split(" ")[1];
-            String color = line.split(" ")[2];
+            String[] split = line.split(" ");
+            String user = split[1];
+            String color = split[2];
             Color c = null;
             try {
                 c = Color.decode(color);
@@ -1307,9 +1220,11 @@ public class PircBot implements ReplyConstants {
             User u = getUser(channel, user);
             if (u == null) {
                 u = new User(user);
+                u.setColor(c);
                 addUser(channel, u);
+            } else {
+                u.setColor(c);
             }
-            u.setColor(c);
         }
     }
 
@@ -1317,12 +1232,11 @@ public class PircBot implements ReplyConstants {
      * Add a user to the specified channel in our memory.
      */
     private synchronized void addUser(String channel, User user) {
-        if (isSlave) parent.channelManager.addUser(channel, user);
-        else channelManager.addUser(channel, user);
+        getChannelManager().addUser(channel, user);
     }
 
     private synchronized void removeUser(String chnl, String nick) {
-        channelManager.removeUser(chnl, nick);
+        getChannelManager().removeUser(chnl, nick);
     }
 
     /**

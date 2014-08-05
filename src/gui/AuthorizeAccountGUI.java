@@ -1,6 +1,8 @@
 package gui;
 
-import util.Settings;
+import irc.Account;
+import irc.Oauth;
+import irc.Task;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,11 +14,19 @@ import java.net.URI;
  */
 
 /**
+ * This GUI handles authorizing Botnak to handle your main account.
+ * <p/>
+ * Botnak does not generate an Oauth for your bot account.
+ *
  * @author Nick K
  */
 public class AuthorizeAccountGUI extends JFrame {
     public AuthorizeAccountGUI() {
         initComponents();
+        if (GUIMain.currentSettings.accountManager.getUserAccount() != null) {
+            accountNameField.setText(GUIMain.currentSettings.accountManager.getUserAccount().getName());
+            oAuthField.setText(GUIMain.currentSettings.accountManager.getUserAccount().getKey().getKey());
+        }
     }
 
     private void authorizeButtonActionPerformed() {
@@ -39,8 +49,13 @@ public class AuthorizeAccountGUI extends JFrame {
     }
 
     private void closeButtonActionPerformed() {
-        if (accountNameField.getText().length() > 0 && oAuthField.getPassword().length > 5) {
-            GUIMain.currentSettings.user = new Settings.Account(accountNameField.getText(), new String(oAuthField.getPassword()));
+        if (GUIMain.currentSettings.accountManager.getUserAccount() == null) {
+            if (accountNameField.getText().length() > 0 && oAuthField.getPassword().length > 5) {
+                GUIMain.currentSettings.accountManager.setUserAccount(
+                        new Account(accountNameField.getText().toLowerCase(),
+                                new Oauth("oauth:" + new String(oAuthField.getPassword()), boxEditStream.isSelected(), boxCommercial.isSelected())));
+                GUIMain.currentSettings.accountManager.addTask(new Task(null, Task.Type.CREATE_VIEWER_ACCOUNT, null));
+            }
         }
         dispose();
     }

@@ -32,16 +32,21 @@ public class Message {
     }
 
     /**
-     * Constructs a sub notify message.
+     * Constructs either a sub or ban notify message.
      *
-     * @param channel The channel the new sub is for.
-     * @param newSub  The new sub's name.
+     * @param channel The channel the incident happened.
+     * @param user    The user who subbed/was banned.
+     * @param type    The type of the message.
+     * @param content The content of the message.
      */
-    public Message(String channel, String newSub) {
-        content = " " + newSub + " has just subscribed!";
+    public Message(String channel, String user, MessageType type, String content) {
+        if (type == MessageType.SUB_NOTIFY) {
+            this.content = " " + user + " has just subscribed!";
+        } else if (type == MessageType.BAN_NOTIFY) {
+            this.content = content;
+        }
         this.channel = channel;
-        sender = newSub;
-        type = MessageType.SUB_NOTIFY;
+        this.type = type;
     }
 
     /**
@@ -80,7 +85,8 @@ public class Message {
         NORMAL_MESSAGE,
         ACTION_MESSAGE,
         LOG_MESSAGE,
-        SUB_NOTIFY
+        SUB_NOTIFY,
+        BAN_NOTIFY
     }
 
 }

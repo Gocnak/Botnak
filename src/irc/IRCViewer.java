@@ -1,8 +1,6 @@
 package irc;
 
 import gui.GUIMain;
-import lib.pircbot.org.jibble.pircbot.PircBot;
-import util.Settings;
 import util.Utils;
 
 import java.awt.*;
@@ -10,86 +8,21 @@ import java.awt.*;
 
 public class IRCViewer extends MessageHandler {
 
-    String name, pass;
-
     BanQueue bq = null;
-    private PircBot viewer;
 
-    public PircBot getViewer() {
-        return viewer;
-    }
-
-    public String getMaster() {
-        return name;
-    }
-
-    public IRCViewer(String user, String password) {
-        if (GUIMain.currentSettings.user == null) {//someone clicked "login"
-            name = user;
-            pass = password;
-            GUIMain.currentSettings.user = new Settings.Account(name, pass);
-            GUIMain.currentSettings.loadKeywords();//set that name keyword
-        } else {// it was loaded from file
-            name = GUIMain.currentSettings.user.getAccountName();
-            pass = GUIMain.currentSettings.user.getAccountPass();
+    public IRCViewer() {
+        if (bq == null || !bq.isAlive()) {
+            bq = new BanQueue();
+            bq.start();
         }
-        viewer = new PircBot(this);
-        viewer.setVerbose(true);//TODO remove dis
-        viewer.setNick(user);
-        try {
-            /*
-            TODO
-            put this in a ConnectThread, which will handle all (re)connections
-            for the PircBot.
-
-            it's changed to a boolean now, so we can rid the try{}catch block and use
-            the outcome of the boolean to determine a reconnect
-
-            also I should make a cancel listener for that
-             */
-            viewer.connect("irc.twitch.tv", 6667, pass);
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-        viewer.sendRawLine("TWITCHCLIENT 3");
-        if (GUIMain.loadedStreams()) {
-            for (String s : GUIMain.channelSet) {
-                doConnect(s);
-            }
-        }
-        try {
-            EventQueue.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    if (bq == null || !bq.isAlive()) {
-                        bq = new BanQueue();
-                        bq.start();
-                    }
-                }
-            });
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-        GUIMain.log("Loaded User: " + name + "!");
-        GUIMain.viewer = this;
     }
 
     public void doConnect(String channel) {
-        String channelName = "#" + channel;
-        if (!viewer.isConnected()) {
-            try {
-                //TODO see the todo above in the constructor
-                viewer.connect("irc.twitch.tv", 6667, pass);
-            } catch (Exception e) {
-                GUIMain.log(e.getMessage());
-            }
-        } else {
-            if (!viewer.isInChannel(channelName)) {
-                viewer.joinChannel(channelName);
-                GUIMain.channelSet.add(channel);
-                if (GUIMain.currentSettings.logChat) Utils.logChat(null, channel, 0);
-            }
-        }
+        channel = channel.startsWith("#") ? channel : "#" + channel;
+        GUIMain.currentSettings.accountManager.addTask(
+                new Task(GUIMain.currentSettings.accountManager.getViewer(), Task.Type.JOIN_CHANNEL, channel));
+        if (GUIMain.currentSettings.logChat) Utils.logChat(null, channel, 0);
+        if (!GUIMain.channelSet.contains(channel)) GUIMain.channelSet.add(channel);
     }
 
     /**
@@ -100,9 +33,9 @@ public class IRCViewer extends MessageHandler {
      */
     public void doLeave(String channel) {
         if (!channel.startsWith("#")) channel = "#" + channel;
-        if (viewer.isInChannel(channel)) {
-            viewer.partChannel(channel);
-        }
+        GUIMain.currentSettings.accountManager.addTask(
+                new Task(GUIMain.currentSettings.accountManager.getViewer(), Task.Type.LEAVE_CHANNEL, channel));
+        GUIMain.channelSet.remove(channel);
     }
 
     /**
@@ -111,17 +44,13 @@ public class IRCViewer extends MessageHandler {
      * @param forget If true, will forget the user.
      */
     public synchronized void close(boolean forget) {
-        GUIMain.log("Logging out of user: " + name);
-        for (String s : viewer.getChannels()) {
-            doLeave(s);
-        }
-        viewer.disconnect();
-        viewer.dispose();
+        GUIMain.log("Logging out of user: " + GUIMain.currentSettings.accountManager.getUserAccount().getName());
+        GUIMain.currentSettings.accountManager.addTask(
+                new Task(GUIMain.currentSettings.accountManager.getViewer(), Task.Type.DISCONNECT, null));
         if (bq != null && !bq.isInterrupted()) bq.interrupt();
         if (forget) {
-            GUIMain.currentSettings.user = null;
+            GUIMain.currentSettings.accountManager.setUserAccount(null);
         }
-        viewer = null;
         GUIMain.viewer = null;
     }
 
@@ -175,7 +104,7 @@ public class IRCViewer extends MessageHandler {
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                GUIMain.onMessage(new Message(channel, newSub));
+                GUIMain.onMessage(new Message(channel, newSub, Message.MessageType.SUB_NOTIFY, null));
             }
         });
     }
@@ -202,4 +131,11 @@ public class IRCViewer extends MessageHandler {
         }
     }
 
+    @Override
+    public void onConnect() {
+        for (String channel : GUIMain.channelSet) {
+            doConnect(channel);
+        }
+        GUIMain.updateTitle(null);
+    }
 }

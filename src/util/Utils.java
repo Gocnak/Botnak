@@ -14,6 +14,7 @@ import lib.scalr.Scalr;
 import sound.Sound;
 
 import javax.imageio.ImageIO;
+import javax.net.ssl.HttpsURLConnection;
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
@@ -241,6 +242,7 @@ public class Utils {
      *                2 = shutdown
      */
     public static void logChat(String[] message, String channel, int type) {
+        if (channel.startsWith("#")) channel = channel.substring(1);
         try {
             PrintWriter out = new PrintWriter(new BufferedWriter(
                     new FileWriter(new File(GUIMain.currentSettings.logDir.getAbsolutePath() + File.separator + channel + ".txt"), true)));
@@ -315,6 +317,74 @@ public class Utils {
             count = -1;
         }
         return count;
+    }
+
+    /**
+     * Gets the status of a channel, which is the title and game of the stream.
+     *
+     * @param channel The channel to get the status of.
+     * @return A string array with the status as first index and game as second.
+     */
+    public static String[] getStatusOfStream(String channel) {
+        String[] toRet = new String[2];
+        try {
+            URL twitch = new URL("https://api.twitch.tv/kraken/channels/" + channel);
+            BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
+            String line = br.readLine();
+            if (line != null) {
+                JSONObject base = new JSONObject(line);
+                if (!base.isNull("status")) {
+                    toRet[0] = base.getString("status");
+                    if (toRet[0].equals("")) {
+                        toRet[0] = "Untitled Broadcast";
+                    }
+                }
+                if (base.isNull("game")) {
+                    toRet[1] = "";
+                } else {
+                    toRet[1] = base.getString("game");
+                }
+            }
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+        return toRet;
+    }
+
+    /**
+     * Gets the title of a given channel.
+     *
+     * @param channel The channel to get the title of.
+     * @return The title of the stream.
+     */
+    public static String getTitleOfStream(String channel) {
+        String[] status = getStatusOfStream(channel);
+        return status[0];
+    }
+
+    /**
+     * Gets the game of a given channel.
+     *
+     * @param channel The channel to get the game of.
+     * @return An empty string if not playing, otherwise the game being played.
+     */
+    public static String getGameOfStream(String channel) {
+        String[] status = getStatusOfStream(channel);
+        return status[1];
+    }
+
+
+    //https://api.twitch.tv/kraken/channels/gocnak?oauth=BLAH&channel[status]=Blah!&channel[game]=Half-Life+2&channel[delay]=0
+    //https://github.com/justintv/Twitch-API/blob/master/v3_resources/channels.md
+    public static void setTitleOfStream(String key, String channel, String title) {
+        try {
+            URL twitch = new URL("https://api.twitch.tv/kraken/channels/" + channel);
+            HttpsURLConnection c = (HttpsURLConnection) twitch.openConnection();
+            //TODO figure this out
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
     }
 
 
@@ -397,6 +467,7 @@ public class Utils {
                     if (areFilesGood(i.getFileLoc())) {
                         return new File(i.getFileLoc()).toURI().toURL();
                     } else {
+                        //This updates the icon, all you need to do is remove the file
                         GUIMain.subIconSet.remove(i);
                         break;
                     }
@@ -432,7 +503,7 @@ public class Utils {
     /**
      * Loads the default Twitch faces. This downloads to the local folder in
      * <p/>
-     * /My Documents/Botnak/Faces/
+     * /My Documents/Botnak/TwitchFaces/
      * <p/>
      * It also checks to see if you may be missing a default face, and downloads it.
      * <p/>
@@ -440,20 +511,7 @@ public class Utils {
      */
     public static void loadDefaultFaces() {
         try {
-            File f = GUIMain.currentSettings.twitchFaceFile;
-            Date d = new Date(f.lastModified());
-            //If it's been 6+ hours, check the faces.
-            if (d.before(new Date(System.currentTimeMillis() - 21600000))) {
-                EventQueue.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        faceCheck.start();
-                    }
-                });
-            } else {
-                GUIMain.log("Loaded Twitch faces!");
-                GUIMain.doneWithTwitchFaces = true;
-            }
+            faceCheck.start();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -465,13 +523,13 @@ public class Utils {
             HashSet<StringArray> fromSite = buildMap();
             if (GUIMain.currentSettings.twitchFaceDir != null) {
                 int count = 0;
-                if (GUIMain.currentSettings.twitchFaceDir.list().length > 0) {//has (some... all?) files
+                String[] files = GUIMain.currentSettings.twitchFaceDir.list();
+                if (files.length > 0) {//has (some... all?) files
                     for (StringArray pick : fromSite) {//check default twitch faces...
                         String regex = pick.data[0];
                         String URL = pick.data[1];
                         String fileTheo = pick.data[2];//theoretically, you should have it
                         boolean flag = false;
-                        String[] files = GUIMain.currentSettings.twitchFaceDir.list();
                         for (String fileActual : files) {
                             if (fileActual.equals(fileTheo)) {//but do you actually have it?
                                 TwitchFace face = GUIMain.twitchFaceMap.get(removeExt(fileTheo));
@@ -493,7 +551,7 @@ public class Utils {
                             count++;
                         }
                     }
-                } else {//DOWNLOAD THEM ALLLL
+                } else {//DOWNLOAD THEM ALL
                     for (StringArray pick : fromSite) {
                         String regex = pick.data[0];
                         String URL = pick.data[1];
@@ -513,7 +571,7 @@ public class Utils {
 
     /**
      * Downloads a face off of the internet using the given URL and stores it in the given
-     * directory with the given filename and extension. The regex (or "name") of the sound is put in the map
+     * directory with the given filename and extension. The regex (or "name") of the face is put in the map
      * for later use/comparison.
      * <p/>
      *
@@ -600,7 +658,7 @@ public class Utils {
             URL url = new URL("http://api.twitch.tv/kraken/chat/emoticons?on_site=1");
             BufferedReader irs = new BufferedReader(new InputStreamReader(url.openStream()));
             String line;
-            while ((line = irs.readLine()) != null) {
+            while (!GUIMain.shutDown && (line = irs.readLine()) != null) {
                 JSONObject init = new JSONObject(line);
                 if (init.length() == 2) {
                     JSONArray emotes = init.getJSONArray("emoticons");
@@ -652,7 +710,8 @@ public class Utils {
         try {
             Set<String> set = GUIMain.faceMap.keySet();
             for (String name : set) {
-                String regex = GUIMain.faceMap.get(name).getRegex();
+                Face f = GUIMain.faceMap.get(name);
+                String regex = f.getRegex();
                 if (!checkRegex(regex)) continue;
                 Pattern p = Pattern.compile(regex);
                 Matcher m = p.matcher(message);
@@ -660,12 +719,12 @@ public class Utils {
                     final SimpleAttributeSet attrs = new SimpleAttributeSet(
                             //finds the index of the face while not replacing the old V ones
                             doc.getCharacterElement(start + m.start()).getAttributes());
-                    if (!areFilesGood(GUIMain.faceMap.get(name).getFilePath())) {// the file doesn't exist/didn't download right
+                    if (!areFilesGood(f.getFilePath())) {// the file doesn't exist/didn't download right
                         break;
                     }
                     try {
                         StyleConstants.setIcon(attrs,
-                                sizeIcon(new File(GUIMain.faceMap.get(name).getFilePath()).toURI().toURL()));
+                                sizeIcon(new File(f.getFilePath()).toURI().toURL()));
                     } catch (Exception e) {
                         GUIMain.log(e.getMessage());
                     }
@@ -719,32 +778,41 @@ public class Utils {
      * @param message The message itself.
      */
     public static void handleTwitchFaces(StyledDocument doc, int start, String message) {
+        String[] syn = {"\\b", "\\b", "\\^", "\\^"};
+        String[] syn2 = {"\\b", "\\$", "\\$", "\\b"};
         if (!GUIMain.doneWithTwitchFaces) return;
         try {
             Set<String> set = GUIMain.twitchFaceMap.keySet();
             for (String name : set) {
-                String regex = GUIMain.twitchFaceMap.get(name).getRegex();
-                if (!checkRegex(regex)) continue;
-                if (!GUIMain.twitchFaceMap.get(name).isEnabled()) continue;
-                regex = "\\b" + regex + "\\b";
-                Pattern p = Pattern.compile(regex);
-                Matcher m = p.matcher(message);
-                while (m.find() && !GUIMain.shutDown) {
-                    final SimpleAttributeSet attrs = new SimpleAttributeSet(
-                            //finds the index of the face while not replacing the old V ones
-                            doc.getCharacterElement(start + m.start()).getAttributes());
-                    if (!areFilesGood(GUIMain.twitchFaceMap.get(name).getFilePath())) {// the file doesn't exist/didn't download right
+                in:
+                for (int i = 0; i < 4; i++) {
+                    TwitchFace tf = GUIMain.twitchFaceMap.get(name);
+                    String regex = tf.getRegex();
+                    if (!checkRegex(regex)) {
+                        GUIMain.log("FAILED FACE: " + name + " with regex: " + regex);
                         break;
                     }
-                    try {
-                        StyleConstants.setIcon(attrs,
-                                sizeIcon(new File(GUIMain.twitchFaceMap.get(name).getFilePath()).toURI().toURL()));
-                    } catch (Exception e) {
-                        GUIMain.log(e.getMessage());
+                    if (!tf.isEnabled()) break;
+                    regex = syn[i] + regex + syn2[i];
+                    Pattern p = Pattern.compile(regex);
+                    Matcher m = p.matcher(message);
+                    while (m.find() && !GUIMain.shutDown) {
+                        final SimpleAttributeSet attrs = new SimpleAttributeSet(
+                                //finds the index of the face while not replacing the old V ones
+                                doc.getCharacterElement(start + m.start()).getAttributes());
+                        if (!areFilesGood(tf.getFilePath())) {// the file doesn't exist/didn't download right
+                            break in;
+                        }
+                        try {
+                            StyleConstants.setIcon(attrs,
+                                    sizeIcon(new File(tf.getFilePath()).toURI().toURL()));
+                        } catch (Exception e) {
+                            GUIMain.log(e.getMessage());
+                        }
+                        doc.remove(start + m.start(), m.group().length());
+                        //            sets the index to the last index found, and adds the icon with the face text
+                        doc.insertString(start + m.start(), m.group(), attrs);
                     }
-                    doc.remove(start + m.start(), m.group().length());
-                    //            sets the index to the last index found, and adds the icon with the face text
-                    doc.insertString(start + m.start(), m.group(), attrs);
                 }
             }
         } catch (BadLocationException e1) {
@@ -955,8 +1023,9 @@ public class Utils {
      * @return The console command, or null if the user didn't meet the requirements.
      */
     public static ConsoleCommand getConsoleCommand(String key, String channel, String user) {
-        if (!channel.contains(GUIMain.viewer.getMaster())) return null;
-        User u = GUIMain.viewer.getViewer().getUser(channel, user);
+        String master = GUIMain.currentSettings.accountManager.getUserAccount().getName();
+        if (!channel.contains(master)) return null;
+        User u = GUIMain.currentSettings.accountManager.getViewer().getUser(channel, user);
         if (u != null) {
             for (ConsoleCommand c : GUIMain.conCommands) {
                 if (key.equalsIgnoreCase(c.getTrigger())) {
@@ -984,7 +1053,7 @@ public class Utils {
                         if (u.isOp() || u.isAdmin() || u.isStaff()) {
                             permission = Constants.PERMISSION_MOD;
                         }
-                        if (GUIMain.viewer != null && GUIMain.viewer.getMaster().equals(user)) {
+                        if (GUIMain.viewer != null && master.equals(user)) {
                             permission = Constants.PERMISSION_DEV;
                         }
                         if (permission >= conPerm) {

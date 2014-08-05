@@ -11,6 +11,9 @@ import java.util.ArrayList;
 /**
  * Created by Nick on 1/4/14.
  * <p/>
+ *
+ * TODO: Rewrite this class to support components, as pulsing may come in handy for other things than tabs
+ *
  * This class is like a listener for tabs, but only for setting the colors of them.
  * Credit to http://www.coderanch.com/t/346366/GUI/java/macs-button-pulse
  * for the idea.

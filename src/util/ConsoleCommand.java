@@ -48,7 +48,12 @@ public class ConsoleCommand {
         REMOVE_NAME_FACE,
         SET_STREAM_TITLE,
         SET_STREAM_GAME,
-        PLAY_ADVERT
+        PLAY_ADVERT,
+        START_RAFFLE,
+        ADD_RAFFLE_WINNER,
+        REMOVE_RAFFLE_WINNER,
+        STOP_RAFFLE,
+        SEE_WINNERS
     }
 
     /**

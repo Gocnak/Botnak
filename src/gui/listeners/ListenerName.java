@@ -46,8 +46,8 @@ public class ListenerName extends MouseAdapter implements ActionListener {
                     JPopupMenu popupMenu = new JPopupMenu();
                     if (!(channel.equals("") || channel.equalsIgnoreCase("all"))) {
                         if (GUIMain.viewer != null) {
-                            User u = GUIMain.viewer.getViewer().getUser("#" + channel, name);//get the user in question
-                            User main = GUIMain.viewer.getViewer().getUser("#" + channel, GUIMain.viewer.getMaster());//get yourself
+                            User u = GUIMain.currentSettings.accountManager.getViewer().getUser("#" + channel, name);//get the user in question
+                            User main = GUIMain.currentSettings.accountManager.getViewer().getUser("#" + channel, GUIMain.currentSettings.accountManager.getUserAccount().getName());//get yourself
                             if ((main != null)) {
                                 //can't ban broadcaster or admin/staff
                                 int count = 0; //don't worry about it
@@ -100,23 +100,23 @@ public class ListenerName extends MouseAdapter implements ActionListener {
             String channel = "#" + GUIMain.channelPane.getTitleAt(GUIMain.channelPane.getSelectedIndex());
             if (text.startsWith("Ban")) {
                 if (GUIMain.viewer != null) {
-                    GUIMain.viewer.getViewer().sendMessage(channel, ".ban " + user);
+                    GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".ban " + user);
                 }
             } else if (text.startsWith("Purge")) {
                 if (GUIMain.viewer != null) {
-                    GUIMain.viewer.getViewer().sendMessage(channel, ".timeout " + user + " 1");
+                    GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".timeout " + user + " 1");
                 }
             } else if (text.startsWith("Timeout")) {
                 if (GUIMain.viewer != null) {
-                    GUIMain.viewer.getViewer().sendMessage(channel, ".timeout " + user);
+                    GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".timeout " + user);
                 }
             } else if (text.startsWith("Mod")) {
                 if (GUIMain.viewer != null) {
-                    GUIMain.viewer.getViewer().sendMessage(channel, ".mod " + user);
+                    GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".mod " + user);
                 }
             } else if (text.startsWith("Un-mod")) {
                 if (GUIMain.viewer != null) {
-                    GUIMain.viewer.getViewer().sendMessage(channel, ".unmod " + user);
+                    GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".unmod " + user);
                 }
             } else if (text.startsWith("Go to")) {
                 try {

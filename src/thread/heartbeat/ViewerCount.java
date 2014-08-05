@@ -15,7 +15,7 @@ public class ViewerCount extends HeartbeatThread {
     private String newTitle = null;
 
     public ViewerCount() {
-        toUpdate = new Timer(1500);
+        toUpdate = new Timer(3500);
     }
 
     @Override

@@ -196,8 +196,6 @@ public class DraggableTabbedPane extends JTabbedPane {
                                 menuItem.addActionListener(listener);
                                 popupMenu.add(menuItem);
 
-                                //TODO if (GUIMain.currentSettings.useVLC) menuItem = new JMenuItem("Watch stream");
-
                                 menuItem = new JMenuItem("Remove tab");
                                 menuItem.addActionListener(listener);
                                 popupMenu.add(menuItem);
