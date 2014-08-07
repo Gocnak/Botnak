@@ -493,7 +493,9 @@ public class Utils {
                     for (int i = 0; i < emotes.length(); i++) {
                         JSONObject emote = emotes.getJSONObject(i);
                         JSONObject imageStuff = emote.getJSONArray("images").getJSONObject(0);//3 is URL, 4 is height
-                        String regex = emote.getString("regex").replaceAll("&lt\\\\;", "<").replaceAll("&gt\\\\;", ">");
+                        String regex = emote.getString("regex")
+                            .replaceAll("\\\\&lt\\\\;", "\\<")
+                            .replaceAll("\\\\&gt\\\\;", "\\>");
                         if (imageStuff != null) {//split("-")[4] is the filename
                             String uRL = imageStuff.getString("url");
                             set.add(new StringArray(new String[]{regex, uRL, (uRL.split("-")[4] + ".png")}));
