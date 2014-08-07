@@ -778,41 +778,36 @@ public class Utils {
      * @param message The message itself.
      */
     public static void handleTwitchFaces(StyledDocument doc, int start, String message) {
-        String[] syn = {"\\b", "\\b", "\\^", "\\^"};
-        String[] syn2 = {"\\b", "\\$", "\\$", "\\b"};
         if (!GUIMain.doneWithTwitchFaces) return;
         try {
             Set<String> set = GUIMain.twitchFaceMap.keySet();
             for (String name : set) {
-                in:
-                for (int i = 0; i < 4; i++) {
-                    TwitchFace tf = GUIMain.twitchFaceMap.get(name);
-                    String regex = tf.getRegex();
-                    if (!checkRegex(regex)) {
-                        GUIMain.log("FAILED FACE: " + name + " with regex: " + regex);
+                TwitchFace tf = GUIMain.twitchFaceMap.get(name);
+                String regex = tf.getRegex();
+                if (!checkRegex(regex)) {
+                    GUIMain.log("FAILED FACE: " + name + " with regex: " + regex);
+                    break;
+                }
+                if (!tf.isEnabled()) break;
+                regex = "\\b" + regex + "\\b";
+                Pattern p = Pattern.compile(regex);
+                Matcher m = p.matcher(message);
+                while (m.find() && !GUIMain.shutDown) {
+                    final SimpleAttributeSet attrs = new SimpleAttributeSet(
+                            //finds the index of the face while not replacing the old V ones
+                            doc.getCharacterElement(start + m.start()).getAttributes());
+                    if (!areFilesGood(tf.getFilePath())) {// the file doesn't exist/didn't download right
                         break;
                     }
-                    if (!tf.isEnabled()) break;
-                    regex = syn[i] + regex + syn2[i];
-                    Pattern p = Pattern.compile(regex);
-                    Matcher m = p.matcher(message);
-                    while (m.find() && !GUIMain.shutDown) {
-                        final SimpleAttributeSet attrs = new SimpleAttributeSet(
-                                //finds the index of the face while not replacing the old V ones
-                                doc.getCharacterElement(start + m.start()).getAttributes());
-                        if (!areFilesGood(tf.getFilePath())) {// the file doesn't exist/didn't download right
-                            break in;
-                        }
-                        try {
-                            StyleConstants.setIcon(attrs,
-                                    sizeIcon(new File(tf.getFilePath()).toURI().toURL()));
-                        } catch (Exception e) {
-                            GUIMain.log(e.getMessage());
-                        }
-                        doc.remove(start + m.start(), m.group().length());
-                        //            sets the index to the last index found, and adds the icon with the face text
-                        doc.insertString(start + m.start(), m.group(), attrs);
+                    try {
+                        StyleConstants.setIcon(attrs,
+                                sizeIcon(new File(tf.getFilePath()).toURI().toURL()));
+                    } catch (Exception e) {
+                        GUIMain.log(e.getMessage());
                     }
+                    doc.remove(start + m.start(), m.group().length());
+                    //            sets the index to the last index found, and adds the icon with the face text
+                    doc.insertString(start + m.start(), m.group(), attrs);
                 }
             }
         } catch (BadLocationException e1) {
