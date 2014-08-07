@@ -789,7 +789,10 @@ public class Utils {
                     break;
                 }
                 if (!tf.isEnabled()) break;
-                regex = "\\b" + regex + "\\b";
+                if (!regex.matches("^\\W.*|.*\\W$")) {
+                    //boundary checks are only necessary for emotes that start and end with a word character.
+                    regex = "\\b" + regex + "\\b";
+                }
                 Pattern p = Pattern.compile(regex);
                 Matcher m = p.matcher(message);
                 while (m.find() && !GUIMain.shutDown) {
