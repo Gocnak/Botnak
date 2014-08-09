@@ -1,7 +1,9 @@
-package util;
+package util.misc;
 
 import gui.GUIMain;
 import lib.pircbot.org.jibble.pircbot.PircBot;
+import util.Timer;
+import util.Utils;
 
 import java.util.ArrayList;
 
@@ -93,7 +95,7 @@ public class Raffle extends Thread {
         int size = entrants.size();
         if (size > 0) {
             winner = entrants.get(Utils.random(0, size));
-            bot.sendMessage(channel, "CONGRATS TO " + winner + " !!!");
+            bot.sendMessage(channel, "CONGRATULATIONS TO " + winner + " !!!");
         } else {
             bot.sendMessage(channel, "Nobody entered the giveaway... BibleThump");
         }

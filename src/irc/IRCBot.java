@@ -6,11 +6,17 @@ import lib.pircbot.org.jibble.pircbot.User;
 import sound.Sound;
 import sound.SoundEngine;
 import sound.SoundEntry;
-import util.*;
+import util.Command;
+import util.ConsoleCommand;
+import util.Constants;
+import util.Utils;
+import util.misc.Raffle;
+import util.misc.Vote;
 
-import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 
 public class IRCBot extends MessageHandler {
 
@@ -20,31 +26,17 @@ public class IRCBot extends MessageHandler {
         return GUIMain.currentSettings.accountManager.getBot();
     }
 
-    public ArrayList<String> winners = new ArrayList<>();
-    public ArrayList<Raffle> raffles = new ArrayList<>();
+    public ArrayList<String> winners;
+    public ArrayList<Raffle> raffles;
+
+    private static Vote poll;
+    private long lastAd;
 
     public IRCBot() {
-        /*if (GUIMain.currentSettings.accountManager.getBotAccount() == null) {
-            GUIMain.currentSettings.bot = new Settings.Account(user, password);
-        }
-        bot = new PircBot(this);
-        bot.setNick(user);
-        if (GUIMain.viewer != null) masterChannel = GUIMain.viewer.getMaster();
-        GUIMain.updateTitle(null);
-        try {
-            bot.connect("irc.twitch.tv", 6667, password);
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-        bot.sendRawLineViaQueue("TWITCHCLIENT 3");
-        bot.setMessageDelay(3000);
-        if (GUIMain.loadedStreams()) {
-            for (String s : GUIMain.channelSet) {
-                doConnect(s);
-            }
-        }
-        GUIMain.log("Loaded Bot: " + user + "!");
-        GUIMain.bot = this;*/
+        raffles = new ArrayList<>();
+        winners = new ArrayList<>();
+        poll = null;
+        lastAd = -1;
     }
 
     @Override
@@ -277,17 +269,8 @@ public class IRCBot extends MessageHandler {
                             GUIMain.currentSettings.saveDonators();
                             break;
                         case SET_SUB_SOUND:
-                            String[] toRead = first.split(",");
-                            ArrayList<String> ar = new ArrayList<>();
-                            for (String s : toRead) {
-                                String filename = GUIMain.currentSettings.defaultSoundDir + File.separator + Utils.setExtension(s, ".wav");
-                                if (Utils.areFilesGood(filename)) {
-                                    ar.add(filename);
-                                }
-                            }
-                            if (!ar.isEmpty()) {
-                                GUIMain.currentSettings.subSound = new Sound(15, ar.toArray(new String[ar.size()]));
-                                getBot().sendMessage(channel, "Sub Sound Set!");
+                            if (GUIMain.currentSettings.loadSubSounds()) {
+                                getBot().sendMessage(channel, "Reloaded sub sounds!");
                             }
                             break;
                         case SET_SOUND_PERMISSION:
@@ -316,21 +299,60 @@ public class IRCBot extends MessageHandler {
                         case SET_STREAM_TITLE:
                             if (key != null) {
                                 if (key.canSetTitle()) {
-                                    //TODO set the title
+                                    String title = message.substring(message.indexOf(" ") + 1);
+                                    if (Utils.setTitleOfStream(key.getKey(), channel, title)) {
+                                        getBot().sendMessage(channel, "Title successfully updated to: " + title);
+                                    } else {
+                                        getBot().sendMessage(channel, "Error setting the title of the stream!");
+                                    }
                                 }
+                            }
+                            break;
+                        case SEE_STREAM_TITLE:
+                            String title = Utils.getTitleOfStream(channel);
+                            if (!"".equals(title)) {
+                                getBot().sendMessage(channel, "The title of the stream is: " + title);
+                            }
+                            break;
+                        case SEE_STREAM_GAME:
+                            String game = Utils.getGameOfStream(channel);
+                            if ("".equals(game)) {
+                                getBot().sendMessage(channel, "The streamer is currently not playing a game!");
+                            } else {
+                                getBot().sendMessage(channel, "The current game is: " + game);
                             }
                             break;
                         case SET_STREAM_GAME:
                             if (key != null) {
                                 if (key.canSetTitle()) {
-                                    //TODO set the game
+                                    String newGame = message.substring(message.indexOf(" ") + 1);
+                                    if (Utils.setGameOfStream(key.getKey(), channel, newGame)) {
+                                        getBot().sendMessage(channel, "The game has been set to: " + newGame);
+                                    } else {
+                                        getBot().sendMessage(channel, "Error in setting the game of the stream!");
+                                    }
                                 }
                             }
                             break;
                         case PLAY_ADVERT:
                             if (key != null) {
                                 if (key.canPlayAd()) {
-                                    //TODO play ad
+                                    try {
+                                        int length = Utils.getTime(first);
+                                        if (Utils.playAdvert(key.getKey(), channel, length)) {
+                                            getBot().sendMessage(channel, "Playing an ad for " + length + " seconds!");
+                                            lastAd = System.currentTimeMillis();
+                                        } else {
+                                            getBot().sendMessage(channel, "Error playing an ad!");
+                                            if (lastAd > 0 && ((System.currentTimeMillis() - lastAd) < 480000)) {
+                                                SimpleDateFormat sdf = new SimpleDateFormat("m:ss");
+                                                Date d = new Date(System.currentTimeMillis() - lastAd);
+                                                getBot().sendMessage(channel, "Last ad was was only " + sdf.format(d) + " ago!");
+                                            }
+                                        }
+                                    } catch (Exception e) {
+                                        GUIMain.log(e.getMessage());
+                                    }
                                 }
                             }
                             break;
@@ -338,13 +360,8 @@ public class IRCBot extends MessageHandler {
                             try {
                                 String timeString = split[2];
                                 try {
-                                    int time;
-                                    if (timeString.contains("m")) {//!startraffle <key> Xmin ?
-                                        timeString = timeString.substring(0, timeString.indexOf("m"));
-                                        time = Integer.parseInt(timeString) * 60;
-                                    } else {
-                                        time = Integer.parseInt(timeString);
-                                    }
+                                    int time = Utils.getTime(timeString);
+                                    if (time < 1) break;
                                     int perm = 0;
                                     //TODO select a parameter in Settings GUI that defines the default raffle
                                     if (split.length == 4) {
@@ -411,6 +428,51 @@ public class IRCBot extends MessageHandler {
                                 getBot().sendMessage(channel, "There are no recorded winners!");
                             }
                             break;
+                        case START_POLL:
+                            if (poll != null) {
+                                if (poll.isDone()) {
+                                    createPoll(channel, message);
+                                } else {
+                                    getBot().sendMessage(channel, "Cannot start a poll with one currently running!");
+                                }
+                            } else {
+                                createPoll(channel, message);
+                            }
+                            break;
+                        case POLL_RESULT:
+                            if (poll != null) {
+                                poll.printResults();
+                            } else {
+                                getBot().sendMessage(channel, "There never was a poll!");
+                            }
+                            break;
+                        case CANCEL_POLL:
+                            if (poll != null) {
+                                if (poll.isDone()) {
+                                    getBot().sendMessage(channel, "The poll is already finished!");
+                                } else {
+                                    poll.interrupt();
+                                    getBot().sendMessage(channel, "The poll has been stopped.");
+                                }
+                            } else {
+                                getBot().sendMessage(channel, "There is no current poll!");
+                            }
+                            break;
+                        case VOTE_POLL:
+                            if (poll != null) {
+                                if (!poll.isDone()) {
+                                    int option;
+                                    try {
+                                        option = Integer.parseInt(first);
+                                    } catch (Exception e) {
+                                        break;
+                                    }
+                                    poll.addVote(sender, option);
+                                }
+                            }
+                            break;
+                        default:
+                            break;
 
                     }
                 }
@@ -424,6 +486,19 @@ public class IRCBot extends MessageHandler {
         }
     }
 
+    //!startpoll time options
+    public void createPoll(String channel, String message) {
+        if (message.contains("]")) {//because what's the point of a poll with one option?
+            int first = message.indexOf(" ") + 1;
+            int second = message.indexOf(" ", first) + 1;
+            String[] split = message.split(" ");
+            int time = Utils.getTime(split[1]);
+            if (time > 0) {
+                poll = new Vote(channel, time, message.substring(second).split("\\]"));
+                poll.start();
+            }
+        }
+    }
 
     /**
      * Base trigger for sounds. Checks if a dev sound is not playing, if the general delay is up,
@@ -490,7 +565,6 @@ public class IRCBot extends MessageHandler {
         return false;
     }
 
-    //TODO overhaul this shit
     public void handleCommand(String channel, Command c) {
         if (c.getMessage().data.length != 0) {
             if (!c.getDelayTimer().isRunning()) {

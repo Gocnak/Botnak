@@ -14,7 +14,6 @@ import lib.scalr.Scalr;
 import sound.Sound;
 
 import javax.imageio.ImageIO;
-import javax.net.ssl.HttpsURLConnection;
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
@@ -24,7 +23,9 @@ import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,8 +44,8 @@ import java.util.regex.Pattern;
  */
 public class Utils {
 
-	static final int DOWNLOAD_MAX_FACE_HEIGHT = 26;
-	static final int DOWNLOAD_MAX_ICON_HEIGHT = 26;
+    static final int DOWNLOAD_MAX_FACE_HEIGHT = 26;
+    static final int DOWNLOAD_MAX_ICON_HEIGHT = 26;
 
     static Random r = new Random();
 
@@ -328,6 +329,7 @@ public class Utils {
     public static String[] getStatusOfStream(String channel) {
         String[] toRet = new String[2];
         try {
+            if (channel.contains("#")) channel = channel.replace("#", "");
             URL twitch = new URL("https://api.twitch.tv/kraken/channels/" + channel);
             BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
             String line = br.readLine();
@@ -374,19 +376,98 @@ public class Utils {
         return status[1];
     }
 
+    /**
+     * Sets the title of a stream.
+     *
+     * @param key     The oauth key which MUST be authorized to edit the status of a stream.
+     * @param channel The channel to edit.
+     * @param title   The new title.
+     * @return true if the title was edited, else false
+     */
+    public static boolean setTitleOfStream(String key, String channel, String title) {
+        return !title.equalsIgnoreCase(getTitleOfStream(channel)) && setStatusOfStream(key, channel, title, getGameOfStream(channel));
+    }
 
-    //https://api.twitch.tv/kraken/channels/gocnak?oauth=BLAH&channel[status]=Blah!&channel[game]=Half-Life+2&channel[delay]=0
-    //https://github.com/justintv/Twitch-API/blob/master/v3_resources/channels.md
-    public static void setTitleOfStream(String key, String channel, String title) {
+    /**
+     * Sets the game for a stream.
+     *
+     * @param key     The oauth key which MUST be authorized to edit the status of a stream.
+     * @param channel The channel to edit.
+     * @param game    The new game.
+     * @return true if the game was updated, else false
+     */
+    public static boolean setGameOfStream(String key, String channel, String game) {
+        return !game.equalsIgnoreCase(getGameOfStream(channel)) && setStatusOfStream(key, channel, getTitleOfStream(channel), game);
+    }
+
+    /**
+     * Sets the status of a stream.
+     *
+     * @param key     The oauth key which MUST be authorized to edit the status of a stream.
+     * @param channel The channel to edit.
+     * @param title   The title to set.
+     * @param game    The game to set.
+     * @return true if the status was successfully updated, else false
+     */
+    private static boolean setStatusOfStream(String key, String channel, String title, String game) {
+        boolean toReturn = false;
         try {
-            URL twitch = new URL("https://api.twitch.tv/kraken/channels/" + channel);
-            HttpsURLConnection c = (HttpsURLConnection) twitch.openConnection();
-            //TODO figure this out
+            if (channel.contains("#")) channel = channel.replace("#", "");
+            String request = "https://api.twitch.tv/kraken/channels/" + channel +
+                    "?channel[status]=" + URLEncoder.encode(title, "UTF-8") +
+                    "&channel[game]=" + URLEncoder.encode(game, "UTF-8") +
+                    "&oauth_token=" + key.split(":")[1] + "&_method=put";
+            URL twitch = new URL(request);
+            BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
+            String line = br.readLine();
+            if (line.contains(title) && line.contains(game)) {
+                toReturn = true;
+            }
+            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
+        return toReturn;
     }
 
+    /**
+     * Plays an ad on stream.
+     *
+     * @param key     The oauth key which MUST be authorized to play a commercial on a stream.
+     * @param channel The channel to play the ad for.
+     * @param length  How long
+     * @return true if the commercial played, else false.
+     */
+    public static boolean playAdvert(String key, String channel, int length) {
+        boolean toReturn = false;
+        try {
+            if ((length % 30) != 0 || length < 30 || length > 180) length = 30;//has to be divisible by 30 seconds
+            if (channel.contains("#")) channel = channel.replace("#", "");
+            String request = "https://api.twitch.tv/kraken/channels/" + channel + "/commercial";
+            URL twitch = new URL(request);
+            HttpURLConnection c = (HttpURLConnection) twitch.openConnection();
+            c.setRequestMethod("POST");
+            c.setDoOutput(true);
+            String toWrite = "length=" + length;
+            c.setRequestProperty("Authorization", "OAuth " + key.split(":")[1]);
+            c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            c.setRequestProperty("Content-Length", String.valueOf(toWrite.length()));
+
+            OutputStreamWriter op = new OutputStreamWriter(c.getOutputStream());
+            op.write(toWrite);
+            op.close();
+            try {
+                int response = c.getResponseCode();
+                toReturn = (response == 204);
+            } catch (Exception e) {
+                GUIMain.log(e.getMessage());
+            }
+            c.disconnect();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+        return toReturn;
+    }
 
     /**
      * Removes a file extension from a path.
@@ -665,7 +746,7 @@ public class Utils {
                     for (int i = 0; i < emotes.length(); i++) {
                         JSONObject emote = emotes.getJSONObject(i);
                         JSONObject imageStuff = emote.getJSONArray("images").getJSONObject(0);//3 is URL, 4 is height
-                        String regex = emote.getString("regex").replaceAll("&lt\\\\;", "<").replaceAll("&gt\\\\;", ">");
+                        String regex = emote.getString("regex").replaceAll("\\\\&lt\\\\;", "\\<").replaceAll("\\\\&gt\\\\;", "\\>");
                         if (imageStuff != null) {//split("-")[4] is the filename
                             String uRL = imageStuff.getString("url");
                             set.add(new StringArray(new String[]{regex, uRL, setExtension(uRL.split("-")[4], ".png")}));
@@ -778,43 +859,40 @@ public class Utils {
      * @param message The message itself.
      */
     public static void handleTwitchFaces(StyledDocument doc, int start, String message) {
-        String[] syn = {"\\b", "\\b", "\\^", "\\^"};
-        String[] syn2 = {"\\b", "\\$", "\\$", "\\b"};
-        if (!GUIMain.doneWithTwitchFaces) return;
+        if (!GUIMain.doneWithTwitchFaces) {
+            return;
+        }
         try {
             Set<String> set = GUIMain.twitchFaceMap.keySet();
             for (String name : set) {
-                in:
-                for (int i = 0; i < 4; i++) {
-                    TwitchFace tf = GUIMain.twitchFaceMap.get(name);
-                    String regex = tf.getRegex();
-                    if (!checkRegex(regex)) {
-                        GUIMain.log("FAILED FACE: " + name + " with regex: " + regex);
-                        break;
+                TwitchFace tf = GUIMain.twitchFaceMap.get(name);
+                String regex = tf.getRegex();
+                if (!tf.isEnabled()) continue;
+                if (!regex.matches("^\\W.*|.*\\W$")) {
+                    //boundary checks are only necessary for emotes that start and end with a word character.
+                    regex = "\\b" + regex + "\\b";
+                }
+                Pattern p = Pattern.compile(regex);
+                Matcher m = p.matcher(message);
+                while (m.find() && !GUIMain.shutDown) {
+                    final SimpleAttributeSet attrs = new SimpleAttributeSet(
+                            //finds the index of the face while not replacing the old V ones
+                            doc.getCharacterElement(start + m.start()).getAttributes());
+                    if (!areFilesGood(tf.getFilePath())) {// the file doesn't exist/didn't download right
+                        return;
                     }
-                    if (!tf.isEnabled()) break;
-                    regex = syn[i] + regex + syn2[i];
-                    Pattern p = Pattern.compile(regex);
-                    Matcher m = p.matcher(message);
-                    while (m.find() && !GUIMain.shutDown) {
-                        final SimpleAttributeSet attrs = new SimpleAttributeSet(
-                                //finds the index of the face while not replacing the old V ones
-                                doc.getCharacterElement(start + m.start()).getAttributes());
-                        if (!areFilesGood(tf.getFilePath())) {// the file doesn't exist/didn't download right
-                            break in;
-                        }
-                        try {
-                            StyleConstants.setIcon(attrs,
-                                    sizeIcon(new File(tf.getFilePath()).toURI().toURL()));
-                        } catch (Exception e) {
-                            GUIMain.log(e.getMessage());
-                        }
-                        doc.remove(start + m.start(), m.group().length());
-                        //            sets the index to the last index found, and adds the icon with the face text
-                        doc.insertString(start + m.start(), m.group(), attrs);
+                    try {
+                        StyleConstants.setIcon(attrs,
+                                sizeIcon(new File(tf.getFilePath()).toURI().toURL()));
+                    } catch (Exception e) {
+                        GUIMain.log(e.getMessage());
                     }
+                    doc.remove(start + m.start(), m.group().length());
+                    //            sets the index to the last index found, and adds the icon with the face text
+                    doc.insertString(start + m.start(), m.group(), attrs);
                 }
             }
+
         } catch (BadLocationException e1) {
             GUIMain.log(e1.getMessage());
         }
@@ -880,6 +958,27 @@ public class Utils {
             given = given * 1000; //convert to millis
         }
         return given;
+    }
+
+    /**
+     * Gets a time (in seconds) from a parsable string.
+     *
+     * @param toParse The string to parse.
+     * @return A time (in seconds) as an integer.
+     */
+    public static int getTime(String toParse) {
+        int toRet;
+        if (toParse.contains("m")) {//!startraffle <key> Xmin ?
+            toParse = toParse.substring(0, toParse.indexOf("m"));
+            toRet = Integer.parseInt(toParse) * 60;
+        } else {
+            try {
+                toRet = Integer.parseInt(toParse);
+            } catch (Exception e) {
+                toRet = -1;
+            }
+        }
+        return toRet;
     }
 
     /**

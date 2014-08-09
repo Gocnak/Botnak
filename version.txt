@@ -1,20 +1,17 @@
-2.23
+2.24
 
 Added:
-Account Manager (closes #23)
-Merged Settings GUI (will create separate ones)
-Full raffle support (closes #30)
-Sub sounds now in their own "Botnak/SubSounds/" directory (half closes #35)
-
+User Polls (closes #45)
+Setting game and title support
+Playing ads support
 
 Fixed:
-BanQueue issue (closes #28)
-Window hook saves settings still (closes #16)
-Investigated !mod <user> (closes #25)
-The "KappaHD" issue (closes #26)
+The ":D" Issue (closes #37 thanks Fragmer!)
+Investigated hiding text issue (closes #31 will re-open if continues)
+!setsubsound now just reloads the sounds in the directory
 
 To come:
+Donation Notifications
 Reconnect threads
-Setting title/game and playing commercials
 VLC Player stuff
 User stats

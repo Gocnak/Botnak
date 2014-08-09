@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 
 public class Constants {
 
-    public static final double VERSION = 2.23;
+    public static final double VERSION = 2.24;
 
     /**
      * All users may do it

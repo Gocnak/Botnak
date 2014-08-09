@@ -51,6 +51,7 @@ public class PaneMenuListener implements ActionListener {
                     if (GUIMain.bot != null) {
                         GUIMain.bot.doLeave(pane.getChannel());
                     }
+                    GUIMain.channelSet.remove(pane.getChannel());
                     GUIMain.chatPanes.remove(pane.getChannel());
                     pane.deletePane();
                     GUIMain.channelPane.updateIndexes();

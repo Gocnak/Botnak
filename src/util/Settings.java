@@ -365,7 +365,8 @@ public class Settings {
         }
     }
 
-    public void loadSubSounds() {
+    public boolean loadSubSounds() {
+        boolean toReturn = false;
         try {
             File[] files = subSoundDir.listFiles();
             if (files != null && files.length > 0) {
@@ -374,11 +375,13 @@ public class Settings {
                     temp.add(f.getAbsolutePath());
                 }
                 subSound = new Sound(5, temp.toArray(new String[temp.size()]));
+                toReturn = true;
                 GUIMain.log("Loaded sub sounds!");
             }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
+        return toReturn;
     }
 
 
@@ -615,12 +618,18 @@ public class Settings {
         hardcoded.add(new ConsoleCommand("removenameface", ConsoleCommand.Action.REMOVE_NAME_FACE, Constants.PERMISSION_SUB, null));
         hardcoded.add(new ConsoleCommand("playad", ConsoleCommand.Action.PLAY_ADVERT, Constants.PERMISSION_DEV, null));
         hardcoded.add(new ConsoleCommand("settitle", ConsoleCommand.Action.SET_STREAM_TITLE, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("title", ConsoleCommand.Action.SEE_STREAM_TITLE, Constants.PERMISSION_ALL, null));
         hardcoded.add(new ConsoleCommand("setgame", ConsoleCommand.Action.SET_STREAM_GAME, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("game", ConsoleCommand.Action.SEE_STREAM_GAME, Constants.PERMISSION_ALL, null));
         hardcoded.add(new ConsoleCommand("startraffle", ConsoleCommand.Action.START_RAFFLE, Constants.PERMISSION_MOD, null));
         hardcoded.add(new ConsoleCommand("addrafflewinner", ConsoleCommand.Action.ADD_RAFFLE_WINNER, Constants.PERMISSION_MOD, null));
         hardcoded.add(new ConsoleCommand("stopraffle", ConsoleCommand.Action.STOP_RAFFLE, Constants.PERMISSION_MOD, null));
         hardcoded.add(new ConsoleCommand("removerafflewinner", ConsoleCommand.Action.REMOVE_RAFFLE_WINNER, Constants.PERMISSION_MOD, null));
         hardcoded.add(new ConsoleCommand("winners", ConsoleCommand.Action.SEE_WINNERS, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("startpoll", ConsoleCommand.Action.START_POLL, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("vote", ConsoleCommand.Action.VOTE_POLL, Constants.PERMISSION_ALL, null));
+        hardcoded.add(new ConsoleCommand("pollresult", ConsoleCommand.Action.POLL_RESULT, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("cancelpoll", ConsoleCommand.Action.CANCEL_POLL, Constants.PERMISSION_MOD, null));
 
         if (Utils.areFilesGood(ccommandsFile.getAbsolutePath())) {
             try {

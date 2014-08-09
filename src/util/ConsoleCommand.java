@@ -47,13 +47,19 @@ public class ConsoleCommand {
         SET_NAME_FACE,
         REMOVE_NAME_FACE,
         SET_STREAM_TITLE,
+        SEE_STREAM_TITLE,
+        SEE_STREAM_GAME,
         SET_STREAM_GAME,
         PLAY_ADVERT,
         START_RAFFLE,
         ADD_RAFFLE_WINNER,
         REMOVE_RAFFLE_WINNER,
         STOP_RAFFLE,
-        SEE_WINNERS
+        SEE_WINNERS,
+        START_POLL,
+        VOTE_POLL,
+        POLL_RESULT,
+        CANCEL_POLL
     }
 
     /**
