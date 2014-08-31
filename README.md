@@ -1,6 +1,7 @@
 Botnak
 ======
 
+<<<<<<< HEAD
 Botnak is a Java-based IRC chat client with bot capabilities and a focus on Twitch.tv streams.
 
 Botnak 2 Episode 2 has a while to go before being 100% polished and released! You can track its progress in the [Episode 2 Milestone tab](https://github.com/Gocnak/Botnak/milestones).
@@ -39,4 +40,8 @@ Kinamkrindar
 Fragmer
 
 and anyone else reporting issues about this monstrosity of code!
+=======
+A more up-to-date README can be found at the [developer branch](https://github.com/Gocnak/Botnak/tree/dev): https://github.com/Gocnak/Botnak/tree/dev
+>>>>>>> origin/master
 
+Looking for the jar download? Check the [releases tab](https://github.com/Gocnak/Botnak/releases).
