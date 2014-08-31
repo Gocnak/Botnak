@@ -1,14 +1,19 @@
-2.24
+2.25
+
+NOTE:
+>>> YOU NEED JAVA 8 TO CONTINUE TO USE BOTNAK!!! <<<
 
 Added:
-User Polls (closes #45)
-Setting game and title support
-Playing ads support
+Hosting Notification messages (closes #51)
+New User-Management System
+Maven Support (rids local dependencies) (closes #29)
+Pop-out Functionality for Tabs
+!song command (see Issue #53)
 
 Fixed:
-The ":D" Issue (closes #37 thanks Fragmer!)
-Investigated hiding text issue (closes #31 will re-open if continues)
-!setsubsound now just reloads the sounds in the directory
+More Intelligent Ban-Queue (closes #52)
+More Intelligent Viewer Count
+Bug fixes and code cleanup
 
 To come:
 Donation Notifications

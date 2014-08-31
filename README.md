@@ -1,34 +1,42 @@
 Botnak
 ======
 
-This is the development branch for Botnak 2 Episode 2, which has a while to go before being 100% polished and released.
-
 Botnak is a Java-based IRC chat client with bot capabilities and a focus on Twitch.tv streams.
 
-#Download:
-The latest (pre-compiled) build can be found here: https://www.dropbox.com/s/vbi96scjutlrgzx/Botnak.jar
+Botnak 2 Episode 2 has a while to go before being 100% polished and released! You can track its progress in the [Episode 2 Milestone tab](https://github.com/Gocnak/Botnak/milestones).
 
-Keep in mind, this does not mean that Botnak is a final product, but the version in the link above is much more ahead than the master branch. However, this implies multiple changes, some of which may require additional research to have Botnak work completely. It is only recommended to download this if you wish to test Botnak and report bugs.
+#Download
+The latest (pre-compiled) build can be found in the [releases tab](https://github.com/Gocnak/Botnak/releases).
 
-Speaking of reporting bugs, if you come across an issue, simply open a New Issue in the issues tab! I am using that tab to track progress of Episode 2, so an issue there would be the best place to put it. If you don't wish to publicly report the issue, go ahead and PM me on twitch, at http://twitch.tv/gocnak .
+Keep in mind, this does not mean that Botnak is a final product quite yet. The fact episode 2 is not completed yet implies there will be multiple changes, some of which may require additional research to have Botnak work completely. It is only recommended to download this if you wish to test Botnak as-is and report bugs.
 
-You will need the latest version of Java 7 to run Botnak.
+#Issues
+Speaking of reporting bugs, if you come across an issue, simply open a New Issue in the [issues tab](https://github.com/Gocnak/Botnak/issues)! I am using that tab to track progress of Episode 2, so an issue there would be the best place to put it. If you don't wish to publicly report the issue, go ahead and [PM me on twitch](http://www.twitch.tv/message/compose?to=gocnak)!
 
-A full example list of commands and such can be found at http://bit.ly/1366RwM.
+#Requirements
+You will need the latest version of Java 8 to run Botnak. [Download it here.](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
 
-Credits:
+A full example list of commands and such can be found [here](http://bit.ly/1366RwM).
 
-JSON Library for making Twitch parsing easier - https://github.com/douglascrockford/JSON-java
+#Credits
 
-JTattoo for making Botnak look pretty - http://www.jtattoo.net/
+[JSON Library](https://github.com/douglascrockford/JSON-java) for making Twitch parsing easier
 
-Scalr API for Image Scaling - https://github.com/thebuzzmedia/imgscalr/
+[JTattoo](http://www.jtattoo.net/) for making Botnak look pretty
 
-Pircbot API for giving me headaches - http://www.jibble.org/pircbot.php
+[Scalr API](https://github.com/thebuzzmedia/imgscalr/) for Image Scaling
+
+[Pircbot API](http://www.jibble.org/pircbot.php) for giving me a good start to IRC bots
 
 Collaborators that help out with the project:
+
 Dr Kegel
+
 YaLTeR
+
 Kinamkrindar
+
+Fragmer
+
 and anyone else reporting issues about this monstrosity of code!
 
