@@ -16,15 +16,14 @@ import java.util.HashSet;
  * <p>
  * Handles removing users.
  */
-public class UserManager extends HeartbeatThread {
+public class UserManager implements HeartbeatThread {
 
-
-    Timer toUpdate;
-    HashSet<User> collectedusers;
+    private Timer toUpdate;
+    private HashSet<User> collectedUsers;
 
     public UserManager() {
         toUpdate = new Timer(5000);
-        collectedusers = new HashSet<>();
+        collectedUsers = new HashSet<>();
     }
 
     @Override
@@ -39,6 +38,11 @@ public class UserManager extends HeartbeatThread {
         for (String chan : channels) {
             try {
                 url = new URL("http://tmi.twitch.tv/group/user/" + chan.substring(1) + "/chatters");
+                /**
+                 * TODO GUIMain.viewerLists.exists(chan.substring(1)) GUIMain.get(chan).updateViewers
+                 * create a local hashset, send the collected users of this channel to that viewer list
+                 */
+
                 BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
                 StringBuilder stanSB = new StringBuilder();
                 String line;
@@ -50,19 +54,19 @@ public class UserManager extends HeartbeatThread {
                 JSONObject chatters = site.getJSONObject("chatters");
                 JSONArray mods = chatters.getJSONArray("moderators");
                 for (int i = 0; i < mods.length(); i++) {
-                    collectedusers.add(new User(mods.getString(i)));
+                    collectedUsers.add(new User(mods.getString(i)));
                 }
                 JSONArray staff = chatters.getJSONArray("staff");
                 for (int i = 0; i < staff.length(); i++) {
-                    collectedusers.add(new User(staff.getString(i)));
+                    collectedUsers.add(new User(staff.getString(i)));
                 }
                 JSONArray admins = chatters.getJSONArray("admins");
                 for (int i = 0; i < admins.length(); i++) {
-                    collectedusers.add(new User(admins.getString(i)));
+                    collectedUsers.add(new User(admins.getString(i)));
                 }
                 JSONArray viewers = chatters.getJSONArray("viewers");
                 for (int i = 0; i < viewers.length(); i++) {
-                    collectedusers.add(new User(viewers.getString(i)));
+                    collectedUsers.add(new User(viewers.getString(i)));
                 }
             } catch (Exception ignored) {
             }
@@ -73,11 +77,19 @@ public class UserManager extends HeartbeatThread {
     public void afterBeat() {
         User[] stored = GUIMain.currentSettings.channelManager.getUsers();
         for (User u : stored) {
-            if (!collectedusers.contains(u)) {
-                GUIMain.currentSettings.channelManager.removeUser(u);//remove people not in any channels
+            boolean flag = false;
+            for (User collected : collectedUsers) {
+                if (u.equals(collected)) {
+                    //still here
+                    flag = true;
+                    break;
+                }
+            }
+            if (!flag) {
+                GUIMain.currentSettings.channelManager.removeUser(u);
             }
         }
-        collectedusers.clear();
+        collectedUsers.clear();
         toUpdate.reset();
     }
 }

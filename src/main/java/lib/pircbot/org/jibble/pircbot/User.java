@@ -14,8 +14,7 @@ found at http://www.jibble.org/licenses/
 package lib.pircbot.org.jibble.pircbot;
 
 import gui.GUIMain;
-import irc.Donator;
-import util.Utils;
+import irc.Donor;
 
 import java.awt.*;
 
@@ -32,12 +31,12 @@ import java.awt.*;
  * @version 1.5.0 (Build time: Mon Dec 14 20:07:17 2009)
  * @since 1.0.0
  */
-public class User {
+public class User implements Comparable<User> {
 
     private boolean staff = false, admin = false, turbo = false;
 
     private Color color = null;
-    private Donator donator = null;
+    private Donor donor = null;
 
     /**
      * Constructs a User object with a known prefix and nick.
@@ -138,17 +137,17 @@ public class User {
         return c != null && c.isSubscriber(this);
     }
 
-    public boolean isDonator() {
-        donator = Utils.getDonator(getNick());
-        return donator != null;
+    public boolean isDonor() {
+        donor = GUIMain.currentSettings.donationManager.getDonor(getNick());
+        return donor != null;
     }
 
     public int getDonationStatus() {
-        return donator.getDonationStatus();
+        return Donor.getDonationStatus(donor.getDonated());
     }
 
     public double getDonated() {
-        return donator.getDonated();
+        return donor.getDonated();
     }
 
     /**
@@ -158,6 +157,10 @@ public class User {
      */
     public String getNick() {
         return _nick;
+    }
+
+    public String getLowerNick() {
+        return _lowerNick;
     }
 
     public void setNick(String newNick) {
@@ -230,10 +233,9 @@ public class User {
      *
      * @return the result of calling compareTo on lowercased nicks.
      */
-    public int compareTo(Object o) {
-        if (o instanceof User) {
-            User other = (User) o;
-            return other._lowerNick.compareTo(_lowerNick);
+    public int compareTo(User o) {
+        if (o != null) {
+            return o._lowerNick.compareTo(_lowerNick);
         }
         return -1;
     }

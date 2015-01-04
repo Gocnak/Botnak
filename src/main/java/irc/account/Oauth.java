@@ -1,4 +1,4 @@
-package irc;
+package irc.account;
 
 /**
  * Created by Nick on 7/16/2014.

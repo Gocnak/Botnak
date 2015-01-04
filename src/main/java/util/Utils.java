@@ -1,27 +1,22 @@
 package util;
 
 import face.Face;
-import face.SubscriberIcon;
-import face.TwitchFace;
+import face.FaceManager;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.GUIMain;
-import irc.Donator;
-import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import lib.pircbot.org.jibble.pircbot.User;
-import lib.scalr.Scalr;
 import sound.Sound;
+import util.comm.Command;
+import util.comm.ConsoleCommand;
 
-import javax.imageio.ImageIO;
-import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import javax.swing.text.html.HTML;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -44,8 +39,6 @@ import java.util.regex.Pattern;
  */
 public class Utils {
 
-    static final int DOWNLOAD_MAX_FACE_HEIGHT = 26;
-    static final int DOWNLOAD_MAX_ICON_HEIGHT = 26;
 
     static Random r = new Random();
 
@@ -279,12 +272,11 @@ public class Utils {
             URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName);
             BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
             String line = br.readLine();
+            br.close();
             if (line != null) {
                 JSONObject jsonObject = new JSONObject(line);
-                JSONObject stream = jsonObject.getJSONObject("stream");
-                isLive = !stream.isNull("preview");
+                isLive = !jsonObject.isNull("stream") && !jsonObject.getJSONObject("stream").isNull("preview");
             }
-            br.close();
         } catch (Exception ignored) {
         }
         return isLive;
@@ -533,368 +525,6 @@ public class Utils {
         return Color.getHSBColor(h, s * 0.25f + 0.75f, b * 0.25f + 0.75f);
     }
 
-
-    /**
-     * Gets the subscriber icon for the given channel from either cache or downloads
-     * it if you do not have it already.
-     *
-     * @param channel The channel the icon is for.
-     * @return The URL of the subscriber icon.
-     */
-    public static URL getSubIcon(String channel) {
-        for (SubscriberIcon i : GUIMain.subIconSet) {
-            if (i.getChannel().equalsIgnoreCase(channel)) {
-                try {
-                    if (areFilesGood(i.getFileLoc())) {
-                        return new File(i.getFileLoc()).toURI().toURL();
-                    } else {
-                        //This updates the icon, all you need to do is remove the file
-                        GUIMain.subIconSet.remove(i);
-                        break;
-                    }
-                } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
-                }
-            }
-        }
-        try {
-            URL toRead = new URL("https://api.twitch.tv/kraken/chat/" + channel.replace("#", "") + "/badges");
-            BufferedReader irs = new BufferedReader(new InputStreamReader(toRead.openStream()));
-            String line;
-            String path = null;
-            while (!GUIMain.shutDown && (line = irs.readLine()) != null) {
-                JSONObject init = new JSONObject(line);
-                JSONObject sub = init.getJSONObject("subscriber");
-                if (!sub.getString("image").equalsIgnoreCase("null")) {
-                    path = downloadIcon(sub.getString("image"), channel);
-                    break;
-                }
-            }
-            irs.close();
-            if (path != null) {
-                GUIMain.subIconSet.add(new SubscriberIcon(channel, path));
-                return getSubIcon(channel);
-            }
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-        return null;
-    }
-
-    /**
-     * Loads the default Twitch faces. This downloads to the local folder in
-     * <p>
-     * /My Documents/Botnak/TwitchFaces/
-     * <p>
-     * It also checks to see if you may be missing a default face, and downloads it.
-     * <p>
-     * This process is threaded, and will only show the faces when it's done downloading.
-     */
-    public static void loadDefaultFaces() {
-        try {
-            faceCheck.start();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
-
-    public static Thread faceCheck = new Thread(() -> {
-        HashSet<StringArray> fromSite = buildMap();
-        if (GUIMain.currentSettings.twitchFaceDir != null) {
-            int count = 0;
-            String[] files = GUIMain.currentSettings.twitchFaceDir.list();
-            if (files.length > 0) {//has (some... all?) files
-                for (StringArray pick : fromSite) {//check default twitch faces...
-                    String regex = pick.data[0];
-                    String URL = pick.data[1];
-                    String fileTheo = pick.data[2];//theoretically, you should have it
-                    boolean flag = false;
-                    for (String fileActual : files) {
-                        if (fileActual.equals(fileTheo)) {//but do you actually have it?
-                            TwitchFace face = GUIMain.twitchFaceMap.get(removeExt(fileTheo));
-                            if (face != null) {
-                                if (face.getRegex().equals(regex)) {//is the regex right?
-                                    flag = true;//it's fine, no need to do anything
-                                    break;
-                                } else {//replace the existing with the new regex face
-                                    GUIMain.twitchFaceMap.put(removeExt(fileTheo), new TwitchFace(regex, face.getFilePath(), face.isEnabled()));
-                                    flag = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (!flag) { //guess not
-                        downloadFace(URL, GUIMain.currentSettings.twitchFaceDir.getAbsolutePath(), fileTheo, regex, 0);
-                        count++;
-                    }
-                }
-            } else {//DOWNLOAD THEM ALL
-                for (StringArray pick : fromSite) {
-                    String regex = pick.data[0];
-                    String URL = pick.data[1];
-                    String filename = pick.data[2];
-                    downloadFace(URL, GUIMain.currentSettings.twitchFaceDir.getAbsolutePath(), filename, regex, 0);
-                    count++;
-                }
-            }
-            if (count != 0)
-                GUIMain.log("Downloaded " + count + " missing Twitch face" + (count > 1 ? "s" : "") + "!");
-            GUIMain.log("Loaded Twitch faces!");
-            GUIMain.doneWithTwitchFaces = true;
-            GUIMain.currentSettings.saveTwitchFaces();
-        }
-    });
-
-    /**
-     * Downloads a face off of the internet using the given URL and stores it in the given
-     * directory with the given filename and extension. The regex (or "name") of the face is put in the map
-     * for later use/comparison.
-     * <p>
-     *
-     * @param url       The URL to the face.
-     * @param directory The directory to save the face in.
-     * @param name      The name of the file for the face, including the extension.
-     * @param regex     The regex pattern ("name") of the face.
-     * @param type      What type of face it is. 0 = twitch, 1 = custom face, 2 = name face
-     */
-    public static void downloadFace(String url, String directory, String name, String regex, int type) {
-        if (directory == null || name == null || directory.equals("") || name.equals("")) return;
-        try {
-            BufferedImage image;
-            URL URL = new URL(url);//bad URL or something
-            image = ImageIO.read(URL);//just incase the file is null/it can't read it
-            if (image.getHeight() > DOWNLOAD_MAX_FACE_HEIGHT) {//if it's too big
-                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_FACE_HEIGHT);//scale it
-            }
-            File tosave = new File(directory + File.separator + name);
-            ImageIO.write(image, "PNG", tosave);//save it
-            if (type == 0) {
-                TwitchFace faec = new TwitchFace(regex, tosave.getAbsolutePath(), true);
-                name = removeExt(name);
-                GUIMain.twitchFaceMap.put(name, faec);
-            } else if (type == 1) {
-                Face faec = new Face(regex, tosave.getAbsolutePath());
-                name = removeExt(name);
-                GUIMain.faceMap.put(name, faec);//put it
-            } else if (type == 2) {
-                Face faec = new Face(regex, tosave.getAbsolutePath());
-                name = removeExt(name);
-                GUIMain.nameFaceMap.put(name, faec);
-            }
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
-
-    /**
-     * Downloads the subscriber icon of the specified URL and channel.
-     *
-     * @param url     The url to download the icon from.
-     * @param channel The channel the icon is for.
-     * @return The path of the file of the icon.
-     */
-    public static String downloadIcon(String url, String channel) {
-        try {
-            URL u = new URL(url);
-            BufferedImage image = ImageIO.read(u);//just incase the file is null/it can't read it
-            if (image.getHeight() > DOWNLOAD_MAX_ICON_HEIGHT) {//if it's too big
-                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_ICON_HEIGHT);//scale it
-            }
-            File tosave = new File(GUIMain.currentSettings.subIconsDir + File.separator + setExtension(channel.substring(1), ".png"));
-            ImageIO.write(image, "PNG", tosave);//save it
-            return tosave.getAbsolutePath();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-        return null;
-    }
-
-    /**
-     * Removes a face from the Face HashMap and deletes the face picture file.
-     *
-     * @param key The name of the face to remove.
-     */
-    public static void removeFace(String key) {
-        Face toDelete = GUIMain.faceMap.get(key);
-        File f = new File(toDelete.getFilePath());
-        if (f.delete()) {
-            GUIMain.faceMap.remove(key);
-        }
-    }
-
-    /**
-     * Builds a HashSet for the default JSON faces from Twitch's API site.
-     * The info is stored in a StringArray for future reference.
-     *
-     * @return An array with the Face data from the website, 0 is regex, 1 is the full URL, 2 is the filename
-     */
-    public static HashSet<StringArray> buildMap() {
-        HashSet<StringArray> set = new HashSet<>();
-        try {
-            URL url = new URL("http://api.twitch.tv/kraken/chat/emoticons?on_site=1");
-            BufferedReader irs = new BufferedReader(new InputStreamReader(url.openStream()));
-            String line;
-            while (!GUIMain.shutDown && (line = irs.readLine()) != null) {
-                JSONObject init = new JSONObject(line);
-                if (init.length() == 2) {
-                    JSONArray emotes = init.getJSONArray("emoticons");
-                    for (int i = 0; i < emotes.length(); i++) {
-                        JSONObject emote = emotes.getJSONObject(i);
-                        JSONObject imageStuff = emote.getJSONArray("images").getJSONObject(0);//3 is URL, 4 is height
-                        String regex = emote.getString("regex").replaceAll("\\\\&lt\\\\;", "\\<").replaceAll("\\\\&gt\\\\;", "\\>");
-                        if (imageStuff != null) {//split("-")[4] is the filename
-                            String uRL = imageStuff.getString("url");
-                            set.add(new StringArray(new String[]{regex, uRL, setExtension(uRL.split("-")[4], ".png")}));
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-        return set;
-    }
-
-    private static ImageIcon sizeIcon(URL image) {
-        ImageIcon icon;
-        try {
-            BufferedImage img = ImageIO.read(image);
-
-            // Scale the icon if it's too big.
-            int maxHeight = GUIMain.currentSettings.faceMaxHeight;
-            if (img.getHeight() > maxHeight)
-                img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, maxHeight);
-
-            icon = new ImageIcon(img);
-            icon.getImage().flush();
-            return icon;
-        } catch (Exception e) {
-            icon = new ImageIcon(image);
-        }
-        return icon;
-    }
-
-    /**
-     * Adds the faces to the chat, using Regex as keys in the Image Map.
-     *
-     * @param doc     The Styled Document from the GUIMain class.
-     * @param start   The start index of the message.
-     * @param message The message itself.
-     */
-    public static void handleFaces(StyledDocument doc, int start, String message) {
-        if (!GUIMain.doneWithFaces) return;
-        try {
-            Set<String> set = GUIMain.faceMap.keySet();
-            for (String name : set) {
-                Face f = GUIMain.faceMap.get(name);
-                String regex = f.getRegex();
-                if (!checkRegex(regex)) continue;
-                Pattern p = Pattern.compile(regex);
-                Matcher m = p.matcher(message);
-                while (m.find() && !GUIMain.shutDown) {
-                    final SimpleAttributeSet attrs = new SimpleAttributeSet(
-                            //finds the index of the face while not replacing the old V ones
-                            doc.getCharacterElement(start + m.start()).getAttributes());
-                    if (!areFilesGood(f.getFilePath())) {// the file doesn't exist/didn't download right
-                        break;
-                    }
-                    try {
-                        StyleConstants.setIcon(attrs,
-                                sizeIcon(new File(f.getFilePath()).toURI().toURL()));
-                    } catch (Exception e) {
-                        GUIMain.log(e.getMessage());
-                    }
-                    // Remove the face text.
-                    doc.remove(start + m.start(), m.group().length());
-                    // Insert the icon.
-                    doc.insertString(start + m.start(), m.group(), attrs);
-                }
-            }
-        } catch (BadLocationException e1) {
-            GUIMain.log(e1.getMessage());
-        }
-    }
-
-    /**
-     * Handles adding the name faces to the users.
-     *
-     * @param doc   The document (JTextPane) to search.
-     * @param start The start index of the user.
-     * @param name  The name of the user.
-     */
-    public static void handleNameFaces(StyledDocument doc, int start, String name) {
-        try {
-            Set<String> names = GUIMain.nameFaceMap.keySet();
-            for (String s : names) {
-                if (name.equalsIgnoreCase(s)) {
-                    final SimpleAttributeSet attrs = new SimpleAttributeSet(
-                            //finds the index of the face while not replacing the old V ones
-                            doc.getCharacterElement(start).getAttributes());
-                    try {
-                        StyleConstants.setIcon(attrs,
-                                sizeIcon(new File(GUIMain.nameFaceMap.get(s).getFilePath()).toURI().toURL()));
-                    } catch (Exception e) {
-                        GUIMain.log(e.getMessage());
-                    }
-                    doc.remove(start, name.length());
-                    doc.insertString(start, name, attrs);
-                    break;
-                }
-            }
-        } catch (BadLocationException e1) {
-            GUIMain.log(e1.getMessage());
-        }
-    }
-
-    /**
-     * Handles the twitch faces using Regex in the twitch faces map.
-     *
-     * @param doc     The Styled Document from the GUIMain class.
-     * @param start   The start index of the message.
-     * @param message The message itself.
-     */
-    public static void handleTwitchFaces(StyledDocument doc, int start, String message) {
-        if (!GUIMain.doneWithTwitchFaces) {
-            return;
-        }
-        try {
-            Set<String> set = GUIMain.twitchFaceMap.keySet();
-            for (String name : set) {
-                TwitchFace tf = GUIMain.twitchFaceMap.get(name);
-                String regex = tf.getRegex();
-                if (!tf.isEnabled()) continue;
-                if (!regex.matches("^\\W.*|.*\\W$")) {
-                    //boundary checks are only necessary for emotes that start and end with a word character.
-                    regex = "\\b" + regex + "\\b";
-                }
-                Pattern p = Pattern.compile(regex);
-                Matcher m = p.matcher(message);
-                while (m.find() && !GUIMain.shutDown) {
-                    final SimpleAttributeSet attrs = new SimpleAttributeSet(
-                            //finds the index of the face while not replacing the old V ones
-                            doc.getCharacterElement(start + m.start()).getAttributes());
-                    if (!areFilesGood(tf.getFilePath())) {// the file doesn't exist/didn't download right
-                        return;
-                    }
-                    try {
-                        StyleConstants.setIcon(attrs,
-                                sizeIcon(new File(tf.getFilePath()).toURI().toURL()));
-                    } catch (Exception e) {
-                        GUIMain.log(e.getMessage());
-                    }
-                    doc.remove(start + m.start(), m.group().length());
-                    //            sets the index to the last index found, and adds the icon with the face text
-                    doc.insertString(start + m.start(), m.group(), attrs);
-                }
-            }
-
-        } catch (BadLocationException e1) {
-            GUIMain.log(e1.getMessage());
-        }
-    }
-
     /**
      * Finds and tags URLs in the chat so that you can click them.
      *
@@ -927,24 +557,6 @@ public class Utils {
     }
 
     /**
-     * Inserts the NAME attribute for the popup menus.
-     *
-     * @param doc   The document (JTextPane) to search.
-     * @param start The start index of the user.
-     * @param name  The name of the user.
-     * @param set   The user's set.
-     */
-    public static void handleNames(StyledDocument doc, int start, String name, SimpleAttributeSet set) {
-        try {
-            set.addAttribute(HTML.Attribute.NAME, name);
-            doc.remove(start, name.length());
-            doc.insertString(start, name, set);
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
-
-    /**
      * Converts a given int to the correct millis form, except for 0.
      *
      * @param given Integer to convert.
@@ -965,9 +577,18 @@ public class Utils {
      */
     public static int getTime(String toParse) {
         int toRet;
-        if (toParse.contains("m")) {//!startraffle <key> Xmin ?
-            toParse = toParse.substring(0, toParse.indexOf("m"));
-            toRet = Integer.parseInt(toParse) * 60;
+        if (toParse.contains("m")) {
+            String toParseSub = toParse.substring(0, toParse.indexOf("m"));
+            try {
+                toRet = Integer.parseInt(toParseSub) * 60;
+                if (toParse.contains("s")) {
+                    toParseSub = toParse.substring(toParse.indexOf("m"), toParse.indexOf("s"));
+                    toRet += Integer.parseInt(toParseSub);
+                }
+            } catch (Exception e) {
+                toRet = -1;
+            }
+
         } else {
             try {
                 toRet = Integer.parseInt(toParse);
@@ -981,65 +602,73 @@ public class Utils {
     /**
      * Adds a command to the command map.
      * <p>
-     * To do this in chat, simply type !addcommand command time message
+     * To do this in chat, simply type !addcommand command message
      * More examples at http://bit.ly/1366RwM
      *
      * @param s The string from the chat.
+     * @return true if added, false if fail
      */
-    public static void addCommands(String s) {
+    public static Response addCommands(String s) {
+        Response toReturn = new Response();
         String[] split = s.split(" ");
-        if (GUIMain.commandSet != null && split.length >= 4) {
+        if (GUIMain.commandSet != null) {
             try {
                 String name = split[1];//name of the command, [0] is "addcommand"
                 if (name.startsWith("!")) name = name.substring(1);
-                int time;//for timer
-                try {
-                    time = Integer.parseInt(split[2]);
-                } catch (NumberFormatException e) {
-                    return;
+                if (getCommand(name) != null) {
+                    toReturn.setResponseText("Failed to add command, !" + name + " already exists!");
+                    return toReturn;
                 }
-                int bingo = s.indexOf(" ", s.indexOf(" ", s.indexOf(" ") + 1) + 1);//Third space is the message
-                String[] message = s.substring(bingo + 1).split("\\]");
-                if (time > 0) {
-                    GUIMain.commandSet.add(new Command(name, time, message));
+                ArrayList<String> arguments = new ArrayList<>();
+                if (s.contains(" | ")) {//command with arguments
+                    StringTokenizer st = new StringTokenizer(s.substring(0, s.indexOf(" | ")), " ");
+                    while (st.hasMoreTokens()) {
+                        String work = st.nextToken();
+                        if (work.startsWith("%") && work.endsWith("%")) {
+                            arguments.add(work);
+                        }
+                    }
+                }
+                int bingo;
+                if (!arguments.isEmpty()) {
+                    bingo = s.indexOf(" | ") + 3;//message comes after the pipe separator
+                } else {
+                    bingo = s.indexOf(" ", s.indexOf(" ") + 1) + 1;//after second space is the message without arguments
+                }
+                String[] message = s.substring(bingo).split("\\]");
+                Command c = new Command(name, message);
+                if (!arguments.isEmpty()) c.addArguments(arguments.toArray(new String[arguments.size()]));
+                if (GUIMain.commandSet.add(c)) {
+                    toReturn.wasSuccessful();
+                    toReturn.setResponseText("Successfully added command \"!" + name + "\"");
                 }
             } catch (Exception e) {
-                GUIMain.log(e.getMessage());
+                toReturn.setResponseText("Failed to add command due to Exception: " + e.getMessage());
             }
         }
+        return toReturn;
     }
 
     /**
      * Removes a command from the command map.
      *
      * @param key The !command trigger, or key.
+     * @return true if removed, else false
      */
-    public static void removeCommands(String key) {
+    public static Response removeCommands(String key) {
+        Response toReturn = new Response();
         if (GUIMain.commandSet != null && key != null) {
-            for (Command c : GUIMain.commandSet) {
-                if (key.equals(c.getTrigger())) {
-                    GUIMain.commandSet.remove(c);
-                    return;
+            Command c = getCommand(key);
+            if (c != null) {
+                if (GUIMain.commandSet.remove(c)) {
+                    toReturn.wasSuccessful();
+                    toReturn.setResponseText("Successfully removed command \"" + key + "\"");
                 }
+            } else {
+                toReturn.setResponseText("Failed to remove command, " + key + " does not exist!");
             }
         }
-    }
-
-    /**
-     * Gets the donator of the given name, if they exist.
-     *
-     * @param name The name of the donator.
-     * @return The donator if they exist, else null.
-     */
-    public static Donator getDonator(String name) {
-        if (!GUIMain.donators.isEmpty()) {
-            for (Donator d : GUIMain.donators) {
-                if (d.getName().equalsIgnoreCase(name)) {
-                    return d;
-                }
-            }
-        }
-        return null;
+        return toReturn;
     }
 
     /**
@@ -1138,7 +767,7 @@ public class Utils {
                         if (u.isSubscriber(channel)) {
                             permission = Constants.PERMISSION_SUB;
                         }
-                        if (u.isDonator()) {
+                        if (u.isDonor()) {
                             if (u.getDonated() >= 2.50) {
                                 permission = Constants.PERMISSION_DONOR;
                             }
@@ -1177,24 +806,32 @@ public class Utils {
      *
      * @param mess The entire message to dissect.
      */
-    public static void setCommandPermission(String mess) {
-        if (mess == null) return;
-        String trigger = mess.split(" ")[1];
+    public static Response setCommandPermission(String mess) {
+        Response toReturn = new Response();
+        if (mess == null) {
+            toReturn.setResponseText("Failed to set command permission, message is null!");
+            return toReturn;
+        }
+        String[] split = mess.split(" ");
+        String trigger = split[1];
         for (ConsoleCommand c : GUIMain.conCommands) {
             if (trigger.equalsIgnoreCase(c.getTrigger())) {
                 int classPerm;
                 String[] certainPerm = null;
                 try {
-                    classPerm = Integer.parseInt(mess.split(" ")[2]);
+                    classPerm = Integer.parseInt(split[2]);
                 } catch (Exception e) {
                     classPerm = -1;
-                    certainPerm = mess.split(" ")[2].split(",");
+                    certainPerm = split[2].split(",");
                 }
                 c.setCertainPermission(certainPerm);
                 c.setClassPermission(classPerm);
+                toReturn.wasSuccessful();
+                toReturn.setResponseText("Successfully set the command permission for " + trigger + " !");
                 break;
             }
         }
+        return toReturn;
     }
 
     /**
@@ -1202,19 +839,22 @@ public class Utils {
      *
      * @return The name of the song, else an empty string.
      */
-    public static String getCurrentlyPlaying() {
-        String toReturn = "";
-        if ("".equals(GUIMain.currentSettings.nowPlayingFile)) return "";
+    public static Response getCurrentlyPlaying() {
+        Response toReturn = new Response();
+        if ("".equals(GUIMain.currentSettings.nowPlayingFile)) {
+            toReturn.setResponseText("Failed to fetch current playing song, the now playing file is null!");
+            return toReturn;
+        }
         //TODO check the song requests engine to see if that is currently playing
-        try {
-            File f = new File(GUIMain.currentSettings.nowPlayingFile);
-            BufferedReader br = new BufferedReader(new InputStreamReader(f.toURI().toURL().openStream()));
+        File f = new File(GUIMain.currentSettings.nowPlayingFile);
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(f.toURI().toURL().openStream()))) {
             String line = br.readLine();
             if (line != null) {
-                toReturn = line;
+                toReturn.wasSuccessful();
+                toReturn.setResponseText("The current song is: " + line);
             }
-            br.close();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            toReturn.setResponseText("Failed to fetch current playing song due to Exception: " + e.getMessage());
         }
         return toReturn;
     }
@@ -1257,26 +897,42 @@ public class Utils {
      *
      * @param mess The entire message to dissect.
      */
-    public static void handleKeyword(String mess) {
-        if (mess == null) return;
-        String[] split = mess.split(" ");
-        String trigger = split[0];
-        String word = split[1];
-        if (trigger.equalsIgnoreCase("addkeyword")) {
-            String color = mess.substring(mess.indexOf(" ", mess.indexOf(" ") + 1) + 1);
-            Color c = getColor(color, null);
-            if (!c.equals(Color.white)) {
-                GUIMain.keywordMap.put(word, c);
-            }
-        } else if (trigger.equalsIgnoreCase("removekeyword")) {
-            Set<String> keys = GUIMain.keywordMap.keySet();
-            for (String s : keys) {
-                if (s.equalsIgnoreCase(word)) {
-                    GUIMain.keywordMap.remove(s);
-                    break;
-                }
-            }
+    public static Response handleKeyword(String mess) {
+        Response toReturn = new Response();
+        if (mess == null || "".equals(mess)) {
+            toReturn.setResponseText("Failed to handle keyword, the message is null!");
+            return toReturn;
         }
+        String[] split = mess.split(" ");
+        if (split.length > 1) {
+            String trigger = split[0];
+            String word = split[1];
+            if (trigger.equalsIgnoreCase("addkeyword")) {
+                String color = mess.substring(mess.indexOf(" ", mess.indexOf(" ") + 1) + 1);
+                Color c = getColor(color, null);
+                if (!c.equals(Color.white)) {
+                    GUIMain.keywordMap.put(word, c);
+                    toReturn.wasSuccessful();
+                    toReturn.setResponseText("Successfully added keyword \"" + word + "\" !");
+                } else {
+                    toReturn.setResponseText("Failed to add keyword, the color cannot be white!");
+                }
+            } else if (trigger.equalsIgnoreCase("removekeyword")) {
+                Set<String> keys = GUIMain.keywordMap.keySet();
+                for (String s : keys) {
+                    if (s.equalsIgnoreCase(word)) {
+                        GUIMain.keywordMap.remove(s);
+                        toReturn.wasSuccessful();
+                        toReturn.setResponseText("Successfully removed keyword \"" + word + "\" !");
+                        return toReturn;
+                    }
+                }
+                toReturn.setResponseText("Failed to remove keyword, \"" + word + "\" does not exist!");
+            }
+        } else {
+            toReturn.setResponseText("Failed to handle keyword, the keyword is null!");
+        }
+        return toReturn;
     }
 
     /**
@@ -1304,17 +960,17 @@ public class Utils {
             int G;
             int B;
             try {
-                R = Integer.parseInt(split[1]);
+                R = Integer.parseInt(split[0]);
             } catch (NumberFormatException e) {
                 R = 0;
             }
             try {
-                G = Integer.parseInt(split[2]);
+                G = Integer.parseInt(split[1]);
             } catch (NumberFormatException e) {
                 G = 0;
             }
             try {
-                B = Integer.parseInt(split[3]);
+                B = Integer.parseInt(split[2]);
             } catch (NumberFormatException e) {
                 B = 0;
             }
@@ -1348,13 +1004,19 @@ public class Utils {
      * @param user User to change the color for.
      * @param mess Their message.
      */
-    public static void handleColor(String user, String mess) {
+    public static Response handleColor(String user, String mess) {
+        Response toReturn = new Response();
         if (user != null && mess != null) {
             //mess = "!setcol r g b" or "!setcol #cd4fd5"
             //so let's send just the second part.
             Color newColor = getColor(mess.substring(mess.indexOf(" ") + 1), getColorFromHashcode(user.hashCode()));
             GUIMain.userColMap.put(user, newColor);
+            toReturn.setResponseText("Successfully set color for user " + user + " !");
+            toReturn.wasSuccessful();
+        } else {
+            toReturn.setResponseText("Failed to update user color, user or message is null!");
         }
+        return toReturn;
     }
 
     /**
@@ -1377,8 +1039,8 @@ public class Utils {
      * @return true if the Integers meet the specification.
      */
     public static boolean checkInts(int r, int g, int b) {
-        double luma = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
-        return luma > 40;
+        double luma = (0.2126 * (double) r) + (0.7152 * (double) g) + (0.0722 * (double) b);
+        return luma > (double) 35;
     }
 
     /**
@@ -1531,137 +1193,176 @@ public class Utils {
     }
 
     /**
-     * Toggles a default twitch face on/off.
-     * <p>
-     * Ex: !toggleface RitzMitz
-     * would toggle RitzMitz off/on in showing up on botnak,
-     * depending on current state.
-     *
-     * @param facename The face name to toggle.
-     */
-    public static void toggleFace(String facename) {
-        if (facename == null || !GUIMain.doneWithTwitchFaces) return;
-        Set<String> set = GUIMain.twitchFaceMap.keySet();
-        for (String name : set) {
-            String regex = GUIMain.twitchFaceMap.get(name).getRegex();
-            if (!checkRegex(regex)) continue;
-            Pattern p = Pattern.compile(regex);
-            Matcher m = p.matcher(facename);
-            if (m.find()) {
-                boolean old = GUIMain.twitchFaceMap.get(name).isEnabled();
-                GUIMain.twitchFaceMap.get(name).setEnabled(!old);
-                break;
-            }
-        }
-    }
-
-    /**
      * Either adds a face to the image map or changes a face to another variant.
      * If the face image size is too big, it is scaled (using Scalr) to fit the 26 pixel height limit.
      *
      * @param s The string from the chat.
+     * @return The response of the method.
      */
-    public static void handleFace(String s) {
-        if (GUIMain.currentSettings.defaultFaceDir == null
+    public static Response handleFace(String s) {
+        Response toReturn = new Response();
+        boolean localCheck = (GUIMain.currentSettings.defaultFaceDir == null
                 || GUIMain.currentSettings.defaultFaceDir.equals("")
-                || GUIMain.currentSettings.defaultFaceDir.equals("null"))
-            return;
-        try {
-            String[] split = s.split(" ");
-            String command = split[0];
-            String name = split[1];//name of the face, used for file name, and if regex isn't supplied, becomes the regex
-            String regex;
-            String file;//or the URL...
-            if (command.equalsIgnoreCase("addface")) {//a new face
-                if (GUIMain.faceMap.containsKey(name))
-                    return;//!addface is not !changeface, remove the face first or do changeface
-                if (split.length == 4) {//!addface <name> <regex> <URL or file>
-                    regex = split[2];
-                    if (!checkRegex(regex)) return;
-                    if (checkName(name)) return;
-                    file = split[3];
-                    if (file.startsWith("http")) {//online
-                        downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), setExtension(name, ".png"), regex, 1);//save locally
-                    } else {//local
-                        if (checkName(file)) return;
-                        downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
-                                GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                setExtension(name, ".png"),
-                                regex, 1);
-                    }
+                || GUIMain.currentSettings.defaultFaceDir.equals("null"));
+
+        String[] split = s.split(" ");
+        String command = split[0];
+        String name = split[1];//name of the face, used for file name, and if regex isn't supplied, becomes the regex
+        String regex;
+        String file;//or the URL...
+
+        if (command.equalsIgnoreCase("addface")) {//a new face
+
+            if (FaceManager.faceMap.containsKey(name)) {//!addface is not !changeface, remove the face first or do changeface
+                toReturn.setResponseText("Failed to add face, " + name + " already exists!");
+                return toReturn;
+            }
+
+            if (split.length == 4) {//!addface <name> <regex> <URL or file>
+                regex = split[2];
+                //regex check
+                if (!checkRegex(regex)) {
+                    toReturn.setResponseText("Failed to add face, the supplied regex does not compile!");
+                    return toReturn;
                 }
-                if (split.length == 3) {//!addface <name> <URL or file> (name will be the regex, case sensitive)
-                    file = split[2];
-                    if (!checkRegex(name)) return;
-                    if (checkName(name)) return;
-                    if (file.startsWith("http")) {//online
-                        downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                setExtension(name, ".png"), name, 1);//name is regex, so case sensitive
-                    } else {//local
-                        if (checkName(file)) return;
-                        downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
-                                GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                setExtension(name, ".png"),
-                                name, //<- this will be the regex, so case sensitive
-                                1);
+                //name check (for saving the file)
+                if (checkName(name)) {
+                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                    return toReturn;
+                }
+
+                file = split[3];
+                if (file.startsWith("http")) {//online
+                    return FaceManager.downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                            setExtension(name, ".png"), regex, FaceManager.FACE_TYPE.NORMAL_FACE);//save locally
+
+                } else {//local
+                    if (checkName(file) || localCheck) {
+                        if (!localCheck)
+                            toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                        else toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
+                        return toReturn;
                     }
+                    return FaceManager.downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
+                            GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                            setExtension(name, ".png"),
+                            regex, FaceManager.FACE_TYPE.NORMAL_FACE);
+                }
+            } else if (split.length == 3) {//!addface <name> <URL or file> (name will be the regex, case sensitive)
+                file = split[2];
+                //regex (this should never be a problem, however...)
+                if (!checkRegex(name)) {
+                    toReturn.setResponseText("Failed to add face, the supplied name is not a valid regex!");
+                    return toReturn;
+                }
+                //name check (for saving the file)
+                if (checkName(name)) {
+                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                    return toReturn;
+                }
+                if (file.startsWith("http")) {//online
+                    return FaceManager.downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                            setExtension(name, ".png"), name, FaceManager.FACE_TYPE.NORMAL_FACE);//name is regex, so case sensitive
+                } else {//local
+                    if (checkName(file) || localCheck) {
+                        if (!localCheck)
+                            toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                        else toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
+                        return toReturn;
+                    }
+                    return FaceManager.downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
+                            GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                            setExtension(name, ".png"),
+                            name, //<- this will be the regex, so case sensitive
+                            FaceManager.FACE_TYPE.NORMAL_FACE);
                 }
             }
-            if (command.equalsIgnoreCase("changeface")) {//replace entirely
-                if (GUIMain.faceMap.containsKey(name)) {//!changeface is not !addface, the map MUST contain it
-                    if (split.length == 5) {//!changeface <name> 2 <new regex> <new URL/file>
-                        try {//gotta make sure the number is the ^
-                            if (Integer.parseInt(split[2]) != 2) return;
-                        } catch (Exception e) {
-                            return;
+        } else if (command.equalsIgnoreCase("changeface")) {//replace entirely
+            if (FaceManager.faceMap.containsKey(name)) {//!changeface is not !addface, the map MUST contain it
+                if (split.length == 5) {//!changeface <name> 2 <new regex> <new URL/file>
+                    try {//gotta make sure the number is the ^
+                        if (Integer.parseInt(split[2]) != 2) {
+                            toReturn.setResponseText("Failed to change face, make sure to designate the \"2\" in the command!");
+                            return toReturn;
                         }
+                    } catch (Exception e) {
+                        toReturn.setResponseText("Failed to change face, the indicator number cannot be parsed!");
+                        return toReturn;
+                    }
+
+                    regex = split[3];
+                    //regex check
+                    if (!checkRegex(regex)) {
+                        toReturn.setResponseText("Failed to add face, the supplied regex does not compile!");
+                        return toReturn;
+                    }
+
+                    //name check (for saving the file)
+                    if (checkName(name)) {
+                        toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                        return toReturn;
+                    }
+
+                    file = split[4];
+                    if (file.startsWith("http")) {//online
+                        return FaceManager.downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                                setExtension(name, ".png"), regex, FaceManager.FACE_TYPE.NORMAL_FACE);//save locally
+                    } else {//local
+                        if (checkName(file) || localCheck) {
+                            if (!localCheck)
+                                toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                            else
+                                toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
+                            return toReturn;
+                        }
+                        return FaceManager.downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
+                                GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                                setExtension(name, ".png"),
+                                regex, //< this will be the regex, so case sensitive
+                                FaceManager.FACE_TYPE.NORMAL_FACE);
+                    }
+                } else if (split.length == 4) {//!changeface <name> <numb> <newregex>|<new URL or file>
+                    int type;
+                    try {//gotta check the number
+                        type = Integer.parseInt(split[2]);
+                    } catch (Exception e) {
+                        toReturn.setResponseText("Failed to change face, the indicator number cannot be parsed!");
+                        return toReturn;
+                    }
+                    Face face = FaceManager.faceMap.get(name);
+                    if (type == 0) {//regex change; !changeface <name> 0 <new regex>
                         regex = split[3];
-                        if (!checkRegex(regex)) return;
-                        if (checkName(name)) return;
-                        file = split[4];
+                        if (checkRegex(regex)) {
+                            FaceManager.faceMap.put(name, new Face(regex, face.getFilePath()));
+                            toReturn.setResponseText("Successfully changed the regex for face: " + name + " !");
+                            toReturn.wasSuccessful();
+                        } else {
+                            toReturn.setResponseText("Failed to change the regex, the new regex could not be compiled!");
+                        }
+                    } else if (type == 1) {//file change; !changeface <name> 1 <new URL/file>
+                        file = split[3];
                         if (file.startsWith("http")) {//online
-                            downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), setExtension(name, ".png"), regex, 1);//save locally
+                            return FaceManager.downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                                    setExtension(name, ".png"), face.getRegex(), FaceManager.FACE_TYPE.NORMAL_FACE);//save locally
                         } else {//local
-                            if (checkName(file)) return;
-                            downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
+                            if (checkName(file) || localCheck) {
+                                if (!localCheck)
+                                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                                else
+                                    toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
+                                return toReturn;
+                            }
+                            return FaceManager.downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
                                     GUIMain.currentSettings.faceDir.getAbsolutePath(),
                                     setExtension(name, ".png"),
-                                    regex, //< this will be the regex, so case sensitive
-                                    1);
-                        }
-                    }
-                    if (split.length == 4) {//!changeface <name> <numb> <newregex>|<new URL or file>
-                        int type;
-                        try {//gotta check the number
-                            type = Integer.parseInt(split[2]);
-                        } catch (Exception e) {
-                            return;
-                        }
-                        if (type == 0) {//regex change; !changeface <name> 0 <new regex>
-                            Face face = GUIMain.faceMap.get(name);
-                            regex = split[3];
-                            if (checkRegex(regex)) {
-                                GUIMain.faceMap.put(name, new Face(regex, face.getFilePath()));
-                            }
-                        }
-                        if (type == 1) {//file change; !changeface <name> 1 <new URL/file>
-                            Face face = GUIMain.faceMap.get(name);
-                            file = split[3];
-                            if (file.startsWith("http")) {//online
-                                downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(), setExtension(name, ".png"), face.getRegex(), 1);//save locally
-                            } else {//local
-                                if (checkName(file)) return;
-                                downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file).toURI().toURL().toString(),
-                                        GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                        setExtension(name, ".png"),
-                                        face.getRegex(), 1);
-                            }
+                                    face.getRegex(), FaceManager.FACE_TYPE.NORMAL_FACE);
                         }
                     }
                 }
+            } else {
+                toReturn.setResponseText("Failed to change face, the face " + name + " does not exist!");
             }
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
         }
+        return toReturn;
     }
 }

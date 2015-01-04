@@ -5,12 +5,12 @@ package irc;
  * Created to handle the amounts a person donates.
  * This class was a better solution over PircBot Users.
  */
-public class Donator {
+public class Donor {
 
     private double donated;
     private String name;
 
-    public Donator(String nick, double amt) {
+    public Donor(String nick, double amt) {
         name = nick;
         donated = amt;
     }
@@ -42,9 +42,12 @@ public class Donator {
      * $100 thru $499.99 = gold
      * $500+ = diamond
      *
+     * TODO make this user specified
+     *
+     * @param donated The amount donated. Most of the time this is
      * @return The int status of the user, or -1 if they have none.
      */
-    public int getDonationStatus() {
+    public static int getDonationStatus(Double donated) {
         if (donated > 0) {
             if (donated >= 10) {
                 if (donated >= 50) {

@@ -16,7 +16,6 @@ import java.net.URI;
  */
 public class PaneMenuListener implements ActionListener {
 
-
     @Override
     public void actionPerformed(ActionEvent e) {
         JMenuItem source = (JMenuItem) e.getSource();
@@ -70,6 +69,20 @@ public class PaneMenuListener implements ActionListener {
                     desktop.browse(uri);
                 } catch (Exception ev) {
                     GUIMain.log((ev.getMessage()));
+                }
+            } else if (text.startsWith("Clear ")) {
+                if (pane == null) pane = Utils.getCombinedChatPane(GUIMain.channelPane.getSelectedIndex());
+                if (pane != null) { //The combined could return null, still have to check
+                    if (pane instanceof CombinedChatPane) pane = ((CombinedChatPane) pane).getActiveChatPane();
+                    pane.resetCleanupCounter();
+                    final ChatPane pane1 = pane;
+                    EventQueue.invokeLater(() -> {
+                        if (GUIMain.currentSettings.logChat) {
+                            String[] toPrint = pane1.getText().split("\\n");
+                            Utils.logChat(toPrint, pane1.getChannel(), 1);
+                        }
+                        pane1.getTextPane().setText(null);
+                    });
                 }
             }
             if (source instanceof JCheckBoxMenuItem) {

@@ -1,13 +1,13 @@
 package gui;
 
-import irc.Account;
-import irc.Oauth;
-import irc.Task;
+import irc.account.Account;
+import irc.account.Oauth;
+import irc.account.Task;
 import lib.scalr.Scalr;
 import sound.Sound;
 import util.Constants;
-import util.Settings;
 import util.Utils;
+import util.settings.Settings;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -102,22 +102,22 @@ public class GUISettings extends JFrame {
             if (useCustomMod.isSelected()) {
                 GUIMain.currentSettings.modIcon = new URL(customMod.getText());
             } else {
-                GUIMain.currentSettings.modIcon = GUISettings.class.getResource("/resource/mod.png");
+                GUIMain.currentSettings.modIcon = GUISettings.class.getResource("/image/mod.png");
             }
             if (useCustomBroad.isSelected()) {
                 GUIMain.currentSettings.broadIcon = new URL(customBroad.getText());
             } else {
-                GUIMain.currentSettings.broadIcon = GUISettings.class.getResource("/resource/broad.png");
+                GUIMain.currentSettings.broadIcon = GUISettings.class.getResource("/image/broad.png");
             }
             if (useCustomAdmin.isSelected()) {
                 GUIMain.currentSettings.adminIcon = new URL(customAdminField.getText());
             } else {
-                GUIMain.currentSettings.adminIcon = GUISettings.class.getResource("/resource/admin.png");
+                GUIMain.currentSettings.adminIcon = GUISettings.class.getResource("/image/admin.png");
             }
             if (useCustomStaff.isSelected()) {
                 GUIMain.currentSettings.staffIcon = new URL(customStaffField.getText());
             } else {
-                GUIMain.currentSettings.staffIcon = GUISettings.class.getResource("/resource/staff.png");
+                GUIMain.currentSettings.staffIcon = GUISettings.class.getResource("/image/staff.png");
             }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -503,7 +503,7 @@ public class GUISettings extends JFrame {
         setTitle("Settings");
         setResizable(false);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
+        setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
         Container contentPane = getContentPane();
 
         //======== tabbedPane1 ========
@@ -1166,7 +1166,8 @@ public class GUISettings extends JFrame {
 
                 //---- clearChatSpinner ----
                 if (GUIMain.currentSettings.chatMax < 40) GUIMain.currentSettings.chatMax = 40;
-                clearChatSpinner.setModel(new SpinnerNumberModel(GUIMain.currentSettings.chatMax, 40, null, 1));
+                clearChatSpinner.setModel(new SpinnerNumberModel(GUIMain.currentSettings.chatMax, 40, null, 5));
+                ((JSpinner.DefaultEditor) clearChatSpinner.getEditor()).getTextField().setEditable(false);
                 clearChatSpinner.setFocusable(false);
                 clearChatSpinner.setEnabled(GUIMain.currentSettings.cleanupChat);
 
@@ -1208,10 +1209,10 @@ public class GUISettings extends JFrame {
                 graphiteButton.setActionCommand("Graphite");
 
                 //---- label31 ----
-                label31.setIcon(new ImageIcon(getClass().getResource("/resource/graphite.png")));
+                label31.setIcon(new ImageIcon(getClass().getResource("/image/graphite.png")));
 
                 //---- label30 ----
-                label30.setIcon(new ImageIcon(getClass().getResource("/resource/hifi.png")));
+                label30.setIcon(new ImageIcon(getClass().getResource("/image/hifi.png")));
 
                 //---- hifiButton ----
                 hifiButton.setText("HiFi");
@@ -1536,7 +1537,7 @@ public class GUISettings extends JFrame {
             //======== this ========
             setResizable(false);
             setTitle("Add Sound(s)");
-            setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
+            setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
             Container contentPane = getContentPane();
 
             //---- label2 ----

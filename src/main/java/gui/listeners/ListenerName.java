@@ -48,18 +48,18 @@ public class ListenerName extends MouseAdapter implements ActionListener {
                         if (GUIMain.viewer != null) {
                             User u = GUIMain.currentSettings.channelManager.getUser(name, false);//get the user in question
                             User main = GUIMain.currentSettings.channelManager.getUser(GUIMain.currentSettings.accountManager.getUserAccount().getName(), false);//get yourself
-                            if ((main != null)) {
+                            if (main != null) {
                                 int count = 0; //don't worry about it
                                 //can't ban broadcaster or admin/staff
-                                if (u != null && (u.isAdmin() || u.isStaff() || name.equalsIgnoreCase(channel)))
+                                if (u != null && (u.isAdmin() || u.isStaff() || name.equalsIgnoreCase(channel.replace("#", ""))))
                                     count++;
 
                                 //can't ban other mods if you aren't the broadcaster
-                                if (u != null && (!main.getNick().equalsIgnoreCase(channel) && (main.isOp(channel) && u.isOp(channel))))
+                                if (u != null && (!main.getNick().equalsIgnoreCase(channel.replace("#", "")) && (main.isOp(channel) && u.isOp(channel))))
                                     count++;
 
                                 //Feature added: the ability to purge spammers' messages, even if they leave
-                                if (count == 0 && (channel.equalsIgnoreCase(main.getNick()) || main.isOp(channel))) {
+                                if (count == 0 && (channel.replace("#", "").equalsIgnoreCase(main.getNick()) || main.isOp(channel))) {
                                     //it's your channel OR you're op and the other user isn't.
                                     JMenuItem menuItem;
                                     menuItem = new JMenuItem("Purge " + name);
@@ -71,7 +71,7 @@ public class ListenerName extends MouseAdapter implements ActionListener {
                                     menuItem = new JMenuItem("Ban " + name);
                                     menuItem.addActionListener(this);
                                     popupMenu.add(menuItem);
-                                    if (channel.equalsIgnoreCase(main.getNick()) && u != null) {
+                                    if (channel.replace("#", "").equalsIgnoreCase(main.getNick()) && u != null) {
                                         //you can only (un)mod people in your chat that are(n't) mods
                                         menuItem = new JMenuItem((u.isOp(channel) ? "Un-mod " : "Mod ") + name);
                                         menuItem.addActionListener(this);

@@ -10,7 +10,7 @@ import java.util.Iterator;
 /**
  * Created by Nick on 8/29/2014.
  */
-public class BanQueue extends HeartbeatThread {
+public class BanQueue implements HeartbeatThread {
 
     private static HashSet<User> banMap;
 
@@ -54,10 +54,10 @@ public class BanQueue extends HeartbeatThread {
             User u = it.next();
             if (!u.timer.isRunning()) {
                 if (u.count > 1) {
-                    GUIMain.onMessage(new Message(u.channel, null, Message.MessageType.BAN_NOTIFY,
+                    GUIMain.onMessage(new Message(u.channel.substring(1), null, Message.MessageType.BAN_NOTIFY,
                             u.name + " has been banned/timed out " + u.count + " times!"));
                 } else {
-                    GUIMain.onMessage(new Message(u.channel, null, Message.MessageType.BAN_NOTIFY,
+                    GUIMain.onMessage(new Message(u.channel.substring(1), null, Message.MessageType.BAN_NOTIFY,
                             u.name + " has been banned/timed out!"));
                 }
                 it.remove();

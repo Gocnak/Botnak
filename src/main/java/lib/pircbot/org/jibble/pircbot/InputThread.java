@@ -22,6 +22,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.Socket;
 import java.util.StringTokenizer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * A Thread which reads lines from the IRC server.  It then
@@ -43,11 +45,14 @@ public class InputThread extends Thread {
      * @param breader The BufferedReader that reads lines from the server.
      */
     InputThread(PircBot bot, Socket socket, BufferedReader breader) {
+        executor = Executors.newCachedThreadPool();
         _bot = bot;
         _socket = socket;
         _breader = breader;
         this.setName(this.getClass() + "-Thread");
     }
+
+    ExecutorService executor;
 
 
     /**

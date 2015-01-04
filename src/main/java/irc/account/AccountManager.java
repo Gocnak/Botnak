@@ -1,6 +1,8 @@
-package irc;
+package irc.account;
 
 import gui.GUIMain;
+import irc.IRCBot;
+import irc.IRCViewer;
 import lib.pircbot.org.jibble.pircbot.PircBot;
 
 import java.util.ArrayList;
@@ -10,12 +12,11 @@ import java.util.ArrayList;
  */
 public class AccountManager extends Thread {
 
-    ArrayList<Task> tasks = new ArrayList<>();
+    private ArrayList<Task> tasks = new ArrayList<>();
 
     private Account userAccount, botAccount;
 
     private PircBot viewer, bot;
-
 
     public AccountManager() {
         userAccount = null;
@@ -122,6 +123,4 @@ public class AccountManager extends Thread {
             }
         }
     }
-
-
 }

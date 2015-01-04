@@ -1,6 +1,6 @@
 import gui.GUIMain;
 import gui.GUIUpdate;
-import util.Settings;
+import util.settings.Settings;
 
 import javax.swing.*;
 import java.awt.*;

@@ -9,14 +9,13 @@ public class Message {
     private String content = null;
     private String channel = null;
     private String sender = null;
+    private Object extra = null;
 
     /**
-     * Constructs a default message.
-     *
-     * @param content The content of the message.
+     * Constructs a default, blank message.
      */
-    public Message(String content) {
-        this.content = content;
+    public Message() {
+
     }
 
     /**
@@ -40,7 +39,7 @@ public class Message {
      */
     public Message(String channel, String user, MessageType type, String content) {
         if (type == MessageType.SUB_NOTIFY) {
-            this.content = " " + user + " has just subscribed!";
+            this.content = user + " has just subscribed!";
         } else if (type == MessageType.BAN_NOTIFY) {
             this.content = content;
         }
@@ -76,6 +75,30 @@ public class Message {
         return this;
     }
 
+    public Object getExtra() {
+        return extra;
+    }
+
+    public Message setContent(String content) {
+        this.content = content;
+        return this;
+    }
+
+    public Message setType(MessageType type) {
+        this.type = type;
+        return this;
+    }
+
+    public Message setSender(String sender) {
+        this.sender = sender;
+        return this;
+    }
+
+    public Message setExtra(Object extra) {
+        this.extra = extra;
+        return this;
+    }
+
     public MessageType getType() {
         return type;
     }
@@ -91,7 +114,9 @@ public class Message {
         SUB_NOTIFY,
         BAN_NOTIFY,
         HOSTING_NOTIFY,
-        HOSTED_NOTIFY
+        HOSTED_NOTIFY,
+        DONATION_NOTIFY,
+        JTV_NOTIFY
     }
 
 }

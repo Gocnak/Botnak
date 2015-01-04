@@ -2,7 +2,6 @@ package gui;
 
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
-import thread.TabPulse;
 import util.Utils;
 
 import javax.swing.*;
@@ -58,11 +57,18 @@ public class CombinedChatPane extends ChatPane {
         return activeChannel;
     }
 
+    private ChatPane activeChatPane = this;
+
+    public ChatPane getActiveChatPane() {
+        return activeChatPane;
+    }
+
     public void setActiveScrollPane(String channel) {
         for (ChatPane p : panes) {
             if (p.getChannel().equalsIgnoreCase(channel)) {
                 setScrollPane(p.getScrollPane());
                 p.scrollToBottom();
+                activeChatPane = p;
                 break;
             }
         }
@@ -73,6 +79,7 @@ public class CombinedChatPane extends ChatPane {
 
     public void setDefaultScrollPane() {
         activeChannel = "All";
+        activeChatPane = this;
         setScrollPane(scrollPaneAll);
         GUIMain.channelPane.setComponentAt(getIndex(), getScrollPane());
         GUIMain.channelPane.fireStateChanged();
@@ -156,7 +163,6 @@ public class CombinedChatPane extends ChatPane {
             }
         }
 
-
         channels = channelsTemp.toArray(new String[channelsTemp.size()]);
         panes = panesTemp.toArray(new ChatPane[panesTemp.size()]);
 
@@ -191,7 +197,6 @@ public class CombinedChatPane extends ChatPane {
         pane.addMouseListener(new ListenerName());
         scrollPane.setViewportView(pane);
         for (ChatPane cp : panes) {
-            GUIMain.tabPulses.stream().filter(tp -> tp.getIndex() == cp.getIndex()).forEach(TabPulse::interrupt);
             cp.setTabVisible(false);
         }
         //Tab adding is handled at the DraggableTabbedPane
@@ -209,14 +214,6 @@ public class CombinedChatPane extends ChatPane {
                 cp.scrollToBottom();
                 GUIMain.channelPane.insertTab(cp.getChannel(), null, cp.getScrollPane(), null, index);
                 index++;
-            }
-        }
-        //check for a pulse
-        for (TabPulse tp : GUIMain.tabPulses) {
-            if (tp.getIndex() == getIndex()) {
-                tp.interrupt();
-                GUIMain.tabPulses.remove(tp);
-                break;
             }
         }
 

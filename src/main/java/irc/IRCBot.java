@@ -1,19 +1,26 @@
 package irc;
 
+import face.FaceManager;
 import gui.GUIMain;
+import irc.account.Oauth;
+import irc.account.Task;
 import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
 import sound.Sound;
 import sound.SoundEngine;
 import sound.SoundEntry;
-import util.Command;
-import util.ConsoleCommand;
 import util.Constants;
+import util.Response;
+import util.StringArray;
 import util.Utils;
+import util.comm.Command;
+import util.comm.ConsoleCommand;
+import util.misc.Donation;
 import util.misc.Raffle;
 import util.misc.Vote;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -86,7 +93,18 @@ public class IRCBot extends MessageHandler {
     public void onMessage(String channel, String sender, String message) {
         if (message != null && channel != null && sender != null && GUIMain.currentSettings.accountManager.getViewer() != null) {
             sender = sender.toLowerCase();
-            if (sender.equalsIgnoreCase(getBot().getNick())) return;
+            /**
+             * What we're doing here is checking to see if the user
+             * uses their viewer account as the bot. They know full well
+             * that they want to access the commands, but when you have
+             * a separate account, you won't want text commands to call
+             * other commands of the bot.
+             *
+             * So... be careful using the same account for both
+             */
+            if (sender.equalsIgnoreCase(getBot().getNick()) &&
+                    !(GUIMain.currentSettings.accountManager.getUserAccount().getName()
+                            .equals(GUIMain.currentSettings.accountManager.getBotAccount().getName()))) return;
 
             //raffles
             User u = GUIMain.currentSettings.channelManager.getUser(sender, true);
@@ -103,7 +121,7 @@ public class IRCBot extends MessageHandler {
                             if (u.isSubscriber(channel)) {
                                 permission = Constants.PERMISSION_SUB;
                             }
-                            if (u.isDonator()) {
+                            if (u.isDonor()) {
                                 if (u.getDonated() >= 2.50) {
                                     permission = Constants.PERMISSION_DONOR;
                                 }
@@ -139,6 +157,7 @@ public class IRCBot extends MessageHandler {
             //commands
             if (message.startsWith("!")) {
                 String trigger = message.substring(1).split(" ")[0].toLowerCase();
+                String mess = message.substring(1);
                 /*//dev
                 if (sender.equals(GUIMain.viewer.getMaster())) {
                     handleDev(channel, message.substring(1));
@@ -153,21 +172,29 @@ public class IRCBot extends MessageHandler {
                 }
                 ConsoleCommand consoleCommand = Utils.getConsoleCommand(trigger, channel, u);
                 if (consoleCommand != null) {
-                    String mess = message.substring(1);
+                    Response commandResponse = null;
                     switch (consoleCommand.getAction()) {
                         case ADD_FACE:
-                            Utils.handleFace(mess);
+                            commandResponse = Utils.handleFace(mess);
+                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveFaces();
                             break;
                         case CHANGE_FACE:
-                            Utils.handleFace(mess);
+                            commandResponse = Utils.handleFace(mess);
+                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveFaces();
                             break;
                         case REMOVE_FACE:
-                            if (GUIMain.faceMap.containsKey(first)) {
-                                Utils.removeFace(first);
+                            if (FaceManager.faceMap.containsKey(first)) {
+                                if (FaceManager.removeFace(first)) {
+                                    getBot().sendMessage(channel, "Removed face with name \"" + first + "\"!");
+                                } else {
+                                    getBot().sendMessage(channel, "Could not remove face with name \"" + first + "\"!");
+                                }
+                            } else {
+                                getBot().sendMessage(channel, "There is no face with the name \"" + first + "\"!");
                             }
                             break;
                         case TOGGLE_FACE:
-                            Utils.toggleFace(first);
+                            commandResponse = FaceManager.toggleFace(first);
                             break;
                         case ADD_SOUND:
                             Utils.handleSound(mess, false);
@@ -182,11 +209,7 @@ public class IRCBot extends MessageHandler {
                             break;
                         case SET_SOUND_DELAY:
                             int soundTime;
-                            try {
-                                soundTime = Integer.parseInt(first);
-                            } catch (Exception e) {
-                                return;
-                            }
+                            soundTime = Utils.getTime(first);
                             if (soundTime < 0) return;
                             soundTime = Utils.handleInt(soundTime);
                             int delay = soundTime / 1000;
@@ -210,40 +233,45 @@ public class IRCBot extends MessageHandler {
                             if (sound != null) {
                                 getBot().sendMessage(channel, "Stopping the first sound...");
                                 sound.close();
+                            } else {
+                                getBot().sendMessage(channel, "There are no sounds currently playing!");
                             }
                             break;
                         case STOP_ALL_SOUNDS:
                             Collection<SoundEntry> coll = SoundEngine.getEngine().getCurrentPlayingSounds();
-                            if (coll.size() > 0) {
+                            if (!coll.isEmpty()) {
                                 getBot().sendMessage(channel, "Stopping all currently playing sounds...");
-                                for (SoundEntry soun : coll) {
-                                    soun.close();
-                                }
+                                coll.stream().forEach(s -> s.close());
+                            } else {
+                                getBot().sendMessage(channel, "There are no sounds currently playing!");
                             }
                             break;
                         case MOD_USER:
                             GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".mod " + first);
                             break;
                         case ADD_KEYWORD:
-                            Utils.handleKeyword(mess);
+                            commandResponse = Utils.handleKeyword(mess);
+                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveKeywords();
                             break;
                         case REMOVE_KEYWORD:
-                            Utils.handleKeyword(mess);
+                            commandResponse = Utils.handleKeyword(mess);
+                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveKeywords();
                             break;
                         case SET_USER_COL:
-                            Utils.handleColor(sender, mess);
+                            commandResponse = Utils.handleColor(sender, mess);
+                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveUserColors();
                             break;
                         case SET_COMMAND_PERMISSION:
-                            Utils.setCommandPermission(mess);
-                            GUIMain.currentSettings.saveConCommands();
+                            commandResponse = Utils.setCommandPermission(mess);
+                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveConCommands();
                             break;
                         case ADD_TEXT_COMMAND:
-                            Utils.addCommands(mess);
-                            GUIMain.currentSettings.saveCommands();
+                            commandResponse = Utils.addCommands(mess);
+                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveCommands();
                             break;
                         case REMOVE_TEXT_COMMAND:
-                            Utils.removeCommands(first);
-                            GUIMain.currentSettings.saveCommands();
+                            commandResponse = Utils.removeCommands(first);
+                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveCommands();
                             break;
                         case ADD_DONATION:
                             double amount;
@@ -252,14 +280,11 @@ public class IRCBot extends MessageHandler {
                             } catch (Exception ignored) {
                                 return;
                             }
-                            Donator don = Utils.getDonator(first);
-                            if (don == null) {
-                                don = new Donator(first, amount);
-                                GUIMain.donators.add(don);
-                            } else {
-                                don.addDonated(amount);
+                            if (amount > 0.0) {
+                                GUIMain.currentSettings.donationManager.addDonation(
+                                        new Donation("LOCAL", first, "Added manually.", amount, Date.from(Instant.now())), true);
+                                getBot().sendMessage(channel, "Added local donation!");
                             }
-                            GUIMain.currentSettings.saveDonators();
                             break;
                         case SET_SUB_SOUND:
                             if (GUIMain.currentSettings.loadSubSounds()) {
@@ -268,25 +293,28 @@ public class IRCBot extends MessageHandler {
                             break;
                         case SET_SOUND_PERMISSION:
                             try {
-                                int perm;
-                                perm = Integer.parseInt(first);
+                                int perm = Integer.parseInt(first);
                                 if (perm > -1 && perm < 5) {
                                     SoundEngine.getEngine().setPermission(perm);
+                                    getBot().sendMessage(channel, "Sound permission set to: " + perm);
                                 }
                             } catch (Exception ignored) {
+                                getBot().sendMessage(channel, "Failed to set sound permission, usage: !setsoundperm (num permission)");
                             }
                             break;
                         case SET_NAME_FACE:
                             if (first.startsWith("http")) {
-                                Utils.downloadFace(first, GUIMain.currentSettings.nameFaceDir.getAbsolutePath(),
-                                        Utils.setExtension(sender, ".png"), sender, 2);
-                                GUIMain.currentSettings.saveNameFaces();
+                                commandResponse = FaceManager.downloadFace(first,
+                                        GUIMain.currentSettings.nameFaceDir.getAbsolutePath(),
+                                        Utils.setExtension(sender, ".png"), sender, FaceManager.FACE_TYPE.NAME_FACE);
+                                if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveNameFaces();
                             }
                             break;
                         case REMOVE_NAME_FACE:
-                            if (GUIMain.nameFaceMap.containsKey(sender)) {
-                                GUIMain.nameFaceMap.remove(sender);
+                            if (FaceManager.nameFaceMap.containsKey(sender)) {
+                                FaceManager.nameFaceMap.remove(sender);
                                 GUIMain.currentSettings.saveNameFaces();
+                                getBot().sendMessage(channel, "Removed face for user: " + sender + " !");
                             }
                             break;
                         case SET_STREAM_TITLE:
@@ -298,6 +326,8 @@ public class IRCBot extends MessageHandler {
                                     } else {
                                         getBot().sendMessage(channel, "Error setting the title of the stream!");
                                     }
+                                } else {
+                                    getBot().sendMessage(channel, "This OAuth key cannot update the title of the stream!");
                                 }
                             }
                             break;
@@ -324,58 +354,58 @@ public class IRCBot extends MessageHandler {
                                     } else {
                                         getBot().sendMessage(channel, "Error in setting the game of the stream!");
                                     }
+                                } else {
+                                    getBot().sendMessage(channel, "This OAuth key cannot update the title of the stream!");
                                 }
                             }
                             break;
                         case PLAY_ADVERT:
                             if (key != null) {
                                 if (key.canPlayAd()) {
-                                    try {
-                                        int length = Utils.getTime(first);
-                                        if (Utils.playAdvert(key.getKey(), channel, length)) {
-                                            getBot().sendMessage(channel, "Playing an ad for " + length + " seconds!");
-                                            lastAd = System.currentTimeMillis();
-                                        } else {
-                                            getBot().sendMessage(channel, "Error playing an ad!");
-                                            if (lastAd > 0 && ((System.currentTimeMillis() - lastAd) < 480000)) {
-                                                SimpleDateFormat sdf = new SimpleDateFormat("m:ss");
-                                                Date d = new Date(System.currentTimeMillis() - lastAd);
-                                                getBot().sendMessage(channel, "Last ad was was only " + sdf.format(d) + " ago!");
-                                            }
+                                    int length = Utils.getTime(first);
+                                    if (length == -1) length = 30;
+                                    if (Utils.playAdvert(key.getKey(), channel, length)) {
+                                        getBot().sendMessage(channel, "Playing an ad for " + length + " seconds!");
+                                        lastAd = System.currentTimeMillis();
+                                    } else {
+                                        getBot().sendMessage(channel, "Error playing an ad!");
+                                        if (lastAd > 0 && ((System.currentTimeMillis() - lastAd) < 480000)) {
+                                            SimpleDateFormat sdf = new SimpleDateFormat("m:ss");
+                                            Date d = new Date(System.currentTimeMillis() - lastAd);
+                                            getBot().sendMessage(channel, "Last ad was was only " + sdf.format(d) + " ago!");
                                         }
-                                    } catch (Exception e) {
-                                        GUIMain.log(e.getMessage());
                                     }
+                                } else {
+                                    getBot().sendMessage(channel, "This OAuth key cannot play an advertisement!");
                                 }
                             }
                             break;
                         case START_RAFFLE:
-                            try {
+                            if (split.length > 2) {
                                 String timeString = split[2];
-                                try {
-                                    int time = Utils.getTime(timeString);
-                                    if (time < 1) break;
-                                    int perm = 0;
-                                    //TODO select a parameter in Settings GUI that defines the default raffle
-                                    if (split.length == 4) {
-                                        //because right now it just "Everyone" unless specified with the int param
-                                        perm = Integer.parseInt(split[3]);
-                                    }
-
-                                    Raffle r = new Raffle(getBot(), first, time, channel, perm);
-                                    r.start();
-                                    raffles.add(r);
-                                    //print the blarb
-                                    getBot().sendMessage(channel, r.getStartMessage());
-                                    getBot().sendMessage(channel, "NOTE: This is a promotion from " + channel.substring(1) +
-                                            ". Twitch does not sponsor or endorse broadcaster promotions and is not responsible for them.");
-                                } catch (Exception e) {
+                                int time = Utils.getTime(timeString);
+                                if (time < 1) {
+                                    getBot().sendMessage(channel, "Failed to start raffle, usage: !startraffle (name) (time) (permission?)");
                                     break;
                                 }
-                            } catch (Exception e) {
-                                GUIMain.log(e.getMessage());
+                                int perm = 0;//TODO select a parameter in Settings GUI that defines the default raffle
+                                if (split.length == 4) {
+                                    //because right now it's just "Everyone" unless specified with the int param
+                                    try {
+                                        perm = Integer.parseInt(split[3]);
+                                    } catch (Exception ignored) {//default to the specified value
+                                    }
+                                }
+                                Raffle r = new Raffle(getBot(), first, time, channel, perm);
+                                r.start();
+                                raffles.add(r);
+                                //print the blarb
+                                getBot().sendMessage(channel, r.getStartMessage());
+                                getBot().sendMessage(channel, "NOTE: This is a promotion from " + channel.substring(1) +
+                                        ". Twitch does not sponsor or endorse broadcaster promotions and is not responsible for them.");
+                            } else {
+                                getBot().sendMessage(channel, "Failed to start raffle, usage: !startraffle (name) (time) (permission?)");
                             }
-
                             break;
                         case ADD_RAFFLE_WINNER:
                             if (!winners.contains(first)) {
@@ -393,6 +423,7 @@ public class IRCBot extends MessageHandler {
                                     r.interrupt();
                                     toRemove = r;
                                     getBot().sendMessage(channel, "The raffle with key " + first + " has been stopped!");
+                                    break;
                                 }
                             }
                             if (toRemove != null) {
@@ -465,27 +496,40 @@ public class IRCBot extends MessageHandler {
                             }
                             break;
                         case NOW_PLAYING:
-                            String song = Utils.getCurrentlyPlaying();
-                            if ("".equals(song)) {
-                                getBot().sendMessage(channel, "There is no currently playing song!");
-                            } else {
-                                getBot().sendMessage(channel, "The current song is: " + song);
-                            }
+                            commandResponse = Utils.getCurrentlyPlaying();
                             break;
                         default:
                             break;
 
                     }
+                    if (commandResponse != null) getBot().sendMessage(channel, commandResponse.getResponseText());
                 }
                 //text command
                 Command c = Utils.getCommand(trigger);
-                if (c != null) {
+                if (c != null && c.getMessage().data.length > 0 && !c.getDelayTimer().isRunning()) {
                     //TODO add a check to see if people want it only to react in their channel
-                    handleCommand(channel, c);
+                    StringArray sa = c.getMessage();
+                    if (c.hasArguments()) {
+                        //build arguments if it has any
+                        int argAmount = c.countArguments();
+                        if ((split.length - 1) < argAmount) {
+                            getBot().sendMessage(channel, "Missing command arguments! Command format: " + c.printCommand());
+                            return;
+                        }
+                        String[] definedArguments = new String[argAmount];
+                        System.arraycopy(split, 1, definedArguments, 0, argAmount);
+                        sa = c.buildMessage(sa, definedArguments);
+                    }
+                    //send the message
+                    for (String s : sa.data) {
+                        getBot().sendMessage(channel, s);
+                    }
+                    c.getDelayTimer().reset();
                 }
             }
         }
     }
+
 
     //!startpoll time options
     public void createPoll(String channel, String message) {
@@ -514,7 +558,7 @@ public class IRCBot extends MessageHandler {
         if (SoundEngine.getEngine().shouldPlay()) {//sound not turned off
             if (channel.equalsIgnoreCase("#" + GUIMain.currentSettings.accountManager.getUserAccount().getName())) {//is in main channel
                 if (soundCheck(s, send, channel)) {//let's check the existence/permission
-                    return true;//HIT THAT SHIT
+                    return true;//HIT THAT
                 }
             }
         }
@@ -535,7 +579,7 @@ public class IRCBot extends MessageHandler {
         if (u.isSubscriber(channel)) {
             permission = Constants.PERMISSION_SUB;
         }
-        if (u.isDonator()) {
+        if (u.isDonor()) {
             if (u.getDonated() >= 2.50) {
                 permission = Constants.PERMISSION_DONOR;
             }
@@ -565,17 +609,6 @@ public class IRCBot extends MessageHandler {
         return false;
     }
 
-    public void handleCommand(String channel, Command c) {
-        if (c.getMessage().data.length != 0) {
-            if (!c.getDelayTimer().isRunning()) {
-                for (String s : c.getMessage().data) {
-                    getBot().sendMessage(channel, s);
-                }
-                c.getDelayTimer().reset();
-            }
-        }
-    }
-
     /*public void handleDev(String channel, String s) {
         //TODO think of some more dev commands later, this is pretty bare now
         handleMod(channel, s);
@@ -587,20 +620,7 @@ public class IRCBot extends MessageHandler {
             if (s.startsWith("soundstate")) {
                 String[] split = s.split(" ");
                 if (split.length == 1) {
-                    int delay = (int) SoundEngine.getEngine().getSoundTimer().period / 1000;
-                    String onOrOff = (SoundEngine.getEngine().shouldPlay() ? "ON" : "OFF");
-                    int numSound = SoundEngine.getEngine().getCurrentPlayingSounds().size();
-                    int permission = SoundEngine.getEngine().getPermission();
-                    String numSounds = (numSound > 0 ? (numSound == 1 ? "one sound" : (numSound + " sounds")) : "no sounds") + " currently playing";
-                    String delayS = (delay < 2 ? (delay == 0 ? "no delay." : "a delay of 1 second.") : ("a delay of " + delay + " seconds."));
-                    String perm = (permission > 0 ? (permission > 1 ? (permission > 2 ? (permission > 3 ?
-                            "Only the Broadcaster" :
-                            "Only Mods and the Broadcaster") :
-                            "Donators, Mods, and the Broadcaster") :
-                            "Subscribers, Donators, Mods, and the Broadcaster") :
-                            "Everyone")
-                            + " can play sounds.";
-                    getBot().sendMessage(channel, "Sound is currently turned " + onOrOff + " with " + numSounds + " with " + delayS + " " + perm);
+                    getBot().sendMessage(channel, SoundEngine.getEngine().getSoundState());
                 } else if (split.length == 2) {
                     String soundName = split[1];
                     if (GUIMain.soundMap.containsKey(soundName)) {

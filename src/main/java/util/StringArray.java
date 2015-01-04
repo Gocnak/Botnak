@@ -14,7 +14,7 @@ public class StringArray {
     public String[] data;
 
     public StringArray(String[] data) {
-        this.data = data;
+        this.data = Arrays.copyOf(data, data.length);
     }
 
     @Override

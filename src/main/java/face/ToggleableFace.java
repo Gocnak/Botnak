@@ -24,4 +24,9 @@ public class ToggleableFace extends Face {
     public void setEnabled(boolean newBool) {
         isEnabled = newBool;
     }
+
+    @Override
+    public boolean equals(Object another) {
+        return super.equals(another) && ((ToggleableFace) another).isEnabled() == this.isEnabled();
+    }
 }

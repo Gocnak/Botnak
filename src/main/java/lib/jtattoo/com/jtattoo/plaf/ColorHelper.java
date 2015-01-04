@@ -62,7 +62,7 @@ public class ColorHelper {
      */
     public static Color[] createColorArr(Color c1, Color c2, int steps) {
         if (c1 == null || c2 == null) {
-            return null;
+            return new Color[0];
         }
 
         Color colors[] = new Color[steps];

@@ -1,15 +1,12 @@
 package gui;
 
-import irc.Account;
-import irc.Oauth;
-import irc.Task;
+import irc.account.Account;
+import irc.account.Oauth;
+import irc.account.Task;
 
 import javax.swing.*;
 import java.awt.*;
 import java.net.URI;
-/*
- * Created by JFormDesigner on Sat May 10 06:16:20 EDT 2014
- */
 
 /**
  * This GUI handles authorizing Botnak to handle your main account.
@@ -34,6 +31,7 @@ public class AuthorizeAccountGUI extends JFrame {
                     "&client_id=qw8d3ve921t0n6e3if07l664f1jn1y7" +
                     "&redirect_uri=http://gocnak.github.io/Botnak/token_redirect.html" +
                     "&scope=chat_login";
+            if (/*TODO implement "Read Subs" box*/true) URL += "+channel_subscriptions";
             if (boxCommercial.isSelected()) URL += "+channel_commercial";
             if (boxEditStream.isSelected()) URL += "+channel_editor";
             if (boxFollowed.isSelected()) URL += "+user_follows_edit";

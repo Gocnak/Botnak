@@ -1,17 +1,21 @@
 package gui;
 
+import face.FaceManager;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
+import irc.Donor;
 import irc.Message;
 import lib.pircbot.org.jibble.pircbot.User;
 import lib.scalr.Scalr;
 import util.Utils;
+import util.misc.Donation;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.*;
+import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -48,36 +52,27 @@ public class ChatPane implements DocumentListener {
                 }
             });
             JScrollPane pane = new JScrollPane();
-            frame.setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
+            frame.setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
             pane.setViewportView(getTextPane());
             pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
             pane.getVerticalScrollBar().setPreferredSize(new Dimension(0, 0));
-            frame.setMinimumSize(new Dimension(750, 420));
-            frame.setSize(750, 420);
             frame.add(pane);
             frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
             frame.pack();
+            frame.setSize(750, 420);
             frame.setVisible(true);
             setPoppedOutPane(frame);
         }
     }
 
-    public boolean shouldPulse() {
-        return shouldPulse;
-    }
-
+    /**
+     * Keeps track of how many subs this channel gets.
+     * TODO: make this a statistic that the user can output to a file ("yesterday sub #")
+     */
     private int subCount = 0;
 
     private int viewerCount = -1;
     private int viewerPeak = 0;
-
-    public int getViewerPeak() {
-        return viewerPeak;
-    }
-
-    public int getViewerCount() {
-        return viewerCount;
-    }
 
     public void setViewerCount(int newCount) {
         if (newCount > viewerPeak) viewerPeak = newCount;
@@ -96,11 +91,63 @@ public class ChatPane implements DocumentListener {
         return String.format("Viewer count: %d (%d)", viewerCount, viewerPeak);
     }
 
-    private boolean shouldPulse = true;
-
-    public void setShouldPulse(boolean newBool) {
-        shouldPulse = newBool;
+    /**
+     * This is the main boolean to check to see if this tab should pulse.
+     * <p>
+     * This boolean checks to see if the tab wasn't toggled, if it's visible (not in a combined tab),
+     * and if it's not selected. TODO check for global setting of pulsing tabs
+     *
+     * @return True if this tab should pulse, else false.
+     */
+    public boolean shouldPulse() {
+        boolean shouldPulseLocal = (this instanceof CombinedChatPane) ?
+                ((CombinedChatPane) this).getActiveChatPane().shouldPulseLoc() : shouldPulseLoc;
+        return shouldPulseLocal && isTabVisible() && GUIMain.channelPane.getSelectedIndex() != index && index != 0;
     }
+
+    private boolean shouldPulseLoc = true;
+
+    /**
+     * Determines if this tab should pulse.
+     *
+     * @return True if this tab is not toggled off, else false. ("Tab Pulsing OFF")
+     */
+    public boolean shouldPulseLoc() {
+        return shouldPulseLoc;
+    }
+
+    /**
+     * Sets the value for if this tab should pulse or not.
+     *
+     * @param newBool True (default) if tab pulsing should happen, else false if you wish to
+     *                toggle tab pulsing off.
+     */
+    public void setShouldPulse(boolean newBool) {
+        shouldPulseLoc = newBool;
+    }
+
+
+    /**
+     * Sets the pulsing boolean if this tab is starting to pulse.
+     * <p>
+     * Used by the TabPulse class.
+     *
+     * @param isPulsing True if the tab is starting to pulse, else false to stop pulsing.
+     */
+    public void setPulsing(boolean isPulsing) {
+        this.isPulsing = isPulsing;
+    }
+
+    /**
+     * Used by the TabPulse class.
+     *
+     * @return true if the chat pane is currently pulsing, else false.
+     */
+    public boolean isPulsing() {
+        return isPulsing;
+    }
+
+    private boolean isPulsing = false;
 
     //credit to http://stackoverflow.com/a/4047794 for the below
     public boolean isScrollBarFullyExtended(JScrollBar vScrollBar) {
@@ -130,7 +177,7 @@ public class ChatPane implements DocumentListener {
             if (cleanupCounter > GUIMain.currentSettings.chatMax) {
                     /* cleanup every n messages */
                 if (cleanupChat()) {
-                    cleanupCounter = 0;
+                    resetCleanupCounter();
                 }
             }
         }
@@ -222,12 +269,14 @@ public class ChatPane implements DocumentListener {
 
     private int cleanupCounter = 0;
 
+    public void resetCleanupCounter() {
+        cleanupCounter = 0;
+    }
+
     //TODO make this be in 24 hour if they want
     final SimpleDateFormat format = new SimpleDateFormat("[h:mm a]", Locale.getDefault());
 
     public String getTime() {
-
-        Runtime.getRuntime().gc();
         return format.format(new Date(System.currentTimeMillis()));
     }
 
@@ -247,11 +296,10 @@ public class ChatPane implements DocumentListener {
         this.scrollPane = scrollPane;
         textPane.getDocument().addDocumentListener(this);
         textPane.getDocument().addDocumentListener(new ScrollingDocumentListener());
-        textPane.getStyledDocument().addDocumentListener(new ScrollingDocumentListener());
     }
 
     public ChatPane() {
-
+        //Used by the CombinedChatPane class, which calls its super anyways.
     }
 
     /**
@@ -293,7 +341,7 @@ public class ChatPane implements DocumentListener {
                     insertIcon(doc, doc.getLength(), 0, null);
                 }
             }
-            if (u.isDonator()) {
+            if (u.isDonor()) {
                 insertIcon(doc, doc.getLength(), u.getDonationStatus(), null);
             }
             if (u.isStaff()) {
@@ -302,21 +350,23 @@ public class ChatPane implements DocumentListener {
             if (u.isAdmin()) {
                 insertIcon(doc, doc.getLength(), 2, null);
             }
-            if (u.isSubscriber(channel)) {
+            boolean isSubsciber = u.isSubscriber(channel);
+            if (isSubsciber) {
                 insertIcon(doc, doc.getLength(), 5, channel);
             }
             if (u.isTurbo()) {
                 insertIcon(doc, doc.getLength(), 4, null);
             }
             int nameStart = doc.getLength() + 1;
+            user.addAttribute(HTML.Attribute.NAME, sender);
             if (showChannel) {
                 doc.insertString(doc.getLength(), " " + sender, user);
                 doc.insertString(doc.getLength(), " (" + channel.substring(1) + ")" + (isMe ? " " : ": "), GUIMain.norm);
             } else {
                 doc.insertString(doc.getLength(), " " + sender + (!isMe ? ": " : " "), user);
             }
-            Utils.handleNames(doc, nameStart, sender, user);
-            Utils.handleNameFaces(doc, nameStart, sender);
+            StyleConstants.setIcon(user, null);
+            FaceManager.handleFaces(doc, nameStart, sender, FaceManager.FACE_TYPE.NAME_FACE);
             int messStart = doc.getLength();
             SimpleAttributeSet set;
             if (Utils.mentionsKeyword(mess)) {
@@ -325,49 +375,49 @@ public class ChatPane implements DocumentListener {
                 set = (isMe ? user : GUIMain.norm);
             }
             doc.insertString(doc.getLength(), mess, set);
-            Utils.handleFaces(doc, messStart, mess);
-            Utils.handleTwitchFaces(doc, messStart, mess);
+            FaceManager.handleFaces(doc, messStart, mess, FaceManager.FACE_TYPE.NORMAL_FACE);
+            FaceManager.handleFaces(doc, messStart, mess, FaceManager.FACE_TYPE.TWITCH_FACE);
             Utils.handleURLs(doc, messStart, mess);
-            if (index != 0 && isTabVisible && shouldPulse)
-                GUIMain.instance.pulseTab(index);
+            if (channel.substring(1).equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName()))
+                //check status of the sub, has it been a month?
+                GUIMain.currentSettings.subscriberManager.updateSubscriber(u, channel, isSubsciber);
+            if (shouldPulse())
+                GUIMain.instance.pulseTab(this);
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
     }
 
-    public void onBan(String message) {
-        StyledDocument doc = textPane.getStyledDocument();
-        try {
-            doc.insertString(doc.getLength(), "\n" + getTime(), GUIMain.norm);
-            doc.insertString(doc.getLength(), " " + message, GUIMain.norm);
-        } catch (Exception ignored) {
-        }
-    }
-
-    public void onBeingHosted(String message) {
-        StyledDocument doc = textPane.getStyledDocument();
-        try {
-            doc.insertString(doc.getLength(), "\n" + getTime(), GUIMain.norm);
-            doc.insertString(doc.getLength(), " " + message, GUIMain.norm);
-        } catch (Exception ignored) {
-        }
-    }
-
-    public void onSub(Message message) {
+    /**
+     * Handles inserting icons before and after the message.
+     *
+     * @param message The message itself.
+     * @param status  5 for sub message, else pass Donor#getDonationStatus(d#getAmount())
+     */
+    public void onIconMessage(Message message, int status) {
         StyledDocument doc = textPane.getStyledDocument();
         try {
             doc.insertString(doc.getLength(), "\n", GUIMain.norm);
             for (int i = 0; i < 5; i++) {
-                insertIcon(doc, doc.getLength(), 5, message.getChannel());
+                insertIcon(doc, doc.getLength(), status, (status == 5 ? message.getChannel() : null));
             }
-            //TODO make a setting for the color for the sub message
-            doc.insertString(doc.getLength(), message.getContent() + " (" + (subCount + 1) + ")", GUIMain.norm);
+            doc.insertString(doc.getLength(), " " + message.getContent() + (status == 5 ? (" (" + (subCount + 1) + ") ") : " "), GUIMain.norm);
             for (int i = 0; i < 5; i++) {
-                insertIcon(doc, doc.getLength(), 5, message.getChannel());
+                insertIcon(doc, doc.getLength(), status, (status == 5 ? message.getChannel() : null));
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
         }
-        subCount++;
+        if (status == 5) subCount++;
+    }
+
+    public void onSub(Message message) {
+        onIconMessage(message, 5);
+    }
+
+    public void onDonation(Message message) {
+        Donation d = (Donation) message.getExtra();
+        onIconMessage(message, Donor.getDonationStatus(d.getAmount()));
     }
 
     private ImageIcon sizeIcon(URL image) {
@@ -413,29 +463,29 @@ public class ChatPane implements DocumentListener {
                 kind = "Turbo";
                 break;
             case 5:
-                URL subIcon = Utils.getSubIcon(channel);
+                URL subIcon = FaceManager.getSubIcon(channel);
                 if (subIcon == null) return;
                 icon = sizeIcon(subIcon);
                 kind = "Subscriber";
                 break;
             case 6://donation normal
-                icon = sizeIcon(ChatPane.class.getResource("/resource/green.png"));
+                icon = sizeIcon(ChatPane.class.getResource("/image/green.png"));
                 kind = "Donator";
                 break;
             case 7:
-                icon = sizeIcon(ChatPane.class.getResource("/resource/bronze.png"));
+                icon = sizeIcon(ChatPane.class.getResource("/image/bronze.png"));
                 kind = "Donator";
                 break;
             case 8:
-                icon = sizeIcon(ChatPane.class.getResource("/resource/silver.png"));
+                icon = sizeIcon(ChatPane.class.getResource("/image/silver.png"));
                 kind = "Donator";
                 break;
             case 9:
-                icon = sizeIcon(ChatPane.class.getResource("/resource/gold.png"));
+                icon = sizeIcon(ChatPane.class.getResource("/image/gold.png"));
                 kind = "Donator";
                 break;
             case 10:
-                icon = sizeIcon(ChatPane.class.getResource("/resource/diamond.png"));
+                icon = sizeIcon(ChatPane.class.getResource("/image/diamond.png"));
                 kind = "Donator";
                 break;
             default:
@@ -448,7 +498,7 @@ public class ChatPane implements DocumentListener {
             doc.insertString(pos, " ", null);
             doc.insertString(pos + 1, kind, attrs);
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log("INSERT ICON " + e.getMessage());
         }
     }
 
@@ -458,7 +508,7 @@ public class ChatPane implements DocumentListener {
 
     // Source: http://stackoverflow.com/a/4628879
     // by http://stackoverflow.com/users/131872/camickr & Community
-    private boolean cleanupChat() {
+    public boolean cleanupChat() {
         if (textPane == null || textPane.getParent() == null) return false;
         if (!(textPane.getParent() instanceof JViewport)) {
             return false;
@@ -488,7 +538,7 @@ public class ChatPane implements DocumentListener {
                 }
             } catch (BadLocationException e) {
                 // we cannot do anything here
-                GUIMain.log(e.getMessage());
+                GUIMain.log("CLEANUP CHAT " + e.getMessage());
                 return false;
             }
         }
@@ -524,16 +574,25 @@ public class ChatPane implements DocumentListener {
         if (GUIMain.currentSettings.logChat) {
             Utils.logChat(getText().split("\\n"), chan, 2);
         }
-        //TODO check if the viewer list and popped out GUIs are deleted
+        //TODO ensure the viewer list & other popped out GUIs are deleted
+        if (getPoppedOutPane() != null) {
+            getPoppedOutPane().dispose();
+        }
         GUIMain.channelPane.removeTabAt(index);
         GUIMain.channelPane.setSelectedIndex(index - 1);
     }
 
-    public void log(String message) {
-        String time = format.format(new Date(System.currentTimeMillis()));
+    /**
+     * Logs a message to this chat pane.
+     *
+     * @param message  The message itself.
+     * @param isSystem Whether the message is a system log message or not.
+     */
+    public void log(String message, boolean isSystem) {
         StyledDocument doc = textPane.getStyledDocument();
         try {
-            doc.insertString(doc.getLength(), "\n" + time + " SYS: " + message, GUIMain.norm);
+            doc.insertString(doc.getLength(), "\n" + getTime(), GUIMain.norm);
+            doc.insertString(doc.getLength(), " " + (isSystem ? "SYS: " : "") + message, GUIMain.norm);
         } catch (Exception ignored) {
         }
     }

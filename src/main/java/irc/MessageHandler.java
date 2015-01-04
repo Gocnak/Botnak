@@ -155,4 +155,13 @@ public abstract class MessageHandler {
      */
     public void onBeingHosted(String line) {
     }
+
+    /**
+     * This method is called if JTV is trying to tell you something.
+     *
+     * @param channel The channel (used for getting the pane)
+     * @param line    What JTV is trying to tell you.
+     */
+    public void onJTVMessage(String channel, String line) {
+    }
 }

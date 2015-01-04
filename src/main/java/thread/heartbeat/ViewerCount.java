@@ -1,7 +1,6 @@
 package thread.heartbeat;
 
 import gui.ChatPane;
-import gui.CombinedChatPane;
 import gui.GUIMain;
 import util.Timer;
 import util.Utils;
@@ -11,7 +10,7 @@ import java.util.Set;
 /**
  * Created by Nick on 7/8/2014.
  */
-public class ViewerCount extends HeartbeatThread {
+public class ViewerCount implements HeartbeatThread {
 
     private Timer toUpdate;
 
@@ -21,19 +20,7 @@ public class ViewerCount extends HeartbeatThread {
 
     @Override
     public boolean shouldBeat() {
-        if (!toUpdate.isRunning()) {
-            int index = GUIMain.channelPane.getSelectedIndex();
-            ChatPane cp = Utils.getChatPane(index);
-            CombinedChatPane ccp = Utils.getCombinedChatPane(index);
-            if (index != 0) {
-                if (ccp != null && !ccp.getActiveChannel().equalsIgnoreCase("all")) {
-                    return true;
-                } else if (cp != null) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return !toUpdate.isRunning() && GUIMain.chatPanes.size() > 1;
     }
 
     @Override
@@ -45,8 +32,11 @@ public class ViewerCount extends HeartbeatThread {
                 int count = Utils.countViewers(s);
                 if (count >= 0) {
                     ChatPane cp = GUIMain.chatPanes.get(s);
-                    cp.setViewerCount(count);
+                    if (cp != null) cp.setViewerCount(count);
                 }
+            } else {
+                ChatPane cp = GUIMain.chatPanes.get(s);
+                if (cp != null) cp.setViewerCount(-1);
             }
         }
     }

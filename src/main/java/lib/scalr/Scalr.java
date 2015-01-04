@@ -1992,7 +1992,7 @@ public class Scalr {
      * Modifications to the original algorithm are variable names and comments
      * added for clarity and the hard-coding of using BICUBIC interpolation as
      * well as the explicit "flush()" operation on the interim BufferedImage
-     * instances to avoid resource leaking.
+     * instances to avoid image leaking.
      *
      * @param src                    The image that will be scaled.
      * @param targetWidth            The target width for the scaled image.

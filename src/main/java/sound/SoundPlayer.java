@@ -81,9 +81,7 @@ public final class SoundPlayer implements Closeable {
 
     @Override
     public void close() {
-        for (final SoundEntry clip : this.clips.values()) {
-            clip.close();
-        }
+        this.clips.values().forEach(sound.SoundEntry::close);
         this.clips.clear();
     }
 
@@ -118,7 +116,7 @@ public final class SoundPlayer implements Closeable {
      * @throws IOException
      */
     public void play(final File file, final PlayMode mode) throws IOException {
-        this.getClip(file).play(mode);
+        if (file != null) this.getClip(file).play(mode);
     }
 
 

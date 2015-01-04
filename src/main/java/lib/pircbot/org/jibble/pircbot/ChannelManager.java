@@ -1,15 +1,15 @@
 package lib.pircbot.org.jibble.pircbot;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Created by Nick on 12/22/13.
  */
 public class ChannelManager {
 
-    private HashSet<Channel> channels = new HashSet<>();
-    private HashSet<User> users = new HashSet<>();
+    private CopyOnWriteArraySet<Channel> channels = new CopyOnWriteArraySet<>();
+    private CopyOnWriteArraySet<User> users = new CopyOnWriteArraySet<>();
 
     /**
      * Creates a blank ChannelManager.
@@ -22,7 +22,7 @@ public class ChannelManager {
      *
      * @param toAdd The channel to add.
      */
-    public synchronized void addChannel(Channel toAdd) {
+    public void addChannel(Channel toAdd) {
         channels.add(toAdd);
     }
 
@@ -31,7 +31,7 @@ public class ChannelManager {
      *
      * @param name The name of the channel.
      */
-    public synchronized void removeChannel(String name) {
+    public void removeChannel(String name) {
         removeChannel(getChannel(name));
     }
 
@@ -40,7 +40,7 @@ public class ChannelManager {
      *
      * @param channel The channel object to remove.
      */
-    public synchronized void removeChannel(Channel channel) {
+    public void removeChannel(Channel channel) {
         if (channel != null) {
             channel.clear();
             channels.remove(channel);
@@ -54,7 +54,7 @@ public class ChannelManager {
      * @param name The name of the channel.
      * @return The channel object if it exists, else null.
      */
-    public synchronized Channel getChannel(String name) {
+    public Channel getChannel(String name) {
         if (!name.startsWith("#")) name = "#" + name;
         for (Channel c : channels) {
             if (c.getName().equalsIgnoreCase(name)) {
@@ -71,7 +71,7 @@ public class ChannelManager {
      * @param create If true, create the user and add to the user list, else return null.
      * @return The user that either exists, was created if create is true, or null.
      */
-    public synchronized User getUser(String name, boolean create) {
+    public User getUser(String name, boolean create) {
         for (User u : users) {
             if (u.getNick().equalsIgnoreCase(name)) {
                 return u;
@@ -92,7 +92,7 @@ public class ChannelManager {
      * @param channel The channel the user is in.
      * @param user    The name of the user.
      */
-    public synchronized void handleSubscriber(String channel, String user) {
+    public void handleSubscriber(String channel, String user) {
         getChannel(channel).addSubscriber(user);
     }
 
@@ -101,7 +101,7 @@ public class ChannelManager {
      *
      * @param user The user to add.
      */
-    public synchronized void addUser(User user) {
+    public void addUser(User user) {
         users.add(user);
     }
 
@@ -110,7 +110,7 @@ public class ChannelManager {
      *
      * @param u The user to remove.
      */
-    public synchronized void removeUser(User u) {
+    public void removeUser(User u) {
         users.remove(u);
     }
 
@@ -120,7 +120,11 @@ public class ChannelManager {
      * @return an array of users.
      */
     public User[] getUsers() {
-        return users.toArray(new User[users.size()]);
+        return users.stream().sorted().toArray(User[]::new);
+    }
+
+    public User[] getUsers(String subWord) {
+        return users.stream().sorted().filter(s -> s.getLowerNick().startsWith(subWord)).toArray(User[]::new);
     }
 
     /**
@@ -128,18 +132,16 @@ public class ChannelManager {
      *
      * @return The names of the channels we are in.
      */
-    public synchronized String[] getChannelNames() {
+    public String[] getChannelNames() {
         ArrayList<String> names = new ArrayList<>();
-        for (Channel c : channels) {
-            names.add(c.getName());
-        }
+        channels.stream().forEach(c -> names.add(c.getName()));
         return names.toArray(new String[names.size()]);
     }
 
     /**
      * Disposes of the channel manager by clearing the channel objects.
      */
-    public synchronized void dispose() {
+    public void dispose() {
         channels.clear();
         users.clear();
     }

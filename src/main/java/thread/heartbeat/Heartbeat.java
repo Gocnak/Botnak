@@ -2,7 +2,9 @@ package thread.heartbeat;
 
 import gui.GUIMain;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Nick on 3/12/14.
@@ -16,7 +18,8 @@ import java.util.HashSet;
  */
 public class Heartbeat extends Thread {
 
-    private HashSet<HeartbeatThread> heartbeatThreads;
+    private ExecutorService executor;
+    private ArrayList<HeartbeatThread> heartbeatThreads;
     private int delay;
 
     /**
@@ -32,17 +35,22 @@ public class Heartbeat extends Thread {
      * @param del The specified delay in milliseconds.
      */
     public Heartbeat(int del) {
-        heartbeatThreads = new HashSet<>();
+        heartbeatThreads = new ArrayList<>();
+        executor = Executors.newCachedThreadPool();
         delay = del;
     }
 
     @Override
     public void run() {
         while (!GUIMain.shutDown) {
-            heartbeatThreads.stream().filter(HeartbeatThread::shouldBeat).forEach(t -> {
-                t.beat();
-                t.afterBeat();
-            });
+            heartbeatThreads.stream().filter(HeartbeatThread::shouldBeat).forEach(t ->
+                    executor.execute(() -> {
+                        try {
+                            t.beat();
+                            t.afterBeat();
+                        } catch (Exception ignored) {
+                        }
+                    }));
             try {
                 Thread.sleep(delay);
             } catch (Exception ignored) {
@@ -56,6 +64,7 @@ public class Heartbeat extends Thread {
 
     @Override
     public void interrupt() {
+        executor.shutdown();
         super.interrupt();
     }
 }

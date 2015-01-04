@@ -76,7 +76,7 @@ public class GUIStreams extends JFrame {
 
         //======== this ========
         setTitle("Add Streams");
-        setIconImage(new ImageIcon(getClass().getResource("/resource/icon.png")).getImage());
+        setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
         setResizable(false);
         Container contentPane = getContentPane();
 
@@ -92,6 +92,9 @@ public class GUIStreams extends JFrame {
             public void keyReleased(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     addStreamButtonActionPerformed();
+                }
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    dispose();
                 }
             }
         });

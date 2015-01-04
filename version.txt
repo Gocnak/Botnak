@@ -1,22 +1,28 @@
-2.25
+2.26
 
-NOTE:
->>> YOU NEED JAVA 8 TO CONTINUE TO USE BOTNAK!!! <<<
+(If these exist)
+Delete your Botnak/TwichFaces/ folder
+Delete your twitchfaces.txt file
+Delete your commands.txt file
+(before opening the new version of Botnak)
 
 Added:
-Hosting Notification messages (closes #51)
-New User-Management System
-Maven Support (rids local dependencies) (closes #29)
-Pop-out Functionality for Tabs
-!song command (see Issue #53)
+
+Donation Manager (closes #11)
+Subscriber Manager (closes #36)
+JTV Messages Support
+"Clear chat" Support (closes #27)
+"Pop-out" Limitless Dimensions (closes #19)
+User-Defined Argument Commands (closes #46)
+Botnak talks more in response to commands
+"@ user auto completion" (closes #59)
 
 Fixed:
-More Intelligent Ban-Queue (closes #52)
-More Intelligent Viewer Count
-Bug fixes and code cleanup
 
-To come:
-Donation Notifications
-Reconnect threads
-VLC Player stuff
-User stats
+Too many spaces replaced with one space
+Tab pulsing issues (closes #42)
+Account Mishaps (closes #49 issue, please read it)
+Twitch Face Downloading to be more sparse (closes #32)
+Clear chat amount being detected now (closes #55)
+Removed maven support, no need for it yet
+

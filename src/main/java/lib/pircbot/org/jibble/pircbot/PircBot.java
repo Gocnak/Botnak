@@ -14,6 +14,7 @@ found at http://www.jibble.org/licenses/
 
 package lib.pircbot.org.jibble.pircbot;
 
+import face.FaceManager;
 import gui.GUIMain;
 import irc.MessageHandler;
 import util.Constants;
@@ -22,6 +23,7 @@ import java.awt.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 /**
@@ -395,6 +397,7 @@ public class PircBot implements ReplyConstants {
             onServerPing(line.substring(5));
             return;
         }
+        line = line.replaceAll("\\s+", " ");
 
         String sourceNick = "";
         String sourceLogin = "";
@@ -466,18 +469,23 @@ public class PircBot implements ReplyConstants {
             if (sourceNick.equalsIgnoreCase("jtv")) {
                 if (line.contains("SPECIALUSER")) {
                     handleSpecial(target, line.substring(line.indexOf(" :") + 2));
-                }
-                if (line.contains("USERCOLOR")) {
+                } else if (line.contains("USERCOLOR")) {
                     handleColor(target, line.substring(line.indexOf(" :") + 2));
-                }
-                if (line.contains("CLEARCHAT")) {
+                } else if (line.contains("EMOTESET")) {
+                    String[] toParse = line.substring(line.indexOf("[") + 1, line.indexOf("]")).split(",");
+                    ArrayList<Integer> emoteSets = new ArrayList<>();
+                    for (String s : toParse) emoteSets.add(Integer.parseInt(s));
+                    FaceManager.handleEmoteset(emoteSets.toArray(new Integer[emoteSets.size()]));
+                } else if (line.contains("HISTORYEND") || line.contains("Now hosting") || line.contains("Exited host")) {
+                    //do nothing
+                } else if (line.contains("CLEARCHAT")) {
                     getMessageHandler().onClearChat(target, line.substring(line.indexOf(" :") + 2));
-                }
-                if (line.contains("HOSTTARGET")) {
+                } else if (line.contains("HOSTTARGET")) {
                     getMessageHandler().onHosting(target.substring(1), line.substring(line.indexOf(" :") + 2).split(" ")[1]);
-                }
-                if (line.contains("The moderators of this ")) {
+                } else if (line.contains("The moderators of this ")) {
                     buildMods(target, line.substring(line.indexOf(" :") + 2));
+                } else {
+                    getMessageHandler().onJTVMessage(target.substring(1), line.substring(line.indexOf(" :") + 2));
                 }
                 return;
             }

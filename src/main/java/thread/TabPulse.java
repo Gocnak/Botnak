@@ -1,8 +1,10 @@
 package thread;
 
+import gui.ChatPane;
 import gui.GUIMain;
 import lib.jtattoo.com.jtattoo.plaf.ColorHelper;
 
+import javax.accessibility.AccessibleComponent;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -20,34 +22,50 @@ import java.util.ArrayList;
  */
 public class TabPulse extends Thread {
 
-    private int index;
-
-    public int getIndex() {
-        return index;
-    }
-
     private Color[] totalColors = new Color[200];
     private final Color controlColorDark = new Color(32, 32, 32);
 
     private TimerListener tl;
     private javax.swing.Timer timer;
+    private ChatPane cp = null;
+    private AccessibleComponent ac = null;
 
     public TabPulse(final int index) {
-        this.index = index;
+        this(GUIMain.channelPane.getPage(index));
+    }
+
+    public TabPulse(ChatPane cp) {
+        this(cp.getIndex());
+        this.cp = cp;
+    }
+
+    public TabPulse(Component c) {
+
+    }
+
+    public TabPulse(AccessibleComponent ac) {
+
         tl = new TimerListener();
-        tl.addColorChanger(c -> GUIMain.channelPane.setBackgroundAt(index, c));
+        this.ac = ac;
+        tl.addColorChanger(c -> {
+            ac.setBackground(c);
+            GUIMain.channelPane.repaint(ac.getBounds());
+        });
+        //tl.addColorChanger(c -> GUIMain.channelPane.setBackgroundAt(index, c));
         timer = new javax.swing.Timer(20, tl);
     }
 
     @Override
     public void run() {
-        if (GUIMain.channelPane.getSelectedIndex() != index) {
+        if (cp.shouldPulse()) {
             timer.start();
-            while (!GUIMain.shutDown && GUIMain.channelPane.getSelectedIndex() != index) {
+            while (!GUIMain.shutDown && cp.shouldPulse()) {
                 //do pulse
                 if (tl.isActuallyDone()) {
                     timer.stop();
-                    GUIMain.channelPane.setBackgroundAt(index, ColorHelper.darker(Color.orange, 15));
+                    ac.setBackground(ColorHelper.darker(Color.orange, 15));
+                    GUIMain.channelPane.repaint(ac.getBounds());
+                    //GUIMain.channelPane.setBackgroundAt(index, ColorHelper.darker(Color.orange, 15));
                 }
                 try {
                     Thread.sleep(50);
@@ -56,9 +74,10 @@ public class TabPulse extends Thread {
             }
             timer.stop();
             timer = null;
-            GUIMain.channelPane.setBackgroundAt(index, null);
+            if (cp != null) cp.setPulsing(false);
+            //GUIMain.channelPane.setBackgroundAt(index, null);
+            ac.setBackground(null);
         }
-        super.run();
         GUIMain.tabPulses.remove(this);
     }
 
@@ -71,6 +90,7 @@ public class TabPulse extends Thread {
     @Override
     public synchronized void start() {
         initColors();
+        if (cp != null) cp.setPulsing(true);
         super.start();
     }
 
@@ -87,8 +107,17 @@ public class TabPulse extends Thread {
     private class TimerListener implements ActionListener {
         private int counter = 0;
         private int doneCounter = 0;
+        private int setCounter = 0;
         private java.util.List<ColorChanger> colorChangerList = new ArrayList<>();
         private boolean isActuallyDone = false;
+
+        public TimerListener() {
+            this(2);
+        }
+
+        public TimerListener(int count) {
+            setCounter = count;
+        }
 
         public void actionPerformed(ActionEvent e) {
             for (ColorChanger cc : colorChangerList) {
@@ -96,7 +125,7 @@ public class TabPulse extends Thread {
                     cc.setColor(totalColors[counter]);
                 } catch (Exception ex) {
                     doneCounter++;
-                    isActuallyDone = (doneCounter >= 2);
+                    isActuallyDone = (doneCounter >= setCounter);
                     counter = -1;
                 }
             }

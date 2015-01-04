@@ -1,4 +1,4 @@
-package irc;
+package irc.account;
 
 import lib.pircbot.org.jibble.pircbot.PircBot;
 

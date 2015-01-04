@@ -1,22 +1,22 @@
 package lib.pircbot.org.jibble.pircbot;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Created by Nick on 12/22/13.
  */
 public class Channel {
 
-    private HashSet<String> mods = new HashSet<>();
-    private HashSet<String> subscribers = new HashSet<>();
+    private CopyOnWriteArraySet<String> mods = new CopyOnWriteArraySet<>();
+    private CopyOnWriteArraySet<String> subscribers = new CopyOnWriteArraySet<>();
     private String name = "";
 
     public Channel(String name) {
         this.name = name;
     }
 
-    public synchronized boolean isMod(String user) {
+    public boolean isMod(String user) {
         for (String s : mods) {
             if (user.equalsIgnoreCase(s)) {
                 return true;
@@ -25,9 +25,9 @@ public class Channel {
         return false;
     }
 
-    public synchronized boolean isSubscriber(User user) {
-        for (String u : subscribers) {
-            if (u.equals(user.getNick())) {
+    public boolean isSubscriber(User u) {
+        for (String s : subscribers) {
+            if (s.equals(u.getNick())) {
                 return true;
             }
         }
@@ -58,26 +58,24 @@ public class Channel {
      *
      * @param mods The mod names to add.
      */
-    public synchronized void addMods(String... mods) {
+    public void addMods(String... mods) {
         Collections.addAll(this.mods, mods);
     }
 
     /**
      * Adds a subscriber name to the channel.
      *
-     * @param name The name of the user to add.
+     * @param sub The subscriber to add.
      */
-    public synchronized void addSubscriber(String name) {
-        subscribers.add(name);
+    public void addSubscriber(String sub) {
+        subscribers.add(sub);
     }
 
     /**
      * Clear the channel of its mods and subscribers.
      */
-    public synchronized void clear() {
+    public void clear() {
         mods.clear();
         subscribers.clear();
     }
-
-
 }

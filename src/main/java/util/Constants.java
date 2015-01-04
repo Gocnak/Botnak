@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 
 public class Constants {
 
-    public static final double VERSION = 2.25;
+    public static final double VERSION = 2.26;
 
     /**
      * All users may do it
@@ -24,7 +24,7 @@ public class Constants {
     public static final int PERMISSION_SUB = 1;
 
     /**
-     * Only donators, mods, and the person running botnak can do it.
+     * Only donors, mods, and the person running botnak can do it.
      */
     public static final int PERMISSION_DONOR = 2;
 

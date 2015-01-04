@@ -1,20 +1,33 @@
-package util;
+package util.settings;
 
 import face.Face;
+import face.FaceManager;
 import face.SubscriberIcon;
 import face.TwitchFace;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.GUIMain;
-import irc.*;
+import irc.Donor;
+import irc.Subscriber;
+import irc.account.Account;
+import irc.account.AccountManager;
+import irc.account.Oauth;
+import irc.account.Task;
 import lib.pircbot.org.jibble.pircbot.ChannelManager;
 import sound.Sound;
+import util.Constants;
+import util.Utils;
+import util.comm.Command;
+import util.comm.ConsoleCommand;
+import util.misc.Donation;
 
 import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
 import java.io.*;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +45,10 @@ public class Settings {
     public AccountManager accountManager = null;
     public ChannelManager channelManager = null;
 
+    //donations
+    public DonationManager donationManager = null;
+    public SubscriberManager subscriberManager = null;
+
     //custom directories
     public String defaultSoundDir = "";
     public String defaultFaceDir = "";
@@ -39,6 +56,7 @@ public class Settings {
 
     //custom sound
     public Sound subSound = null;
+    public Sound donationSound = null;
 
     //icons
     public URL modIcon;
@@ -62,6 +80,7 @@ public class Settings {
     public File twitchFaceDir = new File(defaultDir + File.separator + "TwitchFaces");
     public File subIconsDir = new File(defaultDir + File.separator + "SubIcons");
     public File subSoundDir = new File(defaultDir + File.separator + "SubSounds");
+    public File donationSoundDir = new File(defaultDir + File.separator + "DonationSounds");
     public File logDir = new File(defaultDir + File.separator + "Logs");
     //files
     public File accountsFile = new File(defaultDir + File.separator + "acc.ini");
@@ -79,6 +98,8 @@ public class Settings {
     public File subIconsFile = new File(defaultDir + File.separator + "subIcons.txt");
     public File donatorsFile = new File(defaultDir + File.separator + "donators.txt");
     public File namefaceFile = new File(defaultDir + File.separator + "namefaces.txt");
+    public File donationsFile = new File(defaultDir + File.separator + "donations.txt");
+    public File subsFile = new File(defaultDir + File.separator + "subs.txt");
 
     //appearance
     public boolean logChat = false;
@@ -88,15 +109,14 @@ public class Settings {
     public int faceMaxHeight = 20;
     //Graphite = "lib.jtattoo.com.jtattoo.plaf.graphite.GraphiteLookAndFeel"
 
-
     public String date;
 
     public Settings() {//default account
-        modIcon = Settings.class.getResource("/resource/mod.png");
-        broadIcon = Settings.class.getResource("/resource/broad.png");
-        adminIcon = Settings.class.getResource("/resource/admin.png");
-        staffIcon = Settings.class.getResource("/resource/staff.png");
-        turboIcon = Settings.class.getResource("/resource/turbo.png");
+        modIcon = Settings.class.getResource("/image/mod.png");
+        broadIcon = Settings.class.getResource("/image/broad.png");
+        adminIcon = Settings.class.getResource("/image/admin.png");
+        staffIcon = Settings.class.getResource("/image/staff.png");
+        turboIcon = Settings.class.getResource("/image/turbo.png");
         long time = System.currentTimeMillis();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yy");
         date = sdf.format(new Date(time));
@@ -108,68 +128,96 @@ public class Settings {
         twitchFaceDir.mkdirs();
         subIconsDir.mkdirs();
         subSoundDir.mkdirs();
+        donationSoundDir.mkdirs();
     }
 
     /**
      * This void loads everything Botnak will use, and sets the appropriate settings.
      */
     public void load() {
-        loadWindow();
-        accountManager = new AccountManager();
-        accountManager.start();
-        if (Utils.areFilesGood(accountsFile.getAbsolutePath())) {
-            GUIMain.log("Loading accounts...");
-            loadPropData(0);
-        }
-        if (Utils.areFilesGood(defaultsFile.getAbsolutePath())) {
-            GUIMain.log("Loading defaults...");
-            loadPropData(1);
-        }
-        if (Utils.areFilesGood(tabsFile.getAbsolutePath())) {
-            GUIMain.log("Loading tabs...");
-            loadTabState();
-        }
-        if (Utils.areFilesGood(soundsFile.getAbsolutePath())) {
-            GUIMain.log("Loading sounds...");
-            loadSounds();
-        }
-        if (subSoundDir.exists() && subSoundDir.list().length > 0) {
-            GUIMain.log("Loading sub sounds...");
-            loadSubSounds();
-        }
-        if (Utils.areFilesGood(userColFile.getAbsolutePath())) {
-            GUIMain.log("Loading user colors...");
-            loadUserColors();
-        }
-        if (Utils.areFilesGood(donatorsFile.getAbsolutePath())) {
-            GUIMain.log("Loading donators...");
-            loadDonators();
-        }
-        if (Utils.areFilesGood(commandsFile.getAbsolutePath())) {
-            GUIMain.log("Loading text commands...");
-            loadCommands();
-        }
-        if (Utils.areFilesGood(subIconsFile.getAbsolutePath())) {
-            GUIMain.log("Loading subscriber icons...");
-            loadSubIcons();
-        }
-        if (Utils.areFilesGood(namefaceFile.getAbsolutePath())) {
-            GUIMain.log("Loading Subscriber name faces...");
-            loadNameFaces();
-        }
-        GUIMain.log("Loading keywords...");
-        loadKeywords();//first time boot adds the username
-        GUIMain.log("Loading console commands...");
-        loadConsoleCommands();//has to be out of the check for files for first time boot
-        if (Utils.areFilesGood(faceFile.getAbsolutePath())) {
-            GUIMain.log("Loading custom faces...");
-            loadFaces();
-        }
-        GUIMain.log("Loading default Twitch faces...");
-        if (Utils.areFilesGood(twitchFaceFile.getAbsolutePath())) {
-            loadDefaultTwitchFaces();
-        }
-        Utils.loadDefaultFaces();
+        new Thread(() -> {
+            loadWindow();
+            accountManager = new AccountManager();
+            accountManager.start();
+            donationManager = new DonationManager();
+            subscriberManager = new SubscriberManager();
+            if (Utils.areFilesGood(accountsFile.getAbsolutePath())) {
+                GUIMain.log("Loading accounts...");
+                loadPropData(0);
+            }
+            if (Utils.areFilesGood(defaultsFile.getAbsolutePath())) {
+                GUIMain.log("Loading defaults...");
+                loadPropData(1);
+            }
+            if (Utils.areFilesGood(tabsFile.getAbsolutePath())) {
+                GUIMain.log("Loading tabs...");
+                loadTabState();
+            }
+            if (Utils.areFilesGood(soundsFile.getAbsolutePath())) {
+                GUIMain.log("Loading sounds...");
+                loadSounds();
+            }
+            if (subSoundDir.exists() && subSoundDir.list().length > 0) {
+                GUIMain.log("Loading sub sounds...");
+                loadSubSounds();
+            }
+            if (donationSoundDir.exists() && donationSoundDir.list().length > 0) {
+                GUIMain.log("Loading donation sounds...");
+                loadDonationSounds();
+            }
+            if (Utils.areFilesGood(userColFile.getAbsolutePath())) {
+                GUIMain.log("Loading user colors...");
+                loadUserColors();
+            }
+            if (Utils.areFilesGood(donatorsFile.getAbsolutePath())) {
+                GUIMain.log("Loading donors...");
+                loadDonators();
+            }
+            if (Utils.areFilesGood(donationsFile.getAbsolutePath())) {
+                GUIMain.log("Loading donations...");
+                loadDonations();//these are stored locally
+            }
+            //checks online for offline donations and adds them
+            if (donationManager.canCheck()) {
+                donationManager.checkDonations(false);
+                donationManager.ranFirstCheck = true;
+            }
+            //TODO implement #canCheckSubs()
+            if (!subscriberManager.ranInitialCheck) {
+                subscriberManager.scanInitialSubscribers(accountManager.getUserAccount().getName(),
+                        accountManager.getUserAccount().getKey().getKey().split(":")[1], 0, new HashSet<>());
+                subscriberManager.ranInitialCheck = true;
+            }
+            if (Utils.areFilesGood(subsFile.getAbsolutePath())) {
+                GUIMain.log("Loading subscribers...");
+                loadSubscribers();
+            }
+            if (Utils.areFilesGood(commandsFile.getAbsolutePath())) {
+                GUIMain.log("Loading text commands...");
+                loadCommands();
+            }
+            if (Utils.areFilesGood(subIconsFile.getAbsolutePath())) {
+                GUIMain.log("Loading subscriber icons...");
+                loadSubIcons();
+            }
+            if (Utils.areFilesGood(namefaceFile.getAbsolutePath())) {
+                GUIMain.log("Loading name faces...");
+                loadNameFaces();
+            }
+            GUIMain.log("Loading keywords...");
+            loadKeywords();//first time boot adds the username
+            GUIMain.log("Loading console commands...");
+            loadConsoleCommands();//has to be out of the check for files for first time boot
+            if (Utils.areFilesGood(faceFile.getAbsolutePath())) {
+                GUIMain.log("Loading custom faces...");
+                loadFaces();
+            }
+            GUIMain.log("Loading default Twitch faces...");
+            if (Utils.areFilesGood(twitchFaceFile.getAbsolutePath())) {
+                loadDefaultTwitchFaces();
+            }
+            FaceManager.loadDefaultFaces();
+        }).start();
     }
 
     /**
@@ -181,22 +229,24 @@ public class Settings {
         if (accountManager.getUserAccount() != null || accountManager.getBotAccount() != null) savePropData(0);
         savePropData(1);
         if (!GUIMain.soundMap.isEmpty()) saveSounds();
-        if (!GUIMain.faceMap.isEmpty()) saveFaces();
-        saveTwitchFaces();
+        if (!FaceManager.faceMap.isEmpty()) saveFaces();
+        if (!FaceManager.loadedTwitchFaces.isEmpty()) saveTwitchFaces();
+        if (!FaceManager.nameFaceMap.isEmpty()) saveNameFaces();
         saveTabState();
         if (!GUIMain.userColMap.isEmpty()) saveUserColors();
         if (GUIMain.loadedCommands()) saveCommands();
         if (!GUIMain.keywordMap.isEmpty()) saveKeywords();
-        if (!GUIMain.subIconSet.isEmpty()) saveSubIcons();
-        if (!GUIMain.donators.isEmpty()) saveDonators();
-        if (!GUIMain.nameFaceMap.isEmpty()) saveNameFaces();
+        if (!FaceManager.subIconSet.isEmpty()) saveSubIcons();
+        if (!donationManager.getDonors().isEmpty()) saveDonors();
+        if (!donationManager.getDonations().isEmpty()) saveDonations();
+        if (!subscriberManager.getSubscribers().isEmpty()) saveSubscribers();
         saveConCommands();
     }
 
     /**
      * *********VOIDS*************
      */
-    public void loadPropData(int type) {
+    public boolean loadPropData(int type) {
         Properties p = new Properties();
         if (type == 0) {//accounts
             try {
@@ -223,13 +273,20 @@ public class Settings {
                 }
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
+                return false;
             }
+            return true;
         }
         if (type == 1) {//defaults
             try {
                 p.load(new FileInputStream(defaultsFile));
+                subscriberManager.ranInitialCheck = Boolean.parseBoolean(p.getProperty("RanInitSub", "false"));
                 nowPlayingFile = p.getProperty("NowPlayingFile", "");
                 if (!nowPlayingFile.endsWith("txt")) nowPlayingFile = "";
+                String donation_client_id = p.getProperty("DCID", "");
+                String donation_client_oauth = p.getProperty("DCOAUTH", "");
+                if (!"".equals(donation_client_id)) donationManager.setClientID(donation_client_id);
+                if (!"".equals(donation_client_oauth)) donationManager.setAccessCode(donation_client_oauth);
                 defaultFaceDir = p.getProperty("FaceDir", "");
                 defaultSoundDir = p.getProperty("SoundDir", "");
                 useMod = Boolean.parseBoolean(p.getProperty("UseMod", "false"));
@@ -262,10 +319,12 @@ public class Settings {
                 faceMaxHeight = Integer.parseInt(p.getProperty("FaceMaxHeight", "20"));
                 font = Utils.stringToFont(p.getProperty("Font", "Calibri, 18, Plain").split(","));
                 GUIMain.log("Loaded defaults!");
+                return true;
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
         }
+        return false;
     }
 
     public void savePropData(int type) {
@@ -292,7 +351,10 @@ public class Settings {
             }
         }
         if (type == 1) {//deaults data
+            p.put("RanInitSub", String.valueOf(subscriberManager.ranInitialCheck));
             p.put("NowPlayingFile", nowPlayingFile);
+            p.put("DCID", donationManager.getClientID());
+            p.put("DCOAUTH", donationManager.getAccessCode());
             if (defaultFaceDir != null && !defaultFaceDir.equals("")) {
                 p.put("FaceDir", defaultFaceDir);
             }
@@ -325,8 +387,7 @@ public class Settings {
      * Sounds
      */
     public void loadSounds() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(soundsFile.toURI().toURL().openStream()));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(soundsFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split(",");
@@ -341,17 +402,14 @@ public class Settings {
                 GUIMain.soundMap.put(split[0], new Sound(perm, split2add));
             }
             GUIMain.log("Loaded sounds!");
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
     }
 
     public void saveSounds() {
-        try {
-            PrintWriter br = new PrintWriter(soundsFile);
+        try (PrintWriter br = new PrintWriter(soundsFile)) {
             Set<String> keys = GUIMain.soundMap.keySet();
-            //you're too young to play that sound, boy
             keys.stream().filter(s -> s != null && GUIMain.soundMap.get(s) != null).forEach(s -> {
                 Sound boii = GUIMain.soundMap.get(s);//you're too young to play that sound, boy
                 StringBuilder sb = new StringBuilder();
@@ -364,8 +422,6 @@ public class Settings {
                 }
                 br.println(sb.toString());
             });
-            br.flush();
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -390,37 +446,48 @@ public class Settings {
         return toReturn;
     }
 
+    public boolean loadDonationSounds() {
+        try {
+            File[] files = donationSoundDir.listFiles();
+            if (files != null && files.length > 0) {
+                ArrayList<String> temp = new ArrayList<>();
+                for (File f : files) {
+                    temp.add(f.getAbsolutePath());
+                }
+                donationSound = new Sound(5, temp.toArray(new String[temp.size()]));
+                GUIMain.log("Loaded donation sounds!");
+            }
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+        return false;
+    }
+
 
     /**
      * User Colors
      */
     public void loadUserColors() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(userColFile.toURI().toURL().openStream()));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(userColFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split(",");
                 GUIMain.userColMap.put(split[0], new Color(Integer.parseInt(split[1]), Integer.parseInt(split[2]), Integer.parseInt(split[3])));
             }
             GUIMain.log("Loaded user colors!");
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
     }
 
     public void saveUserColors() {
-        try {
-            PrintWriter br = new PrintWriter(userColFile);
+        try (PrintWriter br = new PrintWriter(userColFile)) {
             GUIMain.userColMap.keySet().stream().filter(
                     s -> s != null && GUIMain.userColMap.get(s) != null).forEach(
-                    s -> br.println(
-                            s + "," +
-                                    GUIMain.userColMap.get(s).getRed() + "," +
-                                    GUIMain.userColMap.get(s).getGreen() + "," +
-                                    GUIMain.userColMap.get(s).getBlue()));
-            br.flush();
-            br.close();
+                    s -> br.println(s + "," +
+                            GUIMain.userColMap.get(s).getRed() + "," +
+                            GUIMain.userColMap.get(s).getGreen() + "," +
+                            GUIMain.userColMap.get(s).getBlue()));
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -433,32 +500,11 @@ public class Settings {
      * if it was added via !addface and no regex was specified.
      */
     public void saveFaces() {
-        try {
-            PrintWriter br = new PrintWriter(faceFile);
-            GUIMain.faceMap.keySet().stream().filter(s -> s != null && GUIMain.faceMap.get(s) != null).forEach(s -> {
-                Face fa = GUIMain.faceMap.get(s);
+        try (PrintWriter br = new PrintWriter(faceFile)) {
+            FaceManager.faceMap.keySet().stream().filter(s -> s != null && FaceManager.faceMap.get(s) != null).forEach(s -> {
+                Face fa = FaceManager.faceMap.get(s);
                 br.println(s + "," + fa.getRegex() + "," + fa.getFilePath());
             });
-            br.flush();
-            br.close();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
-
-    /**
-     * Saves the default twitch faces.
-     */
-    public void saveTwitchFaces() {
-        try {
-            PrintWriter br = new PrintWriter(twitchFaceFile);
-            GUIMain.twitchFaceMap.keySet().stream().filter(s -> s != null && GUIMain.twitchFaceMap.get(s) != null).forEach(s -> {
-                TwitchFace fa = GUIMain.twitchFaceMap.get(s);
-                br.println(s + "," + fa.getRegex() + "," + fa.getFilePath() + "," +
-                        Boolean.toString(GUIMain.twitchFaceMap.get(s).isEnabled()));
-            });
-            br.flush();
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -469,17 +515,31 @@ public class Settings {
      * if that file exists.
      */
     public void loadFaces() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(faceFile.toURI().toURL().openStream()));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(faceFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split(",");
-                //                    name           name/regex   path
-                GUIMain.faceMap.put(split[0], new Face(split[1], split[2]));
+                //                        name           name/regex   path
+                FaceManager.faceMap.put(split[0], new Face(split[1], split[2]));
             }
-            GUIMain.doneWithFaces = true;
+            FaceManager.doneWithFaces = true;
             GUIMain.log("Loaded custom faces!");
-            br.close();
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    /**
+     * Saves the default twitch faces.
+     */
+    public void saveTwitchFaces() {
+        try (PrintWriter br = new PrintWriter(twitchFaceFile)) {
+            FaceManager.loadedTwitchFaces.keySet().stream().filter(s -> s != null && FaceManager.loadedTwitchFaces.get(s) != null).forEach(s -> {
+                ArrayList<TwitchFace> faces = FaceManager.loadedTwitchFaces.get(s);
+                for (TwitchFace fa : faces) {
+                    br.println(s + "," + fa.getRegex() + "," + fa.getFilePath() + "," + Boolean.toString(fa.isEnabled()));
+                }
+            });
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -489,15 +549,24 @@ public class Settings {
      * Loads the default twitch faces already saved on the computer.
      */
     public void loadDefaultTwitchFaces() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(twitchFaceFile.toURI().toURL().openStream()));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(twitchFaceFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] split = line.split(",");
-                boolean enabled = Boolean.parseBoolean(split[3]);
-                GUIMain.twitchFaceMap.put(split[0], new TwitchFace(split[1], split[2], enabled));
+                try {
+                    String[] split = line.split(",");
+                    int emoteSet = Integer.parseInt(split[0]);
+                    TwitchFace tf = new TwitchFace(split[1], split[2], Boolean.parseBoolean(split[3]));
+                    if (FaceManager.loadedTwitchFaces.containsKey(emoteSet)) {
+                        FaceManager.loadedTwitchFaces.get(emoteSet).add(tf);
+                    } else {
+                        ArrayList<TwitchFace> twitchFaces = new ArrayList<>();
+                        twitchFaces.add(tf);
+                        FaceManager.loadedTwitchFaces.put(emoteSet, twitchFaces);
+                    }
+                } catch (Exception e) {
+                    GUIMain.log(e.getMessage());
+                }
             }
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -505,47 +574,49 @@ public class Settings {
 
     /**
      * Commands
+     * <p>
+     * trigger[message (content)[arguments?
      */
     public void loadCommands() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(commandsFile.toURI().toURL().openStream()));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(commandsFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split("\\[");
-                int time;
-                try {
-                    time = Integer.parseInt(split[2]);
-                } catch (Exception e) {
-                    time = 10;
-                }
                 String[] contents = split[1].split("\\]");
-                GUIMain.commandSet.add(new Command(split[0], time, contents));
+                Command c = new Command(split[0], contents);
+                if (split.length > 2) {
+                    c.addArguments(split[2].split(","));
+                }
+                GUIMain.commandSet.add(c);
             }
             GUIMain.log("Loaded text commands!");
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
     }
 
     public void saveCommands() {
-        try {
-            PrintWriter br = new PrintWriter(commandsFile);
+        try (PrintWriter br = new PrintWriter(commandsFile)) {
             for (Command next : GUIMain.commandSet) {
                 if (next != null) {
                     String name = next.getTrigger();
                     String[] contents = next.getMessage().data;
-                    int time = next.getDelay();
                     StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < contents.length; i++) {
                         sb.append(contents[i]);
                         if (i != (contents.length - 1)) sb.append("]");
                     }
-                    br.println(name + "[" + sb.toString() + "[" + time);
+                    br.print(name + "[" + sb.toString());
+                    if (next.hasArguments()) {
+                        br.print("[");
+                        for (int i = 0; i < next.countArguments(); i++) {
+                            br.print(next.getArguments().get(i));
+                            if (i != (next.countArguments() - 1)) br.print(",");
+                        }
+                    }
+                    br.println();
                 }
             }
-            br.flush();
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -555,8 +626,7 @@ public class Settings {
      * Console Commands
      */
     public void saveConCommands() {
-        try {
-            PrintWriter br = new PrintWriter(ccommandsFile);
+        try (PrintWriter br = new PrintWriter(ccommandsFile)) {
             for (ConsoleCommand next : GUIMain.conCommands) {
                 if (next != null) {
                     String name = next.getTrigger();
@@ -574,8 +644,6 @@ public class Settings {
                     br.println(name + "[" + action + "[" + classPerm + "[" + certainPerm);
                 }
             }
-            br.flush();
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -634,8 +702,7 @@ public class Settings {
         hardcoded.add(new ConsoleCommand("song", ConsoleCommand.Action.NOW_PLAYING, Constants.PERMISSION_ALL, null));
 
         if (Utils.areFilesGood(ccommandsFile.getAbsolutePath())) {
-            try {
-                BufferedReader br = new BufferedReader(new InputStreamReader(ccommandsFile.toURI().toURL().openStream()));
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(ccommandsFile.toURI().toURL().openStream()))) {
                 String line;
                 while ((line = br.readLine()) != null) {
                     String[] split = line.split("\\[");
@@ -652,7 +719,6 @@ public class Settings {
                     }
                     GUIMain.conCommands.add(new ConsoleCommand(split[0], a, classPerm, customUsers));
                 }
-                br.close();
                 if (GUIMain.conCommands.size() != hardcoded.size()) { //something's not right...
                     for (ConsoleCommand hard : hardcoded) {
                         boolean isAdded = false;
@@ -683,8 +749,7 @@ public class Settings {
      */
     public void loadKeywords() {
         if (Utils.areFilesGood(keywordsFile.getAbsolutePath())) {
-            try {
-                BufferedReader br = new BufferedReader(new InputStreamReader(keywordsFile.toURI().toURL().openStream()));
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(keywordsFile.toURI().toURL().openStream()))) {
                 String line;
                 while ((line = br.readLine()) != null) {
                     String[] split = line.split(",");
@@ -706,7 +771,6 @@ public class Settings {
                     }
                     GUIMain.keywordMap.put(split[0], new Color(r, g, b));
                 }
-                br.close();
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
@@ -719,15 +783,12 @@ public class Settings {
     }
 
     public void saveKeywords() {
-        try {
-            PrintWriter br = new PrintWriter(keywordsFile);
+        try (PrintWriter br = new PrintWriter(keywordsFile)) {
             Set<String> keys = GUIMain.keywordMap.keySet();
             keys.stream().filter(word -> word != null).forEach(word -> {
                 Color c = GUIMain.keywordMap.get(word);
                 br.println(word + "," + c.getRed() + "," + c.getGreen() + "," + c.getBlue());
             });
-            br.flush();
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -737,28 +798,21 @@ public class Settings {
      * Sub icons
      */
     public void saveSubIcons() {
-        try {
-            PrintWriter br = new PrintWriter(subIconsFile);
-            for (SubscriberIcon i : GUIMain.subIconSet) {
-                br.println(i.getChannel() + "," + i.getFileLoc());
-            }
-            br.flush();
-            br.close();
+        try (PrintWriter br = new PrintWriter(subIconsFile)) {
+            FaceManager.subIconSet.stream().forEach(i -> br.println(i.getChannel() + "," + i.getFileLoc()));
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
     }
 
     public void loadSubIcons() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(subIconsFile.toURI().toURL().openStream()));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(subIconsFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split(",");
-                GUIMain.subIconSet.add(new SubscriberIcon(split[0], split[1]));
+                FaceManager.subIconSet.add(new SubscriberIcon(split[0], split[1]));
             }
             GUIMain.log("Loaded subscriber icons!");
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -768,8 +822,7 @@ public class Settings {
      * Donators
      */
     public void loadDonators() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(donatorsFile.toURI().toURL().openStream()));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(donatorsFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split(",");
@@ -779,24 +832,66 @@ public class Settings {
                 } catch (Exception e) {
                     amount = 0.0;
                 }
-                GUIMain.donators.add(new Donator(split[0], amount));
+                donationManager.getDonors().add(new Donor(split[0], amount));
             }
-            GUIMain.log("Loaded donators!");
-            br.close();
+            GUIMain.log("Loaded donors!");
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
     }
 
 
-    public void saveDonators() {
-        try {
-            PrintWriter br = new PrintWriter(donatorsFile);
-            for (Donator d : GUIMain.donators) {
-                br.println(d.getName() + "," + d.getDonated());
+    public void saveDonors() {
+        try (PrintWriter br = new PrintWriter(donatorsFile)) {
+            donationManager.getDonors().stream().forEach(d -> br.println(d.getName() + "," + d.getDonated()));
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+
+    /**
+     * Donations. This ranges from people just giving you money to
+     * people subscribing to your channel.
+     */
+    public void saveDonations() {
+        try (PrintWriter br = new PrintWriter(donationsFile)) {
+            donationManager.getDonations().stream().sorted().forEach(d ->
+                    br.println(d.getDonationID() + "[" + d.getFromWho() + "[" + d.getNote() + "["
+                            + d.getAmount() + "[" + Instant.ofEpochMilli(d.getDateReceived().getTime()).toString()));
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    public void loadDonations() {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(donationsFile.toURI().toURL().openStream()))) {
+            String line;
+            HashSet<Donation> donations = new HashSet<>();
+            Donation mostRecent = null;
+            while ((line = br.readLine()) != null) {
+                String[] split = line.split("\\[");
+                double amount;
+                try {
+                    amount = Double.parseDouble(split[3]);
+                } catch (Exception e) {
+                    amount = 0.0;
+                }
+                Donation d = new Donation(split[0], split[1], split[2], amount, Date.from(Instant.parse(split[4])));
+                if ((mostRecent == null || mostRecent.compareTo(d) > 0) &&
+                        !d.getDonationID().equalsIgnoreCase("SUBSCRIBER") &&
+                        !d.getDonationID().equals("LOCAL"))
+                    mostRecent = d;
+                donations.add(d);
             }
-            br.flush();
-            br.close();
+            if (mostRecent != null) {
+                donationManager.setLastDonation(mostRecent);
+                GUIMain.log("Most recent donation: " + mostRecent.getFromWho() + " for " + DonationManager.CURRENCY_SYMBOL + mostRecent.getAmount());
+            }
+            if (!donations.isEmpty()) {
+                donationManager.fillDonations(donations);
+                GUIMain.log("Loaded donations!");
+            }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -805,10 +900,43 @@ public class Settings {
 
     /**
      * Subscribers of your own channel
+     * Saves each subscriber with the first date Botnak meets them
+     * and each month check to see if they're still subbed, if not, make them donor
+     * with (months subbed * $2.50) as their amount.
      */
-    //TODO save each subscriber with the first date Botnak meets them
-    //and each month check to see if they're still subbed, if not, make them donator
-    //with (months subbed * $2.50) as their amount.
+
+    public void saveSubscribers() {
+        try (PrintWriter br = new PrintWriter(subsFile)) {
+            subscriberManager.getSubscribers().stream().sorted().forEach(
+                    s -> br.println(s.getName() + "[" + s.getStarted().toString() + "["
+                            + String.valueOf(s.isActive()) + "[" + s.getStreak()));
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
+    public void loadSubscribers() {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(subsFile.toURI().toURL().openStream()))) {
+            String line;
+            HashSet<Subscriber> subscribers = new HashSet<>();
+            Subscriber mostRecent = null;
+            while ((line = br.readLine()) != null) {
+                String[] split = line.split("\\[");
+                Subscriber s = new Subscriber(split[0], LocalDateTime.parse(split[1]), Boolean.parseBoolean(split[2]), Integer.parseInt(split[3]));
+                subscribers.add(s);
+                if (mostRecent == null || mostRecent.compareTo(s) > 0) mostRecent = s;
+            }
+            if (mostRecent != null) {
+                subscriberManager.setLastSubscriber(mostRecent);
+                GUIMain.log("Most recent subscriber: " + mostRecent.getName());
+            }
+            if (!subscribers.isEmpty()) subscriberManager.fillSubscribers(subscribers);
+            GUIMain.log("Loaded subscribers!");
+        } catch (Exception e) {
+            GUIMain.log(e.getMessage());
+        }
+    }
+
 
     /**
      * Tab State
@@ -830,8 +958,7 @@ public class Settings {
      * Single tabs can be invisible if they are in a combined tab.
      */
     public void saveTabState() {
-        try {
-            PrintWriter br = new PrintWriter(tabsFile);
+        try (PrintWriter br = new PrintWriter(tabsFile)) {
             int currentSelectedIndex = GUIMain.channelPane.getSelectedIndex();
             for (int i = 1; i < GUIMain.channelPane.getTabCount() - 1; i++) {
                 ChatPane current = Utils.getChatPane(i);
@@ -857,16 +984,13 @@ public class Settings {
                     }
                 }
             }
-            br.flush();
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
     }
 
     public void loadTabState() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(tabsFile.toURI().toURL().openStream()));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(tabsFile.toURI().toURL().openStream()))) {
             String line;
             int index = 0;
             while ((line = br.readLine()) != null) {
@@ -910,7 +1034,6 @@ public class Settings {
             }
             GUIMain.channelPane.setSelectedIndex(index);
             GUIMain.log("Loaded tabs!");
-            br.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -921,30 +1044,24 @@ public class Settings {
      * Name faces
      */
     public void loadNameFaces() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(namefaceFile.toURI().toURL().openStream()));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(namefaceFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split(",");
-                GUIMain.nameFaceMap.put(split[0], new Face(split[0], split[1]));
+                FaceManager.nameFaceMap.put(split[0], new Face(split[0], split[1]));
             }
-            GUIMain.log("Loaded Namefaces!");
-            br.close();
+            GUIMain.log("Loaded namefaces!");
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
     }
 
     public void saveNameFaces() {
-        try {
-            PrintWriter br = new PrintWriter(namefaceFile);
-            Set<String> keys = GUIMain.nameFaceMap.keySet();
-            for (String s : keys) {
-                Face toPrint = GUIMain.nameFaceMap.get(s);
+        try (PrintWriter br = new PrintWriter(namefaceFile)) {
+            FaceManager.nameFaceMap.keySet().stream().forEach(s -> {
+                Face toPrint = FaceManager.nameFaceMap.get(s);
                 br.println(s + "," + toPrint.getFilePath());
-            }
-            br.flush();
-            br.close();
+            });
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -971,11 +1088,8 @@ public class Settings {
     }
 
     public void saveLAF() {
-        try {
-            PrintWriter pr = new PrintWriter(lafFile);
+        try (PrintWriter pr = new PrintWriter(lafFile)) {
             pr.println(lookAndFeel);
-            pr.flush();
-            pr.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -985,8 +1099,7 @@ public class Settings {
      * Window Properties (location and size)
      */
     public void loadWindow() {
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(windowFile.toURI().toURL().openStream()));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(windowFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("p")) {
@@ -1006,22 +1119,16 @@ public class Settings {
                     }
                 }
             }
-            br.close();
         } catch (Exception ignored) {
         }
     }
 
     public void saveWindow() {
-        try {
-            PrintWriter pr = new PrintWriter(windowFile);
+        try (PrintWriter pr = new PrintWriter(windowFile)) {
             pr.println("p" + GUIMain.instance.getLocationOnScreen().x + "," + GUIMain.instance.getLocationOnScreen().y);
             pr.println("s" + GUIMain.instance.getSize().getWidth() + "," + GUIMain.instance.getSize().getHeight());
-            pr.flush();
-            pr.close();
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
     }
-
-
 }

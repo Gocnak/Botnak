@@ -4,12 +4,15 @@ import gui.listeners.PaneMenuListener;
 import util.Constants;
 import util.Utils;
 
+import javax.accessibility.AccessibleComponent;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 
 /**
  * Created by Nick on 1/4/14.
@@ -165,10 +168,10 @@ public class DraggableTabbedPane extends JTabbedPane {
                                 insertTab(title, null, comp, null, indexWillPlace);
                                 setSelectedIndex(indexWillPlace);
                             }
-                            updateIndexes();
                         }
                     }
                 }
+
                 if (SwingUtilities.isRightMouseButton(e)) {
                     if (tabNumber > 0) {
                         ChatPane detected = Utils.getChatPane(tabNumber);
@@ -182,8 +185,9 @@ public class DraggableTabbedPane extends JTabbedPane {
                             JMenuItem menuItem = new JMenuItem("Pop-out chat");
                             menuItem.addActionListener(listener);
                             popupMenu.add(menuItem);
+
                             //TODO if (GUIMain.currentSettings.pulseTabs) {
-                            menuItem = new JMenuItem("Toggle Tab Pulsing " + (first ? (detected.shouldPulse() ? "OFF" : "ON") : (detectedCombo.shouldPulse() ? "OFF" : "ON")));
+                            menuItem = new JMenuItem("Toggle Tab Pulsing " + (first ? (detected.shouldPulseLoc() ? "OFF" : "ON") : (detectedCombo.shouldPulseLoc() ? "OFF" : "ON")));
                             menuItem.addActionListener(listener);
                             popupMenu.add(menuItem);
                             //}
@@ -229,10 +233,15 @@ public class DraggableTabbedPane extends JTabbedPane {
                                 popupMenu.add(panels);
                             }
 
+                            menuItem = new JMenuItem("Clear Chat");
+                            menuItem.addActionListener(listener);
+                            popupMenu.add(menuItem);
+
                             popupMenu.show((DraggableTabbedPane) e.getSource(), e.getX(), e.getY());
                         }
                     }
                 }
+                updateIndexes();
                 tabImage = null;
                 toPlace = null;
                 dragging = false;
@@ -254,7 +263,6 @@ public class DraggableTabbedPane extends JTabbedPane {
                 String title = getTitleAt(i);
                 for (CombinedChatPane cp : GUIMain.combinedChatPanes) {
                     if (cp.getTabTitle().equalsIgnoreCase(title)) {
-
                         cp.setIndex(i);
                         break;
                     }
@@ -274,6 +282,18 @@ public class DraggableTabbedPane extends JTabbedPane {
             for (CombinedChatPane p : GUIMain.combinedChatPanes) {
                 p.scrollToBottom();
             }
+        }
+    }
+
+    public AccessibleComponent getPage(int index) {
+        try {
+            Field pages = JTabbedPane.class.getDeclaredField("pages");
+            pages.setAccessible(true);
+            Object p = pages.get(this);
+            return (AccessibleComponent) ((ArrayList) p).get(index);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

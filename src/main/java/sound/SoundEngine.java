@@ -3,6 +3,7 @@ package sound;
 import gui.GUIMain;
 import util.Timer;
 
+import java.io.File;
 import java.util.Collection;
 
 /**
@@ -81,12 +82,11 @@ public class SoundEngine {
     /**
      * Plays the new subscriber sound, ignoring the current playing ones.
      */
-    public void playSubSound() {
-        if (GUIMain.currentSettings.subSound != null) {
-            try {
-                player.play(GUIMain.currentSettings.subSound.getFile(), SoundPlayer.PlayMode.Force);
-            } catch (Exception ignored) {
-            }
+    public void playSpecialSound(boolean isSub) {
+        File f = (isSub ? GUIMain.currentSettings.subSound.getFile() : GUIMain.currentSettings.donationSound.getFile());
+        try {
+            player.play(f, SoundPlayer.PlayMode.Force);
+        } catch (Exception ignored) {
         }
     }
 
@@ -118,5 +118,23 @@ public class SoundEngine {
 
     public void close() {
         player.close();
+    }
+
+
+    public String getSoundState() {
+        int delay = (int) getSoundTimer().period / 1000;
+        String onOrOff = (shouldPlay() ? "ON" : "OFF");
+        int numSound = getCurrentPlayingSounds().size();
+        int permission = getPermission();
+        String numSounds = (numSound > 0 ? (numSound == 1 ? "one sound" : (numSound + " sounds")) : "no sounds") + " currently playing";
+        String delayS = (delay < 2 ? (delay == 0 ? "no delay." : "a delay of 1 second.") : ("a delay of " + delay + " seconds."));
+        String perm = (permission > 0 ? (permission > 1 ? (permission > 2 ? (permission > 3 ?
+                "Only the Broadcaster" :
+                "Only Mods and the Broadcaster") :
+                "Donators, Mods, and the Broadcaster") :
+                "Subscribers, Donators, Mods, and the Broadcaster") :
+                "Everyone")
+                + " can play sounds.";
+        return "Sound is currently turned " + onOrOff + " with " + numSounds + " with " + delayS + " " + perm;
     }
 }
