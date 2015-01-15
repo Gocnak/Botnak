@@ -186,7 +186,6 @@ public class Settings {
             if (!subscriberManager.ranInitialCheck) {
                 subscriberManager.scanInitialSubscribers(accountManager.getUserAccount().getName(),
                         accountManager.getUserAccount().getKey().getKey().split(":")[1], 0, new HashSet<>());
-                subscriberManager.ranInitialCheck = true;
             }
             if (Utils.areFilesGood(subsFile.getAbsolutePath())) {
                 GUIMain.log("Loading subscribers...");
@@ -534,7 +533,10 @@ public class Settings {
      */
     public void saveTwitchFaces() {
         try (PrintWriter br = new PrintWriter(twitchFaceFile)) {
-            FaceManager.loadedTwitchFaces.keySet().stream().filter(s -> s != null && FaceManager.loadedTwitchFaces.get(s) != null).forEach(s -> {
+            FaceManager.loadedTwitchFaces.keySet().stream().filter(
+                    s -> s != null &&
+                            FaceManager.loadedTwitchFaces.get(s) != null &&
+                            !FaceManager.loadedTwitchFaces.get(s).isEmpty()).forEach(s -> {
                 ArrayList<TwitchFace> faces = FaceManager.loadedTwitchFaces.get(s);
                 for (TwitchFace fa : faces) {
                     br.println(s + "," + fa.getRegex() + "," + fa.getFilePath() + "," + Boolean.toString(fa.isEnabled()));

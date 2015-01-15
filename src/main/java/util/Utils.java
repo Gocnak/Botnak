@@ -11,14 +11,13 @@ import sound.Sound;
 import util.comm.Command;
 import util.comm.ConsoleCommand;
 
-import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
 import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
@@ -526,34 +525,53 @@ public class Utils {
     }
 
     /**
-     * Finds and tags URLs in the chat so that you can click them.
+     * Returns the SimpleAttributeSet for a specified URL.
      *
-     * @param doc     The document (JTextPane) to search.
-     * @param start   The start index of the message.
-     * @param message The message itself.
+     * @param URL The link to make into a URL.
+     * @return The SimpleAttributeSet of the URL.
      */
-    public static void handleURLs(StyledDocument doc, int start, String message) {
+    public static SimpleAttributeSet URLStyle(String URL) {
+        SimpleAttributeSet attrs = new SimpleAttributeSet();
+        StyleConstants.setForeground(attrs, new Color(43, 162, 235));
+        StyleConstants.setFontFamily(attrs, GUIMain.currentSettings.font.getFamily());
+        StyleConstants.setFontSize(attrs, GUIMain.currentSettings.font.getSize());
+        StyleConstants.setUnderline(attrs, true);
+        attrs.addAttribute(HTML.Attribute.HREF, URL);
+        return attrs;
+    }
+
+    /**
+     * Credit: TDuva
+     *
+     * @param URL The URL to check
+     * @return True if the URL can be formed, else false
+     */
+    public static boolean checkURL(String URL) {
         try {
-            SimpleAttributeSet attrs;
-            String[] split = message.split(" ");
-            for (String s : split) {
-                if (s != null) {
-                    if (s.startsWith("http")) {
-                        int index = message.indexOf(s);
-                        attrs = new SimpleAttributeSet();
-                        StyleConstants.setForeground(attrs, new Color(43, 162, 235));
-                        StyleConstants.setFontFamily(attrs, GUIMain.currentSettings.font.getFamily());
-                        StyleConstants.setFontSize(attrs, GUIMain.currentSettings.font.getSize());
-                        StyleConstants.setUnderline(attrs, true);
-                        attrs.addAttribute(HTML.Attribute.HREF, s);
-                        doc.remove(start + index, s.length());
-                        doc.insertString(start + index, s, attrs);
-                    }
-                }
-            }
-        } catch (BadLocationException e) {
-            GUIMain.log((e.getMessage()));
+            new URI(URL);
+        } catch (Exception ignored) {
+            return false;
         }
+        return true;
+    }
+
+    /**
+     * Checks if the given integer is within the range of any of the key=value
+     * pairs of the Map (inclusive).
+     * <p>
+     * Credit: TDuva
+     *
+     * @param i      The integer to check.
+     * @param ranges The map of the ranges to check.
+     * @return true if the given int is within the range set, else false
+     */
+    public static boolean inRanges(int i, Map<Integer, Integer> ranges) {
+        for (Map.Entry<Integer, Integer> range : ranges.entrySet()) {
+            if (i >= range.getKey() && i <= range.getValue()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

@@ -1,4 +1,4 @@
-package irc;
+package irc.message;
 
 /**
  * Created by Nick on 3/30/2014.

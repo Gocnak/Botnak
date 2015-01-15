@@ -4,6 +4,7 @@ import face.FaceManager;
 import gui.GUIMain;
 import irc.account.Oauth;
 import irc.account.Task;
+import irc.message.MessageHandler;
 import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
 import sound.Sound;
@@ -158,10 +159,6 @@ public class IRCBot extends MessageHandler {
             if (message.startsWith("!")) {
                 String trigger = message.substring(1).split(" ")[0].toLowerCase();
                 String mess = message.substring(1);
-                /*//dev
-                if (sender.equals(GUIMain.viewer.getMaster())) {
-                    handleDev(channel, message.substring(1));
-                }*/
                 //mod
                 if (u.isOp(channel) || u.isAdmin() || u.isStaff()) {
                     handleMod(channel, message.substring(1));
@@ -608,11 +605,6 @@ public class IRCBot extends MessageHandler {
         }
         return false;
     }
-
-    /*public void handleDev(String channel, String s) {
-        //TODO think of some more dev commands later, this is pretty bare now
-        handleMod(channel, s);
-    }*/
 
     public void handleMod(String channel, String s) {
         if (GUIMain.currentSettings.accountManager.getUserAccount() == null) return;

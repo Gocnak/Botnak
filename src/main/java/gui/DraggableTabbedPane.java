@@ -279,9 +279,7 @@ public class DraggableTabbedPane extends JTabbedPane {
             }
         }
         if (!GUIMain.combinedChatPanes.isEmpty()) {
-            for (CombinedChatPane p : GUIMain.combinedChatPanes) {
-                p.scrollToBottom();
-            }
+            GUIMain.combinedChatPanes.forEach(gui.CombinedChatPane::scrollToBottom);
         }
     }
 

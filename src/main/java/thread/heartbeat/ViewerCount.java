@@ -28,15 +28,15 @@ public class ViewerCount implements HeartbeatThread {
         Set<String> keys = GUIMain.chatPanes.keySet();
         for (String s : keys) {
             if (s.equalsIgnoreCase("system logs")) continue;
+            ChatPane cp = GUIMain.chatPanes.get(s);
+            if (cp == null) continue;
             if (Utils.isChannelLive(s)) {
                 int count = Utils.countViewers(s);
                 if (count >= 0) {
-                    ChatPane cp = GUIMain.chatPanes.get(s);
-                    if (cp != null) cp.setViewerCount(count);
+                    cp.setViewerCount(count);
                 }
             } else {
-                ChatPane cp = GUIMain.chatPanes.get(s);
-                if (cp != null) cp.setViewerCount(-1);
+                cp.setViewerCount(-1);
             }
         }
     }

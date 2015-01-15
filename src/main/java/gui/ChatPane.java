@@ -4,9 +4,11 @@ import face.FaceManager;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
 import irc.Donor;
-import irc.Message;
+import irc.message.Message;
+import irc.message.MessageWrapper;
 import lib.pircbot.org.jibble.pircbot.User;
 import lib.scalr.Scalr;
+import util.Constants;
 import util.Utils;
 import util.misc.Donation;
 
@@ -22,8 +24,7 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
+import java.util.*;
 
 /**
  * All channels are stored in this format.
@@ -305,9 +306,10 @@ public class ChatPane implements DocumentListener {
     /**
      * This is the main message method when somebody sends a message to the channel.
      *
-     * @param message The message from the chat.
+     * @param m The message from the chat.
      */
-    public void onMessage(Message message, boolean showChannel) {
+    public void onMessage(MessageWrapper m, boolean showChannel) {
+        Message message = m.getLocal();
         SimpleAttributeSet user = new SimpleAttributeSet();
         StyleConstants.setFontFamily(user, GUIMain.currentSettings.font.getFamily());
         StyleConstants.setFontSize(user, GUIMain.currentSettings.font.getSize());
@@ -315,9 +317,8 @@ public class ChatPane implements DocumentListener {
         String channel = message.getChannel();
         String mess = message.getContent();
         boolean isMe = (message.getType() == Message.MessageType.ACTION_MESSAGE);
-        StyledDocument doc = textPane.getStyledDocument();
         try {
-            doc.insertString(doc.getLength(), "\n" + getTime(), GUIMain.norm);
+            print(m, "\n" + getTime(), GUIMain.norm);
             User u = GUIMain.currentSettings.channelManager.getUser(sender, true);
             Color c;
             if (u.getColor() != null) {
@@ -334,50 +335,50 @@ public class ChatPane implements DocumentListener {
             }
             StyleConstants.setForeground(user, c);
             if (channel.substring(1).equals(sender)) {
-                insertIcon(doc, doc.getLength(), 1, null);
+                insertIcon(m, 1, null);
             }
             if (u.isOp(channel)) {
                 if (!channel.substring(1).equals(sender) && !u.isStaff() && !u.isAdmin()) {//not the broadcaster again
-                    insertIcon(doc, doc.getLength(), 0, null);
+                    insertIcon(m, 0, null);
                 }
             }
             if (u.isDonor()) {
-                insertIcon(doc, doc.getLength(), u.getDonationStatus(), null);
+                insertIcon(m, u.getDonationStatus(), null);
             }
             if (u.isStaff()) {
-                insertIcon(doc, doc.getLength(), 3, null);
+                insertIcon(m, 3, null);
             }
             if (u.isAdmin()) {
-                insertIcon(doc, doc.getLength(), 2, null);
+                insertIcon(m, 2, null);
             }
             boolean isSubsciber = u.isSubscriber(channel);
             if (isSubsciber) {
-                insertIcon(doc, doc.getLength(), 5, channel);
+                insertIcon(m, 5, channel);
             }
             if (u.isTurbo()) {
-                insertIcon(doc, doc.getLength(), 4, null);
+                insertIcon(m, 4, null);
             }
-            int nameStart = doc.getLength() + 1;
+            //name stuff
             user.addAttribute(HTML.Attribute.NAME, sender);
+            SimpleAttributeSet userColor = new SimpleAttributeSet(user);
+            FaceManager.handleNameFaces(sender, user);
             if (showChannel) {
-                doc.insertString(doc.getLength(), " " + sender, user);
-                doc.insertString(doc.getLength(), " (" + channel.substring(1) + ")" + (isMe ? " " : ": "), GUIMain.norm);
+                print(m, " " + sender, user);
+                print(m, " (" + channel.substring(1) + ")" + (isMe ? " " : ": "), GUIMain.norm);
             } else {
-                doc.insertString(doc.getLength(), " " + sender + (!isMe ? ": " : " "), user);
+                print(m, " " + sender, user);
+                print(m, (!isMe ? ": " : " "), userColor);
             }
-            StyleConstants.setIcon(user, null);
-            FaceManager.handleFaces(doc, nameStart, sender, FaceManager.FACE_TYPE.NAME_FACE);
-            int messStart = doc.getLength();
+            //keyword?
             SimpleAttributeSet set;
             if (Utils.mentionsKeyword(mess)) {
                 set = Utils.getSetForKeyword(mess);
             } else {
-                set = (isMe ? user : GUIMain.norm);
+                set = (isMe ? userColor : GUIMain.norm);
             }
-            doc.insertString(doc.getLength(), mess, set);
-            FaceManager.handleFaces(doc, messStart, mess, FaceManager.FACE_TYPE.NORMAL_FACE);
-            FaceManager.handleFaces(doc, messStart, mess, FaceManager.FACE_TYPE.TWITCH_FACE);
-            Utils.handleURLs(doc, messStart, mess);
+            //URL, Faces, rest of message
+            printMessage(m, mess, set);
+
             if (channel.substring(1).equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName()))
                 //check status of the sub, has it been a month?
                 GUIMain.currentSettings.subscriberManager.updateSubscriber(u, channel, isSubsciber);
@@ -389,21 +390,94 @@ public class ChatPane implements DocumentListener {
     }
 
     /**
+     * Credit: TDuva
+     *
+     * Cycles through message data, tagging things like Faces and URLs.
+     *
+     * @param text The message
+     * @param style The default message style to use.
+     */
+    protected void printMessage(MessageWrapper m, String text, SimpleAttributeSet style) {
+        // Where stuff was found
+        TreeMap<Integer, Integer> ranges = new TreeMap<>();
+        // The style of the stuff (basicially metadata)
+        HashMap<Integer, SimpleAttributeSet> rangesStyle = new HashMap<>();
+
+        findLinks(text, ranges, rangesStyle);
+
+        findEmoticons(text, ranges, rangesStyle);
+
+        // Actually print everything
+        int lastPrintedPos = 0;
+        Iterator<Map.Entry<Integer, Integer>> rangesIt = ranges.entrySet().iterator();
+        while (rangesIt.hasNext()) {
+            Map.Entry<Integer, Integer> range = rangesIt.next();
+            int start = range.getKey();
+            int end = range.getValue();
+            if (start > lastPrintedPos) {
+                // If there is anything between the special stuff, print that
+                // first as regular text
+                print(m, text.substring(lastPrintedPos, start), style);
+            }
+            print(m, text.substring(start, end + 1), rangesStyle.get(start));
+            lastPrintedPos = end + 1;
+        }
+        // If anything is left, print that as well as regular text
+        if (lastPrintedPos < text.length()) {
+            print(m, text.substring(lastPrintedPos), style);
+        }
+
+    }
+
+    private void findLinks(String text, Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangesStyle) {
+        // Find links
+        Constants.urlMatcher.reset(text);
+        while (Constants.urlMatcher.find()) {
+            int start = Constants.urlMatcher.start();
+            int end = Constants.urlMatcher.end() - 1;
+            if (!Utils.inRanges(start, ranges) && !Utils.inRanges(end, ranges)) {
+                String foundUrl = Constants.urlMatcher.group();
+                if (Utils.checkURL(foundUrl)) {
+                    ranges.put(start, end);
+                    rangesStyle.put(start, Utils.URLStyle(foundUrl));
+                }
+            }
+        }
+    }
+
+
+    private void findEmoticons(String text, Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangesStyle) {
+        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.NORMAL_FACE);
+        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE);
+    }
+
+    protected void print(MessageWrapper wrapper, String string, SimpleAttributeSet set) {
+        Runnable r = () -> {
+            try {
+                textPane.getStyledDocument().insertString(textPane.getStyledDocument().getLength(), string, set);
+            } catch (Exception e) {
+                GUIMain.log(e.getMessage());
+            }
+        };
+        wrapper.addPrint(r);
+    }
+
+    /**
      * Handles inserting icons before and after the message.
      *
-     * @param message The message itself.
+     * @param m       The message itself.
      * @param status  5 for sub message, else pass Donor#getDonationStatus(d#getAmount())
      */
-    public void onIconMessage(Message message, int status) {
-        StyledDocument doc = textPane.getStyledDocument();
+    public void onIconMessage(MessageWrapper m, int status) {
         try {
-            doc.insertString(doc.getLength(), "\n", GUIMain.norm);
+            Message message = m.getLocal();
+            print(m, "\n", GUIMain.norm);
             for (int i = 0; i < 5; i++) {
-                insertIcon(doc, doc.getLength(), status, (status == 5 ? message.getChannel() : null));
+                insertIcon(m, status, (status == 5 ? message.getChannel() : null));
             }
-            doc.insertString(doc.getLength(), " " + message.getContent() + (status == 5 ? (" (" + (subCount + 1) + ") ") : " "), GUIMain.norm);
+            print(m, " " + message.getContent() + (status == 5 ? (" (" + (subCount + 1) + ") ") : " "), GUIMain.norm);
             for (int i = 0; i < 5; i++) {
-                insertIcon(doc, doc.getLength(), status, (status == 5 ? message.getChannel() : null));
+                insertIcon(m, status, (status == 5 ? message.getChannel() : null));
             }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -411,13 +485,13 @@ public class ChatPane implements DocumentListener {
         if (status == 5) subCount++;
     }
 
-    public void onSub(Message message) {
-        onIconMessage(message, 5);
+    public void onSub(MessageWrapper m) {
+        onIconMessage(m, 5);
     }
 
-    public void onDonation(Message message) {
-        Donation d = (Donation) message.getExtra();
-        onIconMessage(message, Donor.getDonationStatus(d.getAmount()));
+    public void onDonation(MessageWrapper m) {
+        Donation d = (Donation) m.getLocal().getExtra();
+        onIconMessage(m, Donor.getDonationStatus(d.getAmount()));
     }
 
     private ImageIcon sizeIcon(URL image) {
@@ -435,7 +509,7 @@ public class ChatPane implements DocumentListener {
         return icon;
     }
 
-    public void insertIcon(StyledDocument doc, int pos, int type, String channel) {
+    public void insertIcon(MessageWrapper m, int type, String channel) {
         SimpleAttributeSet attrs = new SimpleAttributeSet();
         ImageIcon icon;
         String kind;
@@ -495,8 +569,8 @@ public class ChatPane implements DocumentListener {
         }
         StyleConstants.setIcon(attrs, icon);
         try {
-            doc.insertString(pos, " ", null);
-            doc.insertString(pos + 1, kind, attrs);
+            print(m, " ", null);
+            print(m, kind, attrs);
         } catch (Exception e) {
             GUIMain.log("INSERT ICON " + e.getMessage());
         }

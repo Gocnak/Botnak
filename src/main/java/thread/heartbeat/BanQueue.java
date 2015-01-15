@@ -1,7 +1,8 @@
 package thread.heartbeat;
 
 import gui.GUIMain;
-import irc.Message;
+import irc.message.Message;
+import irc.message.MessageQueue;
 import util.Timer;
 
 import java.util.HashSet;
@@ -33,7 +34,6 @@ public class BanQueue implements HeartbeatThread {
         //nothing
     }
 
-
     /**
      * Adds the ban of the given name to the map.
      *
@@ -54,10 +54,10 @@ public class BanQueue implements HeartbeatThread {
             User u = it.next();
             if (!u.timer.isRunning()) {
                 if (u.count > 1) {
-                    GUIMain.onMessage(new Message(u.channel.substring(1), null, Message.MessageType.BAN_NOTIFY,
+                    MessageQueue.addMessage(new Message(u.channel.substring(1), null, Message.MessageType.BAN_NOTIFY,
                             u.name + " has been banned/timed out " + u.count + " times!"));
                 } else {
-                    GUIMain.onMessage(new Message(u.channel.substring(1), null, Message.MessageType.BAN_NOTIFY,
+                    MessageQueue.addMessage(new Message(u.channel.substring(1), null, Message.MessageType.BAN_NOTIFY,
                             u.name + " has been banned/timed out!"));
                 }
                 it.remove();
@@ -76,15 +76,14 @@ public class BanQueue implements HeartbeatThread {
         return null;
     }
 
-
-    static class User {
+    private static class User {
 
         Timer timer;
         String name, channel;
         int count;
 
         public User(String channel, String name, int count) {
-            timer = new Timer(5000);
+            timer = new Timer(3500);
             this.channel = channel;
             this.name = name;
             this.count = count;
@@ -92,7 +91,7 @@ public class BanQueue implements HeartbeatThread {
 
         public void increment() {
             count++;
+            timer.setEndIn(1500);
         }
     }
-
 }

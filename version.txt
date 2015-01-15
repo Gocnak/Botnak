@@ -1,28 +1,12 @@
-2.26
-
-(If these exist)
-Delete your Botnak/TwichFaces/ folder
-Delete your twitchfaces.txt file
-Delete your commands.txt file
-(before opening the new version of Botnak)
+2.27
 
 Added:
 
-Donation Manager (closes #11)
-Subscriber Manager (closes #36)
-JTV Messages Support
-"Clear chat" Support (closes #27)
-"Pop-out" Limitless Dimensions (closes #19)
-User-Defined Argument Commands (closes #46)
-Botnak talks more in response to commands
-"@ user auto completion" (closes #59)
+MessageQueue for improved message handling and responsive GUI
 
 Fixed:
 
-Too many spaces replaced with one space
-Tab pulsing issues (closes #42)
-Account Mishaps (closes #49 issue, please read it)
-Twitch Face Downloading to be more sparse (closes #32)
-Clear chat amount being detected now (closes #55)
-Removed maven support, no need for it yet
+Overall improved message handling (TDuva is based)
+Null check for twitch faces (deleted sets on Twitch are now deleted locally)
+BanQueue is a little more responsive now
 

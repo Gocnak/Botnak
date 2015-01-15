@@ -11,13 +11,13 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -215,23 +215,24 @@ public class FaceManager {
         for (int localEmoteSet : keyLocal) {
             ArrayList<TwitchFace> localEmotes = loadedTwitchFaces.get(localEmoteSet);
             ArrayList<TwitchFace> externalEmotes = twitchFaceMap.get(localEmoteSet);
-
-            for (TwitchFace external : externalEmotes) {
-                boolean flag = false;
-                for (TwitchFace internal : localEmotes) {
-                    if (internal.getFilePath().contains(external.getFilePath().split("-")[4])) {
-                        flag = true;
-                        break;
-                    }
-                }
-                if (!flag) {//add new faces that I need
-                    try {
-                        String newFaceToAddFileName = Utils.setExtension(external.getFilePath().split("-")[4], ".png");
-                        File newFaceToAdd = new File(GUIMain.currentSettings.twitchFaceDir + File.separator + newFaceToAddFileName);
-                        if (download(external.getFilePath(), newFaceToAdd)) {
-                            localEmotes.add(new TwitchFace(external.getRegex(), newFaceToAdd.getAbsolutePath(), true));
+            if (externalEmotes != null) {
+                for (TwitchFace external : externalEmotes) {
+                    boolean flag = false;
+                    for (TwitchFace internal : localEmotes) {
+                        if (internal.getFilePath().contains(external.getFilePath().split("-")[4])) {
+                            flag = true;
+                            break;
                         }
-                    } catch (Exception ignored) {
+                    }
+                    if (!flag) {//add new faces that I need
+                        try {
+                            String newFaceToAddFileName = Utils.setExtension(external.getFilePath().split("-")[4], ".png");
+                            File newFaceToAdd = new File(GUIMain.currentSettings.twitchFaceDir + File.separator + newFaceToAddFileName);
+                            if (download(external.getFilePath(), newFaceToAdd)) {
+                                localEmotes.add(new TwitchFace(external.getRegex(), newFaceToAdd.getAbsolutePath(), true));
+                            }
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
             }
@@ -239,10 +240,12 @@ public class FaceManager {
             ArrayList<TwitchFace> toRemove = new ArrayList<>();
             for (TwitchFace internal : localEmotes) {
                 boolean flag = false;
-                for (TwitchFace external : externalEmotes) {
-                    if (internal.getFilePath().contains(external.getFilePath().split("-")[4])) {
-                        flag = true;
-                        break;
+                if (externalEmotes != null) {//if it's null, that means the set is gone now, delete it
+                    for (TwitchFace external : externalEmotes) {
+                        if (internal.getFilePath().contains(external.getFilePath().split("-")[4])) {
+                            flag = true;
+                            break;
+                        }
                     }
                 }
                 if (!flag) {
@@ -294,17 +297,18 @@ public class FaceManager {
         return toReturn;
     }
 
-    public static void handleFaces(final StyledDocument doc, final int start, final String object, final FACE_TYPE type) {
-        switch (type) {
-            case NAME_FACE:
-                Set<String> names = nameFaceMap.keySet();
-                for (String s : names) {
-                    if (object.equalsIgnoreCase(s)) {
-                        insertFace(doc, start, object, nameFaceMap.get(s).getFilePath());
-                        break;
-                    }
-                }
+    public static void handleNameFaces(String object, SimpleAttributeSet set) {
+        Set<String> names = nameFaceMap.keySet();
+        for (String s : names) {
+            if (object.equalsIgnoreCase(s)) {
+                insertFace(set, nameFaceMap.get(s).getFilePath());
                 break;
+            }
+        }
+    }
+
+    public static void handleFaces(Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangeStyles, final String object, final FACE_TYPE type) {
+        switch (type) {
             case TWITCH_FACE:
                 if (doneWithTwitchFaces) {
                     Set<Integer> sets = loadedTwitchFaces.keySet();
@@ -320,7 +324,16 @@ public class FaceManager {
                             Pattern p = Pattern.compile(regex);
                             Matcher m = p.matcher(object);
                             while (m.find() && !GUIMain.shutDown) {
-                                insertFace(doc, start + m.start(), m.group(), f.getFilePath());
+                                int start = m.start();
+                                int end = m.end() - 1;
+                                if (!Utils.inRanges(start, ranges) && !Utils.inRanges(end, ranges)) {
+                                    ranges.put(start, end);
+                                    SimpleAttributeSet attrs = new SimpleAttributeSet();
+                                    insertFace(attrs, f.getFilePath());
+                                    attrs.addAttribute("start", start);
+                                    rangeStyles.put(start, attrs);
+                                }
+                                //insertFace(doc, start + m.start(), m.group(), f.getFilePath());
                             }
                         }
                     }
@@ -335,7 +348,16 @@ public class FaceManager {
                         Pattern p = Pattern.compile(f.getRegex());
                         Matcher m = p.matcher(object);
                         while (m.find() && !GUIMain.shutDown) {
-                            insertFace(doc, start + m.start(), m.group(), f.getFilePath());
+                            int start = m.start();
+                            int end = m.end() - 1;
+                            if (!Utils.inRanges(start, ranges) && !Utils.inRanges(end, ranges)) {
+                                ranges.put(start, end);
+                                SimpleAttributeSet attrs = new SimpleAttributeSet();
+                                insertFace(attrs, f.getFilePath());
+                                attrs.addAttribute("start", start);
+                                rangeStyles.put(start, attrs);
+                            }
+                            //insertFace(doc, start + m.start(), m.group(), f.getFilePath());
                         }
                     }
                 }
@@ -345,17 +367,14 @@ public class FaceManager {
         }
     }
 
-    private static synchronized void insertFace(StyledDocument doc, int start, String name, String face) {
+    private static void insertFace(SimpleAttributeSet set, String face) {
         try {
-            //finds the index of the face while not replacing the old ones
-            final SimpleAttributeSet attrs = new SimpleAttributeSet(doc.getCharacterElement(start).getAttributes());
-            StyleConstants.setIcon(attrs, sizeIcon(new File(face).toURI().toURL()));
-            doc.remove(start, name.length());
-            doc.insertString(start, name, attrs);
+            StyleConstants.setIcon(set, sizeIcon(new File(face).toURI().toURL()));
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
     }
+
 
     private static ImageIcon sizeIcon(URL image) {
         ImageIcon icon;

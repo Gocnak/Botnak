@@ -7,7 +7,8 @@ import gui.listeners.ListenerUserChat;
 import gui.listeners.NewTabListener;
 import irc.IRCBot;
 import irc.IRCViewer;
-import irc.Message;
+import irc.message.Message;
+import irc.message.MessageQueue;
 import sound.Sound;
 import sound.SoundEngine;
 import thread.TabPulse;
@@ -66,6 +67,7 @@ public class GUIMain extends JFrame {
     public static Heartbeat heartbeat;
 
     public GUIMain() {
+        new MessageQueue().start();
         instance = this;
         soundMap = new HashMap<>();
         channelSet = new HashSet<>();
@@ -86,7 +88,6 @@ public class GUIMain extends JFrame {
         currentSettings.load();
         StyleConstants.setFontFamily(norm, currentSettings.font.getFamily());
         StyleConstants.setFontSize(norm, currentSettings.font.getSize());
-
         heartbeat = new Heartbeat();
         heartbeat.addHeartbeatThread(new ViewerCount());
         heartbeat.addHeartbeatThread(new UserManager());
@@ -149,65 +150,7 @@ public class GUIMain extends JFrame {
      */
     public static void log(Object message) {
         if (message != null && GUIMain.chatPanes != null && !GUIMain.chatPanes.isEmpty())
-            onMessage(new Message(message.toString(), Message.MessageType.LOG_MESSAGE));
-    }
-
-    /**
-     * The central message handle.
-     *
-     * @param message The message to handle.
-     */
-    public static void onMessage(final Message message) {
-        Runnable handler = () -> instance.onMessageAction(message);
-        if (EventQueue.isDispatchThread()) {
-            handler.run();
-        } else {
-            try {
-                EventQueue.invokeLater(handler);
-            } catch (Exception e) {
-                log(e.getMessage());
-            }
-        }
-    }
-
-    private void onMessageAction(Message mess) {
-        if (mess != null && mess.getType() != null) {
-            if (mess.getType() == Message.MessageType.LOG_MESSAGE) {
-                chatPanes.get("System Logs").log(mess.getContent(), true);
-            } else if (mess.getType() == Message.MessageType.NORMAL_MESSAGE ||
-                    mess.getType() == Message.MessageType.ACTION_MESSAGE) {
-                if (!combinedChatPanes.isEmpty()) {
-                    for (CombinedChatPane cc : combinedChatPanes) {
-                        for (String chan : cc.getChannels()) {
-                            if (mess.getChannel().substring(1).equalsIgnoreCase(chan)) {
-                                //TODO a "don't show channel source" setting?
-                                cc.onMessage(mess, true);
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (chatPanes.get(mess.getChannel().substring(1)) != null)
-                    chatPanes.get(mess.getChannel().substring(1)).onMessage(mess, false);
-            } else if (mess.getType() == Message.MessageType.SUB_NOTIFY) {
-                String channel = mess.getChannel().substring(1);
-                chatPanes.get(channel).onSub(mess);
-                if (channel.equalsIgnoreCase(currentSettings.accountManager.getUserAccount().getName())) {
-                    if (currentSettings.subSound != null)
-                        SoundEngine.getEngine().playSpecialSound(true);
-                }
-            } else if (mess.getType() == Message.MessageType.BAN_NOTIFY ||
-                    mess.getType() == Message.MessageType.HOSTED_NOTIFY ||
-                    mess.getType() == Message.MessageType.HOSTING_NOTIFY ||
-                    mess.getType() == Message.MessageType.JTV_NOTIFY) {
-                chatPanes.get(mess.getChannel()).log(mess.getContent(), false);
-            } else if (mess.getType() == Message.MessageType.DONATION_NOTIFY) {
-                chatPanes.get(mess.getChannel()).onDonation(mess);
-                if (currentSettings.donationSound != null) {
-                    SoundEngine.getEngine().playSpecialSound(false);
-                }
-            }
-        }
+            MessageQueue.addMessage(new Message(message.toString(), Message.MessageType.LOG_MESSAGE));
     }
 
     public static void updateTitle(String viewerCount) {

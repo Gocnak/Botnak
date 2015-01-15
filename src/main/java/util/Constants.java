@@ -7,11 +7,12 @@ import javax.imageio.ImageIO;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Constants {
 
-    public static final double VERSION = 2.26;
+    public static final double VERSION = 2.27;
 
     /**
      * All users may do it
@@ -79,6 +80,17 @@ public class Constants {
 
     public static final Pattern viewerTwitchPattern = Pattern.compile("\"viewers\":\\s*(\\d+)");
     public static final Pattern fileExclPattern = Pattern.compile("[\\/:\"*?<>|]");
+    /**
+     * The regex String for finding URLs in messages.
+     * credit: TDuva
+     */
+    private static final String urlRegex =
+            "(?i)\\b(?:(?:https?)://|www\\.)[-A-Z0-9+&@#/%=~_|$?!:,.]*[A-Z0-9+&@#/%=~_|$]";
+    /**
+     * The Matcher to use for finding URLs in messages.
+     * credit: TDuva
+     */
+    public static final Matcher urlMatcher = Pattern.compile(urlRegex).matcher("");
 
     //Credit TDuva from his Chatty bot for some of theses, as well as the
     //"namedcolor" class idea.

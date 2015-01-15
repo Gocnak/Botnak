@@ -2,6 +2,9 @@ package irc;
 
 import gui.GUIMain;
 import irc.account.Task;
+import irc.message.Message;
+import irc.message.MessageHandler;
+import irc.message.MessageQueue;
 import lib.pircbot.org.jibble.pircbot.ChannelManager;
 import thread.heartbeat.BanQueue;
 import util.Utils;
@@ -47,25 +50,25 @@ public class IRCViewer extends MessageHandler {
 
     @Override
     public void onMessage(final String channel, final String sender, final String message) {
-        GUIMain.onMessage(new Message(channel, sender, message, false));
+        MessageQueue.addMessage(new Message(channel, sender, message, false));
     }
 
     @Override
     public void onAction(final String sender, final String channel, final String action) {
-        GUIMain.onMessage(new Message(channel, sender, action, true));
+        MessageQueue.addMessage(new Message(channel, sender, action, true));
     }
 
     @Override
     public void onBeingHosted(final String line) {
-        GUIMain.onMessage(new Message(line, Message.MessageType.HOSTED_NOTIFY).setChannel(GUIMain.currentSettings.accountManager.getUserAccount().getName()));
+        MessageQueue.addMessage(new Message(line, Message.MessageType.HOSTED_NOTIFY).setChannel(GUIMain.currentSettings.accountManager.getUserAccount().getName()));
     }
 
     @Override
     public void onHosting(final String channel, final String target) {
         if (!target.equals("-")) {
-            GUIMain.onMessage(new Message(channel + " is now hosting " + target + ".", Message.MessageType.HOSTING_NOTIFY).setChannel(channel));
+            MessageQueue.addMessage(new Message(channel + " is now hosting " + target + ".", Message.MessageType.HOSTING_NOTIFY).setChannel(channel));
         } else {
-            GUIMain.onMessage(new Message("Exited host mode.", Message.MessageType.HOSTING_NOTIFY).setChannel(channel));
+            MessageQueue.addMessage(new Message("Exited host mode.", Message.MessageType.HOSTING_NOTIFY).setChannel(channel));
         }
     }
 
@@ -80,7 +83,7 @@ public class IRCViewer extends MessageHandler {
         if (channel.substring(1).equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
             if (GUIMain.currentSettings.subscriberManager.addNewSubscriber(newSub, channel)) return;
         }
-        GUIMain.onMessage(new Message(channel, newSub, Message.MessageType.SUB_NOTIFY, null));
+        MessageQueue.addMessage(new Message(channel, newSub, Message.MessageType.SUB_NOTIFY, null));
     }
 
     @Override
@@ -98,13 +101,13 @@ public class IRCViewer extends MessageHandler {
             BanQueue.addToMap(channel, line.split(" ")[1]);
         } else {
             //TODO perhaps add the option to actually clear the chat based on user setting?
-            GUIMain.onMessage(new Message(channel, null, Message.MessageType.BAN_NOTIFY, "The chat was cleared by a moderator. (Prevented by Botnak)"));
+            MessageQueue.addMessage(new Message(channel, null, Message.MessageType.BAN_NOTIFY, "The chat was cleared by a moderator. (Prevented by Botnak)"));
         }
     }
 
     @Override
     public void onJTVMessage(String channel, String line) {
-        GUIMain.onMessage(new Message().setChannel(channel).setType(Message.MessageType.JTV_NOTIFY).setContent(line));
+        MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.JTV_NOTIFY).setContent(line));
     }
 
     @Override

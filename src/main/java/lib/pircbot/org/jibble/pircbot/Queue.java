@@ -85,8 +85,7 @@ public class Queue<T> {
      * @return The next item from the front of the queue.
      */
     public T next() {
-        T o = null;
-
+        T o;
         // Block if the Queue is empty.
         synchronized (_queue) {
             if (_queue.size() == 0) {
@@ -102,10 +101,9 @@ public class Queue<T> {
                 o = _queue.firstElement();
                 _queue.removeElementAt(0);
             } catch (ArrayIndexOutOfBoundsException e) {
-                throw new InternalError("Race hazard in Queue object.");
+                return null;
             }
         }
-
         return o;
     }
 

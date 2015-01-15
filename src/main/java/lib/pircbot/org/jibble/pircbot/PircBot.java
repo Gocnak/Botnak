@@ -16,7 +16,7 @@ package lib.pircbot.org.jibble.pircbot;
 
 import face.FaceManager;
 import gui.GUIMain;
-import irc.MessageHandler;
+import irc.message.MessageHandler;
 import util.Constants;
 
 import java.awt.*;

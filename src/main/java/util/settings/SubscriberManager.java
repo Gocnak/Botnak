@@ -1,8 +1,9 @@
 package util.settings;
 
 import gui.GUIMain;
-import irc.Message;
 import irc.Subscriber;
+import irc.message.Message;
+import irc.message.MessageQueue;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import lib.pircbot.org.jibble.pircbot.User;
@@ -96,7 +97,7 @@ public class SubscriberManager {
                     if (monthsSince > streak) {
                         String content = s.get().getName() + " has continued their subscription for "
                                 + (monthsSince) + ((monthsSince) > 1 ? " months!" : " month!");
-                        GUIMain.onMessage(new Message().setChannel(channel).setType(Message.MessageType.SUB_NOTIFY).setContent(content));
+                        MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.SUB_NOTIFY).setContent(content));
                         s.get().incrementStreak(monthsSince - streak);//this will most likely be 1
                         addSubDonation(s.get().getName(), content, ((double) (monthsSince - streak)) * 2.50);
                     }
@@ -112,7 +113,7 @@ public class SubscriberManager {
 
                     //or twitchnotify could have been a douchenozzle and did not send the message
                     String content = s.get().getName() + " has RE-subscribed offline!";
-                    GUIMain.onMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
+                    MessageQueue.addMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
                     s.get().resetStreak();
                     s.get().setStarted(LocalDateTime.now());
                     s.get().setActive(true);
@@ -126,7 +127,7 @@ public class SubscriberManager {
                 // as if they had subbed the instant they sent the message
                 //or twitchnotify could have been a douchenozzle and did not send the message
                 String content = u.getNick().toLowerCase() + " has subscribed offline!";
-                GUIMain.onMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
+                MessageQueue.addMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
                 addSub(new Subscriber(u.getNick().toLowerCase(), LocalDateTime.now(), true, 0));
                 addSubDonation(u.getNick().toLowerCase(), content, 2.50);
             }
@@ -159,7 +160,7 @@ public class SubscriberManager {
             //answer: Botnak automatically acknowledges them for their continued support anyways, and
             // if they decide to cancel just to get the notification again, they deserve their streak to be reset
             String content = name + " has just RE-subscribed!";
-            GUIMain.onMessage(new Message().setContent(content).setChannel(channel).setType(Message.MessageType.SUB_NOTIFY));
+            MessageQueue.addMessage(new Message().setContent(content).setChannel(channel).setType(Message.MessageType.SUB_NOTIFY));
             addSubDonation(name, content, 2.50);
             subscriber.get().resetStreak();
             subscriber.get().setStarted(LocalDateTime.now());
@@ -195,6 +196,7 @@ public class SubscriberManager {
                     if (passes == passesCompleted) {
                         fillSubscribers(set);
                         GUIMain.log("Successfully scanned " + set.size() + " subscriber(s)!");
+                        ranInitialCheck = true;
                     } else {
                         JSONArray subs = entire.getJSONArray("subscriptions");
                         for (int subIndex = 0; subIndex < subs.length(); subIndex++) {

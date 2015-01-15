@@ -2,7 +2,8 @@ package util.settings;
 
 import gui.GUIMain;
 import irc.Donor;
-import irc.Message;
+import irc.message.Message;
+import irc.message.MessageQueue;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import util.misc.Donation;
@@ -69,7 +70,7 @@ public class DonationManager {
                 if (isSub) GUIMain.currentSettings.saveSubscribers();
                 else {
                     setLastDonation(d);
-                    GUIMain.onMessage(new Message()
+                    MessageQueue.addMessage(new Message()
                             .setChannel(GUIMain.currentSettings.accountManager.getUserAccount().getName())
                             .setType(Message.MessageType.DONATION_NOTIFY)
                             .setContent(d.getFromWho() + " has just donated " + CURRENCY_SYMBOL + d.getAmount() + "!")
