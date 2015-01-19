@@ -495,6 +495,12 @@ public class IRCBot extends MessageHandler {
                         case NOW_PLAYING:
                             commandResponse = Utils.getCurrentlyPlaying();
                             break;
+                            
+                        case SHOW_UPTIME:
+                        	System.out.println(channel);
+                            commandResponse = Utils.getUptimeString(channel.substring(1)); //yolo substring 
+                            break;
+                            
                         default:
                             break;
 

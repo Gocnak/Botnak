@@ -60,7 +60,8 @@ public class ConsoleCommand {
         VOTE_POLL,
         POLL_RESULT,
         CANCEL_POLL,
-        NOW_PLAYING
+        NOW_PLAYING,
+        SHOW_UPTIME
     }
 
     /**
