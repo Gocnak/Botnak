@@ -43,7 +43,6 @@ public class Boot {
                     ignored.printStackTrace();
                 }*/
 
-            	System.out.println(Utils.getUptimeString("gocnak").getResponseText().toString());
                 setLookAndFeel();
                 GUIMain g = new GUIMain();
                 g.setVisible(true);
