@@ -1,13 +1,11 @@
 package util;
 
-import face.Face;
-import face.FaceManager;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.GUIMain;
+import irc.account.Oauth;
 import lib.JSON.JSONObject;
 import lib.pircbot.org.jibble.pircbot.User;
-import sound.Sound;
 import util.comm.Command;
 import util.comm.ConsoleCommand;
 
@@ -368,27 +366,42 @@ public class Utils {
     }
 
     /**
-     * Sets the title of a stream.
+     * Updates the stream's status to a given parameter.
      *
-     * @param key     The oauth key which MUST be authorized to edit the status of a stream.
+     * @param key     The oauth key which MUST be authorized to edit the status of the stream.
      * @param channel The channel to edit.
-     * @param title   The new title.
-     * @return true if the title was edited, else false
+     * @param message The message containing the new title/game to update to.
+     * @param isTitle If the change is for the title or game.
+     * @return The response Botnak has for the method.
      */
-    public static boolean setTitleOfStream(String key, String channel, String title) {
-        return !title.equalsIgnoreCase(getTitleOfStream(channel)) && setStatusOfStream(key, channel, title, getGameOfStream(channel));
-    }
-
-    /**
-     * Sets the game for a stream.
-     *
-     * @param key     The oauth key which MUST be authorized to edit the status of a stream.
-     * @param channel The channel to edit.
-     * @param game    The new game.
-     * @return true if the game was updated, else false
-     */
-    public static boolean setGameOfStream(String key, String channel, String game) {
-        return !game.equalsIgnoreCase(getGameOfStream(channel)) && setStatusOfStream(key, channel, getTitleOfStream(channel), game);
+    public static Response setStreamStatus(Oauth key, String channel, String message, boolean isTitle) {
+        Response toReturn = new Response();
+        if (key.canSetTitle()) {
+            String add = isTitle ? "title" : "game";
+            if (message.split(" ").length > 1) {
+                String toChangeTo = message.substring(message.indexOf(' ') + 1);
+                if (toChangeTo.equals(" ") || toChangeTo.equals("null")) toChangeTo = "";
+                if (toChangeTo.equalsIgnoreCase(isTitle ? getTitleOfStream(channel) : getGameOfStream(channel))) {
+                    toReturn.setResponseText("Failed to set " + add + ", the " + add + " is already set to that!");
+                } else {
+                    Response status = setStatusOfStream(key.getKey(), channel,
+                            isTitle ? toChangeTo : getTitleOfStream(channel),
+                            isTitle ? getGameOfStream(channel) : toChangeTo);
+                    if (status.isSuccessful()) {
+                        toReturn.wasSuccessful();
+                        toChangeTo = "".equals(toChangeTo) ? (isTitle ? "(untitled broadcast)" : "(not playing a game)") : toChangeTo;
+                        toReturn.setResponseText("Successfully set " + add + " to: \"" + toChangeTo + "\" !");
+                    } else {
+                        toReturn.setResponseText(status.getResponseText());
+                    }
+                }
+            } else {
+                toReturn.setResponseText("Failed to set status status of the " + add + ", usage: !set" + add + " (new " + add + ") or \"null\"");
+            }
+        } else {
+            toReturn.setResponseText("This OAuth key cannot update the status of the stream! Try re-authenticating in the Settings GUI!");
+        }
+        return toReturn;
     }
 
     /**
@@ -398,10 +411,10 @@ public class Utils {
      * @param channel The channel to edit.
      * @param title   The title to set.
      * @param game    The game to set.
-     * @return true if the status was successfully updated, else false
+     * @return The response Botnak has for the method.
      */
-    private static boolean setStatusOfStream(String key, String channel, String title, String game) {
-        boolean toReturn = false;
+    private static Response setStatusOfStream(String key, String channel, String title, String game) {
+        Response toReturn = new Response();
         try {
             if (channel.contains("#")) channel = channel.replace("#", "");
             String request = "https://api.twitch.tv/kraken/channels/" + channel +
@@ -411,12 +424,13 @@ public class Utils {
             URL twitch = new URL(request);
             BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
             String line = br.readLine();
-            if (line.contains(title) && line.contains(game)) {
-                toReturn = true;
-            }
             br.close();
+            if (line.contains(title) && line.contains(game)) {
+                toReturn.wasSuccessful();
+            }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            String error = e.getMessage().length() > 20 ? (e.getMessage().substring(0, e.getMessage().length() / 2) + "...") : e.getMessage();
+            toReturn.setResponseText("Failed to update status due to Exception: " + error);
         }
         return toReturn;
     }
@@ -600,7 +614,7 @@ public class Utils {
             try {
                 toRet = Integer.parseInt(toParseSub) * 60;
                 if (toParse.contains("s")) {
-                    toParseSub = toParse.substring(toParse.indexOf("m"), toParse.indexOf("s"));
+                    toParseSub = toParse.substring(toParse.indexOf("m") + 1, toParse.indexOf("s"));
                     toRet += Integer.parseInt(toParseSub);
                 }
             } catch (Exception e) {
@@ -878,6 +892,35 @@ public class Utils {
     }
 
     /**
+     * Gets stream uptime.
+     *
+     * @return the current stream uptime.
+     */
+    public static Response getUptimeString(String channelName) {
+        if (channelName.contains("#")) channelName = channelName.replace("#", "");
+        Response toReturn = new Response();
+        try {
+            URL nightdev = new URL("https://nightdev.com/hosted/uptime.php?channel=" + channelName);
+            BufferedReader br = new BufferedReader(new InputStreamReader(nightdev.openStream()));
+            String line = br.readLine();
+            br.close();
+            if (line != null) {
+                if (line.contains("is not")) {
+                    toReturn.setResponseText("The stream is not live!");
+                } else if (line.contains("No chan")) {
+                    toReturn.setResponseText("Error checking uptime, no channel specified!");
+                } else {
+                    toReturn.wasSuccessful();
+                    toReturn.setResponseText("The stream has been live for: " + line);
+                }
+            }
+        } catch (Exception ignored) {
+            toReturn.setResponseText("Error checking uptime due to Exception!");
+        }
+        return toReturn;
+    }
+
+    /**
      * Gets the SimpleAttributeSet with the correct color for the message.
      * Cycles through all of the keywords, so the first keyword it matches is the color.
      *
@@ -1022,15 +1065,19 @@ public class Utils {
      * @param user User to change the color for.
      * @param mess Their message.
      */
-    public static Response handleColor(String user, String mess) {
+    public static Response handleColor(String user, String mess, Color old) {
         Response toReturn = new Response();
         if (user != null && mess != null) {
             //mess = "!setcol r g b" or "!setcol #cd4fd5"
             //so let's send just the second part.
-            Color newColor = getColor(mess.substring(mess.indexOf(" ") + 1), getColorFromHashcode(user.hashCode()));
-            GUIMain.userColMap.put(user, newColor);
-            toReturn.setResponseText("Successfully set color for user " + user + " !");
-            toReturn.wasSuccessful();
+            Color newColor = getColor(mess.substring(mess.indexOf(" ") + 1), old);
+            if (!newColor.equals(old)) {
+                GUIMain.userColMap.put(user, newColor);
+                toReturn.setResponseText("Successfully set color for user " + user + " !");
+                toReturn.wasSuccessful();
+            } else {
+                toReturn.setResponseText("Failed to update color, it may be too dark!");
+            }
         } else {
             toReturn.setResponseText("Failed to update user color, user or message is null!");
         }
@@ -1062,128 +1109,6 @@ public class Utils {
     }
 
     /**
-     * Handles the adding/changing of a sound, its permission, and/or its files.
-     *
-     * @param s      The string from the chat to manipulate.
-     * @param change True for changing a sound, false for adding.
-     */
-    public static void handleSound(String s, boolean change) {
-        if (GUIMain.currentSettings.defaultSoundDir != null &&
-                !GUIMain.currentSettings.defaultSoundDir.equals("null") &&
-                !GUIMain.currentSettings.defaultSoundDir.equals("")) {
-            try {
-                String[] split = s.split(" ");
-                String name = split[1];//both commands have this in common.
-                int perm;
-                if (split.length > 3) {//!add/changesound sound 0 sound(,maybe,more)
-                    try {
-                        perm = Integer.parseInt(split[2]);
-                    } catch (Exception e) {
-                        return;
-                    }
-                    String files = split[3];
-                    if (perm == -1) return;
-                    if (!files.contains(",")) {//isn't multiple
-                        //this can be !addsound sound 0 sound or !changesound sound 0 newsound
-                        String filename = GUIMain.currentSettings.defaultSoundDir + File.separator + setExtension(files, ".wav");
-                        if (areFilesGood(filename)) {
-                            if (GUIMain.soundMap.containsKey(name)) {//they could technically change the permission here as well
-                                if (!change) {//!addsound
-                                    GUIMain.soundMap.put(name, new Sound(perm,// add it tooo it maaan
-                                            addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, filename)));
-                                } else {//!changesound
-                                    GUIMain.soundMap.put(name, new Sound(perm, filename));//replace it
-                                }
-                            } else { //*gasp* A NEW SOUND!?
-                                if (!change) GUIMain.soundMap.put(name, new Sound(perm, filename));
-                                //can't have !changesound act like !addsound
-                            }
-                        }
-                    } else {//is multiple
-                        //this can be !addsound sound 0 multi,sound or !changesound sound 0 multi,sound
-                        ArrayList<String> list = new ArrayList<>();
-                        String[] filesSplit = files.split(",");
-                        for (String str : filesSplit) {
-                            list.add(GUIMain.currentSettings.defaultSoundDir + File.separator + setExtension(str, ".wav"));
-                        }             //calls the areFilesGood boolean in it (filters bad files already)
-                        filesSplit = checkFiles(list.toArray(new String[list.size()]));
-                        list.clear();//recycle time!
-                        if (!change) { //adding sounds
-                            if (GUIMain.soundMap.containsKey(name)) {//adding sounds, so get the old ones V
-                                Collections.addAll(list, GUIMain.soundMap.get(name).getSounds().data);
-                            }
-                            checkAndAdd(list, filesSplit);//checks for repetition, will add anyway if list is empty
-                            GUIMain.soundMap.put(name, new Sound(perm, list.toArray(new String[list.size()])));
-                        } else {//!changesound, so replace it if it's in there
-                            if (GUIMain.soundMap.containsKey(name))
-                                GUIMain.soundMap.put(name, new Sound(perm, filesSplit));
-                        }
-                    }
-                }
-                if (split.length == 3) {//add/changesound sound perm/newsound
-                    if (split[2].length() == 1) {//ASSUMING it's a permission change.
-                        try {
-                            perm = Integer.parseInt(split[2]);//I mean come on. What sound will have a 1 char name?
-                            if (perm != -1) {
-                                if (change)//because adding just a sound name and a permission is silly
-                                    GUIMain.soundMap.put(name, new Sound(perm, GUIMain.soundMap.get(name).getSounds().data));//A pretty bad one...
-                            }
-                        } catch (NumberFormatException e) {//maybe it really is a 1-char-named sound?
-                            String test = GUIMain.currentSettings.defaultSoundDir + File.separator + setExtension(split[2], ".wav");
-                            if (areFilesGood(test)) { //wow...
-                                if (change) {
-                                    GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), test));
-                                } else {//adding a 1 char sound that exists to the pool...
-                                    GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(),
-                                            addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, test)));
-                                }
-                            }
-                        }
-                    } else { //it's a/some new file(s) as replacement/to add!
-                        if (split[2].contains(",")) {//multiple
-                            String[] filesSplit = split[2].split(",");
-                            ArrayList<String> list = new ArrayList<>();
-                            for (String str : filesSplit) {
-                                list.add(GUIMain.currentSettings.defaultSoundDir + File.separator + setExtension(str, ".wav"));
-                            }             //calls the areFilesGood boolean in it (filters bad files already)
-                            filesSplit = checkFiles(list.toArray(new String[list.size()]));
-                            if (!change) {//!addsound soundname more,sounds
-                                if (GUIMain.soundMap.containsKey(name)) {
-                                    filesSplit = addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, filesSplit);
-                                    GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), filesSplit));
-                                } else { //use default permission
-                                    GUIMain.soundMap.put(name, new Sound(filesSplit));
-                                }
-                            } else {//!changesound soundname new,sounds
-                                if (GUIMain.soundMap.containsKey(name))//!changesound isn't !addsound
-                                    GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), filesSplit));
-                            }
-                        } else {//singular
-                            String test = GUIMain.currentSettings.defaultSoundDir + File.separator + setExtension(split[2], ".wav");
-                            if (areFilesGood(test)) {
-                                if (!change) {//!addsound sound newsound
-                                    if (GUIMain.soundMap.containsKey(name)) {//getting the old permission/files
-                                        GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(),
-                                                addStringsToArray(GUIMain.soundMap.get(name).getSounds().data, test)));
-                                    } else {//use default permission
-                                        GUIMain.soundMap.put(name, new Sound(test));
-                                    }
-                                } else { //!changesound sound newsound
-                                    if (GUIMain.soundMap.containsKey(name))//!changesound isn't !addsound
-                                        GUIMain.soundMap.put(name, new Sound(GUIMain.soundMap.get(name).getPermission(), test));
-                                }
-                            }
-                        }
-                    }
-
-                }
-            } catch (Exception e) {
-                GUIMain.log(e.getMessage());
-            }
-        }
-    }
-
-    /**
      * Checks to see if the regex is valid.
      *
      * @param toCheck The regex to check.
@@ -1210,177 +1135,4 @@ public class Utils {
         return m.find();
     }
 
-    /**
-     * Either adds a face to the image map or changes a face to another variant.
-     * If the face image size is too big, it is scaled (using Scalr) to fit the 26 pixel height limit.
-     *
-     * @param s The string from the chat.
-     * @return The response of the method.
-     */
-    public static Response handleFace(String s) {
-        Response toReturn = new Response();
-        boolean localCheck = (GUIMain.currentSettings.defaultFaceDir == null
-                || GUIMain.currentSettings.defaultFaceDir.equals("")
-                || GUIMain.currentSettings.defaultFaceDir.equals("null"));
-
-        String[] split = s.split(" ");
-        String command = split[0];
-        String name = split[1];//name of the face, used for file name, and if regex isn't supplied, becomes the regex
-        String regex;
-        String file;//or the URL...
-
-        if (command.equalsIgnoreCase("addface")) {//a new face
-
-            if (FaceManager.faceMap.containsKey(name)) {//!addface is not !changeface, remove the face first or do changeface
-                toReturn.setResponseText("Failed to add face, " + name + " already exists!");
-                return toReturn;
-            }
-
-            if (split.length == 4) {//!addface <name> <regex> <URL or file>
-                regex = split[2];
-                //regex check
-                if (!checkRegex(regex)) {
-                    toReturn.setResponseText("Failed to add face, the supplied regex does not compile!");
-                    return toReturn;
-                }
-                //name check (for saving the file)
-                if (checkName(name)) {
-                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
-                    return toReturn;
-                }
-
-                file = split[3];
-                if (file.startsWith("http")) {//online
-                    return FaceManager.downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                            setExtension(name, ".png"), regex, FaceManager.FACE_TYPE.NORMAL_FACE);//save locally
-
-                } else {//local
-                    if (checkName(file) || localCheck) {
-                        if (!localCheck)
-                            toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
-                        else toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
-                        return toReturn;
-                    }
-                    return FaceManager.downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
-                            GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                            setExtension(name, ".png"),
-                            regex, FaceManager.FACE_TYPE.NORMAL_FACE);
-                }
-            } else if (split.length == 3) {//!addface <name> <URL or file> (name will be the regex, case sensitive)
-                file = split[2];
-                //regex (this should never be a problem, however...)
-                if (!checkRegex(name)) {
-                    toReturn.setResponseText("Failed to add face, the supplied name is not a valid regex!");
-                    return toReturn;
-                }
-                //name check (for saving the file)
-                if (checkName(name)) {
-                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
-                    return toReturn;
-                }
-                if (file.startsWith("http")) {//online
-                    return FaceManager.downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                            setExtension(name, ".png"), name, FaceManager.FACE_TYPE.NORMAL_FACE);//name is regex, so case sensitive
-                } else {//local
-                    if (checkName(file) || localCheck) {
-                        if (!localCheck)
-                            toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
-                        else toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
-                        return toReturn;
-                    }
-                    return FaceManager.downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
-                            GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                            setExtension(name, ".png"),
-                            name, //<- this will be the regex, so case sensitive
-                            FaceManager.FACE_TYPE.NORMAL_FACE);
-                }
-            }
-        } else if (command.equalsIgnoreCase("changeface")) {//replace entirely
-            if (FaceManager.faceMap.containsKey(name)) {//!changeface is not !addface, the map MUST contain it
-                if (split.length == 5) {//!changeface <name> 2 <new regex> <new URL/file>
-                    try {//gotta make sure the number is the ^
-                        if (Integer.parseInt(split[2]) != 2) {
-                            toReturn.setResponseText("Failed to change face, make sure to designate the \"2\" in the command!");
-                            return toReturn;
-                        }
-                    } catch (Exception e) {
-                        toReturn.setResponseText("Failed to change face, the indicator number cannot be parsed!");
-                        return toReturn;
-                    }
-
-                    regex = split[3];
-                    //regex check
-                    if (!checkRegex(regex)) {
-                        toReturn.setResponseText("Failed to add face, the supplied regex does not compile!");
-                        return toReturn;
-                    }
-
-                    //name check (for saving the file)
-                    if (checkName(name)) {
-                        toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
-                        return toReturn;
-                    }
-
-                    file = split[4];
-                    if (file.startsWith("http")) {//online
-                        return FaceManager.downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                setExtension(name, ".png"), regex, FaceManager.FACE_TYPE.NORMAL_FACE);//save locally
-                    } else {//local
-                        if (checkName(file) || localCheck) {
-                            if (!localCheck)
-                                toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
-                            else
-                                toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
-                            return toReturn;
-                        }
-                        return FaceManager.downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
-                                GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                setExtension(name, ".png"),
-                                regex, //< this will be the regex, so case sensitive
-                                FaceManager.FACE_TYPE.NORMAL_FACE);
-                    }
-                } else if (split.length == 4) {//!changeface <name> <numb> <newregex>|<new URL or file>
-                    int type;
-                    try {//gotta check the number
-                        type = Integer.parseInt(split[2]);
-                    } catch (Exception e) {
-                        toReturn.setResponseText("Failed to change face, the indicator number cannot be parsed!");
-                        return toReturn;
-                    }
-                    Face face = FaceManager.faceMap.get(name);
-                    if (type == 0) {//regex change; !changeface <name> 0 <new regex>
-                        regex = split[3];
-                        if (checkRegex(regex)) {
-                            FaceManager.faceMap.put(name, new Face(regex, face.getFilePath()));
-                            toReturn.setResponseText("Successfully changed the regex for face: " + name + " !");
-                            toReturn.wasSuccessful();
-                        } else {
-                            toReturn.setResponseText("Failed to change the regex, the new regex could not be compiled!");
-                        }
-                    } else if (type == 1) {//file change; !changeface <name> 1 <new URL/file>
-                        file = split[3];
-                        if (file.startsWith("http")) {//online
-                            return FaceManager.downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                    setExtension(name, ".png"), face.getRegex(), FaceManager.FACE_TYPE.NORMAL_FACE);//save locally
-                        } else {//local
-                            if (checkName(file) || localCheck) {
-                                if (!localCheck)
-                                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
-                                else
-                                    toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
-                                return toReturn;
-                            }
-                            return FaceManager.downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
-                                    GUIMain.currentSettings.faceDir.getAbsolutePath(),
-                                    setExtension(name, ".png"),
-                                    face.getRegex(), FaceManager.FACE_TYPE.NORMAL_FACE);
-                        }
-                    }
-                }
-            } else {
-                toReturn.setResponseText("Failed to change face, the face " + name + " does not exist!");
-            }
-        }
-        return toReturn;
-    }
 }

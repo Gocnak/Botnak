@@ -24,9 +24,10 @@ public abstract class MessageHandler {
      * the recipient (newSub) subscribes to the channel.
      *
      * @param channel The channel the new subscriber subscribed to.
-     * @param newSub  The new subscriber's nick.
+     * @param line    The line to parse.
+     * @param newSub  The nick of the user.
      */
-    public void onNewSubscriber(String channel, String newSub) {
+    public void onNewSubscriber(String channel, String line, String newSub) {
     }
 
     /**

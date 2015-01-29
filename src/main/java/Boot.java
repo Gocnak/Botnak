@@ -6,7 +6,6 @@ import javax.swing.*;
 import java.awt.*;
 
 public class Boot {
-
     public static void main(final String[] args) {
 
         /* Thread-safe initialization */
@@ -40,7 +39,6 @@ public class Boot {
                 } catch (Exception ignored) {
                     ignored.printStackTrace();
                 }*/
-
 
                 setLookAndFeel();
                 GUIMain g = new GUIMain();

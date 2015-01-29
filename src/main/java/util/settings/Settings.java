@@ -15,6 +15,7 @@ import irc.account.Oauth;
 import irc.account.Task;
 import lib.pircbot.org.jibble.pircbot.ChannelManager;
 import sound.Sound;
+import sound.SoundEngine;
 import util.Constants;
 import util.Utils;
 import util.comm.Command;
@@ -227,7 +228,7 @@ public class Settings {
         saveWindow();
         if (accountManager.getUserAccount() != null || accountManager.getBotAccount() != null) savePropData(0);
         savePropData(1);
-        if (!GUIMain.soundMap.isEmpty()) saveSounds();
+        if (!SoundEngine.getEngine().getSoundMap().isEmpty()) saveSounds();
         if (!FaceManager.faceMap.isEmpty()) saveFaces();
         if (!FaceManager.loadedTwitchFaces.isEmpty()) saveTwitchFaces();
         if (!FaceManager.nameFaceMap.isEmpty()) saveNameFaces();
@@ -245,6 +246,8 @@ public class Settings {
     /**
      * *********VOIDS*************
      */
+
+    //TODO make this load from just one file, but separating the setters based on the int type
     public boolean loadPropData(int type) {
         Properties p = new Properties();
         if (type == 0) {//accounts
@@ -398,7 +401,7 @@ public class Settings {
                 } catch (NumberFormatException e) {
                     GUIMain.log(split[0] + " has a problem. Making it public.");
                 }
-                GUIMain.soundMap.put(split[0], new Sound(perm, split2add));
+                SoundEngine.getEngine().getSoundMap().put(split[0], new Sound(perm, split2add));
             }
             GUIMain.log("Loaded sounds!");
         } catch (Exception e) {
@@ -408,9 +411,9 @@ public class Settings {
 
     public void saveSounds() {
         try (PrintWriter br = new PrintWriter(soundsFile)) {
-            Set<String> keys = GUIMain.soundMap.keySet();
-            keys.stream().filter(s -> s != null && GUIMain.soundMap.get(s) != null).forEach(s -> {
-                Sound boii = GUIMain.soundMap.get(s);//you're too young to play that sound, boy
+            Set<String> keys = SoundEngine.getEngine().getSoundMap().keySet();
+            keys.stream().filter(s -> s != null && SoundEngine.getEngine().getSoundMap().get(s) != null).forEach(s -> {
+                Sound boii = SoundEngine.getEngine().getSoundMap().get(s);//you're too young to play that sound, boy
                 StringBuilder sb = new StringBuilder();
                 sb.append(s);
                 sb.append(",");
@@ -675,7 +678,6 @@ public class Settings {
         hardcoded.add(new ConsoleCommand("togglesound", ConsoleCommand.Action.TOGGLE_SOUND, Constants.PERMISSION_MOD, null));
         hardcoded.add(new ConsoleCommand("stopsound", ConsoleCommand.Action.STOP_SOUND, Constants.PERMISSION_MOD, null));
         hardcoded.add(new ConsoleCommand("stopallsounds", ConsoleCommand.Action.STOP_ALL_SOUNDS, Constants.PERMISSION_MOD, null));
-        hardcoded.add(new ConsoleCommand("mod", ConsoleCommand.Action.MOD_USER, Constants.PERMISSION_MOD, null));
         hardcoded.add(new ConsoleCommand("addkeyword", ConsoleCommand.Action.ADD_KEYWORD, Constants.PERMISSION_DEV, null));
         hardcoded.add(new ConsoleCommand("removekeyword", ConsoleCommand.Action.REMOVE_KEYWORD, Constants.PERMISSION_DEV, null));
         hardcoded.add(new ConsoleCommand("setcol", ConsoleCommand.Action.SET_USER_COL, Constants.PERMISSION_ALL, null));
@@ -702,6 +704,8 @@ public class Settings {
         hardcoded.add(new ConsoleCommand("pollresult", ConsoleCommand.Action.POLL_RESULT, Constants.PERMISSION_MOD, null));
         hardcoded.add(new ConsoleCommand("cancelpoll", ConsoleCommand.Action.CANCEL_POLL, Constants.PERMISSION_MOD, null));
         hardcoded.add(new ConsoleCommand("song", ConsoleCommand.Action.NOW_PLAYING, Constants.PERMISSION_ALL, null));
+        hardcoded.add(new ConsoleCommand("soundstate", ConsoleCommand.Action.SEE_SOUND_STATE, Constants.PERMISSION_MOD, null));
+        hardcoded.add(new ConsoleCommand("uptime", ConsoleCommand.Action.SHOW_UPTIME, Constants.PERMISSION_ALL, null));
 
         if (Utils.areFilesGood(ccommandsFile.getAbsolutePath())) {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(ccommandsFile.toURI().toURL().openStream()))) {

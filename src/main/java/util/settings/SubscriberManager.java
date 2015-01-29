@@ -113,6 +113,7 @@ public class SubscriberManager {
 
                     //or twitchnotify could have been a douchenozzle and did not send the message
                     String content = s.get().getName() + " has RE-subscribed offline!";
+                    //TODO potentially make the bot send the message to the stream? currentSettings.sendSubMessages
                     MessageQueue.addMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
                     s.get().resetStreak();
                     s.get().setStarted(LocalDateTime.now());
@@ -126,6 +127,7 @@ public class SubscriberManager {
                 // this is a new, offline sub. Botnak is going to throw a new sub message just
                 // as if they had subbed the instant they sent the message
                 //or twitchnotify could have been a douchenozzle and did not send the message
+                //TODO potentially make the bot send the message to the stream? currentSettings.sendSubMessages
                 String content = u.getNick().toLowerCase() + " has subscribed offline!";
                 MessageQueue.addMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
                 addSub(new Subscriber(u.getNick().toLowerCase(), LocalDateTime.now(), true, 0));

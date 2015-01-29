@@ -91,7 +91,7 @@ public class PircBot implements ReplyConstants {
      * @param hostname The hostname of the server to connect to.
      * @param port     The port number to connect to on the server.
      */
-    public final synchronized boolean connect(String hostname, int port) {
+    public final boolean connect(String hostname, int port) {
 
         if (isConnected()) {
             return false;
@@ -214,7 +214,7 @@ public class PircBot implements ReplyConstants {
      *
      * @since PircBot 0.9.9
      */
-    public final synchronized void reconnect() throws IOException {
+    public final void reconnect() throws IOException {
         if (getServer() == null || getPassword() == null || getPort() == -1) {
             return;
         }
@@ -241,7 +241,7 @@ public class PircBot implements ReplyConstants {
      *
      * @param channel The name of the channel to join (eg "#cs").
      */
-    public synchronized final void joinChannel(String channel) {
+    public final void joinChannel(String channel) {
         sendRawLine("JOIN " + channel);
         getChannelManager().addChannel(new Channel(channel));
     }
@@ -252,7 +252,7 @@ public class PircBot implements ReplyConstants {
      *
      * @param channel The name of the channel to leave.
      */
-    public synchronized final void partChannel(String channel) {
+    public final void partChannel(String channel) {
         sendRawLine("PART " + channel);
         getChannelManager().removeChannel(channel);
     }
@@ -288,7 +288,7 @@ public class PircBot implements ReplyConstants {
      *
      * @param line The raw line to send to the IRC server.
      */
-    public final synchronized void sendRawLine(String line) {
+    public final void sendRawLine(String line) {
         if (isConnected()) {
             _outputThread.sendRawLine(line);
         }
@@ -299,7 +299,7 @@ public class PircBot implements ReplyConstants {
      *
      * @param line The raw line to send to the IRC server.
      */
-    public final synchronized void sendRawLineViaQueue(String line) {
+    public final void sendRawLineViaQueue(String line) {
         if (line == null) return;
         if (isConnected()) {
             _outQueue.add(line);
@@ -328,9 +328,9 @@ public class PircBot implements ReplyConstants {
     public final void sendMessage(String target, String message) {
         sendRawMessage(target, message);
         if (message.startsWith("/me")) {
-            delayedMessage(":" + getNick() + "!" + getNick() + "@" + getNick() + ".tmi.twitch.tv PRIVMSG " + target + " :\u0001ACTION " + message.substring(4) + "\u0001");
+            handleLine(":" + getNick() + "!" + getNick() + "@" + getNick() + ".tmi.twitch.tv PRIVMSG " + target + " :\u0001ACTION " + message.substring(4) + "\u0001");
         } else {
-            delayedMessage(":" + getNick() + "!" + getNick() + "@" + getNick() + ".tmi.twitch.tv PRIVMSG " + target + " :" + message);
+            handleLine(":" + getNick() + "!" + getNick() + "@" + getNick() + ".tmi.twitch.tv PRIVMSG " + target + " :" + message);
         }
     }
 
@@ -342,17 +342,6 @@ public class PircBot implements ReplyConstants {
      */
     public void sendRawMessage(String channel, String message) {
         _outQueue.add("PRIVMSG " + channel + " :" + message);
-    }
-
-    private void delayedMessage(final String mess) {
-        Runnable r = () -> {
-            try {
-                Thread.sleep(1000);
-            } catch (Exception ignored) {
-            }
-            handleLine(mess);
-        };
-        new Thread(r).start();
     }
 
     /**
@@ -388,7 +377,7 @@ public class PircBot implements ReplyConstants {
      *
      * @param line The raw line of text from the server.
      */
-    protected synchronized void handleLine(String line) {
+    protected void handleLine(String line) {
         log(line);
 
         // Check for server pings.
@@ -454,9 +443,9 @@ public class PircBot implements ReplyConstants {
             target = target.substring(1);
         }
         String _channelPrefixes = "#&+!";
-
+        String content = line.substring(line.indexOf(" :") + 2);
         if (command.equals("PRIVMSG") && line.contains("SPECIALUSER") && !line.contains("subscriber")) {//this is for setting staff/admin
-            handleSpecial(null, line.substring(line.indexOf(" :") + 2));
+            handleSpecial(null, content);
         }
         // Check for CTCP requests.
         if (command.equals("PRIVMSG") && line.indexOf(":\u0001") > 0 && line.endsWith("\u0001")) {
@@ -468,33 +457,33 @@ public class PircBot implements ReplyConstants {
         } else if (command.equals("PRIVMSG") && _channelPrefixes.indexOf(target.charAt(0)) >= 0) {
             if (sourceNick.equalsIgnoreCase("jtv")) {
                 if (line.contains("SPECIALUSER")) {
-                    handleSpecial(target, line.substring(line.indexOf(" :") + 2));
+                    handleSpecial(target, content);
                 } else if (line.contains("USERCOLOR")) {
-                    handleColor(target, line.substring(line.indexOf(" :") + 2));
+                    handleColor(target, content);
                 } else if (line.contains("EMOTESET")) {
-                    String[] toParse = line.substring(line.indexOf("[") + 1, line.indexOf("]")).split(",");
-                    ArrayList<Integer> emoteSets = new ArrayList<>();
-                    for (String s : toParse) emoteSets.add(Integer.parseInt(s));
-                    FaceManager.handleEmoteset(emoteSets.toArray(new Integer[emoteSets.size()]));
+                    handleEmoteSet(line);
                 } else if (line.contains("HISTORYEND") || line.contains("Now hosting") || line.contains("Exited host")) {
                     //do nothing
                 } else if (line.contains("CLEARCHAT")) {
-                    getMessageHandler().onClearChat(target, line.substring(line.indexOf(" :") + 2));
+                    getMessageHandler().onClearChat(target, content);
                 } else if (line.contains("HOSTTARGET")) {
-                    getMessageHandler().onHosting(target.substring(1), line.substring(line.indexOf(" :") + 2).split(" ")[1]);
+                    getMessageHandler().onHosting(target.substring(1), content.split(" ")[1]);
                 } else if (line.contains("The moderators of this ")) {
-                    buildMods(target, line.substring(line.indexOf(" :") + 2));
+                    buildMods(target, content);
                 } else {
-                    getMessageHandler().onJTVMessage(target.substring(1), line.substring(line.indexOf(" :") + 2));
+                    getMessageHandler().onJTVMessage(target.substring(1), content);
                 }
                 return;
             }
 
             //catch the subscriber message
             if (sourceNick.equalsIgnoreCase("twitchnotify")) {
-                String user = line.substring(line.indexOf(" :") + 2).split(" ")[0];
-                getChannelManager().handleSubscriber(target, user);
-                getMessageHandler().onNewSubscriber(target, user);
+                if (line.contains("subscribed!")) {
+                    //we dont want to get the hosted sub messages, Botnak should be in that chat for that
+                    String user = content.split(" ")[0];
+                    getChannelManager().handleSubscriber(target, user);
+                    getMessageHandler().onNewSubscriber(target, content, user);
+                }
                 return;
             }
             // This is a normal message to a channel.
@@ -971,7 +960,7 @@ public class PircBot implements ReplyConstants {
      * are in.
      * @since PircBot 1.0.0
      */
-    public synchronized final String[] getChannels() {
+    public final String[] getChannels() {
         return getChannelManager().getChannelNames();
     }
 
@@ -994,7 +983,7 @@ public class PircBot implements ReplyConstants {
      *
      * @since 1.2.2
      */
-    public synchronized void dispose() {
+    public void dispose() {
         if (_outputThread != null) _outputThread.interrupt();
         if (_inputThread != null) _inputThread.dispose();
         removeAllChannels();
@@ -1005,7 +994,7 @@ public class PircBot implements ReplyConstants {
      *
      * @param line The line to parse.
      */
-    public synchronized void handleSpecial(String channel, String line) {
+    public void handleSpecial(String channel, String line) {
         if (line != null) {//SPECIALUSER name type
             String[] split = line.split(" ");
             String user = split[1].toLowerCase();
@@ -1024,7 +1013,7 @@ public class PircBot implements ReplyConstants {
         }
     }
 
-    public synchronized void handleColor(String channel, String line) {
+    public void handleColor(String channel, String line) {
         if (channel != null && line != null) {
             String[] split = line.split(" ");
             String user = split[1];
@@ -1039,10 +1028,23 @@ public class PircBot implements ReplyConstants {
         }
     }
 
+    public void handleEmoteSet(String line) {
+        try {
+            String user = line.substring(line.indexOf(" :") + 2).split(" ")[1];
+            String[] toParse = line.substring(line.indexOf("[") + 1, line.indexOf("]")).split(",");
+            ArrayList<Integer> emoteSets = new ArrayList<>();
+            for (String s : toParse) emoteSets.add(Integer.parseInt(s));
+            Integer[] toHandle = emoteSets.toArray(new Integer[emoteSets.size()]);
+            getChannelManager().getUser(user, true).setEmotes(toHandle);
+            FaceManager.handleEmoteset(toHandle);
+        } catch (Exception ignored) {
+        }
+    }
+
     /**
      * Removes all channels from our memory of users.
      */
-    private synchronized void removeAllChannels() {
+    private void removeAllChannels() {
         if (getChannelManager() != null) getChannelManager().dispose();
     }
 

@@ -1,12 +1,12 @@
-2.27
+2.28
 
 Added:
 
-MessageQueue for improved message handling and responsive GUI
+"!uptime" command
+Support for the new subscriber messages
+All commands moved to Response framework (closes #63)
 
 Fixed:
 
-Overall improved message handling (TDuva is based)
-Null check for twitch faces (deleted sets on Twitch are now deleted locally)
-BanQueue is a little more responsive now
-
+MessageQueue is significantly faster
+Heartbeat Threads don't overlap each other

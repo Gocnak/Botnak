@@ -5,6 +5,9 @@ import gui.GUIMain;
 import lib.pircbot.org.jibble.pircbot.Queue;
 import sound.SoundEngine;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
  * Created by Nick on 1/14/2015.
  * <p>
@@ -13,21 +16,35 @@ import sound.SoundEngine;
  */
 public class MessageQueue extends Thread {
 
-    private static Queue<Message> queue = null;
+    private static ExecutorService pool;
+    private static Queue<MessageWrapper> queue;
 
     public MessageQueue() {
-        queue = new Queue<>(500);
+        queue = new Queue<>(100);
+        pool = Executors.newCachedThreadPool();
     }
 
     @Override
     public synchronized void run() {
         while (!GUIMain.shutDown) {
-            Message mess = queue.next();//locks for a new message, no need for Thread#sleep
-            if (mess != null && mess.getType() != null) {
+            MessageWrapper mess = queue.next();//locks for a new message, no need for Thread#sleep
+            if (mess != null && mess.getLocal() != null) {
+                mess.print();
+            }
+        }
+    }
+
+    public static synchronized void addToQueue(MessageWrapper mw) {
+        queue.add(mw);
+    }
+
+    public static void addMessage(Message mess) {
+        if (mess != null && mess.getType() != null) {
+            pool.execute(() -> {
                 MessageWrapper wrap = new MessageWrapper(mess);
                 try {//try catch for security, if one message fails, we still want to receive messages
                     if (mess.getType() == Message.MessageType.LOG_MESSAGE) {
-                        GUIMain.chatPanes.get("System Logs").log(mess.getContent(), true);
+                        GUIMain.chatPanes.get("System Logs").log(wrap, true);
                     } else if (mess.getType() == Message.MessageType.NORMAL_MESSAGE ||
                             mess.getType() == Message.MessageType.ACTION_MESSAGE) {
                         if (!GUIMain.combinedChatPanes.isEmpty()) {
@@ -54,22 +71,18 @@ public class MessageQueue extends Thread {
                             mess.getType() == Message.MessageType.HOSTED_NOTIFY ||
                             mess.getType() == Message.MessageType.HOSTING_NOTIFY ||
                             mess.getType() == Message.MessageType.JTV_NOTIFY) {
-                        GUIMain.chatPanes.get(mess.getChannel()).log(mess.getContent(), false);
+                        GUIMain.chatPanes.get(mess.getChannel()).log(wrap, false);
                     } else if (mess.getType() == Message.MessageType.DONATION_NOTIFY) {
                         GUIMain.chatPanes.get(mess.getChannel()).onDonation(wrap);
                         if (GUIMain.currentSettings.donationSound != null) {
                             SoundEngine.getEngine().playSpecialSound(false);
                         }
                     }
-                    wrap.print();
+                    addToQueue(wrap);
                 } catch (Exception e) {
                     GUIMain.log(e.getMessage());
                 }
-            }
+            });
         }
-    }
-
-    public static synchronized void addMessage(Message m) {
-        queue.add(m);
     }
 }

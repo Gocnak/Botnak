@@ -13,18 +13,21 @@ import java.util.Set;
 public class ViewerCount implements HeartbeatThread {
 
     private Timer toUpdate;
+    private boolean beating;
 
     public ViewerCount() {
         toUpdate = new Timer(3500);
+        beating = false;
     }
 
     @Override
     public boolean shouldBeat() {
-        return !toUpdate.isRunning() && GUIMain.chatPanes.size() > 1;
+        return !beating && !toUpdate.isRunning() && GUIMain.chatPanes.size() > 1;
     }
 
     @Override
     public void beat() {
+        beating = true;
         Set<String> keys = GUIMain.chatPanes.keySet();
         for (String s : keys) {
             if (s.equalsIgnoreCase("system logs")) continue;
@@ -44,5 +47,6 @@ public class ViewerCount implements HeartbeatThread {
     @Override
     public void afterBeat() {
         toUpdate.reset();
+        beating = false;
     }
 }

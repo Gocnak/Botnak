@@ -4,8 +4,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -57,32 +56,16 @@ public final class SoundPlayer implements Closeable {
     /* immutable except counter */
 
 
-    private final Map<File, SoundEntry> clips;
+    private static ConcurrentHashMap<File, SoundEntry> clips;
 
-    /**
-     * @param cacheSize The size of the player's cache.
-     */
-    public SoundPlayer(final int cacheSize) {
-        this.clips = new LinkedHashMap<File, SoundEntry>(cacheSize, 0.75f, true) {
-            private static final long serialVersionUID = -3892012877720705757L;
-
-            @Override
-            protected boolean removeEldestEntry(final Map.Entry<File, SoundEntry> eldest) {
-                final boolean result = this.size() > cacheSize;
-                if (result) {
-                    if (eldest.getValue().getClip().isRunning()) {
-                        new Closer(eldest.getValue());
-                    } else eldest.getValue().close();
-                }
-                return result;
-            }
-        };
+    public SoundPlayer() {
+        clips = new ConcurrentHashMap<>();
     }
 
     @Override
     public void close() {
-        this.clips.values().forEach(sound.SoundEntry::close);
-        this.clips.clear();
+        clips.values().forEach(sound.SoundEntry::close);
+        clips.clear();
     }
 
     /**
@@ -92,9 +75,8 @@ public final class SoundPlayer implements Closeable {
      * @return a {@code SoundEntry} instance.
      * @throws IOException
      */
-    private SoundEntry getClip(final File file) throws IOException {
-        final SoundEntry result = new SoundEntry(file, this.clips.get(file));
-
+    private SoundEntry getClip(File file) throws IOException {
+        SoundEntry result = new SoundEntry(file, clips.get(file), clips);
         clips.put(file, result);
         return result;
     }
@@ -105,7 +87,7 @@ public final class SoundPlayer implements Closeable {
      * @return a {@link Collection} with all playing files.
      */
     public Collection<SoundEntry> getPlayingSounds() {
-        return this.clips.values().stream().filter(entry -> entry.getClip().isRunning()).collect(Collectors.toList());
+        return clips.values().stream().filter(entry -> entry.getClip().isRunning()).collect(Collectors.toList());
     }
 
     /**
@@ -115,16 +97,16 @@ public final class SoundPlayer implements Closeable {
      * @param mode The strategy for handling the case that the sound is already playing.
      * @throws IOException
      */
-    public void play(final File file, final PlayMode mode) throws IOException {
-        if (file != null) this.getClip(file).play(mode);
+    public void play(File file, PlayMode mode) throws IOException {
+        if (file != null) getClip(file).play(mode);
     }
 
 
     /**
      * @param file The sound file.
      */
-    public void stop(final File file) {
-        final SoundEntry entry = this.clips.get(file);
+    public void stop(File file) {
+        SoundEntry entry = clips.get(file);
         if (entry != null) {
             entry.stop();
         }

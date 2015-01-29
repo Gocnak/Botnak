@@ -34,7 +34,6 @@ public class ConsoleCommand {
         TOGGLE_SOUND,
         STOP_SOUND,
         STOP_ALL_SOUNDS,
-        MOD_USER,
         ADD_KEYWORD,
         REMOVE_KEYWORD,
         SET_USER_COL,
@@ -60,7 +59,9 @@ public class ConsoleCommand {
         VOTE_POLL,
         POLL_RESULT,
         CANCEL_POLL,
-        NOW_PLAYING
+        NOW_PLAYING,
+        SEE_SOUND_STATE,
+        SHOW_UPTIME
     }
 
     /**
@@ -101,6 +102,4 @@ public class ConsoleCommand {
     public void setCertainPermission(String... newPerm) {
         certainPermission = newPerm;
     }
-
-
 }

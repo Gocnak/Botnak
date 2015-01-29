@@ -9,13 +9,14 @@ import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class GhostingServer {
 
     private static ServerSend serverSend = null;
-    public static HashSet<User> userSet = new HashSet<>();
+    public static CopyOnWriteArraySet<User> userSet = new CopyOnWriteArraySet<>();
     public static boolean debug = false;
     public static int port = 5145;
     public static InetAddress machineIP = null;
@@ -119,16 +120,13 @@ public class GhostingServer {
                         log("Could not find user " + split[1] + " !");
                     }
                 } else {
-                    log("Usage: \"kick <user>\" where <user> is the name of a user.");
+                    log("Usage: \"kick (user)\" where (user) is the name of a user.");
                 }
             } else if (message.startsWith("status")) {
                 if (serverSend != null && serverSend.isAlive()) {
                     log("The server is currently running on " + machineIP.toString() + " with port " + port);
                     log("The server currently has " + userSet.size() + " user(s) on it:");
-                    HashSet<User> set = duplicateSet();
-                    for (User u : set) {
-                        u.printUser();
-                    }
+                    userSet.forEach(User::printUser);
                 } else {
                     log("The server is currently NOT running! Try starting the server with \"restart\"!");
                     log("The server would be run on " + machineIP.toString() + " on port " + port);
@@ -142,17 +140,14 @@ public class GhostingServer {
                         log("Could not find user \"" + split[1] + "\"!");
                     }
                 } else {
-                    log("Usage: \"poll <user>\" where <user> is the name of a user.");
+                    log("Usage: \"poll (user)\" where (user) is the name of a user.");
                 }
-            } else if (message.startsWith("stop")) {
+            } else if (message.startsWith("stop") || message.startsWith("quit")) {
                 if (serverSend != null && serverSend.isAlive()) {
                     log("Shutting down server!");
                     UserEventType kicked = UserEventType.KICK_USER;
                     kicked.reason = "Server shutting down!";
-                    HashSet<User> set = duplicateSet();
-                    for (User u : set) {
-                        u.addEvent(new UserEvent(u, kicked));
-                    }
+                    userSet.stream().forEach(u -> u.addEvent(new UserEvent(u, kicked)));
                     log("Waiting for all users to disconnect...");
                     int count = 0;
                     while (!userSet.isEmpty()) {
@@ -353,8 +348,7 @@ public class GhostingServer {
      * @param recipient The packet initially received to send back to.
      * @param exclude   The user to exclude from the send.
      */
-    public static synchronized void sendExistingLocational(DatagramSocket sock, DatagramPacket recipient, User exclude) {
-        //needed dupe for potential modification while looping (disconnected users, etc)
+    public static void sendExistingLocational(DatagramSocket sock, DatagramPacket recipient, User exclude) {
         for (User toSend : userSet) {
             if (exclude.getName().equalsIgnoreCase(toSend.getName())) continue;
             sendRunLine(sock, recipient, toSend);
@@ -367,7 +361,7 @@ public class GhostingServer {
      * @param sock      The socket to send on.
      * @param recipient The packet initially received to send back to.
      */
-    public static synchronized void sendExistingUsers(DatagramSocket sock, DatagramPacket recipient) {
+    public static void sendExistingUsers(DatagramSocket sock, DatagramPacket recipient) {
         //the following sends the OTHER PEOPLE data to the NEW PERSON
         for (User existingUser : userSet) {
             sendGhostData(sock, recipient, existingUser);
@@ -508,7 +502,7 @@ public class GhostingServer {
      * @param eventUser The user the event is about.
      * @param event     The type of the event.
      */
-    public static synchronized void createUserEvent(User eventUser, UserEventType event) {
+    public static void createUserEvent(User eventUser, UserEventType event) {
         if (event == UserEventType.DISCONNECT) {
             userSet.remove(eventUser);
         }
@@ -541,7 +535,7 @@ public class GhostingServer {
      * @param name The name of the user to get.
      * @return The user object if it exists, otherwise null.
      */
-    public static synchronized User getUser(String name) {
+    public static User getUser(String name) {
         for (User u : userSet) {
             if (u.getName().equalsIgnoreCase(name)) {
                 return u;
@@ -556,7 +550,7 @@ public class GhostingServer {
      * @param name The name of the user.
      * @return The number of users with the given name.
      */
-    public static synchronized int getUserCount(String name) {
+    public static int getUserCount(String name) {
         int count = 0;
         for (User u : userSet) {
             if (u.getName().equalsIgnoreCase(name)) count++;
@@ -574,24 +568,13 @@ public class GhostingServer {
         userSet.add(u);
     }
 
-    /**
-     * Duplicates the user set and returns the copy.
-     *
-     * @return The duplicated set.
-     */
-    public static synchronized HashSet<User> duplicateSet() {
-        HashSet<User> dupe = new HashSet<>();
-        dupe.addAll(userSet);
-        return dupe;
-    }
-
     public static class User {
         String name, map;
         Velocity vel;
         Location loc;
         int trailLength;
         Color ghostColor, trailColor;
-        HashSet<UserEvent> events;
+        ArrayList<UserEvent> events;
         long lastUpdate;
         long ping = 0;
 
@@ -603,7 +586,7 @@ public class GhostingServer {
             trailColor = new Color(tr, tg, tb);
             loc = new Location(0, 0, 0);
             vel = new Velocity(0, 0, 0);
-            events = new HashSet<>();
+            events = new ArrayList<>();
         }
 
         public void setLocation(float x, float y, float z) {
@@ -661,7 +644,7 @@ public class GhostingServer {
             return !events.isEmpty();
         }
 
-        public void completeEvents(DatagramSocket sock, DatagramPacket pack) {
+        public synchronized void completeEvents(DatagramSocket sock, DatagramPacket pack) {
             if (!hasEvents()) return;
             Iterator<UserEvent> iterator = events.iterator();
             while (iterator.hasNext()) {

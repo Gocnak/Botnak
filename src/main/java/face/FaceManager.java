@@ -83,18 +83,26 @@ public class FaceManager {
      *
      * @param key The name of the face to remove.
      */
-    public static boolean removeFace(String key) {
+    public static Response removeFace(String key) {
+        Response toReturn = new Response();
+        if (!faceMap.containsKey(key)) {
+            toReturn.setResponseText("Could not remove the face, there is no such face \"" + key + "\"!");
+            return toReturn;
+        }
         try {
             Face toDelete = faceMap.get(key);
             File f = new File(toDelete.getFilePath());
             if (f.delete()) {
                 faceMap.remove(key);
-                return true;
+                toReturn.wasSuccessful();
+                toReturn.setResponseText("Successfully removed face \"" + key + "\"!");
+            } else {
+                toReturn.setResponseText("Could not remove face due to I/O error!");
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            toReturn.setResponseText("Could not delete face due to Exception: " + e.getMessage());
         }
-        return false;
+        return toReturn;
     }
 
     /**
@@ -307,12 +315,12 @@ public class FaceManager {
         }
     }
 
-    public static void handleFaces(Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangeStyles, final String object, final FACE_TYPE type) {
+    public static void handleFaces(Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangeStyles,
+                                   String object, FACE_TYPE type, Integer[] emotes) {
         switch (type) {
             case TWITCH_FACE:
                 if (doneWithTwitchFaces) {
-                    Set<Integer> sets = loadedTwitchFaces.keySet();
-                    for (int i : sets) {
+                    for (int i : emotes) {
                         ArrayList<TwitchFace> faces = loadedTwitchFaces.get(i);
                         for (TwitchFace f : faces) {
                             if (!f.isEnabled() || !Utils.areFilesGood(f.getFilePath())) continue;
@@ -333,7 +341,6 @@ public class FaceManager {
                                     attrs.addAttribute("start", start);
                                     rangeStyles.put(start, attrs);
                                 }
-                                //insertFace(doc, start + m.start(), m.group(), f.getFilePath());
                             }
                         }
                     }
@@ -357,7 +364,6 @@ public class FaceManager {
                                 attrs.addAttribute("start", start);
                                 rangeStyles.put(start, attrs);
                             }
-                            //insertFace(doc, start + m.start(), m.group(), f.getFilePath());
                         }
                     }
                 }
@@ -380,7 +386,6 @@ public class FaceManager {
         ImageIcon icon;
         try {
             BufferedImage img = ImageIO.read(image);
-
             // Scale the icon if it's too big.
             int maxHeight = GUIMain.currentSettings.faceMaxHeight;
             if (img.getHeight() > maxHeight)
@@ -496,5 +501,180 @@ public class FaceManager {
                 GUIMain.log(e.getMessage());
         }
         return false;
+    }
+
+
+    /**
+     * Either adds a face to the image map or changes a face to another variant.
+     * If the face image size is too big, it is scaled (using Scalr) to fit the 26 pixel height limit.
+     *
+     * @param s The string from the chat.
+     * @return The response of the method.
+     */
+    public static Response handleFace(String s) {
+        Response toReturn = new Response();
+        boolean localCheck = (GUIMain.currentSettings.defaultFaceDir == null
+                || GUIMain.currentSettings.defaultFaceDir.equals("")
+                || GUIMain.currentSettings.defaultFaceDir.equals("null"));
+
+        String[] split = s.split(" ");
+        String command = split[0];
+        String name = split[1];//name of the face, used for file name, and if regex isn't supplied, becomes the regex
+        String regex;
+        String file;//or the URL...
+
+        if (command.equalsIgnoreCase("addface")) {//a new face
+
+            if (faceMap.containsKey(name)) {//!addface is not !changeface, remove the face first or do changeface
+                toReturn.setResponseText("Failed to add face, " + name + " already exists!");
+                return toReturn;
+            }
+
+            if (split.length == 4) {//!addface <name> <regex> <URL or file>
+                regex = split[2];
+                //regex check
+                if (!Utils.checkRegex(regex)) {
+                    toReturn.setResponseText("Failed to add face, the supplied regex does not compile!");
+                    return toReturn;
+                }
+                //name check (for saving the file)
+                if (Utils.checkName(name)) {
+                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                    return toReturn;
+                }
+
+                file = split[3];
+                if (file.startsWith("http")) {//online
+                    return downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                            Utils.setExtension(name, ".png"), regex, FACE_TYPE.NORMAL_FACE);//save locally
+
+                } else {//local
+                    if (Utils.checkName(file) || localCheck) {
+                        if (!localCheck)
+                            toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                        else toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
+                        return toReturn;
+                    }
+                    return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
+                            GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                            Utils.setExtension(name, ".png"),
+                            regex, FACE_TYPE.NORMAL_FACE);
+                }
+            } else if (split.length == 3) {//!addface <name> <URL or file> (name will be the regex, case sensitive)
+                file = split[2];
+                //regex (this should never be a problem, however...)
+                if (!Utils.checkRegex(name)) {
+                    toReturn.setResponseText("Failed to add face, the supplied name is not a valid regex!");
+                    return toReturn;
+                }
+                //name check (for saving the file)
+                if (Utils.checkName(name)) {
+                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                    return toReturn;
+                }
+                if (file.startsWith("http")) {//online
+                    return downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                            Utils.setExtension(name, ".png"), name, FACE_TYPE.NORMAL_FACE);//name is regex, so case sensitive
+                } else {//local
+                    if (Utils.checkName(file) || localCheck) {
+                        if (!localCheck)
+                            toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                        else toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
+                        return toReturn;
+                    }
+                    return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
+                            GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                            Utils.setExtension(name, ".png"),
+                            name, //<- this will be the regex, so case sensitive
+                            FACE_TYPE.NORMAL_FACE);
+                }
+            }
+        } else if (command.equalsIgnoreCase("changeface")) {//replace entirely
+            if (faceMap.containsKey(name)) {//!changeface is not !addface, the map MUST contain it
+                if (split.length == 5) {//!changeface <name> 2 <new regex> <new URL/file>
+                    try {//gotta make sure the number is the ^
+                        if (Integer.parseInt(split[2]) != 2) {
+                            toReturn.setResponseText("Failed to change face, make sure to designate the \"2\" in the command!");
+                            return toReturn;
+                        }
+                    } catch (Exception e) {
+                        toReturn.setResponseText("Failed to change face, the indicator number cannot be parsed!");
+                        return toReturn;
+                    }
+
+                    regex = split[3];
+                    //regex check
+                    if (!Utils.checkRegex(regex)) {
+                        toReturn.setResponseText("Failed to add face, the supplied regex does not compile!");
+                        return toReturn;
+                    }
+
+                    //name check (for saving the file)
+                    if (Utils.checkName(name)) {
+                        toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                        return toReturn;
+                    }
+
+                    file = split[4];
+                    if (file.startsWith("http")) {//online
+                        return downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                                Utils.setExtension(name, ".png"), regex, FACE_TYPE.NORMAL_FACE);//save locally
+                    } else {//local
+                        if (Utils.checkName(file) || localCheck) {
+                            if (!localCheck)
+                                toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                            else
+                                toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
+                            return toReturn;
+                        }
+                        return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
+                                GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                                Utils.setExtension(name, ".png"),
+                                regex, //< this will be the regex, so case sensitive
+                                FACE_TYPE.NORMAL_FACE);
+                    }
+                } else if (split.length == 4) {//!changeface <name> <numb> <newregex>|<new URL or file>
+                    int type;
+                    try {//gotta check the number
+                        type = Integer.parseInt(split[2]);
+                    } catch (Exception e) {
+                        toReturn.setResponseText("Failed to change face, the indicator number cannot be parsed!");
+                        return toReturn;
+                    }
+                    Face face = faceMap.get(name);
+                    if (type == 0) {//regex change; !changeface <name> 0 <new regex>
+                        regex = split[3];
+                        if (Utils.checkRegex(regex)) {
+                            faceMap.put(name, new Face(regex, face.getFilePath()));
+                            toReturn.setResponseText("Successfully changed the regex for face: " + name + " !");
+                            toReturn.wasSuccessful();
+                        } else {
+                            toReturn.setResponseText("Failed to change the regex, the new regex could not be compiled!");
+                        }
+                    } else if (type == 1) {//file change; !changeface <name> 1 <new URL/file>
+                        file = split[3];
+                        if (file.startsWith("http")) {//online
+                            return downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                                    Utils.setExtension(name, ".png"), face.getRegex(), FACE_TYPE.NORMAL_FACE);//save locally
+                        } else {//local
+                            if (Utils.checkName(file) || localCheck) {
+                                if (!localCheck)
+                                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                                else
+                                    toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
+                                return toReturn;
+                            }
+                            return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
+                                    GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                                    Utils.setExtension(name, ".png"),
+                                    face.getRegex(), FACE_TYPE.NORMAL_FACE);
+                        }
+                    }
+                }
+            } else {
+                toReturn.setResponseText("Failed to change face, the face " + name + " does not exist!");
+            }
+        }
+        return toReturn;
     }
 }

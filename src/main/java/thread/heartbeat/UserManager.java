@@ -20,19 +20,22 @@ public class UserManager implements HeartbeatThread {
 
     private Timer toUpdate;
     private HashSet<User> collectedUsers;
+    private boolean beating;
 
     public UserManager() {
-        toUpdate = new Timer(5000);
+        toUpdate = new Timer(10000);
         collectedUsers = new HashSet<>();
+        beating = false;
     }
 
     @Override
     public boolean shouldBeat() {
-        return GUIMain.currentSettings.channelManager != null && !toUpdate.isRunning();
+        return !beating && GUIMain.currentSettings.channelManager != null && !toUpdate.isRunning();
     }
 
     @Override
     public void beat() {
+        beating = true;
         String[] channels = GUIMain.currentSettings.channelManager.getChannelNames();
         URL url;
         for (String chan : channels) {
@@ -70,26 +73,20 @@ public class UserManager implements HeartbeatThread {
                 }
             } catch (Exception ignored) {
             }
+            try {
+                Thread.sleep(750);
+            } catch (Exception ignored) {
+            }
         }
     }
 
     @Override
     public void afterBeat() {
-        User[] stored = GUIMain.currentSettings.channelManager.getUsers();
-        for (User u : stored) {
-            boolean flag = false;
-            for (User collected : collectedUsers) {
-                if (u.equals(collected)) {
-                    //still here
-                    flag = true;
-                    break;
-                }
-            }
-            if (!flag) {
-                GUIMain.currentSettings.channelManager.removeUser(u);
-            }
+        if (!collectedUsers.isEmpty()) {
+            collectedUsers.stream().forEach(GUIMain.currentSettings.channelManager::addUser);
+            collectedUsers.clear();
+            toUpdate.reset();
         }
-        collectedUsers.clear();
-        toUpdate.reset();
+        beating = false;
     }
 }

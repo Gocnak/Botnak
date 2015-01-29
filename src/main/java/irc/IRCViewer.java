@@ -79,11 +79,16 @@ public class IRCViewer extends MessageHandler {
     }
 
     @Override
-    public void onNewSubscriber(final String channel, final String newSub) {
-        if (channel.substring(1).equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
-            if (GUIMain.currentSettings.subscriberManager.addNewSubscriber(newSub, channel)) return;
-        }
-        MessageQueue.addMessage(new Message(channel, newSub, Message.MessageType.SUB_NOTIFY, null));
+    public void onNewSubscriber(String channel, String line, String newSub) {
+        if (line.endsWith("subscribed!")) {//new sub
+            if (channel.substring(1).equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
+                if (GUIMain.currentSettings.subscriberManager.addNewSubscriber(newSub, channel)) return;
+            }
+        } //else it's the (blah blah has subbed for more than 1 month!)
+        //Botnak already handles this, so we can construct this message again since the user feels entitled
+        //to tell us they've remained subbed... again
+        //the catch is the message they send isn't automatic, so there's a chance it won't be sent (ex: on an IRC client, shy, etc)
+        MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.SUB_NOTIFY).setContent(line));
     }
 
     @Override
@@ -101,7 +106,8 @@ public class IRCViewer extends MessageHandler {
             BanQueue.addToMap(channel, line.split(" ")[1]);
         } else {
             //TODO perhaps add the option to actually clear the chat based on user setting?
-            MessageQueue.addMessage(new Message(channel, null, Message.MessageType.BAN_NOTIFY, "The chat was cleared by a moderator. (Prevented by Botnak)"));
+            MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.BAN_NOTIFY)
+                    .setContent("The chat was cleared by a moderator. (Prevented by Botnak)"));
         }
     }
 

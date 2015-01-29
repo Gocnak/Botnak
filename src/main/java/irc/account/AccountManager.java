@@ -4,21 +4,21 @@ import gui.GUIMain;
 import irc.IRCBot;
 import irc.IRCViewer;
 import lib.pircbot.org.jibble.pircbot.PircBot;
-
-import java.util.ArrayList;
+import lib.pircbot.org.jibble.pircbot.Queue;
 
 /**
  * Created by Nick on 6/12/2014.
  */
 public class AccountManager extends Thread {
 
-    private ArrayList<Task> tasks = new ArrayList<>();
+    private Queue<Task> tasks;
 
     private Account userAccount, botAccount;
 
     private PircBot viewer, bot;
 
     public AccountManager() {
+        tasks = new Queue<>();
         userAccount = null;
         botAccount = null;
         viewer = null;
@@ -64,13 +64,8 @@ public class AccountManager extends Thread {
     @Override
     public void run() {//handle connection status
         while (!GUIMain.shutDown) {
-            if (tasks.isEmpty()) {
-                try {
-                    Thread.sleep(500);
-                } catch (Exception ignored) {
-                }
-            } else {
-                Task t = tasks.get(0);
+            Task t = tasks.next();
+            if (t != null) {
                 switch (t.type) {
                     case CREATE_BOT_ACCOUNT:
                         GUIMain.bot = new IRCBot();
@@ -118,8 +113,9 @@ public class AccountManager extends Thread {
                         if (!chaan.startsWith("#")) chaan = "#" + chaan;
                         t.doer.partChannel(chaan);
                         break;
+                    default:
+                        break;
                 }
-                tasks.remove(0);
             }
         }
     }

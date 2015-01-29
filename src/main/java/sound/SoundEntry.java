@@ -4,6 +4,7 @@ import javax.sound.sampled.*;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a sound with its source and use counter.
@@ -22,36 +23,35 @@ public class SoundEntry implements Closeable {
      * @param file The sound file.
      * @throws java.io.IOException
      */
-    public SoundEntry(final File file, final SoundEntry previous) throws IOException {
+    public SoundEntry(File file, SoundEntry previous, ConcurrentHashMap<File, SoundEntry> map) throws IOException {
         try {
-            this.key = file;
+            key = file;
+            source = AudioSystem.getAudioInputStream(file);
             this.previous = previous;
-            this.source = AudioSystem.getAudioInputStream(file);
+            DataLine.Info info = new DataLine.Info(Clip.class, source.getFormat());
 
-            final DataLine.Info info = new DataLine.Info(Clip.class, this.source.getFormat());
+            clip = (Clip) AudioSystem.getLine(info);
 
-            this.clip = (Clip) AudioSystem.getLine(info);
-
-            this.clip.open(this.source);
-
-        } catch (final UnsupportedAudioFileException | LineUnavailableException e) {
+            clip.addLineListener(new Closer(this, map));
+            clip.open(source);
+        } catch (UnsupportedAudioFileException | LineUnavailableException e) {
             throw new IOException(e);
         }
-
         //sector.incrementAndGet(); TODO look into implementing a counter for how many of each sound is played
     }
 
     @Override
     public void close() {
-        if (this.clip.isActive()) {
-            this.clip.stop();
+        if (clip.isActive()) {
+            clip.stop();
         }
-        if (this.clip.isOpen()) {
-            this.clip.close();
+        if (clip.isOpen()) {
+            clip.flush();
+            clip.drain();
+            clip.close();
         }
         try {
-            this.source.close();
-
+            source.close();
         } catch (Exception ignored) {
         }
 

@@ -51,7 +51,6 @@ public class TabPulse extends Thread {
             ac.setBackground(c);
             GUIMain.channelPane.repaint(ac.getBounds());
         });
-        //tl.addColorChanger(c -> GUIMain.channelPane.setBackgroundAt(index, c));
         timer = new javax.swing.Timer(20, tl);
     }
 
@@ -65,7 +64,6 @@ public class TabPulse extends Thread {
                     timer.stop();
                     ac.setBackground(ColorHelper.darker(Color.orange, 15));
                     GUIMain.channelPane.repaint(ac.getBounds());
-                    //GUIMain.channelPane.setBackgroundAt(index, ColorHelper.darker(Color.orange, 15));
                 }
                 try {
                     Thread.sleep(50);
@@ -75,7 +73,6 @@ public class TabPulse extends Thread {
             timer.stop();
             timer = null;
             if (cp != null) cp.setPulsing(false);
-            //GUIMain.channelPane.setBackgroundAt(index, null);
             ac.setBackground(null);
         }
         GUIMain.tabPulses.remove(this);

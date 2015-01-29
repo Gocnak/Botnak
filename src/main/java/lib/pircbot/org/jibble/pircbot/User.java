@@ -17,6 +17,7 @@ import gui.GUIMain;
 import irc.Donor;
 
 import java.awt.*;
+import java.util.HashSet;
 
 /**
  * This class is used to represent a user on an IRC server.
@@ -35,6 +36,8 @@ public class User implements Comparable<User> {
 
     private boolean staff = false, admin = false, turbo = false;
 
+    private HashSet<Integer> emotes = new HashSet<>();
+
     private Color color = null;
     private Donor donor = null;
 
@@ -46,6 +49,7 @@ public class User implements Comparable<User> {
     public User(String nick) {
         _nick = nick;
         _lowerNick = nick.toLowerCase();
+        emotes.add(0);
     }
 
     /**
@@ -140,6 +144,14 @@ public class User implements Comparable<User> {
     public boolean isDonor() {
         donor = GUIMain.currentSettings.donationManager.getDonor(getNick());
         return donor != null;
+    }
+
+    public void setEmotes(Integer... emotes) {
+        for (int i : emotes) this.emotes.add(i);
+    }
+
+    public Integer[] getEmotes() {
+        return emotes.toArray(new Integer[emotes.size()]);
     }
 
     public int getDonationStatus() {

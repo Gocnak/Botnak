@@ -9,7 +9,6 @@ import irc.IRCBot;
 import irc.IRCViewer;
 import irc.message.Message;
 import irc.message.MessageQueue;
-import sound.Sound;
 import sound.SoundEngine;
 import thread.TabPulse;
 import thread.heartbeat.*;
@@ -33,7 +32,6 @@ import java.util.HashSet;
 
 public class GUIMain extends JFrame {
 
-    public static HashMap<String, Sound> soundMap;
     public static HashMap<String, Color> userColMap;
     public static HashSet<Command> commandSet;
     public static HashSet<String> channelSet;
@@ -69,7 +67,6 @@ public class GUIMain extends JFrame {
     public GUIMain() {
         new MessageQueue().start();
         instance = this;
-        soundMap = new HashMap<>();
         channelSet = new HashSet<>();
         userColMap = new HashMap<>();
         commandSet = new HashSet<>();

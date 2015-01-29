@@ -9,9 +9,11 @@ import util.Timer;
 public class DonationCheck implements HeartbeatThread {
 
     private Timer toCheck;
+    private boolean beating;
 
     public DonationCheck() {
         toCheck = new Timer(7500);
+        beating = false;
     }
 
     @Override
@@ -24,11 +26,13 @@ public class DonationCheck implements HeartbeatThread {
 
     @Override
     public void beat() {
+        beating = true;
         GUIMain.currentSettings.donationManager.checkDonations(true);
     }
 
     @Override
     public void afterBeat() {
+        beating = false;
         toCheck.reset();
     }
 }

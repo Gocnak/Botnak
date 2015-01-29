@@ -6,6 +6,7 @@ import irc.message.Message;
 import irc.message.MessageQueue;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
+import util.Response;
 import util.misc.Donation;
 
 import java.io.BufferedReader;
@@ -78,6 +79,28 @@ public class DonationManager {
                 }
             }
         }
+    }
+
+    public Response parseDonation(String[] lines) {
+        Response toReturn = new Response();
+        if (lines.length > 2) {
+            String name = lines[1];
+            try {
+                Double amount = Double.parseDouble(lines[2]);
+                if (amount > 0.0) {
+                    addDonation(new Donation("LOCAL", name, "Added manually.", amount, java.util.Date.from(Instant.now())), true);
+                    toReturn.setResponseText("Successfully added local donation for " + name + " !");
+                    toReturn.wasSuccessful();
+                } else {
+                    toReturn.setResponseText("Failed to add donation, the amount must be greater than 0!");
+                }
+            } catch (Exception ignored) {
+                toReturn.setResponseText("Failed to add donation, the amount must have a decimal point!");
+            }
+        } else {
+            toReturn.setResponseText("Failed to add donation, usage: !adddonation (user) (amount)");
+        }
+        return toReturn;
     }
 
     public void addDonor(Donor d) {

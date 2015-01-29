@@ -30,24 +30,6 @@ public class Message {
     }
 
     /**
-     * Constructs either a sub or ban notify message.
-     *
-     * @param channel The channel the incident happened.
-     * @param user    The user who subbed/was banned.
-     * @param type    The type of the message.
-     * @param content The content of the message.
-     */
-    public Message(String channel, String user, MessageType type, String content) {
-        if (type == MessageType.SUB_NOTIFY) {
-            this.content = user + " has just subscribed!";
-        } else if (type == MessageType.BAN_NOTIFY) {
-            this.content = content;
-        }
-        this.channel = channel;
-        this.type = type;
-    }
-
-    /**
      * Constructs either an Action or Normal chat message.
      *
      * @param channel  The channel the message is in.

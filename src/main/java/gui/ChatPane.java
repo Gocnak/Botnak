@@ -43,7 +43,7 @@ public class ChatPane implements DocumentListener {
 
     public void createPopOut() {
         if (poppedOutPane == null) {
-            JFrame frame = new JFrame(chan);
+            JFrame frame = new JFrame(getPoppedOutTitle());
             frame.addWindowListener(new WindowAdapter() {
                 @Override
                 public void windowClosed(WindowEvent e) {
@@ -351,22 +351,23 @@ public class ChatPane implements DocumentListener {
             if (u.isAdmin()) {
                 insertIcon(m, 2, null);
             }
-            boolean isSubsciber = u.isSubscriber(channel);
-            if (isSubsciber) {
+            boolean isSubscriber = u.isSubscriber(channel);
+            if (isSubscriber) {
                 insertIcon(m, 5, channel);
             }
             if (u.isTurbo()) {
                 insertIcon(m, 4, null);
             }
             //name stuff
+            print(m, " ", GUIMain.norm);
             user.addAttribute(HTML.Attribute.NAME, sender);
             SimpleAttributeSet userColor = new SimpleAttributeSet(user);
             FaceManager.handleNameFaces(sender, user);
             if (showChannel) {
-                print(m, " " + sender, user);
+                print(m, sender, user);
                 print(m, " (" + channel.substring(1) + ")" + (isMe ? " " : ": "), GUIMain.norm);
             } else {
-                print(m, " " + sender, user);
+                print(m, sender, user);
                 print(m, (!isMe ? ": " : " "), userColor);
             }
             //keyword?
@@ -377,11 +378,11 @@ public class ChatPane implements DocumentListener {
                 set = (isMe ? userColor : GUIMain.norm);
             }
             //URL, Faces, rest of message
-            printMessage(m, mess, set);
+            printMessage(m, mess, set, u);
 
             if (channel.substring(1).equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName()))
                 //check status of the sub, has it been a month?
-                GUIMain.currentSettings.subscriberManager.updateSubscriber(u, channel, isSubsciber);
+                GUIMain.currentSettings.subscriberManager.updateSubscriber(u, channel, isSubscriber);
             if (shouldPulse())
                 GUIMain.instance.pulseTab(this);
         } catch (Exception e) {
@@ -391,21 +392,20 @@ public class ChatPane implements DocumentListener {
 
     /**
      * Credit: TDuva
-     *
+     * <p>
      * Cycles through message data, tagging things like Faces and URLs.
      *
-     * @param text The message
+     * @param text  The message
      * @param style The default message style to use.
      */
-    protected void printMessage(MessageWrapper m, String text, SimpleAttributeSet style) {
+    protected void printMessage(MessageWrapper m, String text, SimpleAttributeSet style, User u) {
         // Where stuff was found
         TreeMap<Integer, Integer> ranges = new TreeMap<>();
         // The style of the stuff (basicially metadata)
         HashMap<Integer, SimpleAttributeSet> rangesStyle = new HashMap<>();
 
         findLinks(text, ranges, rangesStyle);
-
-        findEmoticons(text, ranges, rangesStyle);
+        findEmoticons(text, ranges, rangesStyle, u);
 
         // Actually print everything
         int lastPrintedPos = 0;
@@ -426,7 +426,6 @@ public class ChatPane implements DocumentListener {
         if (lastPrintedPos < text.length()) {
             print(m, text.substring(lastPrintedPos), style);
         }
-
     }
 
     private void findLinks(String text, Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangesStyle) {
@@ -446,9 +445,9 @@ public class ChatPane implements DocumentListener {
     }
 
 
-    private void findEmoticons(String text, Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangesStyle) {
-        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.NORMAL_FACE);
-        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE);
+    private void findEmoticons(String text, Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangesStyle, User u) {
+        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.NORMAL_FACE, null);
+        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE, u.getEmotes());
     }
 
     protected void print(MessageWrapper wrapper, String string, SimpleAttributeSet set) {
@@ -465,8 +464,8 @@ public class ChatPane implements DocumentListener {
     /**
      * Handles inserting icons before and after the message.
      *
-     * @param m       The message itself.
-     * @param status  5 for sub message, else pass Donor#getDonationStatus(d#getAmount())
+     * @param m      The message itself.
+     * @param status 5 for sub message, else pass Donor#getDonationStatus(d#getAmount())
      */
     public void onIconMessage(MessageWrapper m, int status) {
         try {
@@ -662,12 +661,8 @@ public class ChatPane implements DocumentListener {
      * @param message  The message itself.
      * @param isSystem Whether the message is a system log message or not.
      */
-    public void log(String message, boolean isSystem) {
-        StyledDocument doc = textPane.getStyledDocument();
-        try {
-            doc.insertString(doc.getLength(), "\n" + getTime(), GUIMain.norm);
-            doc.insertString(doc.getLength(), " " + (isSystem ? "SYS: " : "") + message, GUIMain.norm);
-        } catch (Exception ignored) {
-        }
+    public void log(MessageWrapper message, boolean isSystem) {
+        print(message, "\n" + getTime(), GUIMain.norm);
+        print(message, " " + (isSystem ? "SYS: " : "") + message.getLocal().getContent(), GUIMain.norm);
     }
 }

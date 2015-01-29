@@ -5,6 +5,7 @@ import irc.account.Oauth;
 import irc.account.Task;
 import lib.scalr.Scalr;
 import sound.Sound;
+import sound.SoundEngine;
 import util.Constants;
 import util.Utils;
 import util.settings.Settings;
@@ -41,12 +42,12 @@ public class GUISettings extends JFrame {
 
     // builds the sound tree
     public void buildTree() {
-        if (!GUIMain.soundMap.isEmpty()) {
+        if (!SoundEngine.getEngine().getSoundMap().isEmpty()) {
             DefaultTreeModel model = (DefaultTreeModel) soundTree.getModel();
             DefaultMutableTreeNode root = (DefaultMutableTreeNode) model.getRoot();
-            String[] keys = GUIMain.soundMap.keySet().toArray(new String[GUIMain.soundMap.keySet().size()]);
+            String[] keys = SoundEngine.getEngine().getSoundMap().keySet().toArray(new String[SoundEngine.getEngine().getSoundMap().keySet().size()]);
             for (String name : keys) {
-                Sound snd = GUIMain.soundMap.get(name);
+                Sound snd = SoundEngine.getEngine().getSoundMap().get(name);
                 int perm = snd.getPermission();
                 String[] files = snd.getSounds().data;
                 DefaultMutableTreeNode node = new DefaultMutableTreeNode(name + "-" + perm);
@@ -149,7 +150,7 @@ public class GUISettings extends JFrame {
                     }
                 }
                 Sound newSound = new Sound(perm, list.toArray(new String[list.size()]));
-                GUIMain.soundMap.put(command, newSound);
+                SoundEngine.getEngine().getSoundMap().put(command, newSound);
             }
         }
 
@@ -335,7 +336,7 @@ public class GUISettings extends JFrame {
             if (!node.isRoot()) {//don't remove everything silly
                 DefaultTreeModel model = (DefaultTreeModel) soundTree.getModel();
                 if (node.getChildCount() > 0) { // parent (all the sounds)
-                    GUIMain.soundMap.remove(node.getUserObject().toString().split("-")[0]);
+                    SoundEngine.getEngine().getSoundMap().remove(node.getUserObject().toString().split("-")[0]);
                     node.removeAllChildren();
                     node.removeFromParent();
                     model.reload();
@@ -343,7 +344,7 @@ public class GUISettings extends JFrame {
                     if (node.getParent().getChildCount() == 1) {
                         //this is one sound clip; they decided to delete the file, so let's delete the parent.
                         DefaultMutableTreeNode node1 = ((DefaultMutableTreeNode) node.getParent());
-                        GUIMain.soundMap.remove(node1.getUserObject().toString().split("-")[0]);
+                        SoundEngine.getEngine().getSoundMap().remove(node1.getUserObject().toString().split("-")[0]);
                         node1.removeAllChildren();
                         node1.removeFromParent();
                         model.reload();

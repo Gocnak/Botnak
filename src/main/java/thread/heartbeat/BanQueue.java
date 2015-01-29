@@ -14,24 +14,27 @@ import java.util.Iterator;
 public class BanQueue implements HeartbeatThread {
 
     private static HashSet<User> banMap;
+    private boolean beating;
 
     public BanQueue() {
         banMap = new HashSet<>();
+        beating = false;
     }
 
     @Override
     public boolean shouldBeat() {
-        return !banMap.isEmpty();
+        return !beating && !banMap.isEmpty();
     }
 
     @Override
     public void beat() {
+        beating = true;
         emptyMap();
     }
 
     @Override
     public void afterBeat() {
-        //nothing
+        beating = false;
     }
 
     /**
@@ -54,11 +57,12 @@ public class BanQueue implements HeartbeatThread {
             User u = it.next();
             if (!u.timer.isRunning()) {
                 if (u.count > 1) {
-                    MessageQueue.addMessage(new Message(u.channel.substring(1), null, Message.MessageType.BAN_NOTIFY,
-                            u.name + " has been banned/timed out " + u.count + " times!"));
+                    MessageQueue.addMessage(new Message().setChannel(u.channel.substring(1))
+                            .setType(Message.MessageType.BAN_NOTIFY)
+                            .setContent(u.name + " has been banned/timed out " + u.count + " times!"));
                 } else {
-                    MessageQueue.addMessage(new Message(u.channel.substring(1), null, Message.MessageType.BAN_NOTIFY,
-                            u.name + " has been banned/timed out!"));
+                    MessageQueue.addMessage(new Message().setChannel(u.channel.substring(1))
+                            .setType(Message.MessageType.BAN_NOTIFY).setContent(u.name + " has been banned/timed out!"));
                 }
                 it.remove();
             }
