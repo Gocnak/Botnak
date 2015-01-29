@@ -892,40 +892,6 @@ public class Utils {
         }
         return toReturn;
     }
-    
-    
-    
-    
-    
-    
-    
-    /**
-     * Gets stream uptime.
-     *
-     * @return the current stream uptime.
-     */
-    
-    
-    public static Response getUptimeString(String channelName){
-    	Response toReturn = new Response();
-    	try {
-    		
-    		 URL nightdev = new URL("https://nightdev.com/hosted/uptime.php?channel=" + channelName);
-             BufferedReader br = new BufferedReader(new InputStreamReader(nightdev.openStream()));
-             String line = br.readLine();
-             br.close();
-             if (line != null) {
-            	 toReturn.wasSuccessful();
-            	 toReturn.setResponseText("Stream Uptime is: " + line);
-             }
-             
-         } catch (Exception ignored) {
-        	 toReturn.setResponseText("Uptime hit an exception");
-         }
-    	return toReturn;
-    }
-    
-    
 
 
     /**
