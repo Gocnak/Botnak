@@ -1,5 +1,6 @@
 package irc.message;
 
+import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.GUIMain;
 import lib.pircbot.org.jibble.pircbot.Queue;
@@ -63,10 +64,6 @@ public class MessageQueue extends Thread {
                     } else if (mess.getType() == Message.MessageType.SUB_NOTIFY) {
                         String channel = mess.getChannel().substring(1);
                         GUIMain.chatPanes.get(channel).onSub(wrap);
-                        if (channel.equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
-                            if (GUIMain.currentSettings.subSound != null)
-                                SoundEngine.getEngine().playSpecialSound(true);
-                        }
                     } else if (mess.getType() == Message.MessageType.BAN_NOTIFY ||
                             mess.getType() == Message.MessageType.HOSTED_NOTIFY ||
                             mess.getType() == Message.MessageType.HOSTING_NOTIFY ||
@@ -77,6 +74,8 @@ public class MessageQueue extends Thread {
                         if (GUIMain.currentSettings.donationSound != null) {
                             SoundEngine.getEngine().playSpecialSound(false);
                         }
+                    } else if (mess.getType() == Message.MessageType.CLEAR_TEXT) {
+                        wrap.addPrint(((ChatPane) mess.getExtra())::cleanupChat);
                     }
                     addToQueue(wrap);
                 } catch (Exception e) {

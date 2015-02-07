@@ -1000,15 +1000,14 @@ public class PircBot implements ReplyConstants {
             String user = split[1].toLowerCase();
             if (split[2].equalsIgnoreCase("admin")) {
                 getChannelManager().getUser(user, true).setAdmin(true);
-            }
-            if (split[2].equalsIgnoreCase("staff")) {
+            } else if (split[2].equalsIgnoreCase("staff")) {
                 getChannelManager().getUser(user, true).setStaff(true);
-            }
-            if (split[2].equalsIgnoreCase("turbo")) {
+            } else if (split[2].equalsIgnoreCase("turbo")) {
                 getChannelManager().getUser(user, true).setTurbo(true);
-            }
-            if (split[2].equalsIgnoreCase("subscriber")) {
+            } else if (split[2].equalsIgnoreCase("subscriber")) {
                 getChannelManager().getChannel(channel).addSubscriber(user);
+            } else if (split[2].equalsIgnoreCase("global_mod")) {
+                getChannelManager().getUser(user, true).setGlobalMod(true);
             }
         }
     }

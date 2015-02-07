@@ -496,7 +496,7 @@ public class DraggableTabbedPane extends JTabbedPane {
         TAB_NEITHER
     }
 
-    class TabType {
+    private class TabType {
 
         Rectangle rectangle;
         TabTypeEnum type;
@@ -514,5 +514,4 @@ public class DraggableTabbedPane extends JTabbedPane {
             return type;
         }
     }
-
 }

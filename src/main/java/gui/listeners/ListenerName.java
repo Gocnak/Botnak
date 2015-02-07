@@ -24,9 +24,6 @@ import java.net.URI;
  */
 public class ListenerName extends MouseAdapter implements ActionListener {
 
-    public ListenerName() {
-    }
-
     @Override
     public void mouseReleased(MouseEvent e) {
         JTextPane textPane = (JTextPane) e.getSource();
@@ -50,8 +47,8 @@ public class ListenerName extends MouseAdapter implements ActionListener {
                             User main = GUIMain.currentSettings.channelManager.getUser(GUIMain.currentSettings.accountManager.getUserAccount().getName(), false);//get yourself
                             if (main != null) {
                                 int count = 0; //don't worry about it
-                                //can't ban broadcaster or admin/staff
-                                if (u != null && (u.isAdmin() || u.isStaff() || name.equalsIgnoreCase(channel.replace("#", ""))))
+                                //can't ban broadcaster or admin/staff/global mod
+                                if (u != null && (u.isAdmin() || u.isGlobalMod() || u.isStaff() || name.equalsIgnoreCase(channel.replace("#", ""))))
                                     count++;
 
                                 //can't ban other mods if you aren't the broadcaster

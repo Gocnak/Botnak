@@ -797,21 +797,7 @@ public class Utils {
                             }
                         }
                     } else {//int class permission
-                        int permission = Constants.PERMISSION_ALL;
-                        if (u.isSubscriber(channel)) {
-                            permission = Constants.PERMISSION_SUB;
-                        }
-                        if (u.isDonor()) {
-                            if (u.getDonated() >= 2.50) {
-                                permission = Constants.PERMISSION_DONOR;
-                            }
-                        }
-                        if (u.isOp(channel) || u.isAdmin() || u.isStaff()) {
-                            permission = Constants.PERMISSION_MOD;
-                        }
-                        if (GUIMain.viewer != null && master.equalsIgnoreCase(u.getNick())) {
-                            permission = Constants.PERMISSION_DEV;
-                        }
+                        int permission = getUserPermission(u, channel);
                         if (permission >= conPerm) {
                             return c;
                         }
@@ -820,6 +806,32 @@ public class Utils {
             }
         }
         return null;
+    }
+
+    /**
+     * Gets the permission of the user based on their status.
+     *
+     * @param u The user to check.
+     * @param channel The channel this is for.
+     * @return The permission they have.
+     */
+    public static int getUserPermission(User u, String channel) {
+        int permission = Constants.PERMISSION_ALL;
+        if (u.isSubscriber(channel)) {
+            permission = Constants.PERMISSION_SUB;
+        }
+        if (u.isDonor()) {
+            if (u.getDonated() >= 2.50) {
+                permission = Constants.PERMISSION_DONOR;
+            }
+        }
+        if (u.isOp(channel) || u.isAdmin() || u.isStaff() || u.isGlobalMod()) {
+            permission = Constants.PERMISSION_MOD;
+        }
+        if (GUIMain.viewer != null && GUIMain.currentSettings.accountManager.getUserAccount().getName().equalsIgnoreCase(u.getNick())) {
+            permission = Constants.PERMISSION_DEV;
+        }
+        return permission;
     }
 
     /**
@@ -886,6 +898,8 @@ public class Utils {
             if (line != null) {
                 toReturn.wasSuccessful();
                 toReturn.setResponseText("The current song is: " + line);
+            } else {
+                toReturn.setResponseText("There is no song currently playing!");
             }
         } catch (Exception e) {
             toReturn.setResponseText("Failed to fetch current playing song due to Exception: " + e.getMessage());
@@ -931,7 +945,7 @@ public class Utils {
      * @return The set with the correct color.
      */
     public static SimpleAttributeSet getSetForKeyword(String message) {
-        SimpleAttributeSet setToRet = (SimpleAttributeSet) GUIMain.norm.clone();
+        SimpleAttributeSet setToRet = new SimpleAttributeSet(GUIMain.norm);
         Set<String> keys = GUIMain.keywordMap.keySet();
         //case doesnt matter
         keys.stream().filter(
@@ -1137,5 +1151,4 @@ public class Utils {
         Matcher m = Constants.fileExclPattern.matcher(toCheck);
         return m.find();
     }
-
 }

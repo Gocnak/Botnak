@@ -2,7 +2,6 @@ package sound;
 
 import gui.GUIMain;
 import lib.pircbot.org.jibble.pircbot.User;
-import util.Constants;
 import util.Response;
 import util.Timer;
 import util.Utils;
@@ -181,23 +180,8 @@ public class SoundEngine {
      */
     private boolean soundCheck(String sound, String sender, String channel) {
         //set the permission
-        int permission = Constants.PERMISSION_ALL;
         User u = GUIMain.currentSettings.channelManager.getUser(sender, true);
-        if (u.isSubscriber(channel)) {
-            permission = Constants.PERMISSION_SUB;
-        }
-        if (u.isDonor()) {
-            if (u.getDonated() >= 2.50) {
-                permission = Constants.PERMISSION_DONOR;
-            }
-        }
-        if (u.isOp(channel) || u.isAdmin() || u.isStaff()) {
-            permission = Constants.PERMISSION_MOD;
-        }
-        if (GUIMain.currentSettings.accountManager.getUserAccount() != null &&
-                GUIMain.currentSettings.accountManager.getUserAccount().getName().equalsIgnoreCase(sender)) {
-            permission = Constants.PERMISSION_DEV;
-        }
+        int permission = Utils.getUserPermission(u, channel);
         String[] keys = soundMap.keySet().toArray(new String[soundMap.keySet().size()]);
         for (String s : keys) {
             if (s != null && s.equalsIgnoreCase(sound)) {

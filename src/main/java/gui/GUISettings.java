@@ -372,11 +372,16 @@ public class GUISettings extends JFrame {
         JFontChooser jfc = new JFontChooser(Constants.fontSizeArray);
         jfc.setSelectedFont(GUIMain.currentSettings.font);
         if (jfc.showDialog(this) == JFontChooser.OK_OPTION) {
-            if (jfc.getSelectedFont() != null) GUIMain.currentSettings.font = jfc.getSelectedFont();
-            StyleConstants.setFontFamily(GUIMain.norm, GUIMain.currentSettings.font.getFamily());
-            StyleConstants.setFontSize(GUIMain.norm, GUIMain.currentSettings.font.getSize());
-            currentFontLabel.setText(Utils.fontToString(GUIMain.currentSettings.font));
-            currentFontLabel.setFont(GUIMain.currentSettings.font);
+            Font f = jfc.getSelectedFont();
+            if (f != null) {
+                GUIMain.currentSettings.font = f;
+                StyleConstants.setFontFamily(GUIMain.norm, GUIMain.currentSettings.font.getFamily());
+                StyleConstants.setFontSize(GUIMain.norm, GUIMain.currentSettings.font.getSize());
+                StyleConstants.setBold(GUIMain.norm, GUIMain.currentSettings.font.isBold());
+                StyleConstants.setItalic(GUIMain.norm, GUIMain.currentSettings.font.isItalic());
+                currentFontLabel.setText(Utils.fontToString(GUIMain.currentSettings.font));
+                currentFontLabel.setFont(GUIMain.currentSettings.font);
+            }
         }
     }
 

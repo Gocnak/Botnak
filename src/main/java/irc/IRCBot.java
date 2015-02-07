@@ -9,7 +9,6 @@ import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
 import sound.Sound;
 import sound.SoundEngine;
-import util.Constants;
 import util.Response;
 import util.StringArray;
 import util.Utils;
@@ -109,22 +108,7 @@ public class IRCBot extends MessageHandler {
                         String key = r.getKeyword();
                         if (message.contains(key)) {
                             int permBase = r.getPermission();
-                            int permission = Constants.PERMISSION_ALL;
-                            if (u.isSubscriber(channel)) {
-                                permission = Constants.PERMISSION_SUB;
-                            }
-                            if (u.isDonor()) {
-                                if (u.getDonated() >= 2.50) {
-                                    permission = Constants.PERMISSION_DONOR;
-                                }
-                            }
-                            if ((u.isOp(channel) || u.isAdmin() || u.isStaff())) {
-                                permission = Constants.PERMISSION_MOD;
-                            }
-                            if (GUIMain.currentSettings.accountManager.getUserAccount() != null &&
-                                    GUIMain.currentSettings.accountManager.getUserAccount().getName().equalsIgnoreCase(sender)) {
-                                permission = Constants.PERMISSION_DEV;
-                            }
+                            int permission = Utils.getUserPermission(u, channel);
                             if (permission >= permBase) {
                                 r.addUser(u.getNick());
                             }

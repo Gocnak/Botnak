@@ -34,7 +34,7 @@ import java.util.HashSet;
  */
 public class User implements Comparable<User> {
 
-    private boolean staff = false, admin = false, turbo = false;
+    private boolean staff = false, admin = false, global_mod = false, turbo = false;
 
     private HashSet<Integer> emotes = new HashSet<>();
 
@@ -71,11 +71,14 @@ public class User implements Comparable<User> {
         //if (isSubscriber()) {
         //    foxStevenson.append("$");
         //}
-        if (isAdmin()) {
+        if (isGlobalMod()) {
             foxStevenson.append("!");
         }
-        if (isStaff()) {
+        if (isAdmin()) {
             foxStevenson.append("!!");
+        }
+        if (isStaff()) {
+            foxStevenson.append("!!!");
         }
         return foxStevenson.toString();
     }
@@ -94,6 +97,13 @@ public class User implements Comparable<User> {
         return c != null && c.isMod(getNick());
     }
 
+    public boolean isGlobalMod() {
+        return global_mod;
+    }
+
+    public void setGlobalMod(boolean newBool) {
+        global_mod = newBool;
+    }
     /**
      * Checks to see if the user is an Admin on Twitch.
      *

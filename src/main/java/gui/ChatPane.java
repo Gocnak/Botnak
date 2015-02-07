@@ -5,6 +5,7 @@ import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
 import irc.Donor;
 import irc.message.Message;
+import irc.message.MessageQueue;
 import irc.message.MessageWrapper;
 import lib.pircbot.org.jibble.pircbot.User;
 import lib.scalr.Scalr;
@@ -16,7 +17,10 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.text.*;
+import javax.swing.text.DefaultCaret;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -166,8 +170,11 @@ public class ChatPane implements DocumentListener {
         }
     }
 
+    private boolean messageOut = false;
+
     @Override
     public void insertUpdate(DocumentEvent e) {
+        maybeScrollToBottom();
         if (GUIMain.currentSettings.cleanupChat) {
             try {
                 if (e.getDocument().getText(e.getOffset(), e.getLength()).contains("\n")) {
@@ -176,9 +183,10 @@ public class ChatPane implements DocumentListener {
             } catch (Exception ignored) {
             }
             if (cleanupCounter > GUIMain.currentSettings.chatMax) {
-                    /* cleanup every n messages */
-                if (cleanupChat()) {
-                    resetCleanupCounter();
+                /* cleanup every n messages */
+                if (!messageOut) {
+                    MessageQueue.addMessage(new Message().setType(Message.MessageType.CLEAR_TEXT).setExtra(this));
+                    messageOut = true;
                 }
             }
         }
@@ -186,32 +194,19 @@ public class ChatPane implements DocumentListener {
 
     @Override
     public void removeUpdate(DocumentEvent e) {
+        maybeScrollToBottom();
     }
 
     @Override
     public void changedUpdate(DocumentEvent e) {
+        maybeScrollToBottom();
     }
 
-    // ScrollingDocumentListener takes care of re-scrolling when appropriate
-    class ScrollingDocumentListener implements DocumentListener {
-        public void changedUpdate(DocumentEvent e) {
-            maybeScrollToBottom();
-        }
-
-        public void insertUpdate(DocumentEvent e) {
-            maybeScrollToBottom();
-        }
-
-        public void removeUpdate(DocumentEvent e) {
-            maybeScrollToBottom();
-        }
-
-        private void maybeScrollToBottom() {
-            JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
-            boolean scrollBarAtBottom = isScrollBarFullyExtended(scrollBar);
-            if (scrollBarAtBottom) {
-                scrollToBottom();
-            }
+    private void maybeScrollToBottom() {
+        JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
+        boolean scrollBarAtBottom = isScrollBarFullyExtended(scrollBar);
+        if (scrollBarAtBottom) {
+            scrollToBottom();
         }
     }
 
@@ -296,7 +291,6 @@ public class ChatPane implements DocumentListener {
         this.index = index;
         this.scrollPane = scrollPane;
         textPane.getDocument().addDocumentListener(this);
-        textPane.getDocument().addDocumentListener(new ScrollingDocumentListener());
     }
 
     public ChatPane() {
@@ -338,9 +332,12 @@ public class ChatPane implements DocumentListener {
                 insertIcon(m, 1, null);
             }
             if (u.isOp(channel)) {
-                if (!channel.substring(1).equals(sender) && !u.isStaff() && !u.isAdmin()) {//not the broadcaster again
+                if (!channel.substring(1).equals(sender) && !u.isStaff() && !u.isAdmin() && !u.isGlobalMod()) {//not the broadcaster again
                     insertIcon(m, 0, null);
                 }
+            }
+            if (u.isGlobalMod()) {
+                insertIcon(m, 11, null);
             }
             if (u.isDonor()) {
                 insertIcon(m, u.getDonationStatus(), null);
@@ -561,6 +558,10 @@ public class ChatPane implements DocumentListener {
                 icon = sizeIcon(ChatPane.class.getResource("/image/diamond.png"));
                 kind = "Donator";
                 break;
+            case 11:
+                icon = sizeIcon(ChatPane.class.getResource("/image/globalmod.png"));
+                kind = "Global Mod";
+                break;
             default:
                 icon = sizeIcon(GUIMain.currentSettings.modIcon);
                 kind = "Mod";
@@ -581,41 +582,32 @@ public class ChatPane implements DocumentListener {
 
     // Source: http://stackoverflow.com/a/4628879
     // by http://stackoverflow.com/users/131872/camickr & Community
-    public boolean cleanupChat() {
-        if (textPane == null || textPane.getParent() == null) return false;
+    public void cleanupChat() {
+        if (textPane == null || textPane.getParent() == null) return;
         if (!(textPane.getParent() instanceof JViewport)) {
-            return false;
+            return;
         }
         JViewport viewport = ((JViewport) textPane.getParent());
         Point startPoint = viewport.getViewPosition();
         // we are not deleting right before the visible area, but one screen behind
         // for convenience, otherwise flickering.
-        if (startPoint == null) return false;
+        if (startPoint == null) return;
         final int start = textPane.viewToModel(startPoint);
         if (start > 0) // not equal zero, because then we don't have to delete anything
         {
             final StyledDocument doc = textPane.getStyledDocument();
             try {
-                if (GUIMain.currentSettings.cleanupChat) {
-                    if (GUIMain.currentSettings.logChat && chan != null) {
-                        String[] toRemove = doc.getText(0, start).split("\\n");
-                        Utils.logChat(toRemove, chan, 1);
-                    }
-                    EventQueue.invokeLater(() -> {
-                        try {
-                            doc.remove(0, start);
-                        } catch (Exception ignored) {
-                        }
-                    });
-                    return true;
+                if (GUIMain.currentSettings.logChat && chan != null) {
+                    String[] toRemove = doc.getText(0, start).split("\\n");
+                    Utils.logChat(toRemove, chan, 1);
                 }
-            } catch (BadLocationException e) {
-                // we cannot do anything here
-                GUIMain.log("CLEANUP CHAT " + e.getMessage());
-                return false;
+                doc.remove(0, start);
+                resetCleanupCounter();
+            } catch (Exception e) {
+                GUIMain.log("Failed clearing chat: " + e.getMessage());
             }
         }
-        return false;
+        messageOut = false;
     }
 
     /**

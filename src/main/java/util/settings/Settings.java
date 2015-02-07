@@ -184,7 +184,7 @@ public class Settings {
                 donationManager.ranFirstCheck = true;
             }
             //TODO implement #canCheckSubs()
-            if (!subscriberManager.ranInitialCheck) {
+            if (!subscriberManager.ranInitialCheck && accountManager.getUserAccount() != null) {
                 subscriberManager.scanInitialSubscribers(accountManager.getUserAccount().getName(),
                         accountManager.getUserAccount().getKey().getKey().split(":")[1], 0, new HashSet<>());
             }

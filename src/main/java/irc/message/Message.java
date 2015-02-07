@@ -98,7 +98,7 @@ public class Message {
         HOSTING_NOTIFY,
         HOSTED_NOTIFY,
         DONATION_NOTIFY,
-        JTV_NOTIFY
+        JTV_NOTIFY,
+        CLEAR_TEXT
     }
-
 }

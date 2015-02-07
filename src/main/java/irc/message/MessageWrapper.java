@@ -29,20 +29,22 @@ public class MessageWrapper {
     }
 
     public void print() {
-        Runnable handler = () -> {
-            try {
-                prints.forEach(java.lang.Runnable::run);
-            } catch (Exception e) {
-                GUIMain.log(e.getMessage());
-            }
-        };
-        if (EventQueue.isDispatchThread()) {
-            handler.run();
-        } else {
-            try {
-                EventQueue.invokeLater(handler);
-            } catch (Exception e) {
-                GUIMain.log(e.getMessage());
+        if (!prints.isEmpty()) {
+            Runnable handler = () -> {
+                try {
+                    prints.forEach(java.lang.Runnable::run);
+                } catch (Exception e) {
+                    GUIMain.log(e.getMessage());
+                }
+            };
+            if (EventQueue.isDispatchThread()) {
+                handler.run();
+            } else {
+                try {
+                    EventQueue.invokeLater(handler);
+                } catch (Exception e) {
+                    GUIMain.log(e.getMessage());
+                }
             }
         }
     }

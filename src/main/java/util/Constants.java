@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 public class Constants {
 
-    public static final double VERSION = 2.28;
+    public static final double VERSION = 2.29;
 
     /**
      * All users may do it

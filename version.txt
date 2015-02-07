@@ -1,12 +1,12 @@
-2.28
+2.29
 
 Added:
 
-"!uptime" command
-Support for the new subscriber messages
-All commands moved to Response framework (closes #63)
+Global Moderator support (closes #58)
+Message clearing/cleanup is now on MessageQueue
 
 Fixed:
 
-MessageQueue is significantly faster
-Heartbeat Threads don't overlap each other
+Subscriber sounds now don't trigger twice
+Font issue (closes #68)
+Null Pointer with checking Subscribers (closes #69)

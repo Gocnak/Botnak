@@ -76,7 +76,7 @@ public class PaneMenuListener implements ActionListener {
                     if (pane instanceof CombinedChatPane) pane = ((CombinedChatPane) pane).getActiveChatPane();
                     pane.resetCleanupCounter();
                     final ChatPane pane1 = pane;
-                    EventQueue.invokeLater(() -> {
+                    EventQueue.invokeLater(() -> {//this should be fine, no need for message queue since clearing would be situational anyways
                         if (GUIMain.currentSettings.logChat) {
                             String[] toPrint = pane1.getText().split("\\n");
                             Utils.logChat(toPrint, pane1.getChannel(), 1);

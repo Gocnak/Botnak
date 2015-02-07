@@ -1,10 +1,8 @@
 import gui.GUIMain;
 import gui.GUIUpdate;
-import util.Utils;
 import util.settings.Settings;
 
 import javax.swing.*;
-
 import java.awt.*;
 
 public class Boot {
