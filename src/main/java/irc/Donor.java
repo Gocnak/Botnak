@@ -48,21 +48,11 @@ public class Donor {
      * @return The int status of the user, or -1 if they have none.
      */
     public static int getDonationStatus(Double donated) {
-        if (donated > 0) {
-            if (donated >= 10) {
-                if (donated >= 50) {
-                    if (donated >= 100) {
-                        if (donated >= 500) {
-                            return 10;
-                        }
-                        return 9;
-                    }
-                    return 8;
-                }
-                return 7;
-            }
-            return 6;
-        }
+        if (donated >= 500) return 10;
+        else if (donated >= 100) return 9;
+        else if (donated >= 50) return 8;
+        else if (donated >= 10) return 7;
+        else if (donated > 0) return 6;
         return -1;
     }
 
