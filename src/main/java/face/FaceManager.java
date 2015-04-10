@@ -291,12 +291,9 @@ public class FaceManager {
                 Pattern p = Pattern.compile(regex);
                 Matcher m = p.matcher(faceName);
                 if (m.find()) {
-                    boolean old = fa.isEnabled();
-                    //if old is enabled (true)
-                    boolean newBool = !old;
-                    //newBool becomes disabled (false)
-                    fa.setEnabled(newBool);
-                    toReturn.setResponseText("Toggled the face " + faceName + " " + (newBool ? "ON" : "OFF"));
+                    boolean newStatus = !fa.isEnabled();
+                    fa.setEnabled(newStatus);
+                    toReturn.setResponseText("Toggled the face " + faceName + " " + (newStatus ? "ON" : "OFF"));
                     return toReturn;
                 }
             }
