@@ -50,13 +50,13 @@ public class Donor {
      * @return The int status of the user, or -1 if they have none.
      */
     public static int getDonationStatus(Double donated) {
-        if (donated > 0) {
+        if (donated > 0 && donated < 10) {
           return IconEnum.Donator_basic;
-        } else if (donated >= 10) {
+        } else if (donated >= 10 && donated < 50) {
           return IconEnum.Donator_low;
-        } else if (donated >= 50) {
+        } else if (donated >= 50 && donated < 100) {
           return IconEnum.Donator_medium;
-        } else if (donated >= 100) {
+        } else if (donated >= 100 && donated < 500) {
           return IconEnum.Donator_high;
         } else if (donated >= 500) {
           return IconEnum.Donator_insane;
