@@ -1,5 +1,7 @@
 package irc;
 
+import gui.Icons;
+
 /**
  * Created by Nick on 1/26/14.
  * Created to handle the amounts a person donates.
@@ -49,21 +51,18 @@ public class Donor {
      */
     public static int getDonationStatus(Double donated) {
         if (donated > 0) {
-            if (donated >= 10) {
-                if (donated >= 50) {
-                    if (donated >= 100) {
-                        if (donated >= 500) {
-                            return 10;
-                        }
-                        return 9;
-                    }
-                    return 8;
-                }
-                return 7;
-            }
-            return 6;
+          return IconEnum.Donator_basic;
+        } else if (donated >= 10) {
+          return IconEnum.Donator_low;
+        } else if (donated >= 50) {
+          return IconEnum.Donator_medium;
+        } else if (donated >= 100) {
+          return IconEnum.Donator_high;
+        } else if (donated >= 500) {
+          return IconEnum.Donator_insane;
+        } else {
+          return IconEnum.None;
         }
-        return -1;
     }
 
     /**
