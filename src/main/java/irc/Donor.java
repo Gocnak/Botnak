@@ -1,6 +1,6 @@
 package irc;
 
-import gui.Icons;
+import gui.IconEnum;
 
 /**
  * Created by Nick on 1/26/14.
@@ -49,7 +49,7 @@ public class Donor {
      * @param donated The amount donated. Most of the time this is
      * @return The int status of the user, or -1 if they have none.
      */
-    public static int getDonationStatus(Double donated) {
+    public static IconEnum getDonationStatus(Double donated) {
         if (donated > 0 && donated < 10) {
           return IconEnum.Donator_basic;
         } else if (donated >= 10 && donated < 50) {

@@ -1,24 +1,11 @@
 package gui;
 
+import face.FaceManager;
+import java.awt.image.BufferedImage;
 import java.net.URL;
 import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import lib.scalr.Scalr;
-
-public enum IconEnum {
-	None,
-	Mod,
-	Broadcaster,
-	Admin,
-	Staff,
-	Turbo,
-	Subscriber,
-	Donator_basic,
-	Donator_low,
-	Donator_medium,
-	Donator_high,
-	Donator_insane,
-	GlobalMod
-}
 
 /**
 * A class which specifies special chat icons, or 'badges'.
@@ -40,72 +27,72 @@ public class Icons {
      * @return ImageIcon the icon file
      */
     
-    public static ImageIcon getIcon (IconEnum i) {
+    public static ImageIcon getIcon(IconEnum i, String channel) {
     	String kind = "";
     	ImageIcon icon = null;
     	switch (i) {
-    		case IconEnum.Mod:
+    		case Mod:
     			kind = "Mod";
     			icon = sizeIcon(GUIMain.currentSettings.modIcon);
     			break;
-    		case IconEnum.Broadcaster:
+    		case Broadcaster:
     			kind = "Broadcaster";
     			icon = sizeIcon(GUIMain.currentSettings.broadIcon);
     			break;
-    		case IconEnum.Admin:
+    		case Admin:
     			kind = "Admin";
     	        icon = sizeIcon(GUIMain.currentSettings.adminIcon);
         		break;
-    		case IconEnum.Staff:
+    		case Staff:
     			kind = "Staff";
     			icon = sizeIcon(GUIMain.currentSettings.staffIcon);
     			break;
-    		case IconEnum.Turbo:
+    		case Turbo:
     			kind = "Turbo";
     			icon = sizeIcon(GUIMain.currentSettings.turboIcon);
     			break;
-    		case IconEnum.Subscriber:
+    		case Subscriber:
     			kind = "Subscriber";
     			URL subIcon = FaceManager.getSubIcon(channel);
     			if (subIcon != null) {
         			icon = sizeIcon(subIcon);
         		}
     			break;
-    		case IconEnum.Donator_basic:
+    		case Donator_basic:
     			kind = "Donator";
     			icon = sizeIcon(ChatPane.class.getResource("/image/green.png"));
     			break;
-    		case IconEnum.Donator_medium:
+    		case Donator_low:
     			kind = "Donator";
     			icon = sizeIcon(ChatPane.class.getResource("/image/bronze.png"));
     			break;
-    		case IconEnum.Donator_medium:
+    		case Donator_medium:
     			kind = "Donator";
     			icon = sizeIcon(ChatPane.class.getResource("/image/silver.png"));
     			break;
-    		case IconEnum.Donator_high:
+    		case Donator_high:
     			kind = "Donator";
     			icon = sizeIcon(ChatPane.class.getResource("/image/gold.png"));
     			break;
-    		case IconEnum.Donator_insane:
+    		case Donator_insane:
     			kind = "Donator";
     			icon = sizeIcon(ChatPane.class.getResource("/image/diamond.png"));
     			break;
-    		case IconEnum.GlobalMod:
+    		case GlobalMod:
     		    kind = "GlobalMod";
     		    icon = sizeIcon(ChatPane.class.getResource("/image/globalmod.png"));
                 break;
-            case IconEnum.None:
+            case None:
             default:
                 break;
     	}
     	
     	try {
-    		print(m, " ", null);
-    		print(m, kind, attrs);
-    	} catch (Exception e) {
-    		GUIMain.log("INSERT ICON " + e.getMessage());
-    	}
+        	print(channel, kind, null);
+        } catch (Exception e) {
+        	GUIMain.log("INSERT ICON " + e.getMessage());
+        }
+    	
     	return icon;
     }
     
@@ -117,14 +104,14 @@ public class Icons {
      * @return ImageIcon the resized image
      */
     
-    private ImageIcon sizeIcon(URL image) {
+    private static ImageIcon sizeIcon(URL image) {
         ImageIcon icon;
         try {
         		BufferedImage img = ImageIO.read(image);
         		int size = GUIMain.currentSettings.font.getSize();
         		img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, size, size);
         		icon = new ImageIcon(img);
-        		IconEnum.getImage().flush();
+        		icon.getImage().flush();
         		return icon;
         } catch (Exception e) {
         		icon = new ImageIcon(image);

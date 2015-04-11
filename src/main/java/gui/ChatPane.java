@@ -4,6 +4,7 @@ import face.FaceManager;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
 import gui.Icons;
+import gui.IconEnum;
 import irc.Donor;
 import irc.message.Message;
 import irc.message.MessageQueue;
@@ -24,7 +25,6 @@ import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -469,7 +469,7 @@ public class ChatPane implements DocumentListener {
             for (int i = 0; i < 5; i++) {
                 insertIcon(m, status, (status == IconEnum.Subscriber ? message.getChannel() : null));
             }
-            print(m, " " + message.getContent() + (status == 5 ? (" (" + (subCount + 1) + ") ") : " "), GUIMain.norm);
+            print(m, " " + message.getContent() + (status == IconEnum.Subscriber ? (" (" + (subCount + 1) + ") ") : " "), GUIMain.norm);
             for (int i = 0; i < 5; i++) {
                 insertIcon(m, status, (status == IconEnum.Subscriber ? message.getChannel() : null));
             }
@@ -490,11 +490,10 @@ public class ChatPane implements DocumentListener {
 
     public void insertIcon(MessageWrapper m, IconEnum type, String channel) {
         SimpleAttributeSet attrs = new SimpleAttributeSet();
-        icon = Icons.getIcon()
+        ImageIcon icon = Icons.getIcon(type, channel);
         StyleConstants.setIcon(attrs, icon);
         try {
             print(m, " ", null);
-            print(m, kind, attrs);
         } catch (Exception e) {
             GUIMain.log("INSERT ICON " + e.getMessage());
         }
