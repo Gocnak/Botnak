@@ -1,6 +1,6 @@
 package irc;
 
-import gui.IconEnum;
+import face.IconEnum;
 
 /**
  * Created by Nick on 1/26/14.
@@ -50,19 +50,12 @@ public class Donor {
      * @return The int status of the user, or -1 if they have none.
      */
     public static IconEnum getDonationStatus(Double donated) {
-        if (donated > 0 && donated < 10) {
-          return IconEnum.Donator_basic;
-        } else if (donated >= 10 && donated < 50) {
-          return IconEnum.Donator_low;
-        } else if (donated >= 50 && donated < 100) {
-          return IconEnum.Donator_medium;
-        } else if (donated >= 100 && donated < 500) {
-          return IconEnum.Donator_high;
-        } else if (donated >= 500) {
-          return IconEnum.Donator_insane;
-        } else {
-          return IconEnum.None;
-        }
+        if (donated >= 500) return IconEnum.DONOR_INSANE;
+        else if (donated >= 100) return IconEnum.DONOR_HIGH;
+        else if (donated >= 50) return IconEnum.DONOR_MEDIUM;
+        else if (donated >= 10) return IconEnum.DONOR_LOW;
+        else if (donated > 0) return IconEnum.DONOR_BASIC;
+        return IconEnum.NONE;
     }
 
     /**

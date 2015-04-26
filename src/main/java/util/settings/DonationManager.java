@@ -74,7 +74,8 @@ public class DonationManager {
                     MessageQueue.addMessage(new Message()
                             .setChannel(GUIMain.currentSettings.accountManager.getUserAccount().getName())
                             .setType(Message.MessageType.DONATION_NOTIFY)
-                            .setContent(d.getFromWho() + " has just donated " + CURRENCY_SYMBOL + d.getAmount() + "! Lifetime total: " + CURRENCY_SYMBOL + don.getDonated() + ".")
+                            .setContent(d.getFromWho() + " has just donated " + CURRENCY_SYMBOL + d.getAmount() + "! " +
+                                    "Lifetime total: " + CURRENCY_SYMBOL + don.getDonated() + " .")
                             .setExtra(d));
                 }
             }
