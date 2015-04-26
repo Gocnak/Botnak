@@ -1,4 +1,4 @@
-/* 
+/*
 Copyright Paul James Mutton, 2001-2009, http://www.jibble.org/
 
 This file is part of PircBot.
@@ -14,6 +14,7 @@ found at http://www.jibble.org/licenses/
 package lib.pircbot.org.jibble.pircbot;
 
 import gui.GUIMain;
+import gui.IconEnum;
 import irc.Donor;
 
 import java.awt.*;
@@ -164,7 +165,7 @@ public class User implements Comparable<User> {
         return emotes.toArray(new Integer[emotes.size()]);
     }
 
-    public int getDonationStatus() {
+    public IconEnum getDonationStatus() {
         return Donor.getDonationStatus(donor.getDonated());
     }
 

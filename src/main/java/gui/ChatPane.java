@@ -3,17 +3,17 @@ package gui;
 import face.FaceManager;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
+import gui.Icons;
+import gui.IconEnum;
 import irc.Donor;
 import irc.message.Message;
 import irc.message.MessageQueue;
 import irc.message.MessageWrapper;
 import lib.pircbot.org.jibble.pircbot.User;
-import lib.scalr.Scalr;
 import util.Constants;
 import util.Utils;
 import util.misc.Donation;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -25,8 +25,6 @@ import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -329,31 +327,31 @@ public class ChatPane implements DocumentListener {
             }
             StyleConstants.setForeground(user, c);
             if (channel.substring(1).equals(sender)) {
-                insertIcon(m, 1, null);
+                insertIcon(m, IconEnum.Broadcaster, null);
             }
             if (u.isOp(channel)) {
                 if (!channel.substring(1).equals(sender) && !u.isStaff() && !u.isAdmin() && !u.isGlobalMod()) {//not the broadcaster again
-                    insertIcon(m, 0, null);
+                    insertIcon(m, IconEnum.None, null);
                 }
             }
             if (u.isGlobalMod()) {
-                insertIcon(m, 11, null);
+                insertIcon(m, IconEnum.GlobalMod, null);
             }
             if (u.isDonor()) {
                 insertIcon(m, u.getDonationStatus(), null);
             }
             if (u.isStaff()) {
-                insertIcon(m, 3, null);
+                insertIcon(m, IconEnum.Staff, null);
             }
             if (u.isAdmin()) {
-                insertIcon(m, 2, null);
+                insertIcon(m, IconEnum.Admin, null);
             }
             boolean isSubscriber = u.isSubscriber(channel);
             if (isSubscriber) {
-                insertIcon(m, 5, channel);
+                insertIcon(m, IconEnum.Subscriber, channel);
             }
             if (u.isTurbo()) {
-                insertIcon(m, 4, null);
+                insertIcon(m, IconEnum.Turbo, null);
             }
             //name stuff
             print(m, " ", GUIMain.norm);
@@ -462,27 +460,27 @@ public class ChatPane implements DocumentListener {
      * Handles inserting icons before and after the message.
      *
      * @param m      The message itself.
-     * @param status 5 for sub message, else pass Donor#getDonationStatus(d#getAmount())
+     * @param status IconEnum.Subscriber for sub message, else pass Donor#getDonationStatus(d#getAmount())
      */
-    public void onIconMessage(MessageWrapper m, int status) {
+    public void onIconMessage(MessageWrapper m, IconEnum status) {
         try {
             Message message = m.getLocal();
             print(m, "\n", GUIMain.norm);
             for (int i = 0; i < 5; i++) {
-                insertIcon(m, status, (status == 5 ? message.getChannel() : null));
+                insertIcon(m, status, (status == IconEnum.Subscriber ? message.getChannel() : null));
             }
-            print(m, " " + message.getContent() + (status == 5 ? (" (" + (subCount + 1) + ") ") : " "), GUIMain.norm);
+            print(m, " " + message.getContent() + (status == IconEnum.Subscriber ? (" (" + (subCount + 1) + ") ") : " "), GUIMain.norm);
             for (int i = 0; i < 5; i++) {
-                insertIcon(m, status, (status == 5 ? message.getChannel() : null));
+                insertIcon(m, status, (status == IconEnum.Subscriber ? message.getChannel() : null));
             }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
-        if (status == 5) subCount++;
+        if (status == IconEnum.Subscriber) subCount++;
     }
 
     public void onSub(MessageWrapper m) {
-        onIconMessage(m, 5);
+        onIconMessage(m, IconEnum.Subscriber);
     }
 
     public void onDonation(MessageWrapper m) {
@@ -490,87 +488,12 @@ public class ChatPane implements DocumentListener {
         onIconMessage(m, Donor.getDonationStatus(d.getAmount()));
     }
 
-    private ImageIcon sizeIcon(URL image) {
-        ImageIcon icon;
-        try {
-            BufferedImage img = ImageIO.read(image);
-            int size = GUIMain.currentSettings.font.getSize();
-            img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, size, size);
-            icon = new ImageIcon(img);
-            icon.getImage().flush();
-            return icon;
-        } catch (Exception e) {
-            icon = new ImageIcon(image);
-        }
-        return icon;
-    }
-
-    public void insertIcon(MessageWrapper m, int type, String channel) {
+    public void insertIcon(MessageWrapper m, IconEnum type, String channel) {
         SimpleAttributeSet attrs = new SimpleAttributeSet();
-        ImageIcon icon;
-        String kind;
-        switch (type) {
-            case -1:
-                return;
-            case 0:
-                icon = sizeIcon(GUIMain.currentSettings.modIcon);
-                kind = "Mod";
-                break;
-            case 1:
-                icon = sizeIcon(GUIMain.currentSettings.broadIcon);
-                kind = "Broadcaster";
-                break;
-            case 2:
-                icon = sizeIcon(GUIMain.currentSettings.adminIcon);
-                kind = "Admin";
-                break;
-            case 3:
-                icon = sizeIcon(GUIMain.currentSettings.staffIcon);
-                kind = "Staff";
-                break;
-            case 4:
-                icon = sizeIcon(GUIMain.currentSettings.turboIcon);
-                kind = "Turbo";
-                break;
-            case 5:
-                URL subIcon = FaceManager.getSubIcon(channel);
-                if (subIcon == null) return;
-                icon = sizeIcon(subIcon);
-                kind = "Subscriber";
-                break;
-            case 6://donation normal
-                icon = sizeIcon(ChatPane.class.getResource("/image/green.png"));
-                kind = "Donator";
-                break;
-            case 7:
-                icon = sizeIcon(ChatPane.class.getResource("/image/bronze.png"));
-                kind = "Donator";
-                break;
-            case 8:
-                icon = sizeIcon(ChatPane.class.getResource("/image/silver.png"));
-                kind = "Donator";
-                break;
-            case 9:
-                icon = sizeIcon(ChatPane.class.getResource("/image/gold.png"));
-                kind = "Donator";
-                break;
-            case 10:
-                icon = sizeIcon(ChatPane.class.getResource("/image/diamond.png"));
-                kind = "Donator";
-                break;
-            case 11:
-                icon = sizeIcon(ChatPane.class.getResource("/image/globalmod.png"));
-                kind = "Global Mod";
-                break;
-            default:
-                icon = sizeIcon(GUIMain.currentSettings.modIcon);
-                kind = "Mod";
-                break;
-        }
+        ImageIcon icon = Icons.getIcon(type, channel);
         StyleConstants.setIcon(attrs, icon);
         try {
             print(m, " ", null);
-            print(m, kind, attrs);
         } catch (Exception e) {
             GUIMain.log("INSERT ICON " + e.getMessage());
         }

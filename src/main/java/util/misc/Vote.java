@@ -1,6 +1,5 @@
 package util.misc;
 
-import com.sun.istack.internal.NotNull;
 import gui.GUIMain;
 import util.Timer;
 import util.Utils;
@@ -125,7 +124,7 @@ public class Vote extends Thread {
         }
 
         @Override
-        public int compareTo(@NotNull Option o) {
+        public int compareTo(Option o) {
             if (o.count > this.count) {
                 return -1;
             } else if (o.count == this.count) {

@@ -77,7 +77,7 @@ public class Raffle extends Thread {
         while (!GUIMain.shutDown && timer.isRunning()) {
             try {
                 Thread.sleep(50);
-            } catch (Exception ignored) {
+            } catch (InterruptedException ignored) {
             }
         }
         //pick the user

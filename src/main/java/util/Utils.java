@@ -1136,7 +1136,7 @@ public class Utils {
      * @return true if the Integers meet the specification.
      */
     public static boolean checkInts(int r, int g, int b) {
-        double luma = (0.2126 * (double) r) + (0.7152 * (double) g) + (0.0722 * (double) b);
+        double luma = (0.3 * (double) r) + (0.6 * (double) g) + (0.1 * (double) b);
         return luma > (double) 35;
     }
 
