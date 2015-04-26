@@ -45,6 +45,7 @@ public class Settings {
     //accounts
     public AccountManager accountManager = null;
     public ChannelManager channelManager = null;
+    public String lastFMAccount = "";
 
     //donations
     public DonationManager donationManager = null;
@@ -53,7 +54,6 @@ public class Settings {
     //custom directories
     public String defaultSoundDir = "";
     public String defaultFaceDir = "";
-    public String nowPlayingFile = "";
 
     //custom sound
     public Sound subSound = null;
@@ -139,6 +139,7 @@ public class Settings {
         new Thread(() -> {
             loadWindow();
             accountManager = new AccountManager();
+            channelManager = new ChannelManager();
             accountManager.start();
             donationManager = new DonationManager();
             subscriberManager = new SubscriberManager();
@@ -283,8 +284,7 @@ public class Settings {
             try {
                 p.load(new FileInputStream(defaultsFile));
                 subscriberManager.ranInitialCheck = Boolean.parseBoolean(p.getProperty("RanInitSub", "false"));
-                nowPlayingFile = p.getProperty("NowPlayingFile", "");
-                if (!nowPlayingFile.endsWith("txt")) nowPlayingFile = "";
+                lastFMAccount = p.getProperty("LastFMAccount", "");
                 String donation_client_id = p.getProperty("DCID", "");
                 String donation_client_oauth = p.getProperty("DCOAUTH", "");
                 if (!"".equals(donation_client_id)) donationManager.setClientID(donation_client_id);
@@ -354,7 +354,7 @@ public class Settings {
         }
         if (type == 1) {//deaults data
             p.put("RanInitSub", String.valueOf(subscriberManager.ranInitialCheck));
-            p.put("NowPlayingFile", nowPlayingFile);
+            p.put("LastFMAccount", lastFMAccount);
             p.put("DCID", donationManager.getClientID());
             p.put("DCOAUTH", donationManager.getAccessCode());
             if (defaultFaceDir != null && !defaultFaceDir.equals("")) {

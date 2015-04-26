@@ -478,7 +478,7 @@ public class PircBot implements ReplyConstants {
 
             //catch the subscriber message
             if (sourceNick.equalsIgnoreCase("twitchnotify")) {
-                if (line.contains("subscribed!")) {
+                if (line.contains("subscribed!") || line.contains("subscribed for")) {
                     //we dont want to get the hosted sub messages, Botnak should be in that chat for that
                     String user = content.split(" ")[0];
                     getChannelManager().handleSubscriber(target, user);

@@ -25,5 +25,4 @@ public class NewTabListener extends MouseAdapter {
         }
         super.mouseReleased(e);
     }
-
 }

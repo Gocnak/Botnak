@@ -61,11 +61,8 @@ public class Constants {
             if (f != null) {
                 if (f.isDirectory()) return true;
                 String ext = Utils.getExtension(f);
-                if (ext != null) {
-                    if (ext.equals("wav")) {
-                        return true;
-                    }
-                }
+                if (ext != null && ext.equals(".wav"))
+                    return true;
             }
             return false;
         }

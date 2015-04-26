@@ -4,6 +4,7 @@ import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.GUIMain;
 import irc.account.Oauth;
+import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import lib.pircbot.org.jibble.pircbot.User;
 import util.comm.Command;
@@ -887,26 +888,40 @@ public class Utils {
      */
     public static Response getCurrentlyPlaying() {
         Response toReturn = new Response();
-        if ("".equals(GUIMain.currentSettings.nowPlayingFile)) {
-            toReturn.setResponseText("Failed to fetch current playing song, the now playing file is null!");
+        if ("".equals(GUIMain.currentSettings.lastFMAccount)) {
+            toReturn.setResponseText("Failed to fetch current playing song, the user has no last.fm account set!");
             return toReturn;
         }
         //TODO check the song requests engine to see if that is currently playing
-        File f = new File(GUIMain.currentSettings.nowPlayingFile);
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(f.toURI().toURL().openStream()))) {
+        String tracks_url = "http://www.last.fm/user/" + GUIMain.currentSettings.lastFMAccount + "/now";
+        try {
+            URL request = new URL("http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
+                    GUIMain.currentSettings.lastFMAccount + "&api_key=e0d3467ebb54bb110787dd3d77705e1a&format=json");
+            BufferedReader br = new BufferedReader(new InputStreamReader(request.openStream()));
             String line = br.readLine();
-            if (line != null) {
+            br.close();
+            JSONObject outermost = new JSONObject(line);
+            JSONObject recentTracks = outermost.getJSONObject("recenttracks");
+            JSONArray songsArray = recentTracks.getJSONArray("track");
+            if (songsArray.length() > 0) {
+                JSONObject mostRecent = songsArray.getJSONObject(0);
+                JSONObject artist = mostRecent.getJSONObject("artist");
+                String artistOfSong = artist.getString("#text");
+                String nameOfSong = mostRecent.getString("name");
+                if (mostRecent.has("@attr")) {//it's the current song
+                    toReturn.setResponseText("The current song is: " + artistOfSong + " - " + nameOfSong + " || " + tracks_url);
+                } else {
+                    toReturn.setResponseText("The most recent song was: " + artistOfSong + " - " + nameOfSong + " || " + tracks_url);
+                }
                 toReturn.wasSuccessful();
-                toReturn.setResponseText("The current song is: " + line);
             } else {
-                toReturn.setResponseText("There is no song currently playing!");
+                toReturn.setResponseText("Failed to fetch current song; last.fm shows no recent tracks!");
             }
         } catch (Exception e) {
-            toReturn.setResponseText("Failed to fetch current playing song due to Exception: " + e.getMessage());
+            toReturn.setResponseText("Failed to fetch current playing song due to an Exception!");
         }
         return toReturn;
     }
-
 
     /**
      * Gets stream uptime.

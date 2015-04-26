@@ -145,5 +145,4 @@ public class ChannelManager {
         channels.clear();
         users.clear();
     }
-
 }

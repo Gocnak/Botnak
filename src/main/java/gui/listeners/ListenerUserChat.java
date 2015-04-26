@@ -23,6 +23,12 @@ public class ListenerUserChat extends KeyAdapter {
 
     public void keyReleased(KeyEvent e) {
         int initial = GUIMain.userResponsesIndex;
+        if (suggestion != null) {
+            if (!userChat.getText().contains("@")) {
+                suggestion.hide();
+                shouldShow = false;
+            }
+        }
         if (e.getKeyCode() == KeyEvent.VK_ENTER) {
             if (suggestion != null) {
                 final String select = suggestion.getSelection();
@@ -35,7 +41,9 @@ public class ListenerUserChat extends KeyAdapter {
                 EventQueue.invokeLater(GUIMain.instance::chatButtonActionPerformed);
             }
         } else if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
-            if (suggestion != null) showSuggestionLater();
+            if (suggestion != null) {
+                showSuggestionLater();
+            }
         } else if (e.getKeyCode() == KeyEvent.VK_TAB) {
             if (suggestion != null) {
                 final String select = this.suggestion.getSelection();
@@ -76,17 +84,15 @@ public class ListenerUserChat extends KeyAdapter {
         } else if (e.getKeyChar() == '@') {
             shouldShow = true;
         }
-
         if (initial != GUIMain.userResponsesIndex) {
             EventQueue.invokeLater(() -> GUIMain.userChat.setText(GUIMain.userResponses.get(GUIMain.userResponsesIndex)));
         }
-
     }
 
 
-    static boolean shouldShow = false;
+    private static boolean shouldShow = false;
 
-    class SuggestionPanel {
+    private class SuggestionPanel {
         private JList<String> list;
         private JPopupMenu popupMenu;
         private String subWord;
@@ -181,7 +187,12 @@ public class ListenerUserChat extends KeyAdapter {
         if (start > position) {
             return;
         }
-        String subWord = text.substring(start, position).toLowerCase().replace("@", "");
+        String subText = text.substring(start, position).toLowerCase();
+        if ("".equals(subText) || !subText.contains("@")) {
+            shouldShow = false;
+            return;
+        }
+        String subWord = subText.replace("@", "");
         if (subWord.length() < 3) {
             return;
         }

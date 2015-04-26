@@ -5,7 +5,6 @@ import irc.account.Task;
 import irc.message.Message;
 import irc.message.MessageHandler;
 import irc.message.MessageQueue;
-import lib.pircbot.org.jibble.pircbot.ChannelManager;
 import thread.heartbeat.BanQueue;
 import util.Utils;
 
@@ -46,6 +45,7 @@ public class IRCViewer extends MessageHandler {
             GUIMain.currentSettings.accountManager.setUserAccount(null);
         }
         GUIMain.viewer = null;
+        GUIMain.currentSettings.channelManager.dispose();
     }
 
     @Override
@@ -118,7 +118,6 @@ public class IRCViewer extends MessageHandler {
 
     @Override
     public void onConnect() {
-        GUIMain.currentSettings.channelManager = new ChannelManager();
         GUIMain.channelSet.forEach(this::doConnect);
         GUIMain.updateTitle(null);
     }
