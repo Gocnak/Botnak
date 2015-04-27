@@ -108,6 +108,7 @@ public class GUIMain extends JFrame {
     }
 
     public void chatButtonActionPerformed() {
+        userResponsesIndex = 0;
         if (GUIMain.currentSettings.accountManager.getViewer() == null) return;
         String channel = channelPane.getTitleAt(channelPane.getSelectedIndex());
         String userInput = userChat.getText().replaceAll("\n", "");
@@ -285,6 +286,7 @@ public class GUIMain extends JFrame {
                 blank.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
                 blankParent.setViewportView(blank);
                 channelPane.addTab("+", blankParent);
+                channelPane.setEnabledAt(channelPane.getTabCount() - 1, false);
                 channelPane.addMouseListener(new NewTabListener());
             }
 

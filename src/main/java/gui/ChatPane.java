@@ -1,10 +1,10 @@
 package gui;
 
 import face.FaceManager;
+import face.IconEnum;
+import face.Icons;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
-import gui.Icons;
-import gui.IconEnum;
 import irc.Donor;
 import irc.message.Message;
 import irc.message.MessageQueue;
@@ -327,31 +327,31 @@ public class ChatPane implements DocumentListener {
             }
             StyleConstants.setForeground(user, c);
             if (channel.substring(1).equals(sender)) {
-                insertIcon(m, IconEnum.Broadcaster, null);
+                insertIcon(m, IconEnum.BROADCASTER, null);
             }
             if (u.isOp(channel)) {
                 if (!channel.substring(1).equals(sender) && !u.isStaff() && !u.isAdmin() && !u.isGlobalMod()) {//not the broadcaster again
-                    insertIcon(m, IconEnum.None, null);
+                    insertIcon(m, IconEnum.MOD, null);
                 }
             }
             if (u.isGlobalMod()) {
-                insertIcon(m, IconEnum.GlobalMod, null);
+                insertIcon(m, IconEnum.GLOBALMOD, null);
             }
             if (u.isDonor()) {
                 insertIcon(m, u.getDonationStatus(), null);
             }
             if (u.isStaff()) {
-                insertIcon(m, IconEnum.Staff, null);
+                insertIcon(m, IconEnum.STAFF, null);
             }
             if (u.isAdmin()) {
-                insertIcon(m, IconEnum.Admin, null);
+                insertIcon(m, IconEnum.ADMIN, null);
             }
             boolean isSubscriber = u.isSubscriber(channel);
             if (isSubscriber) {
-                insertIcon(m, IconEnum.Subscriber, channel);
+                insertIcon(m, IconEnum.SUBSCRIBER, channel);
             }
             if (u.isTurbo()) {
-                insertIcon(m, IconEnum.Turbo, null);
+                insertIcon(m, IconEnum.TURBO, null);
             }
             //name stuff
             print(m, " ", GUIMain.norm);
@@ -467,20 +467,21 @@ public class ChatPane implements DocumentListener {
             Message message = m.getLocal();
             print(m, "\n", GUIMain.norm);
             for (int i = 0; i < 5; i++) {
-                insertIcon(m, status, (status == IconEnum.Subscriber ? message.getChannel() : null));
+                insertIcon(m, status, (status == IconEnum.SUBSCRIBER ? message.getChannel() : null));
             }
-            print(m, " " + message.getContent() + (status == IconEnum.Subscriber ? (" (" + (subCount + 1) + ") ") : " "), GUIMain.norm);
+            print(m, " " + message.getContent() + (status == IconEnum.SUBSCRIBER ? (" (" + (subCount + 1) + ") ") : " "), GUIMain.norm);
             for (int i = 0; i < 5; i++) {
-                insertIcon(m, status, (status == IconEnum.Subscriber ? message.getChannel() : null));
+                insertIcon(m, status, (status == IconEnum.SUBSCRIBER ? message.getChannel() : null));
             }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
-        if (status == IconEnum.Subscriber) subCount++;
+        boolean shouldIncrement = status == IconEnum.SUBSCRIBER && m.getLocal().getExtra() != null;//checking for repeat messages
+        if (shouldIncrement) subCount++;
     }
 
     public void onSub(MessageWrapper m) {
-        onIconMessage(m, IconEnum.Subscriber);
+        onIconMessage(m, IconEnum.SUBSCRIBER);
     }
 
     public void onDonation(MessageWrapper m) {
@@ -490,10 +491,11 @@ public class ChatPane implements DocumentListener {
 
     public void insertIcon(MessageWrapper m, IconEnum type, String channel) {
         SimpleAttributeSet attrs = new SimpleAttributeSet();
-        ImageIcon icon = Icons.getIcon(type, channel);
-        StyleConstants.setIcon(attrs, icon);
+        Icons.BotnakIcon icon = Icons.getIcon(type, channel);
+        StyleConstants.setIcon(attrs, icon.getImage());
         try {
             print(m, " ", null);
+            print(m, icon.getType().type, attrs);
         } catch (Exception e) {
             GUIMain.log("INSERT ICON " + e.getMessage());
         }

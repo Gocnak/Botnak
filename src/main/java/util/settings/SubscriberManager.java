@@ -96,7 +96,7 @@ public class SubscriberManager {
                     int streak = s.get().getStreak();
                     int monthsSince = (int) s.get().getStarted().until(LocalDateTime.now(), ChronoUnit.MONTHS);
                     if (monthsSince > streak) {
-                        String content = s.get().getName() + " has continued their subscription for "
+                        String content = s.get().getName() + " has continued their subscription for over "
                                 + (monthsSince) + ((monthsSince) > 1 ? " months!" : " month!");
                         MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.SUB_NOTIFY).setContent(content));
                         s.get().incrementStreak(monthsSince - streak);//this will most likely be 1
@@ -114,7 +114,8 @@ public class SubscriberManager {
 
                     //or twitchnotify could have been a douchenozzle and did not send the message
                     String content = s.get().getName() + " has RE-subscribed offline!";
-                    //TODO potentially make the bot send the message to the stream? currentSettings.sendSubMessages
+                    //TODO if currentSettings.sendSubMessages {
+                    GUIMain.currentSettings.accountManager.getBot().sendMessage(channel, ".me " + u.getNick() + " has just RE-subscribed!");
                     MessageQueue.addMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
                     s.get().resetStreak();
                     s.get().setStarted(LocalDateTime.now());
@@ -128,7 +129,8 @@ public class SubscriberManager {
                 // this is a new, offline sub. Botnak is going to throw a new sub message just
                 // as if they had subbed the instant they sent the message
                 //or twitchnotify could have been a douchenozzle and did not send the message
-                //TODO potentially make the bot send the message to the stream? currentSettings.sendSubMessages
+                //TODO if currentSettings.sendSubMessages {
+                GUIMain.currentSettings.accountManager.getBot().sendMessage(channel, ".me " + u.getNick() + " has just subscribed!");
                 String content = u.getNick().toLowerCase() + " has subscribed offline!";
                 MessageQueue.addMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
                 addSub(new Subscriber(u.getNick().toLowerCase(), LocalDateTime.now(), true, 0));
@@ -220,7 +222,8 @@ public class SubscriberManager {
                 }
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            if (!e.getMessage().contains("oauth_token"))
+                GUIMain.log(e.getMessage());
         }
     }
 }

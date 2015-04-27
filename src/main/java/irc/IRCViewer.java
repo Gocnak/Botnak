@@ -5,7 +5,6 @@ import irc.account.Task;
 import irc.message.Message;
 import irc.message.MessageHandler;
 import irc.message.MessageQueue;
-import lib.pircbot.org.jibble.pircbot.ChannelManager;
 import thread.heartbeat.BanQueue;
 import util.Utils;
 
@@ -46,6 +45,7 @@ public class IRCViewer extends MessageHandler {
             GUIMain.currentSettings.accountManager.setUserAccount(null);
         }
         GUIMain.viewer = null;
+        GUIMain.currentSettings.channelManager.dispose();
     }
 
     @Override
@@ -80,15 +80,20 @@ public class IRCViewer extends MessageHandler {
 
     @Override
     public void onNewSubscriber(String channel, String line, String newSub) {
-        if (line.endsWith("subscribed!")) {//new sub
-            if (channel.substring(1).equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
+        Message m = new Message().setChannel(channel).setType(Message.MessageType.SUB_NOTIFY).setContent(line);
+        if (channel.substring(1).equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
+            if (line.endsWith("subscribed!")) {//new sub
                 if (GUIMain.currentSettings.subscriberManager.addNewSubscriber(newSub, channel)) return;
+            } else {
+                //it's the (blah blah has subbed for more than 1 month!)
+                //Botnak already handles this, so we can construct this message again since the user feels entitled
+                //to tell us they've remained subbed... again
+                //the catch is the message they send isn't automatic, so there's a chance it won't be sent (ex: on an IRC client, shy, etc)
+                //HOWEVER, we will make sure Botnak does not increment the sub counter for this
+                m.setExtra(false);//anything other than "null" works
             }
-        } //else it's the (blah blah has subbed for more than 1 month!)
-        //Botnak already handles this, so we can construct this message again since the user feels entitled
-        //to tell us they've remained subbed... again
-        //the catch is the message they send isn't automatic, so there's a chance it won't be sent (ex: on an IRC client, shy, etc)
-        MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.SUB_NOTIFY).setContent(line));
+        } //else it's someone else's channel, just print the message
+        MessageQueue.addMessage(m);
     }
 
     @Override
@@ -118,7 +123,6 @@ public class IRCViewer extends MessageHandler {
 
     @Override
     public void onConnect() {
-        GUIMain.currentSettings.channelManager = new ChannelManager();
         GUIMain.channelSet.forEach(this::doConnect);
         GUIMain.updateTitle(null);
     }

@@ -14,7 +14,7 @@ found at http://www.jibble.org/licenses/
 package lib.pircbot.org.jibble.pircbot;
 
 import gui.GUIMain;
-import gui.IconEnum;
+import face.IconEnum;
 import irc.Donor;
 
 import java.awt.*;

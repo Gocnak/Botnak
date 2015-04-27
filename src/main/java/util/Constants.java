@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 public class Constants {
 
-    public static final double VERSION = 2.29;
+    public static final double VERSION = 2.3;
 
     /**
      * All users may do it
@@ -61,11 +61,8 @@ public class Constants {
             if (f != null) {
                 if (f.isDirectory()) return true;
                 String ext = Utils.getExtension(f);
-                if (ext != null) {
-                    if (ext.equals("wav")) {
-                        return true;
-                    }
-                }
+                if (ext != null && ext.equals(".wav"))
+                    return true;
             }
             return false;
         }
@@ -120,5 +117,4 @@ public class Constants {
             new NamedColor("BlueViolet", 138, 43, 226),
             new NamedColor("SpringGreen", 0, 255, 127)
     };
-
 }

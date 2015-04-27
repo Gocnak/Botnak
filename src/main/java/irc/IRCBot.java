@@ -405,7 +405,8 @@ public class IRCBot extends MessageHandler {
                             break;
 
                     }
-                    if (commandResponse != null) getBot().sendMessage(channel, commandResponse.getResponseText());
+                    if (commandResponse != null && !"".equals(commandResponse.getResponseText()))
+                        getBot().sendMessage(channel, commandResponse.getResponseText());
                 }
                 //text command
                 Command c = Utils.getCommand(trigger);

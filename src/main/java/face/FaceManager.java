@@ -72,7 +72,7 @@ public class FaceManager {
         }
     }
 
-    public static enum FACE_TYPE {
+    public enum FACE_TYPE {
         NAME_FACE,
         TWITCH_FACE,
         NORMAL_FACE
@@ -460,7 +460,7 @@ public class FaceManager {
         }
         try {
             if (url.contains("imgur.com") && !url.contains("i.imgur"))
-                url = "http://i.imgur.com/" + url.substring(url.lastIndexOf("/"));
+                url = "http://i.imgur.com/" + url.substring(url.lastIndexOf("/") + 1);//fixes URLs of base-imgur
             File toSave = new File(directory + File.separator + name);
             if (download(url, toSave)) {
                 if (type == FACE_TYPE.NORMAL_FACE) {
@@ -475,7 +475,8 @@ public class FaceManager {
                     toReturn.setResponseText("Successfully added the nameface for user: " + name + " !");
                 }
                 toReturn.wasSuccessful();
-
+            } else {
+                toReturn.setResponseText("Failed to download the face, perhaps a bad URL!");
             }
         } catch (Exception e) {
             toReturn.setResponseText("Failed to download face due to Exception: " + e.getMessage());

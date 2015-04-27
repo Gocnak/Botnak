@@ -9,8 +9,9 @@ import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Scanner;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class GhostingServer {
@@ -29,10 +30,16 @@ public class GhostingServer {
          * -debug
          * -port xxxx
          */
-        System.setProperty("java.net.preferIPv4Stack", "true");
+        Scanner in = new Scanner(System.in);
+        String url = in.nextLine();
+        if (url.contains("imgur.com") && !url.contains("i.imgur")) {
+            url = "http://i.imgur.com/" + url.substring(url.lastIndexOf("/") + 1);
+        }
+        System.out.println("URL IS: " + url);
+        /*System.setProperty("java.net.preferIPv4Stack", "true");
         handleArgs(args);
         if (machineIP == null) machineIP = InetAddress.getLocalHost();
-        init();
+        init();*/
     }
 
     public static void init() {
@@ -262,65 +269,68 @@ public class GhostingServer {
                 if (socket == null) break;
                 byte[] buff = new byte[512];
                 DatagramPacket request = new DatagramPacket(buff, buff.length);
+                boolean rec = false;
                 try {
                     socket.receive(request);
+                    rec = true;
                 } catch (Exception e) {
                     if (!(e instanceof SocketTimeoutException))
                         e.printStackTrace();
                 }
-
-                DataCounterStream dcs = new DataCounterStream(request.getData(), new DataInputStream(new ByteArrayInputStream(request.getData())));
-                char indicator = dcs.getIndicator();
-                if (indicator == 'l') {
-                    String name = dcs.getString();
-                    User u = getUser(name);
-                    //is the user even valid?
-                    if (u != null) {
-                        //update the map, velocity, and location
-                        String map = dcs.getString();
-                        if (u.getMap() == null || !u.getMap().equalsIgnoreCase(map)) {
-                            u.setMap(map);
+                if (rec) {
+                    DataCounterStream dcs = new DataCounterStream(request.getData(), new DataInputStream(new ByteArrayInputStream(request.getData())));
+                    char indicator = dcs.getIndicator();
+                    if (indicator == 'l') {
+                        String name = dcs.getString();
+                        User u = getUser(name);
+                        //is the user even valid?
+                        if (u != null) {
+                            //update the map, velocity, and location
+                            String map = dcs.getString();
+                            if (u.getMap() == null || !u.getMap().equalsIgnoreCase(map)) {
+                                u.setMap(map);
+                            }
+                            float vx = dcs.getFloat();
+                            float vy = dcs.getFloat();
+                            float vz = dcs.getFloat();
+                            u.setVelocity(vx, vy, vz);
+                            float x = dcs.getFloat();
+                            float y = dcs.getFloat();
+                            float z = dcs.getFloat();
+                            u.setLocation(x, y, z);
+                            //update the user with the other ghost data
+                            sendExistingLocational(socket, request, u);
+                            //add/remove new ghosts if there are any
+                            u.completeEvents(socket, request);
                         }
-                        float vx = dcs.getFloat();
-                        float vy = dcs.getFloat();
-                        float vz = dcs.getFloat();
-                        u.setVelocity(vx, vy, vz);
-                        float x = dcs.getFloat();
-                        float y = dcs.getFloat();
-                        float z = dcs.getFloat();
-                        u.setLocation(x, y, z);
-                        //update the user with the other ghost data
-                        sendExistingLocational(socket, request, u);
-                        //add/remove new ghosts if there are any
-                        u.completeEvents(socket, request);
-                    }
-                } else if (indicator == 'c') {
-                    String name = dcs.getString();
-                    if (getUser(name) != null) {
-                        UserEventType kicked = UserEventType.KICK_USER;
-                        kicked.reason = "Change your gh_name to something unique, there already is a " + name + " on the server!";
-                        sendKick(socket, request, null, kicked);
-                    } else {
-                        int trailLength = dcs.readUnsignedByte();
-                        int trailRed = dcs.readUnsignedByte();
-                        int trailGreen = dcs.readUnsignedByte();
-                        int trailBlue = dcs.readUnsignedByte();
-                        int ghostRed = dcs.readUnsignedByte();
-                        int ghostGreen = dcs.readUnsignedByte();
-                        int ghostBlue = dcs.readUnsignedByte();
-                        User u = new User(name, trailLength, trailRed, trailGreen, trailBlue, ghostRed, ghostGreen, ghostBlue);
-                        log("User received! " + name + " trail: " + trailLength + " colors: " + u.getGhostColor().toString());
-                        sendExistingUsers(socket, request);
-                        createUserEvent(u, UserEventType.NEW_USER);
-                        addNewUser(u);
-                    }
-                } else if (indicator == 'd') {
-                    //TODO verify the sending packet -- will this actually be a problem?
-                    String name = dcs.getString();
-                    User u = getUser(name);
-                    if (u != null) {
-                        log(u.getName() + " has disconnected!");
-                        createUserEvent(u, UserEventType.DISCONNECT);
+                    } else if (indicator == 'c') {
+                        String name = dcs.getString();
+                        if (getUser(name) != null) {
+                            UserEventType kicked = UserEventType.KICK_USER;
+                            kicked.reason = "Change your gh_name to something unique, there already is a " + name + " on the server!";
+                            sendKick(socket, request, null, kicked);
+                        } else {
+                            int trailLength = dcs.readUnsignedByte();
+                            int trailRed = dcs.readUnsignedByte();
+                            int trailGreen = dcs.readUnsignedByte();
+                            int trailBlue = dcs.readUnsignedByte();
+                            int ghostRed = dcs.readUnsignedByte();
+                            int ghostGreen = dcs.readUnsignedByte();
+                            int ghostBlue = dcs.readUnsignedByte();
+                            User u = new User(name, trailLength, trailRed, trailGreen, trailBlue, ghostRed, ghostGreen, ghostBlue);
+                            log("User received! " + name + " trail: " + trailLength + " colors: " + u.getGhostColor().toString());
+                            sendExistingUsers(socket, request);
+                            createUserEvent(u, UserEventType.NEW_USER);
+                            addNewUser(u);
+                        }
+                    } else if (indicator == 'd') {
+                        //TODO verify the sending packet -- will this actually be a problem?
+                        String name = dcs.getString();
+                        User u = getUser(name);
+                        if (u != null) {
+                            log(u.getName() + " has disconnected!");
+                            createUserEvent(u, UserEventType.DISCONNECT);
+                        }
                     }
                 }
             }
@@ -551,11 +561,7 @@ public class GhostingServer {
      * @return The number of users with the given name.
      */
     public static int getUserCount(String name) {
-        int count = 0;
-        for (User u : userSet) {
-            if (u.getName().equalsIgnoreCase(name)) count++;
-        }
-        return count;
+        return (int) userSet.stream().filter(u -> u.getName().equalsIgnoreCase(name)).count();
     }
 
     /**
@@ -569,14 +575,14 @@ public class GhostingServer {
     }
 
     public static class User {
-        String name, map;
-        Velocity vel;
-        Location loc;
-        int trailLength;
-        Color ghostColor, trailColor;
-        ArrayList<UserEvent> events;
-        long lastUpdate;
-        long ping = 0;
+        private String name, map;
+        private Velocity vel;
+        private Location loc;
+        private int trailLength;
+        private Color ghostColor, trailColor;
+        private CopyOnWriteArrayList<UserEvent> events;
+        private long lastUpdate;
+        private long ping = 0;
 
         public User(String name, int tl, int tr, int tg, int tb, int gr, int gg, int gb) {
             this.name = name;
@@ -586,7 +592,7 @@ public class GhostingServer {
             trailColor = new Color(tr, tg, tb);
             loc = new Location(0, 0, 0);
             vel = new Velocity(0, 0, 0);
-            events = new ArrayList<>();
+            events = new CopyOnWriteArrayList<>();
         }
 
         public void setLocation(float x, float y, float z) {
@@ -636,7 +642,7 @@ public class GhostingServer {
             return trailLength;
         }
 
-        public synchronized void addEvent(UserEvent newEvent) {
+        public void addEvent(UserEvent newEvent) {
             events.add(newEvent);
         }
 
@@ -644,7 +650,7 @@ public class GhostingServer {
             return !events.isEmpty();
         }
 
-        public synchronized void completeEvents(DatagramSocket sock, DatagramPacket pack) {
+        public void completeEvents(DatagramSocket sock, DatagramPacket pack) {
             if (!hasEvents()) return;
             Iterator<UserEvent> iterator = events.iterator();
             while (iterator.hasNext()) {
@@ -665,10 +671,20 @@ public class GhostingServer {
             System.out.printf("Name: %s%nCurrent map: %s%nTrail length: %d seconds%nGhost color: %s%nTrail color: %s%n%s%n%s%nHas events: %b%nPing: %d ms",
                     name, map, trailLength, ghostColor.toString(), trailColor.toString(), loc.toString(), vel.toString(), hasEvents(), (int) ping);
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            return (obj instanceof User) &&
+                    ((User) obj).getGhostColor().equals(this.getGhostColor()) &&
+                    ((User) obj).getName().equals(this.getName()) &&
+                    ((User) obj).getMap().equals(this.getMap()) &&
+                    ((User) obj).getTrailColor().equals(this.getTrailColor()) &&
+                    ((User) obj).getTrailLength() == this.getTrailLength();
+        }
     }
 
     public static class Velocity {
-        float vx, vy, vz;
+        private float vx, vy, vz;
 
         public Velocity(float x, float y, float z) {
             vx = x;
@@ -700,7 +716,7 @@ public class GhostingServer {
     }
 
     public static class Location {
-        float x, y, z;
+        private float x, y, z;
 
         public Location(float x, float y, float z) {
             this.x = x;
@@ -732,15 +748,13 @@ public class GhostingServer {
     }
 
     public static class DataCounterStream {
-        int totalBytesRead;
-        DataInputStream dis;
-        ByteBuffer buf;
-        byte[] buffer;
+        private int totalBytesRead;
+        private DataInputStream dis;
+        private ByteBuffer buf;
 
         public DataCounterStream(byte[] buffer, DataInputStream dis) {
             totalBytesRead = 0;
             this.dis = dis;
-            this.buffer = buffer;
             buf = ByteBuffer.wrap(buffer).asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
         }
 

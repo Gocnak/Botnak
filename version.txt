@@ -1,12 +1,18 @@
-2.29
+2.3
 
 Added:
 
-Global Moderator support (closes #58)
-Message clearing/cleanup is now on MessageQueue
+Full !song support with last.fm (closes #53 but see the wiki on github)
+Icon enums (one step closer towards #57, thanks @jbzdarkid!)
+Donation total for a user printed out upon another donation
 
 Fixed:
 
-Subscriber sounds now don't trigger twice
-Font issue (closes #68)
-Null Pointer with checking Subscribers (closes #69)
+FileChooser for Sounds now compares correctly (closes #71)
+Channel manager null fix (closes #73)
+User Chat index sets correctly (you can up arrow -> enter spam again)
+Issue with User Suggestion panel still showing
+Imgur URLs are corrected to i.imgur URLs (namefaces)
+Luminosity values should be better now
+Subscriber count streak does not increase for repeat messages
+Minor code improvements (thanks @jbzdarkid and @tsteinholz !)
