@@ -205,9 +205,9 @@ public class HiFiIcons extends BaseIcons {
 
     private static class CheckBoxIcon implements Icon, UIResource, Serializable {
 
-        private static Icon checkIcon = new LazyImageIcon("hifi/icons/CheckSymbol.gif");
-        private static Icon checkPressedIcon = new LazyImageIcon("hifi/icons/CheckPressedSymbol.gif");
-        private static Icon baseCheckIcon = new LazyImageIcon("icons/CheckSymbol.gif");
+        private static final Icon checkIcon = new LazyImageIcon("hifi/icons/CheckSymbol.gif");
+        private static final Icon checkPressedIcon = new LazyImageIcon("hifi/icons/CheckPressedSymbol.gif");
+        private static final Icon baseCheckIcon = new LazyImageIcon("icons/CheckSymbol.gif");
 
         private final int WIDTH = 17;
         private final int HEIGHT = 17;
@@ -288,8 +288,8 @@ public class HiFiIcons extends BaseIcons {
 
     private static class RadioButtonIcon implements Icon, UIResource, Serializable {
 
-        private static Icon radioIcon = new LazyImageIcon("hifi/icons/RadioSymbol.gif");
-        private static Icon baseRadioIcon = new LazyImageIcon("icons/RadioSymbol.gif");
+        private static final Icon radioIcon = new LazyImageIcon("hifi/icons/RadioSymbol.gif");
+        private static final Icon baseRadioIcon = new LazyImageIcon("icons/RadioSymbol.gif");
         private final int WIDTH = 16;
         private final int HEIGHT = 16;
 

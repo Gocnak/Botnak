@@ -38,8 +38,8 @@ public class NoireLookAndFeel extends AbstractLookAndFeel {
 
     private static NoireDefaultTheme myTheme = null;
 
-    private static final ArrayList themesList = new ArrayList();
-    private static final HashMap themesMap = new HashMap();
+    private static final ArrayList<String> themesList = new ArrayList<>();
+    private static final HashMap<String, Properties> themesMap = new HashMap<>();
     private static final Properties defaultProps = new Properties();
     private static final Properties smallFontProps = new Properties();
     private static final Properties largeFontProps = new Properties();
@@ -89,11 +89,11 @@ public class NoireLookAndFeel extends AbstractLookAndFeel {
 
     public static void setTheme(String name) {
         AbstractTheme.setInternalName(name);
-        setTheme((Properties) themesMap.get(name));
+        setTheme(themesMap.get(name));
     }
 
     public static void setTheme(String name, String licenseKey, String logoString) {
-        Properties props = (Properties) themesMap.get(name);
+        Properties props = themesMap.get(name);
         if (props != null) {
             props.put("licenseKey", licenseKey);
             props.put("logoString", logoString);
@@ -106,7 +106,7 @@ public class NoireLookAndFeel extends AbstractLookAndFeel {
         if (myTheme == null) {
             myTheme = new NoireDefaultTheme();
         }
-        if ((myTheme != null) && (themesProps != null)) {
+        if (themesProps != null) {
             myTheme.setUpColor();
             myTheme.setProperties(themesProps);
             myTheme.setUpColorArrs();

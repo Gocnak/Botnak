@@ -30,42 +30,41 @@ import javax.swing.border.Border;
  */
 public interface AbstractBorderFactory {
 
-    public Border getFocusFrameBorder();
+    Border getFocusFrameBorder();
 
-    public Border getButtonBorder();
+    Border getButtonBorder();
 
-    public Border getToggleButtonBorder();
+    Border getToggleButtonBorder();
 
-    public Border getTextBorder();
+    Border getTextBorder();
 
-    public Border getSpinnerBorder();
+    Border getSpinnerBorder();
 
-    public Border getTextFieldBorder();
+    Border getTextFieldBorder();
 
-    public Border getComboBoxBorder();
+    Border getComboBoxBorder();
 
-    public Border getTableHeaderBorder();
+    Border getTableHeaderBorder();
 
-    public Border getTableScrollPaneBorder();
+    Border getTableScrollPaneBorder();
 
-    public Border getScrollPaneBorder();
+    Border getScrollPaneBorder();
 
-    public Border getTabbedPaneBorder();
+    Border getTabbedPaneBorder();
 
-    public Border getMenuBarBorder();
+    Border getMenuBarBorder();
 
-    public Border getMenuItemBorder();
+    Border getMenuItemBorder();
 
-    public Border getPopupMenuBorder();
+    Border getPopupMenuBorder();
 
-    public Border getInternalFrameBorder();
+    Border getInternalFrameBorder();
 
-    public Border getPaletteBorder();
+    Border getPaletteBorder();
 
-    public Border getToolBarBorder();
+    Border getToolBarBorder();
 
-    public Border getDesktopIconBorder();
+    Border getDesktopIconBorder();
 
-    public Border getProgressBarBorder();
+    Border getProgressBarBorder();
 }
-

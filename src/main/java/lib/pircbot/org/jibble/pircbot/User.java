@@ -13,8 +13,8 @@ found at http://www.jibble.org/licenses/
 
 package lib.pircbot.org.jibble.pircbot;
 
-import gui.GUIMain;
 import face.IconEnum;
+import gui.GUIMain;
 import irc.Donor;
 
 import java.awt.*;
@@ -36,6 +36,7 @@ import java.util.HashSet;
 public class User implements Comparable<User> {
 
     private boolean staff = false, admin = false, global_mod = false, turbo = false;
+    private String _nick, _lowerNick, displayName = null;
 
     private HashSet<Integer> emotes = new HashSet<>();
 
@@ -50,7 +51,6 @@ public class User implements Comparable<User> {
     public User(String nick) {
         _nick = nick;
         _lowerNick = nick.toLowerCase();
-        emotes.add(0);
     }
 
     /**
@@ -191,6 +191,16 @@ public class User implements Comparable<User> {
         _lowerNick = _nick.toLowerCase();
     }
 
+    public String getDisplayName() {
+        return displayName == null ? getLowerNick() : displayName;
+    }
+
+    public void setDisplayName(String name) {
+        if (displayName == null) {
+            displayName = name;
+        }
+    }
+
     /**
      * @return The chat color of the user.
      */
@@ -262,8 +272,5 @@ public class User implements Comparable<User> {
         }
         return -1;
     }
-
-    private String _nick;
-    private String _lowerNick;
 
 }

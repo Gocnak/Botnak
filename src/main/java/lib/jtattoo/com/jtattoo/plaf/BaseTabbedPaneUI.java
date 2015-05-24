@@ -94,7 +94,7 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
     private Component visibleComponent;
     // PENDING(api): See comment for ContainerHandler
     private ArrayList<View> htmlViews;
-    private HashMap mnemonicToIndexMap;
+    private HashMap<Integer, Integer> mnemonicToIndexMap;
     /**
      * InputMap used for mnemonics. Only non-null if the JTabbedPane has
      * mnemonics associated with it. Lazily created in initMnemonics.
@@ -251,9 +251,9 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
 
     private void removeMyPropertyChangeListeners(Component component) {
         PropertyChangeListener[] listeners = component.getPropertyChangeListeners();
-        for (int i = 0; i < listeners.length; i++) {
-            if (listeners[i] instanceof MyTabComponentListener) {
-                component.removePropertyChangeListener(listeners[i]);
+        for (PropertyChangeListener listener : listeners) {
+            if (listener instanceof MyTabComponentListener) {
+                component.removePropertyChangeListener(listener);
             }
         }
         if (component instanceof Container) {
@@ -509,15 +509,15 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
         if (mnemonicToIndexMap == null) {
             initMnemonics();
         }
-        mnemonicInputMap.put(KeyStroke.getKeyStroke(mnemonic, Event.ALT_MASK), "setSelectedIndex");
-        mnemonicToIndexMap.put(new Integer(mnemonic), new Integer(index));
+        mnemonicInputMap.put(KeyStroke.getKeyStroke(mnemonic, InputEvent.ALT_MASK), "setSelectedIndex");
+        mnemonicToIndexMap.put(mnemonic, index);
     }
 
     /**
      * Installs the state needed for mnemonics.
      */
     private void initMnemonics() {
-        mnemonicToIndexMap = new HashMap();
+        mnemonicToIndexMap = new HashMap<>();
         mnemonicInputMap = new InputMapUIResource();
         mnemonicInputMap.setParent(SwingUtilities.getUIInputMap(tabPane, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT));
         SwingUtilities.replaceUIInputMap(tabPane, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT, mnemonicInputMap);
@@ -921,7 +921,7 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
             tabPane.putClientProperty("html", v);
         }
 
-        SwingUtilities.layoutCompoundLabel((JComponent) tabPane,
+        SwingUtilities.layoutCompoundLabel(tabPane,
                 metrics, title, icon,
                 SwingUtilities.CENTER,
                 SwingUtilities.CENTER,
@@ -1630,12 +1630,11 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
      * JTabbedPane's coordinate space to the coordinate space of the
      * ScrollableTabPanel. This is used for SCROLL_TAB_LAYOUT ONLY.
      */
-    private Point translatePointToTabPanel(int srcx, int srcy, Point dest) {
+    private void translatePointToTabPanel(int srcx, int srcy, Point dest) {
         Point vpp = tabScroller.viewport.getLocation();
         Point viewp = tabScroller.viewport.getViewPosition();
         dest.x = srcx - vpp.x + viewp.x;
         dest.y = srcy - vpp.y + viewp.y;
-        return dest;
     }
 
     // BaseTabbedPaneUI methods
@@ -1729,7 +1728,7 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
      */
     protected View getTextViewForTab(int tabIndex) {
         if (htmlViews != null && htmlViews.size() > tabIndex) {
-            return (View) htmlViews.get(tabIndex);
+            return htmlViews.get(tabIndex);
         }
         return null;
     }
@@ -2103,7 +2102,7 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
 
     protected boolean requestFocusForVisibleComponent() {
         Component vc = getVisibleComponent();
-        if (vc.isFocusTraversable()) {
+        if (vc.isFocusable()) {
             vc.requestFocus();
             return true;
         } else if (vc instanceof JComponent) {
@@ -2232,9 +2231,9 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
                     if (mnemonic >= 'a' && mnemonic <= 'z') {
                         mnemonic -= ('a' - 'A');
                     }
-                    Integer index = (Integer) ui.mnemonicToIndexMap.get(new Integer(mnemonic));
-                    if (index != null && pane.isEnabledAt(index.intValue())) {
-                        pane.setSelectedIndex(index.intValue());
+                    Integer index = ui.mnemonicToIndexMap.get(new Integer(mnemonic));
+                    if (index != null && pane.isEnabledAt(index)) {
+                        pane.setSelectedIndex(index);
                     }
                 }
             }
@@ -3495,7 +3494,7 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
             return new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE);
         }
 
-        public boolean isFocusTraversable() {
+        public boolean isFocusable() {
             return false;
         }
 
@@ -3583,7 +3582,7 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
             } else if ("displayedMnemonicIndexAt".equals(name)) {
                 pane.repaint();
             } else if ("indexForTitle".equals(name)) {
-                int index = ((Integer) e.getNewValue()).intValue();
+                int index = (Integer) e.getNewValue();
                 String title = tabPane.getTitleAt(index);
                 if (BasicHTML.isHTMLString(title)) {
                     if (htmlViews == null) {    // Initialize vector
@@ -3669,25 +3668,10 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
         }
     }
 
-    public class TabComponentHandler implements ComponentListener {
+    public class TabComponentHandler extends ComponentAdapter {
 
         public void componentResized(ComponentEvent ce) {
-            SwingUtilities.invokeLater(new Runnable() {
-
-                public void run() {
-                    tabPane.doLayout();
-                }
-            });
-        }
-
-        public void componentMoved(ComponentEvent ce) {
-        }
-
-        public void componentShown(ComponentEvent ce) {
-
-        }
-
-        public void componentHidden(ComponentEvent ce) {
+            SwingUtilities.invokeLater(tabPane::doLayout);
         }
     }
 
@@ -3939,9 +3923,9 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
         public void remove(Component comp) {
             int index = tabPane.indexOfTabComponent(comp);
             PropertyChangeListener[] listeners = comp.getPropertyChangeListeners();
-            for (int j = 0; j < listeners.length; j++) {
-                if (listeners[j] instanceof MyTabComponentListener) {
-                    comp.removePropertyChangeListener(listeners[j]);
+            for (PropertyChangeListener listener : listeners) {
+                if (listener instanceof MyTabComponentListener) {
+                    comp.removePropertyChangeListener(listener);
                 }
             }
             super.remove(comp);
@@ -3957,9 +3941,9 @@ public class BaseTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
                     int index = tabPane.indexOfTabComponent(c);
                     if (index == -1) {
                         PropertyChangeListener[] listeners = c.getPropertyChangeListeners();
-                        for (int j = 0; j < listeners.length; j++) {
-                            if (listeners[j] instanceof MyTabComponentListener) {
-                                c.removePropertyChangeListener(listeners[j]);
+                        for (PropertyChangeListener listener : listeners) {
+                            if (listener instanceof MyTabComponentListener) {
+                                c.removePropertyChangeListener(listener);
                             }
                         }
                         super.remove(c);

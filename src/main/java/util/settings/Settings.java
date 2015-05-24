@@ -1,9 +1,6 @@
 package util.settings;
 
-import face.Face;
-import face.FaceManager;
-import face.SubscriberIcon;
-import face.TwitchFace;
+import face.*;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.GUIMain;
@@ -35,7 +32,7 @@ import java.util.stream.Collectors;
 /**
  * This class is the container for every setting Botnak has.
  * There's accounts, booleans of all sorts, and ints, you name it.
- * <p>
+ * <p/>
  * What is unique about this is you can define an "account" which
  * may be in the future to prevent unnecessary logging out. For now
  * we can continue to use a "default" account.
@@ -79,6 +76,7 @@ public class Settings {
     public File faceDir = new File(defaultDir + File.separator + "Faces");
     public File nameFaceDir = new File(defaultDir + File.separator + "NameFaces");
     public File twitchFaceDir = new File(defaultDir + File.separator + "TwitchFaces");
+    public File frankerFaceZDir = new File(defaultDir + File.separator + "FrankerFaceZ");
     public File subIconsDir = new File(defaultDir + File.separator + "SubIcons");
     public File subSoundDir = new File(defaultDir + File.separator + "SubSounds");
     public File donationSoundDir = new File(defaultDir + File.separator + "DonationSounds");
@@ -130,6 +128,7 @@ public class Settings {
         subIconsDir.mkdirs();
         subSoundDir.mkdirs();
         donationSoundDir.mkdirs();
+        frankerFaceZDir.mkdirs();
     }
 
     /**
@@ -173,7 +172,7 @@ public class Settings {
             }
             if (Utils.areFilesGood(donatorsFile.getAbsolutePath())) {
                 GUIMain.log("Loading donors...");
-                loadDonators();
+                loadDonors();
             }
             if (Utils.areFilesGood(donationsFile.getAbsolutePath())) {
                 GUIMain.log("Loading donations...");
@@ -205,6 +204,10 @@ public class Settings {
                 GUIMain.log("Loading name faces...");
                 loadNameFaces();
             }
+            if (frankerFaceZDir.exists() && frankerFaceZDir.length() > 0) {
+                GUIMain.log("Loading FrankerFaceZ faces...");
+                loadFFZFaces();
+            }
             GUIMain.log("Loading keywords...");
             loadKeywords();//first time boot adds the username
             GUIMain.log("Loading console commands...");
@@ -231,7 +234,7 @@ public class Settings {
         savePropData(1);
         if (!SoundEngine.getEngine().getSoundMap().isEmpty()) saveSounds();
         if (!FaceManager.faceMap.isEmpty()) saveFaces();
-        if (!FaceManager.loadedTwitchFaces.isEmpty()) saveTwitchFaces();
+        if (!FaceManager.twitchFaceMap.isEmpty()) saveTwitchFaces();
         if (!FaceManager.nameFaceMap.isEmpty()) saveNameFaces();
         saveTabState();
         if (!GUIMain.userColMap.isEmpty()) saveUserColors();
@@ -249,7 +252,7 @@ public class Settings {
      */
 
     //TODO make this load from just one file, but separating the setters based on the int type
-    public boolean loadPropData(int type) {
+    public void loadPropData(int type) {
         Properties p = new Properties();
         if (type == 0) {//accounts
             try {
@@ -276,9 +279,7 @@ public class Settings {
                 }
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
-                return false;
             }
-            return true;
         }
         if (type == 1) {//defaults
             try {
@@ -321,12 +322,10 @@ public class Settings {
                 faceMaxHeight = Integer.parseInt(p.getProperty("FaceMaxHeight", "20"));
                 font = Utils.stringToFont(p.getProperty("Font", "Calibri, 18, Plain").split(","));
                 GUIMain.log("Loaded defaults!");
-                return true;
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
         }
-        return false;
     }
 
     public void savePropData(int type) {
@@ -448,7 +447,7 @@ public class Settings {
         return toReturn;
     }
 
-    public boolean loadDonationSounds() {
+    public void loadDonationSounds() {
         try {
             File[] files = donationSoundDir.listFiles();
             if (files != null && files.length > 0) {
@@ -462,7 +461,6 @@ public class Settings {
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
-        return false;
     }
 
 
@@ -536,15 +534,11 @@ public class Settings {
      */
     public void saveTwitchFaces() {
         try (PrintWriter br = new PrintWriter(twitchFaceFile)) {
-            FaceManager.loadedTwitchFaces.keySet().stream().filter(
-                    s -> s != null &&
-                            FaceManager.loadedTwitchFaces.get(s) != null &&
-                            !FaceManager.loadedTwitchFaces.get(s).isEmpty()).forEach(s -> {
-                ArrayList<TwitchFace> faces = FaceManager.loadedTwitchFaces.get(s);
-                for (TwitchFace fa : faces) {
-                    br.println(s + "," + fa.getRegex() + "," + fa.getFilePath() + "," + Boolean.toString(fa.isEnabled()));
-                }
-            });
+            FaceManager.twitchFaceMap.keySet().stream().filter(s -> s != null && FaceManager.twitchFaceMap.get(s) != null)
+                    .forEach(s -> {
+                        TwitchFace fa = FaceManager.twitchFaceMap.get(s);
+                        br.println(s + "," + fa.getRegex() + "," + Boolean.toString(fa.isEnabled()));
+                    });
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -559,15 +553,11 @@ public class Settings {
             while ((line = br.readLine()) != null) {
                 try {
                     String[] split = line.split(",");
-                    int emoteSet = Integer.parseInt(split[0]);
-                    TwitchFace tf = new TwitchFace(split[1], split[2], Boolean.parseBoolean(split[3]));
-                    if (FaceManager.loadedTwitchFaces.containsKey(emoteSet)) {
-                        FaceManager.loadedTwitchFaces.get(emoteSet).add(tf);
-                    } else {
-                        ArrayList<TwitchFace> twitchFaces = new ArrayList<>();
-                        twitchFaces.add(tf);
-                        FaceManager.loadedTwitchFaces.put(emoteSet, twitchFaces);
-                    }
+                    int emoteID = Integer.parseInt(split[0]);
+                    TwitchFace tf = new TwitchFace(split[1],
+                            new File(twitchFaceDir + File.separator + String.valueOf(emoteID) + ".png").getAbsolutePath(),
+                            Boolean.parseBoolean(split[2]));
+                    FaceManager.twitchFaceMap.put(emoteID, tf);
                 } catch (Exception e) {
                     GUIMain.log(e.getMessage());
                 }
@@ -577,9 +567,37 @@ public class Settings {
         }
     }
 
+
+    /**
+     * FrankerFaceZ
+     * <p/>
+     * We can be a little more broad about this saving, since it's a per-channel basis
+     */
+    public void loadFFZFaces() {
+        File[] channels = frankerFaceZDir.listFiles();
+        if (channels == null) return;
+        for (File channel : channels) {
+            if (channel.isDirectory() && channel.length() > 0) {
+                File[] faces = channel.listFiles();
+                if (faces != null) {
+                    ArrayList<FrankerFaceZ> loadedFaces = new ArrayList<>();
+                    for (File face : faces) {
+                        if (face != null) {
+                            loadedFaces.add(new FrankerFaceZ(face.getName(), face.getAbsolutePath(), true));
+                        }
+                    }
+                    FaceManager.ffzFaceMap.put(channel.getName(), loadedFaces);
+                } else {
+                    channel.delete();
+                }
+            }
+        }
+    }
+
+
     /**
      * Commands
-     * <p>
+     * <p/>
      * trigger[message (content)[arguments?
      */
     public void loadCommands() {
@@ -827,7 +845,7 @@ public class Settings {
     /**
      * Donators
      */
-    public void loadDonators() {
+    public void loadDonors() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(donatorsFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -892,7 +910,8 @@ public class Settings {
             }
             if (mostRecent != null) {
                 donationManager.setLastDonation(mostRecent);
-                GUIMain.log("Most recent donation: " + mostRecent.getFromWho() + " for " + DonationManager.CURRENCY_SYMBOL + mostRecent.getAmount());
+                GUIMain.log(String.format("Most recent donation: %s for %s", mostRecent.getFromWho(),
+                        DonationManager.getCurrencyFormat().format(mostRecent.getAmount())));
             }
             if (!donations.isEmpty()) {
                 donationManager.fillDonations(donations);
@@ -946,21 +965,21 @@ public class Settings {
 
     /**
      * Tab State
-     * <p>
+     * <p/>
      * This is for opening back up to the correct tab, with the correct pane showing.
      * This also handles saving the combined tabs.
      * Format:
-     * <p>
+     * <p/>
      * Single:
      * bool      bool     string
      * single[  selected[ name
-     * <p>
+     * <p/>
      * Combined:
      * bool    boolean    String         String     String[] (split(","))
      * single[ selected[ activeChannel[  title[ every,channel,in,it,separated,by,commas
-     * <p>
+     * <p/>
      * No spaces though.
-     * <p>
+     * <p/>
      * Single tabs can be invisible if they are in a combined tab.
      */
     public void saveTabState() {

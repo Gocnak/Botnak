@@ -1,10 +1,12 @@
 package irc;
 
+import face.FaceManager;
 import gui.GUIMain;
 import irc.account.Task;
 import irc.message.Message;
 import irc.message.MessageHandler;
 import irc.message.MessageQueue;
+import lib.pircbot.org.jibble.pircbot.User;
 import thread.heartbeat.BanQueue;
 import util.Utils;
 
@@ -17,6 +19,9 @@ public class IRCViewer extends MessageHandler {
                 new Task(GUIMain.currentSettings.accountManager.getViewer(), Task.Type.JOIN_CHANNEL, channel));
         if (GUIMain.currentSettings.logChat) Utils.logChat(null, channel, 0);
         if (!GUIMain.channelSet.contains(channel)) GUIMain.channelSet.add(channel);
+        //TODO if currentSettings.FFZFacesEnable
+        if (FaceManager.doneWithFrankerFaces && FaceManager.ffzChannels.contains(channel.substring(1)))
+            FaceManager.handleFFZChannel(channel.substring(1));
     }
 
     /**
@@ -103,12 +108,14 @@ public class IRCViewer extends MessageHandler {
     }
 
     public void onDisconnect() {
-        //TODO create and run the reconnect listener thread  if (!GUIMain.shutdown)
+        if (!GUIMain.shutDown && GUIMain.currentSettings.accountManager.getViewer() != null) {
+            GUIMain.currentSettings.accountManager.createReconnectThread(GUIMain.currentSettings.accountManager.getViewer());
+        }
     }
 
-    public synchronized void onClearChat(String channel, String line) {
-        if (line.split(" ").length > 1) {
-            BanQueue.addToMap(channel, line.split(" ")[1]);
+    public synchronized void onClearChat(String channel, String name) {
+        if (name != null) {
+            BanQueue.addToMap(channel, name);
         } else {
             //TODO perhaps add the option to actually clear the chat based on user setting?
             MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.BAN_NOTIFY)
@@ -123,6 +130,7 @@ public class IRCViewer extends MessageHandler {
 
     @Override
     public void onConnect() {
+        GUIMain.currentSettings.channelManager.addUser(new User(GUIMain.currentSettings.accountManager.getViewer().getNick()));
         GUIMain.channelSet.forEach(this::doConnect);
         GUIMain.updateTitle(null);
     }

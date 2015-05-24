@@ -48,7 +48,7 @@ public class NoFocusButton extends JButton {
         }
     }
 
-    public boolean isFocusTraversable() {
+    public boolean isFocusable() {
         return false;
     }
 

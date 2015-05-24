@@ -44,14 +44,13 @@ public class HiFiTabbedPaneUI extends BaseTabbedPaneUI {
     }
 
     protected Color[] getContentBorderColors(int tabPlacement) {
-        Color SEP_COLORS[] = {
+        return new Color[]{
                 ColorHelper.darker(AbstractLookAndFeel.getBackgroundColor(), 40),
                 ColorHelper.brighter(AbstractLookAndFeel.getBackgroundColor(), 20),
                 ColorHelper.darker(AbstractLookAndFeel.getBackgroundColor(), 20),
                 ColorHelper.darker(AbstractLookAndFeel.getBackgroundColor(), 40),
                 ColorHelper.darker(AbstractLookAndFeel.getBackgroundColor(), 60),
         };
-        return SEP_COLORS;
     }
 
     protected void paintText(Graphics g, int tabPlacement, Font font, FontMetrics metrics, int tabIndex, String title, Rectangle textRect, boolean isSelected) {

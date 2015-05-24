@@ -358,7 +358,7 @@ public class XML {
                     return Double.valueOf(string);
                 } else if (string.indexOf('e') < 0 && string.indexOf('E') < 0) {
                     Long myLong = new Long(string);
-                    if (myLong.longValue() == myLong.intValue()) {
+                    if (myLong == myLong.intValue()) {
                         return myLong.intValue();
                     } else {
                         return myLong;

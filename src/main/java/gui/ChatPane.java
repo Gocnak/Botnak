@@ -3,6 +3,7 @@ package gui;
 import face.FaceManager;
 import face.IconEnum;
 import face.Icons;
+import gui.listeners.ListenerFace;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
 import irc.Donor;
@@ -359,10 +360,10 @@ public class ChatPane implements DocumentListener {
             SimpleAttributeSet userColor = new SimpleAttributeSet(user);
             FaceManager.handleNameFaces(sender, user);
             if (showChannel) {
-                print(m, sender, user);
+                print(m, u.getDisplayName(), user);
                 print(m, " (" + channel.substring(1) + ")" + (isMe ? " " : ": "), GUIMain.norm);
             } else {
-                print(m, sender, user);
+                print(m, u.getDisplayName(), user);
                 print(m, (!isMe ? ": " : " "), userColor);
             }
             //keyword?
@@ -396,17 +397,15 @@ public class ChatPane implements DocumentListener {
     protected void printMessage(MessageWrapper m, String text, SimpleAttributeSet style, User u) {
         // Where stuff was found
         TreeMap<Integer, Integer> ranges = new TreeMap<>();
-        // The style of the stuff (basicially metadata)
+        // The style of the stuff (basically metadata)
         HashMap<Integer, SimpleAttributeSet> rangesStyle = new HashMap<>();
 
         findLinks(text, ranges, rangesStyle);
-        findEmoticons(text, ranges, rangesStyle, u);
+        findEmoticons(text, ranges, rangesStyle, u, m.getLocal().getChannel().replaceAll("#", ""));
 
         // Actually print everything
         int lastPrintedPos = 0;
-        Iterator<Map.Entry<Integer, Integer>> rangesIt = ranges.entrySet().iterator();
-        while (rangesIt.hasNext()) {
-            Map.Entry<Integer, Integer> range = rangesIt.next();
+        for (Map.Entry<Integer, Integer> range : ranges.entrySet()) {
             int start = range.getKey();
             int end = range.getValue();
             if (start > lastPrintedPos) {
@@ -440,9 +439,11 @@ public class ChatPane implements DocumentListener {
     }
 
 
-    private void findEmoticons(String text, Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangesStyle, User u) {
-        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.NORMAL_FACE, null);
-        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE, u.getEmotes());
+    private void findEmoticons(String text, Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangesStyle, User u, String channel) {
+        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.NORMAL_FACE, null, null);
+        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE, u.getEmotes(), null);
+        //TODO if (currentSettings.FFZFaceEnabled)
+        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.FRANKER_FACE, null, channel);
     }
 
     protected void print(MessageWrapper wrapper, String string, SimpleAttributeSet set) {
@@ -476,7 +477,7 @@ public class ChatPane implements DocumentListener {
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
-        boolean shouldIncrement = status == IconEnum.SUBSCRIBER && m.getLocal().getExtra() != null;//checking for repeat messages
+        boolean shouldIncrement = ((status == IconEnum.SUBSCRIBER) && (m.getLocal().getExtra() == null));//checking for repeat messages
         if (shouldIncrement) subCount++;
     }
 
@@ -553,6 +554,7 @@ public class ChatPane implements DocumentListener {
         pane.setFont(GUIMain.currentSettings.font);
         pane.addMouseListener(new ListenerURL());
         pane.addMouseListener(new ListenerName());
+        pane.addMouseListener(new ListenerFace());
         scrollPane.setViewportView(pane);
         return new ChatPane(channel, scrollPane, pane, GUIMain.channelPane.getTabCount() - 1);
     }

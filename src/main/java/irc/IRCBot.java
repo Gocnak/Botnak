@@ -9,6 +9,7 @@ import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
 import sound.Sound;
 import sound.SoundEngine;
+import util.APIRequests;
 import util.Response;
 import util.StringArray;
 import util.Utils;
@@ -42,7 +43,7 @@ public class IRCBot extends MessageHandler {
 
     @Override
     public void onConnect() {
-        //TODO do people want it to follow?
+        //TODO do people want it to follow? See Issue #76
         if (GUIMain.currentSettings.accountManager.getUserAccount() != null)
             doConnect(GUIMain.currentSettings.accountManager.getUserAccount().getName());
         GUIMain.updateTitle(null);
@@ -73,16 +74,18 @@ public class IRCBot extends MessageHandler {
      */
     public void close(boolean forget) {
         GUIMain.log("Logging out of bot: " + GUIMain.currentSettings.accountManager.getBotAccount().getName());
-        GUIMain.currentSettings.accountManager.addTask(
-                new Task(GUIMain.currentSettings.accountManager.getBot(), Task.Type.DISCONNECT, null));
         if (forget) {
             GUIMain.currentSettings.accountManager.setBotAccount(null);
         }
+        GUIMain.currentSettings.accountManager.addTask(
+                new Task(GUIMain.currentSettings.accountManager.getBot(), Task.Type.DISCONNECT, null));
         GUIMain.bot = null;
     }
 
     public void onDisconnect() {
-        //TODO create and run the reconnect listener thread if (!GUIMain.shutdown)
+        if (!GUIMain.shutDown && GUIMain.currentSettings.accountManager.getBot() != null) {
+            GUIMain.currentSettings.accountManager.createReconnectThread(GUIMain.currentSettings.accountManager.getBot());
+        }
     }
 
     @Override
@@ -92,7 +95,7 @@ public class IRCBot extends MessageHandler {
 
             boolean senderIsBot = sender.equalsIgnoreCase(getBot().getNick());
             boolean userIsBot = GUIMain.currentSettings.accountManager.getUserAccount().getName()
-                    .equals(GUIMain.currentSettings.accountManager.getBotAccount().getName());
+                    .equalsIgnoreCase(GUIMain.currentSettings.accountManager.getBotAccount().getName());
             //if the sender of the message is the bot, but
             //the user account is NOT the bot, just return, we don't want the bot to trigger anything
             if (senderIsBot && !userIsBot) return;
@@ -110,7 +113,7 @@ public class IRCBot extends MessageHandler {
                             int permBase = r.getPermission();
                             int permission = Utils.getUserPermission(u, channel);
                             if (permission >= permBase) {
-                                r.addUser(u.getNick());
+                                r.addUser(u.getLowerNick());
                             }
                         }
                     }
@@ -128,6 +131,23 @@ public class IRCBot extends MessageHandler {
 
             Oauth key = GUIMain.currentSettings.accountManager.getUserAccount().getKey();
             String[] split = message.split(" ");
+
+            //URL Checking TODO could this be threaded?
+            for (String part : split) {
+                if (part.startsWith("http") || part.startsWith("www")) {
+                    if (part.contains("youtu.be") || part.contains("youtube.com/watch")
+                            || part.contains("youtube.com/v") || part.contains("youtube.com/embed/")) {
+                        getBot().sendMessage(channel, APIRequests.YouTube.getVideoData(part).getResponseText());
+                    } else if (part.contains("bit.ly") || part.contains("tinyurl")) {
+                        getBot().sendMessage(channel, APIRequests.UnshortenIt.getUnshortened(part).getResponseText());
+                    } else if (part.contains("twitch.tv/")) {
+                        if (part.contains("/v/") || part.contains("/c/") || part.contains("/b/")) {
+                            getBot().sendMessage(channel, APIRequests.Twitch.getTitleOfVOD(part).getResponseText());
+                        }
+                    }
+                }
+            }
+
             String first = "";
             if (split.length > 1) first = split[1];
             //commands
@@ -235,16 +255,16 @@ public class IRCBot extends MessageHandler {
                             }
                             break;
                         case SET_STREAM_TITLE:
-                            commandResponse = Utils.setStreamStatus(key, channel, message, true);
+                            commandResponse = APIRequests.Twitch.setStreamStatus(key, channel, message, true);
                             break;
                         case SEE_STREAM_TITLE:
-                            String title = Utils.getTitleOfStream(channel);
+                            String title = APIRequests.Twitch.getTitleOfStream(channel);
                             if (!"".equals(title)) {
                                 getBot().sendMessage(channel, "The title of the stream is: " + title);
                             }
                             break;
                         case SEE_STREAM_GAME:
-                            String game = Utils.getGameOfStream(channel);
+                            String game = APIRequests.Twitch.getGameOfStream(channel);
                             if ("".equals(game)) {
                                 getBot().sendMessage(channel, "The streamer is currently not playing a game!");
                             } else {
@@ -252,14 +272,14 @@ public class IRCBot extends MessageHandler {
                             }
                             break;
                         case SET_STREAM_GAME:
-                            commandResponse = Utils.setStreamStatus(key, channel, message, false);
+                            commandResponse = APIRequests.Twitch.setStreamStatus(key, channel, message, false);
                             break;
                         case PLAY_ADVERT:
                             if (key != null) {
                                 if (key.canPlayAd()) {
                                     int length = Utils.getTime(first);
                                     if (length == -1) length = 30;
-                                    if (Utils.playAdvert(key.getKey(), channel, length)) {
+                                    if (APIRequests.Twitch.playAdvert(key.getKey(), channel, length)) {
                                         getBot().sendMessage(channel, "Playing an ad for " + length + " seconds!");
                                         lastAd = System.currentTimeMillis();
                                     } else {
@@ -396,10 +416,10 @@ public class IRCBot extends MessageHandler {
                             }
                             break;
                         case NOW_PLAYING:
-                            commandResponse = Utils.getCurrentlyPlaying();
+                            commandResponse = APIRequests.LastFM.getCurrentlyPlaying();
                             break;
                         case SHOW_UPTIME:
-                            commandResponse = Utils.getUptimeString(channel.substring(1));
+                            commandResponse = APIRequests.Twitch.getUptimeString(channel.substring(1));
                             break;
                         default:
                             break;
@@ -414,7 +434,7 @@ public class IRCBot extends MessageHandler {
                 //but we don't want the bot to trigger its own text commands, which
                 //could infinite loop (two commands calling each other over and over)
                 if (c != null && !senderIsBot && c.getMessage().data.length > 0 && !c.getDelayTimer().isRunning()) {
-                    //TODO add a check to see if people want it only to react in their channel
+                    //TODO add a check to see if people want it only to react in their channel. See Issue #76
                     StringArray sa = c.getMessage();
                     if (c.hasArguments()) {
                         //build arguments if it has any

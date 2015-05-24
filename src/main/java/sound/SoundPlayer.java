@@ -20,7 +20,7 @@ public final class SoundPlayer implements Closeable {
      *
      * @author Dr. Kegel
      */
-    public static enum PlayMode {
+    public enum PlayMode {
         /**
          * Restarts the sound from the beginning.
          */

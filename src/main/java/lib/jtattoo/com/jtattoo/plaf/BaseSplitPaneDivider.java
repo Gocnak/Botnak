@@ -169,7 +169,7 @@ public class BaseSplitPaneDivider extends BasicSplitPaneDivider {
                 }
             }
 
-            public boolean isFocusTraversable() {
+            public boolean isFocusable() {
                 return false;
             }
         };
@@ -216,7 +216,7 @@ public class BaseSplitPaneDivider extends BasicSplitPaneDivider {
                 }
             }
 
-            public boolean isFocusTraversable() {
+            public boolean isFocusable() {
                 return false;
             }
         };

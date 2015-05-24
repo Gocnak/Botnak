@@ -710,7 +710,6 @@ public class BaseTitlePane extends JComponent {
 
             // assumes all buttons have the same dimensions these dimensions include the borders
             int btnHeight = h - getVerSpacing();
-            int btnWidth = btnHeight;
 
 
             if (menuBar != null) {
@@ -727,28 +726,28 @@ public class BaseTitlePane extends JComponent {
             int y = Math.max(0, ((h - btnHeight) / 2) - 1);
 
             if (closeButton != null) {
-                x += leftToRight ? -btnWidth : spacing;
-                closeButton.setBounds(x, y, btnWidth, btnHeight);
+                x += leftToRight ? -btnHeight : spacing;
+                closeButton.setBounds(x, y, btnHeight, btnHeight);
                 if (!leftToRight) {
-                    x += btnWidth;
+                    x += btnHeight;
                 }
             }
 
             if ((maxButton != null) && (maxButton.getParent() != null)) {
                 if (DecorationHelper.isFrameStateSupported(Toolkit.getDefaultToolkit(), BaseRootPaneUI.MAXIMIZED_BOTH)) {
-                    x += leftToRight ? -spacing - btnWidth : spacing;
-                    maxButton.setBounds(x, y, btnWidth, btnHeight);
+                    x += leftToRight ? -spacing - btnHeight : spacing;
+                    maxButton.setBounds(x, y, btnHeight, btnHeight);
                     if (!leftToRight) {
-                        x += btnWidth;
+                        x += btnHeight;
                     }
                 }
             }
 
             if ((iconifyButton != null) && (iconifyButton.getParent() != null)) {
-                x += leftToRight ? -spacing - btnWidth : spacing;
-                iconifyButton.setBounds(x, y, btnWidth, btnHeight);
+                x += leftToRight ? -spacing - btnHeight : spacing;
+                iconifyButton.setBounds(x, y, btnHeight, btnHeight);
                 if (!leftToRight) {
-                    x += btnWidth;
+                    x += btnHeight;
                 }
             }
 
@@ -761,10 +760,9 @@ public class BaseTitlePane extends JComponent {
                     maxWidth -= spacing;
                 }
                 int cpw = Math.min(maxWidth, customTitlePanel.getPreferredSize().width);
-                int cph = h;
                 int cpx = leftToRight ? w - buttonsWidth - cpw : buttonsWidth;
                 int cpy = 0;
-                customTitlePanel.setBounds(cpx, cpy, cpw, cph);
+                customTitlePanel.setBounds(cpx, cpy, cpw, h);
                 buttonsWidth += customTitlePanel.getPreferredSize().width;
             }
         }
@@ -776,23 +774,22 @@ public class BaseTitlePane extends JComponent {
 
             // assumes all buttons have the same dimensions these dimensions include the borders
             int btnHeight = h - getVerSpacing() - 1;
-            int btnWidth = btnHeight;
 
             int x = 2;
             int y = centerButtons() ? Math.max(0, ((h - btnHeight) / 2) - 1) : 0;
 
             if (closeButton != null) {
-                closeButton.setBounds(x, y, btnWidth, btnHeight);
-                x += btnWidth + spacing;
+                closeButton.setBounds(x, y, btnHeight, btnHeight);
+                x += btnHeight + spacing;
             }
             if ((iconifyButton != null) && (iconifyButton.getParent() != null)) {
-                iconifyButton.setBounds(x, y, btnWidth, btnHeight);
-                x += btnWidth + spacing;
+                iconifyButton.setBounds(x, y, btnHeight, btnHeight);
+                x += btnHeight + spacing;
             }
             if ((maxButton != null) && (maxButton.getParent() != null)) {
                 if (DecorationHelper.isFrameStateSupported(Toolkit.getDefaultToolkit(), BaseRootPaneUI.MAXIMIZED_BOTH)) {
-                    maxButton.setBounds(x, y, btnWidth, btnHeight);
-                    x += btnWidth + spacing;
+                    maxButton.setBounds(x, y, btnHeight, btnHeight);
+                    x += btnHeight + spacing;
                 }
             }
 
@@ -802,8 +799,7 @@ public class BaseTitlePane extends JComponent {
                 int cpx = buttonsWidth + 5;
                 int cpy = 0;
                 int cpw = customTitlePanel.getPreferredSize().width;
-                int cph = h;
-                customTitlePanel.setBounds(cpx, cpy, cpw, cph);
+                customTitlePanel.setBounds(cpx, cpy, cpw, h);
                 buttonsWidth += cpw + 5;
             }
         }
@@ -875,7 +871,7 @@ public class BaseTitlePane extends JComponent {
 
         public void windowDeiconified(WindowEvent e) {
             if (JTattooUtilities.isMac() && JTattooUtilities.getJavaVersion() >= 1.7 && wasMaximized) {
-                SwingUtilities.invokeLater(() -> maximize());
+                SwingUtilities.invokeLater(BaseTitlePane.this::maximize);
             }
         }
 

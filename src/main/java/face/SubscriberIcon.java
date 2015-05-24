@@ -2,6 +2,7 @@ package face;
 
 /**
  * Created by Nick on 12/30/13.
+ * Represents a subscriber icon on Twitch.
  */
 public class SubscriberIcon {
 

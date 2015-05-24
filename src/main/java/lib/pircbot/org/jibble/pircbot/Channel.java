@@ -27,7 +27,7 @@ public class Channel {
 
     public boolean isSubscriber(User u) {
         for (String s : subscribers) {
-            if (s.equals(u.getNick())) {
+            if (s.equals(u.getNick().toLowerCase())) {
                 return true;
             }
         }

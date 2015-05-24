@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 public class Constants {
 
-    public static final double VERSION = 2.3;
+    public static final double VERSION = 2.31;
 
     /**
      * All users may do it
@@ -76,7 +76,7 @@ public class Constants {
     public static final FileFilter pictureFilter = new FileNameExtensionFilter("Image files", ImageIO.getReaderFileSuffixes());
 
     public static final Pattern viewerTwitchPattern = Pattern.compile("\"viewers\":\\s*(\\d+)");
-    public static final Pattern fileExclPattern = Pattern.compile("[\\/:\"*?<>|]");
+    public static final Pattern fileExclPattern = Pattern.compile("[/:\"*?<>|]");
     /**
      * The regex String for finding URLs in messages.
      * credit: TDuva

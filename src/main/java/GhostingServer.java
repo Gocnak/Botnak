@@ -10,7 +10,6 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Iterator;
-import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -30,12 +29,6 @@ public class GhostingServer {
          * -debug
          * -port xxxx
          */
-        Scanner in = new Scanner(System.in);
-        String url = in.nextLine();
-        if (url.contains("imgur.com") && !url.contains("i.imgur")) {
-            url = "http://i.imgur.com/" + url.substring(url.lastIndexOf("/") + 1);
-        }
-        System.out.println("URL IS: " + url);
         /*System.setProperty("java.net.preferIPv4Stack", "true");
         handleArgs(args);
         if (machineIP == null) machineIP = InetAddress.getLocalHost();
@@ -521,7 +514,7 @@ public class GhostingServer {
         }
     }
 
-    static enum UserEventType {
+    enum UserEventType {
         NEW_USER,
         DISCONNECT,
         KICK_USER;

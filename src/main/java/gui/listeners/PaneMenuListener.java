@@ -36,10 +36,9 @@ public class PaneMenuListener implements ActionListener {
                     }
                 }
             } else if (text.startsWith("View viewer")) {
-                //TODO create an alphabetically sorted viewer list in a JPanel or something,
-                //which has clickable names that will pop out viewer stats
                 if (pane != null) {
-
+                    //TODO create an alphabetically sorted viewer list in a JPanel or something, issue #60
+                    //which has clickable names that will pop out viewer stats
                 }
             } else if (text.startsWith("Remove ")) {
                 if (pane != null) {

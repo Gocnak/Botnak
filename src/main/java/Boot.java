@@ -12,34 +12,6 @@ public class Boot {
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                /*
-                NativeLibrary.addSearchPath(
-                        RuntimeUtil.getLibVlcLibraryName(), "C:\\Program Files\\VideoLAN\\VLC");
-                Native.loadLibrary(RuntimeUtil.getLibVlcLibraryName(), LibVlc.class);
-                LibXUtil.initialise();
-                *//*JFrame frame = new JFrame("vlcj Tutorial");
-
-
-                frame.setLocation(100, 100);
-                frame.setSize(1050, 600);
-                frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-                frame.setVisible(true);
-                final EmbeddedMediaPlayerComponent player = new EmbeddedMediaPlayerComponent();
-                frame.setContentPane(player);
-
-                player.getMediaPlayer().playMedia(video, "network-caching=5000");*//*
-                try {
-                    AudioMediaPlayerComponent audio = new AudioMediaPlayerComponent();
-                    MediaPlayerFactory factory = new MediaPlayerFactory();
-                    Prototype for VLC playing sounds:
-                    audio.getMediaPlayerFactory().newEmbeddedMediaPlayer().playMedia("C:\\Users\\Nick\\Documents\\Dropbox\\Botnak\\sounds\\frustrated.mp3");
-                    Thread.sleep(500);
-                    //audio.getMediaPlayerFactory().newEmbeddedMediaPlayer().playMedia("C:\\Users\\Nick\\Documents\\Dropbox\\Botnak\\sounds\\azorae.wav");
-                    //audio.release(true);
-                } catch (Exception ignored) {
-                    ignored.printStackTrace();
-                }*/
-
                 setLookAndFeel();
                 GUIMain g = new GUIMain();
                 g.setVisible(true);
@@ -57,7 +29,7 @@ public class Boot {
                 try {
                     Settings.loadLAF();
                     UIManager.setLookAndFeel(Settings.lookAndFeel);
-                } catch (UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }

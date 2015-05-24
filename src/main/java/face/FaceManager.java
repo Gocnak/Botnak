@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,46 +36,32 @@ public class FaceManager {
     //loading the faces
     public static boolean doneWithFaces = false;
     public static boolean doneWithTwitchFaces = false;
+    public static boolean doneWithFrankerFaces = false;
 
     //faces
     public static ConcurrentHashMap<String, Face> faceMap;
     public static ConcurrentHashMap<String, Face> nameFaceMap;
     public static CopyOnWriteArraySet<SubscriberIcon> subIconSet;
-    /**
-     * Due to the immense size of the Twitch face library, we need to cut this into two maps.
-     * One map is going to be the one Botnak loads on every boot, filling it with every single twitch face
-     * there is. The second one is going to be the one Botnak loads to fill with Twitch Faces that
-     * you know you've used before in the past.
-     * <p>
-     * The plan is to cache these faces, and download the new ones upon meeting the emoteset
-     * in IRC, in order to provide a cleaner file storage system for Botnak compared to the massive amount
-     * of faces it had downloaded before.
-     */
-    public static ConcurrentHashMap<Integer, ArrayList<TwitchFace>> twitchFaceMap;
-    public static ConcurrentHashMap<Integer, ArrayList<TwitchFace>> loadedTwitchFaces;
+    public static ConcurrentHashMap<Integer, TwitchFace> twitchFaceMap;
+    public static ConcurrentHashMap<Integer, TwitchFace> onlineTwitchFaces;
+
+    public static ConcurrentHashMap<String, ArrayList<FrankerFaceZ>> ffzFaceMap;
+    public static CopyOnWriteArrayList<String> ffzChannels;
 
     public static void init() {
         faceMap = new ConcurrentHashMap<>();
         nameFaceMap = new ConcurrentHashMap<>();
         twitchFaceMap = new ConcurrentHashMap<>();
-        loadedTwitchFaces = new ConcurrentHashMap<>();
+        onlineTwitchFaces = new ConcurrentHashMap<>();
+        ffzFaceMap = new ConcurrentHashMap<>();
+        ffzChannels = new CopyOnWriteArrayList<>();
         subIconSet = new CopyOnWriteArraySet<>();
-    }
-
-    public static void handleEmoteset(Integer... emotes) {
-        if (doneWithTwitchFaces) {
-            for (final int i : emotes) {
-                if (!loadedTwitchFaces.containsKey(i)) {
-                    loadedTwitchFaces.put(i, new ArrayList<>());
-                    new Thread(() -> downloadEmoteSet(i)).start();
-                }
-            }
-        }
     }
 
     public enum FACE_TYPE {
         NAME_FACE,
         TWITCH_FACE,
+        FRANKER_FACE,
         NORMAL_FACE
     }
 
@@ -157,37 +144,38 @@ public class FaceManager {
      */
     public static void buildMap() {
         try {
-            URL url = new URL("http://api.twitch.tv/kraken/chat/emoticons?on_site=1");
-            BufferedReader irs = new BufferedReader(new InputStreamReader(url.openStream()));
-            String line = irs.readLine();
-            irs.close();
+            // Load twitch faces
+            URL url = new URL("https://api.twitch.tv/kraken/chat/emoticon_images");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
+            String line = reader.readLine();
+            reader.close();
             if (line != null) {
-                JSONObject init = new JSONObject(line);
-                if (init.length() == 2) {
+                try {
+                    JSONObject init = new JSONObject(line);
                     JSONArray emotes = init.getJSONArray("emoticons");
                     for (int i = 0; i < emotes.length(); i++) {
                         JSONObject emote = emotes.getJSONObject(i);
-                        JSONObject imageStuff = emote.getJSONArray("images").getJSONObject(0);//3 is URL, 4 is height
-                        String regex = emote.getString("regex").replaceAll("\\\\&lt\\\\;", "\\<").replaceAll("\\\\&gt\\\\;", "\\>");
-                        if (imageStuff != null) {//split("-")[4] is the filename
-                            int emoteSet;
-                            if (imageStuff.isNull("emoticon_set")) { //global emotes
-                                emoteSet = 0;
-                            } else { //sub emotes
-                                emoteSet = imageStuff.getInt("emoticon_set");
-                            }
-                            String uRL = imageStuff.getString("url");
-                            if (twitchFaceMap.containsKey(emoteSet)) {
-                                twitchFaceMap.get(emoteSet).add(new TwitchFace(regex, uRL, true));
-                            } else {
-                                ArrayList<TwitchFace> newList = new ArrayList<>();
-                                newList.add(new TwitchFace(regex, uRL, true));
-                                twitchFaceMap.put(emoteSet, newList);
-                            }
-                        }
+                        int ID = emote.getInt("id");
+                        if (twitchFaceMap.get(ID) != null) continue;
+                        String regex = emote.getString("code").replaceAll("\\\\&lt\\\\;", "\\<").replaceAll("\\\\&gt\\\\;", "\\>");
+                        String URL = "http://static-cdn.jtvnw.net/emoticons/v1/" + ID + "/1.0";
+                        onlineTwitchFaces.put(ID, new TwitchFace(regex, URL, true));
                     }
+                } catch (Exception e) {
+                    GUIMain.log("Failed to load online Twitch faces, is the API endpoint down?");
                 }
             }
+            //TODO if currentSettings.FFZFacesEnable
+            // Load FFZ faces
+            url = new URL("http://frankerfacez.com/users.txt");
+            reader = new BufferedReader(new InputStreamReader(url.openStream()));
+            while ((line = reader.readLine()) != null) {
+                if (!line.startsWith(".")) {
+                    ffzChannels.add(line);
+                }
+            }
+            reader.close();
+
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -195,11 +183,11 @@ public class FaceManager {
 
     /**
      * Loads the default Twitch faces. This downloads to the local folder in
-     * <p>
+     * <p/>
      * /My Documents/Botnak/TwitchFaces/
-     * <p>
+     * <p/>
      * It also checks to see if you may be missing a default face, and downloads it.
-     * <p>
+     * <p/>
      * This process is threaded, and will only show the faces when it's done downloading.
      */
     public static void loadDefaultFaces() {
@@ -212,64 +200,21 @@ public class FaceManager {
 
     public static Thread faceCheck = new Thread(() -> {
         buildMap();
-
-        //load global faces first if there's nothing here (first time boot?)
-        if (loadedTwitchFaces.isEmpty()) {
-            loadedTwitchFaces.put(0, new ArrayList<>());
-            downloadEmoteSet(0);
-        }
-
-        Set<Integer> keyLocal = loadedTwitchFaces.keySet();
-        for (int localEmoteSet : keyLocal) {
-            ArrayList<TwitchFace> localEmotes = loadedTwitchFaces.get(localEmoteSet);
-            ArrayList<TwitchFace> externalEmotes = twitchFaceMap.get(localEmoteSet);
-            if (externalEmotes != null) {
-                for (TwitchFace external : externalEmotes) {
-                    boolean flag = false;
-                    for (TwitchFace internal : localEmotes) {
-                        if (internal.getFilePath().contains(external.getFilePath().split("-")[4])) {
-                            flag = true;
-                            break;
-                        }
-                    }
-                    if (!flag) {//add new faces that I need
-                        try {
-                            String newFaceToAddFileName = Utils.setExtension(external.getFilePath().split("-")[4], ".png");
-                            File newFaceToAdd = new File(GUIMain.currentSettings.twitchFaceDir + File.separator + newFaceToAddFileName);
-                            if (download(external.getFilePath(), newFaceToAdd)) {
-                                localEmotes.add(new TwitchFace(external.getRegex(), newFaceToAdd.getAbsolutePath(), true));
-                            }
-                        } catch (Exception ignored) {
-                        }
-                    }
-                }
-            }
-            //remove the ones I shouldn't have
-            ArrayList<TwitchFace> toRemove = new ArrayList<>();
-            for (TwitchFace internal : localEmotes) {
-                boolean flag = false;
-                if (externalEmotes != null) {//if it's null, that means the set is gone now, delete it
-                    for (TwitchFace external : externalEmotes) {
-                        if (internal.getFilePath().contains(external.getFilePath().split("-")[4])) {
-                            flag = true;
-                            break;
-                        }
-                    }
-                }
-                if (!flag) {
-                    toRemove.add(internal);
-                }
-            }
-            toRemove.stream().forEach(localEmotes::remove);
-        }
         GUIMain.log("Loaded Twitch faces!");
         GUIMain.currentSettings.saveTwitchFaces();
         doneWithTwitchFaces = true;
+
+        //TODO if currentSettings.FFZFacesEnable
+        handleFFZChannel("global");//this corrects the global emotes and downloads them if we don't have them
+        GUIMain.channelSet.stream().filter(ffzChannels::contains).forEach(face.FaceManager::handleFFZChannel);
+        doneWithFrankerFaces = true;
+        GUIMain.log("Loaded FrankerFaceZ faces!");
+        // END TODO
     });
 
     /**
      * Toggles a twitch face on/off.
-     * <p>
+     * <p/>
      * Ex: !toggleface RitzMitz
      * would toggle RitzMitz off/on in showing up on botnak,
      * depending on current state.
@@ -283,22 +228,38 @@ public class FaceManager {
             else toReturn.setResponseText("Failed to toggle face, not done checking Twitch faces!");
             return toReturn;
         }
-        Set<Integer> set = loadedTwitchFaces.keySet();
+        Set<Integer> set = twitchFaceMap.keySet();
         for (int es : set) {
-            ArrayList<TwitchFace> faces = loadedTwitchFaces.get(es);
-            for (TwitchFace fa : faces) {
-                String regex = fa.getRegex();
-                Pattern p = Pattern.compile(regex);
-                Matcher m = p.matcher(faceName);
-                if (m.find()) {
-                    boolean newStatus = !fa.isEnabled();
-                    fa.setEnabled(newStatus);
-                    toReturn.setResponseText("Toggled the face " + faceName + " " + (newStatus ? "ON" : "OFF"));
+            TwitchFace fa = twitchFaceMap.get(es);
+            String regex = fa.getRegex();
+            Pattern p = Pattern.compile(regex);
+            Matcher m = p.matcher(faceName);
+            if (m.find()) {
+                boolean newStatus = !fa.isEnabled();
+                fa.setEnabled(newStatus);
+                toReturn.setResponseText("Toggled the face " + faceName + (newStatus ? " ON" : " OFF"));
+                toReturn.wasSuccessful();
+                return toReturn;
+            }
+        }
+        String errorMessage = "Could not find face " + faceName + " in the loaded Twitch faces ";
+        //TODO if currentSettings.ffzEnable
+        Set<String> channels = ffzFaceMap.keySet();
+        for (String chan : channels) {
+            ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(chan);
+            for (FrankerFaceZ f : faces) {
+                if (f.getRegex().equalsIgnoreCase(faceName)) {
+                    boolean newStatus = !f.isEnabled();
+                    f.setEnabled(newStatus);
+                    toReturn.setResponseText("Toggled the FrankerFaceZ face " + f.getRegex() + (newStatus ? " ON" : " OFF"));
+                    toReturn.wasSuccessful();
                     return toReturn;
                 }
             }
         }
-        toReturn.setResponseText("Could not find face " + faceName + " in the loaded Twitch faces!");
+        errorMessage += "or loaded FrankerFaceZ faces!";
+        //end TODO
+        toReturn.setResponseText(errorMessage);
         return toReturn;
     }
 
@@ -313,31 +274,34 @@ public class FaceManager {
     }
 
     public static void handleFaces(Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangeStyles,
-                                   String object, FACE_TYPE type, Integer[] emotes) {
+                                   String object, FACE_TYPE type, Integer[] emotes, String channel) {
         switch (type) {
             case TWITCH_FACE:
                 if (doneWithTwitchFaces) {
                     for (int i : emotes) {
-                        ArrayList<TwitchFace> faces = loadedTwitchFaces.get(i);
-                        for (TwitchFace f : faces) {
-                            if (!f.isEnabled() || !Utils.areFilesGood(f.getFilePath())) continue;
-                            String regex = f.getRegex();
-                            if (!regex.matches("^\\W.*|.*\\W$")) {
-                                //boundary checks are only necessary for emotes that start and end with a word character.
-                                regex = "\\b" + regex + "\\b";
-                            }
-                            Pattern p = Pattern.compile(regex);
-                            Matcher m = p.matcher(object);
-                            while (m.find() && !GUIMain.shutDown) {
-                                int start = m.start();
-                                int end = m.end() - 1;
-                                if (!Utils.inRanges(start, ranges) && !Utils.inRanges(end, ranges)) {
-                                    ranges.put(start, end);
-                                    SimpleAttributeSet attrs = new SimpleAttributeSet();
-                                    insertFace(attrs, f.getFilePath());
-                                    attrs.addAttribute("start", start);
-                                    rangeStyles.put(start, attrs);
-                                }
+                        TwitchFace f = twitchFaceMap.get(i);
+                        if (f == null) {
+                            f = downloadEmote(i);
+                        }
+                        if (f == null || !f.isEnabled() || !Utils.areFilesGood(f.getFilePath())) continue;
+                        String regex = f.getRegex();
+                        if (!regex.matches("^\\W.*|.*\\W$")) {
+                            //boundary checks are only necessary for emotes that start and end with a word character.
+                            regex = "\\b" + regex + "\\b";
+                        }
+                        Pattern p = Pattern.compile(regex);
+                        Matcher m = p.matcher(object);
+                        while (m.find() && !GUIMain.shutDown) {
+                            int start = m.start();
+                            int end = m.end() - 1;
+                            if (!Utils.inRanges(start, ranges) && !Utils.inRanges(end, ranges)) {
+                                ranges.put(start, end);
+                                SimpleAttributeSet attrs = new SimpleAttributeSet();
+                                attrs.addAttribute("faceinfo", f);
+                                attrs.addAttribute("regex", m.group());
+                                insertFace(attrs, f.getFilePath());
+                                attrs.addAttribute("start", start);
+                                rangeStyles.put(start, attrs);
                             }
                         }
                     }
@@ -357,9 +321,40 @@ public class FaceManager {
                             if (!Utils.inRanges(start, ranges) && !Utils.inRanges(end, ranges)) {
                                 ranges.put(start, end);
                                 SimpleAttributeSet attrs = new SimpleAttributeSet();
+                                attrs.addAttribute("faceinfo", f);
+                                attrs.addAttribute("regex", m.group());
                                 insertFace(attrs, f.getFilePath());
                                 attrs.addAttribute("start", start);
                                 rangeStyles.put(start, attrs);
+                            }
+                        }
+                    }
+                }
+                break;
+            case FRANKER_FACE:
+                if (doneWithFrankerFaces) {
+                    //TODO check the option to loop through all the loaded ones, as per issue #81
+                    //right now we just do loaded specific channel (if existing) & global
+                    String[] channels = {"global", channel};
+                    for (String currentChannel : channels) {
+                        ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(currentChannel);
+                        if (faces != null) {
+                            for (FrankerFaceZ f : faces) {
+                                Pattern p = Pattern.compile(f.getRegex());
+                                Matcher m = p.matcher(object);
+                                while (m.find() && !GUIMain.shutDown) {
+                                    int start = m.start();
+                                    int end = m.end() - 1;
+                                    if (!Utils.inRanges(start, ranges) && !Utils.inRanges(end, ranges)) {
+                                        ranges.put(start, end);
+                                        SimpleAttributeSet attrs = new SimpleAttributeSet();
+                                        attrs.addAttribute("faceinfo", f);
+                                        attrs.addAttribute("channel", currentChannel);
+                                        insertFace(attrs, f.getFilePath());
+                                        attrs.addAttribute("start", start);
+                                        rangeStyles.put(start, attrs);
+                                    }
+                                }
                             }
                         }
                     }
@@ -412,20 +407,72 @@ public class FaceManager {
             return null;
     }
 
-    public static void downloadEmoteSet(int emoteSet) {
-        ArrayList<TwitchFace> faces = twitchFaceMap.get(emoteSet);
-        if (faces != null) {
-            for (TwitchFace f : faces) {
-                try {
-                    String fileName = Utils.setExtension(f.getFilePath().split("-")[4], ".png");
-                    File toSave = new File(GUIMain.currentSettings.twitchFaceDir.getAbsolutePath() + File.separator + fileName);
-                    if (download(f.getFilePath(), toSave)) {
-                        loadedTwitchFaces.get(emoteSet).add(new TwitchFace(f.getRegex(), toSave.getAbsolutePath(), true));
-                    }
-                } catch (Exception ignored) {
-                }
+    public static TwitchFace downloadEmote(int emote) {
+        try {
+            TwitchFace f = onlineTwitchFaces.get(emote);
+            if (f == null) return null;
+            String fileName = Utils.setExtension(String.valueOf(emote), ".png");
+            File toSave = new File(GUIMain.currentSettings.twitchFaceDir.getAbsolutePath() + File.separator + fileName);
+            if (download(f.getFilePath(), toSave)) {
+                TwitchFace newFace = new TwitchFace(f.getRegex(), toSave.getAbsolutePath(), true);
+                twitchFaceMap.put(emote, newFace);
+                return newFace;
             }
+        } catch (Exception e) {
+            GUIMain.log("Failed to download emote ID " + emote + " due to exception " + e.getMessage());
         }
+        return null;
+    }
+
+    public static void handleFFZChannel(String channel) {
+        new Thread(() -> {
+            ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(channel);
+            ArrayList<FrankerFaceZ> fromOnline = new ArrayList<>();
+            FrankerFaceZ.FFZParser.parse(channel, fromOnline);
+            if (faces != null) { //already have the faces
+                for (FrankerFaceZ online : fromOnline) {
+                    boolean haveIt = false;
+                    for (FrankerFaceZ f : faces) {//get the ones I need
+                        if (online.getRegex().equalsIgnoreCase(f.getRegex())) {
+                            haveIt = true;
+                            break;
+                        }
+                    }
+                    if (!haveIt) {
+                        FrankerFaceZ downloaded = downloadFFZFace(channel, online);
+                        if (downloaded != null) {
+                            faces.add(downloaded);
+                        }
+                    }
+
+                }
+            } else { //don't have any of them
+                faces = new ArrayList<>();
+                for (FrankerFaceZ online : fromOnline) {
+                    FrankerFaceZ downloaded = downloadFFZFace(channel, online);
+                    if (downloaded != null) faces.add(downloaded);
+                }
+                ffzFaceMap.put(channel, faces);
+            }
+        }).start();
+    }
+
+    private static FrankerFaceZ downloadFFZFace(String channel, FrankerFaceZ face) {//URL is stored in the FFZ face
+        FrankerFaceZ toReturn = null;
+        try {
+            String regex = face.getRegex();
+            String fileName = Utils.setExtension(regex, ".png");
+            //download into the channel's folder
+            File directory = new File(GUIMain.currentSettings.frankerFaceZDir + File.separator + channel);
+            directory.mkdirs();
+            File toSave = new File(directory + File.separator + fileName);
+            if (download(face.getFilePath(), toSave)) {
+                toReturn = new FrankerFaceZ(Utils.removeExt(fileName), toSave.getAbsolutePath(), true);
+            }
+        } catch (Exception e) {
+            GUIMain.log("Failed to download FFZ Faces due to Exception: " + e.getMessage());
+        }
+        return toReturn;
     }
 
     //overload method for below, rids the use of try{}catch{} in Utils class
@@ -444,7 +491,7 @@ public class FaceManager {
      * Downloads a face off of the internet using the given URL and stores it in the given
      * directory with the given filename and extension. The regex (or "name") of the face is put in the map
      * for later use/comparison.
-     * <p>
+     * <p/>
      *
      * @param url       The URL to the face.
      * @param directory The directory to save the face in.
@@ -459,8 +506,6 @@ public class FaceManager {
             return toReturn;
         }
         try {
-            if (url.contains("imgur.com") && !url.contains("i.imgur"))
-                url = "http://i.imgur.com/" + url.substring(url.lastIndexOf("/") + 1);//fixes URLs of base-imgur
             File toSave = new File(directory + File.separator + name);
             if (download(url, toSave)) {
                 if (type == FACE_TYPE.NORMAL_FACE) {
@@ -488,6 +533,9 @@ public class FaceManager {
         try {
             BufferedImage image;
             URL URL = new URL(url);//bad URL or something
+            if (URL.getHost().equals("imgur.com")) {
+                URL = new URL(Utils.setExtension("http://i.imgur.com" + URL.getPath(), ".png"));
+            }
             image = ImageIO.read(URL);//just incase the file is null/it can't read it
             if (image.getHeight() > DOWNLOAD_MAX_FACE_HEIGHT) {//if it's too big, scale it
                 image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY,

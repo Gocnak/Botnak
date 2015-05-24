@@ -56,13 +56,15 @@ public class BanQueue implements HeartbeatThread {
         while (!GUIMain.shutDown && it.hasNext()) {
             User u = it.next();
             if (!u.timer.isRunning()) {
+                String name = u.name.equalsIgnoreCase(GUIMain.currentSettings.accountManager.getViewer().getNick()) ?
+                        ("You have ") : (u.name + " has ");
                 if (u.count > 1) {
                     MessageQueue.addMessage(new Message().setChannel(u.channel.substring(1))
                             .setType(Message.MessageType.BAN_NOTIFY)
-                            .setContent(u.name + " has been banned/timed out " + u.count + " times!"));
+                            .setContent(name + "been banned/timed out " + u.count + " times!"));
                 } else {
                     MessageQueue.addMessage(new Message().setChannel(u.channel.substring(1))
-                            .setType(Message.MessageType.BAN_NOTIFY).setContent(u.name + " has been banned/timed out!"));
+                            .setType(Message.MessageType.BAN_NOTIFY).setContent(name + "been banned/timed out!"));
                 }
                 it.remove();
             }

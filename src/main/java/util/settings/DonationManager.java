@@ -13,7 +13,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.sql.Date;
+import java.text.NumberFormat;
 import java.time.Instant;
+import java.util.Currency;
 import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -26,7 +28,17 @@ public class DonationManager {
     private CopyOnWriteArraySet<Donor> donors;
     private CopyOnWriteArraySet<Donation> donations;
     private String client_ID = "", access_code = "";
-    public static char CURRENCY_SYMBOL = '$';//defaults to US Dollar
+    private static NumberFormat CURRENCY_FORMAT = null;
+
+    public static NumberFormat getCurrencyFormat() {
+        if (CURRENCY_FORMAT == null) {
+            NumberFormat nf = NumberFormat.getCurrencyInstance();
+            nf.setMinimumFractionDigits(0);
+            nf.setMaximumFractionDigits(2);
+            CURRENCY_FORMAT = nf;
+        }
+        return CURRENCY_FORMAT;
+    }
     public boolean ranFirstCheck = false;
 
 
@@ -74,8 +86,8 @@ public class DonationManager {
                     MessageQueue.addMessage(new Message()
                             .setChannel(GUIMain.currentSettings.accountManager.getUserAccount().getName())
                             .setType(Message.MessageType.DONATION_NOTIFY)
-                            .setContent(d.getFromWho() + " has just donated " + CURRENCY_SYMBOL + d.getAmount() + "! " +
-                                    "Lifetime total: " + CURRENCY_SYMBOL + don.getDonated() + " .")
+                            .setContent(String.format("%s has just donated %s! Lifetime total: %s ", d.getFromWho(),
+                                    getCurrencyFormat().format(d.getAmount()), getCurrencyFormat().format(don.getDonated())))
                             .setExtra(d));
                 }
             }
@@ -158,8 +170,7 @@ public class DonationManager {
         lastDonation = d;
     }
 
-    public Donation checkDonations(boolean single) {
-        Donation mostRecent = null;
+    public void checkDonations(boolean single) {
         int limit = (single ? 5 : 100);
         String url = "https://streamtip.com/api/tips?client_id=" + getClientID() + "&access_token=" + getAccessCode() +
                 "&limit=" + limit;
@@ -175,11 +186,15 @@ public class DonationManager {
                     JSONArray tipsArray = outerShell.getJSONArray("tips");
                     for (int i = (single ? tipsArray.length() - 1 : count - 1); i > -1; i--) {
                         JSONObject tip = tipsArray.getJSONObject(i);
-                        char cs = tip.getString("currencySymbol").charAt(0);
-                        if (CURRENCY_SYMBOL != cs) CURRENCY_SYMBOL = cs;
+                        try {
+                            Currency c = Currency.getInstance(tip.getString("currencyCode"));
+                            getCurrencyFormat().setCurrency(c);
+                        } catch (Exception e) {
+                            GUIMain.log("Unknown currency code: " + tip.getString("currencyCode"));
+                            getCurrencyFormat().setCurrency(Currency.getInstance("USD"));
+                        }
                         if (lastDonation != null) {
                             if (lastDonation.getDonationID().equals(tip.getString("_id"))) {
-                                mostRecent = lastDonation;
                                 continue;
                             }
                         }
@@ -189,6 +204,5 @@ public class DonationManager {
             }
         } catch (Exception ignored) {
         }
-        return mostRecent;
     }
 }

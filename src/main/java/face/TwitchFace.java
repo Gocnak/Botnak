@@ -12,5 +12,4 @@ public class TwitchFace extends ToggleableFace {
     public TwitchFace(String regex, String filePath, boolean enabled) {
         super(regex, filePath, enabled);
     }
-
 }

@@ -30,6 +30,8 @@ import java.util.ArrayList;
  */
 public class GUISettings extends JFrame {
 
+    private static String lastSoundDir = "";
+
     GUISounds_2 s2;
     AuthorizeAccountGUI mainAccGUI;
 
@@ -272,27 +274,9 @@ public class GUISettings extends JFrame {
     }
 
     public void userLoginButtonActionPerformed() {
-        //TODO
         if (GUIMain.viewer == null) {
             if (mainAccGUI == null) mainAccGUI = new AuthorizeAccountGUI();
             mainAccGUI.setVisible(true);
-
-            /*String normus = normUser.getText().toLowerCase();
-            String normpass = new String(normPass.getPassword());
-            if (!normus.equals("") && !normus.contains(" ")) {
-                if (!normpass.equals("") && !normpass.contains(" ")) {
-                    if (!normpass.contains("oauth")) {
-                        JOptionPane.showMessageDialog(this,
-                                "The password must be the entire oauth string!" +
-                                        "\n See http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc for more info.",
-                                "Password Needs Oauth", JOptionPane.ERROR_MESSAGE);
-                        normPass.setText("");
-                    } else {//TODO make the Account GUI
-                        //GUIMain.viewer = new IRCViewer(normus, normpass);
-                        //GUIMain.manageAccount.setEnabled(true);
-                    }
-                }
-            }*/
         }
     }
 
@@ -308,7 +292,7 @@ public class GUISettings extends JFrame {
                                         "\n See http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc for more info.",
                                 "Password Needs Oauth", JOptionPane.ERROR_MESSAGE);
                         botPass.setText("");
-                    } else {//TODO make the account GUI
+                    } else {
                         GUIMain.currentSettings.accountManager.setBotAccount(new Account(botus, new Oauth(botpass, false, false)));
                         GUIMain.currentSettings.accountManager.addTask(new Task(null, Task.Type.CREATE_BOT_ACCOUNT, null));
                     }
@@ -1488,12 +1472,12 @@ public class GUISettings extends JFrame {
             jfc.setAcceptAllFileFilterUsed(false);
             jfc.addChoosableFileFilter(Constants.wavfiles);
             jfc.setMultiSelectionEnabled(true);
-            if (!GUIMain.lastSoundDir.equals("")) jfc.setCurrentDirectory(new File(GUIMain.lastSoundDir));
+            if (!lastSoundDir.equals("")) jfc.setCurrentDirectory(new File(lastSoundDir));
             int returnVal = jfc.showOpenDialog(this);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 File[] selectedFiles = jfc.getSelectedFiles();
                 if (selectedFiles.length > 0) {
-                    GUIMain.lastSoundDir = selectedFiles[0].getParent();
+                    lastSoundDir = selectedFiles[0].getParent();
                     ArrayList<String> list = new ArrayList<>();
                     for (File f : selectedFiles) {
                         list.add(f.getAbsolutePath());
@@ -1645,4 +1629,3 @@ public class GUISettings extends JFrame {
     }
 
 }
-

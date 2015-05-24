@@ -21,7 +21,8 @@ public class DonationCheck implements HeartbeatThread {
         return GUIMain.currentSettings != null && GUIMain.currentSettings.donationManager != null
                 && GUIMain.currentSettings.donationManager.canCheck()
                 && GUIMain.currentSettings.donationManager.ranFirstCheck
-                && !toCheck.isRunning();
+                && !toCheck.isRunning()
+                && !beating;
     }
 
     @Override

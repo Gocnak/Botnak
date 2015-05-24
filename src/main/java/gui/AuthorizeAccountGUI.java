@@ -59,17 +59,17 @@ public class AuthorizeAccountGUI extends JFrame {
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner Evaluation license - Nick K
-        label1 = new JLabel();
+        JLabel label1 = new JLabel();
         accountNameField = new JTextField();
-        label2 = new JLabel();
+        JLabel label2 = new JLabel();
         boxEditStream = new JCheckBox();
         boxCommercial = new JCheckBox();
         boxFollowed = new JCheckBox();
-        authorizeButton = new JButton();
-        label3 = new JLabel();
+        JButton authorizeButton = new JButton();
+        JLabel label3 = new JLabel();
         oAuthField = new JPasswordField();
-        label4 = new JLabel();
-        closeButton = new JButton();
+        JLabel label4 = new JLabel();
+        JButton closeButton = new JButton();
 
         //======== this ========
         setTitle("Authorize an Account");
@@ -172,18 +172,10 @@ public class AuthorizeAccountGUI extends JFrame {
         // JFormDesigner - End of component initialization  //GEN-END:initComponents
     }
 
-    // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
-    // Generated using JFormDesigner Evaluation license - Nick K
-    private JLabel label1;
     private JTextField accountNameField;
-    private JLabel label2;
     private JCheckBox boxEditStream;
     private JCheckBox boxCommercial;
     private JCheckBox boxFollowed;
-    private JButton authorizeButton;
-    private JLabel label3;
     public JPasswordField oAuthField;
-    private JLabel label4;
-    private JButton closeButton;
     // JFormDesigner - End of variables declaration  //GEN-END:variables
 }

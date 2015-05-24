@@ -39,7 +39,7 @@ public class GUIStreams extends JFrame {
                         //the tab will not be added to the tabbed pane and therefore invisible
                         cp.setTabVisible(false);
                         if (GUIMain.viewer != null) GUIMain.viewer.doConnect(channel);
-                        //TODO check if in the settings GUI they want the bot to follow
+                        //TODO check if in the settings GUI they want the bot to follow, per issue #76
                         //if (GUIMain.bot != null) GUIMain.bot.doConnect(channel);
                         GUIMain.channelSet.add(channel);
                         GUIMain.chatPanes.put(cp.getChannel(), cp);
@@ -54,7 +54,7 @@ public class GUIStreams extends JFrame {
                 if (!channel.equals("") && !channel.contains(" ") && !GUIMain.chatPanes.containsKey(channel)) {
                     ChatPane cp = ChatPane.createPane(channel);
                     if (GUIMain.viewer != null) GUIMain.viewer.doConnect(channel);
-                    //if (GUIMain.bot != null) GUIMain.bot.doConnect(channel); TODO as above
+                    //if (GUIMain.bot != null) GUIMain.bot.doConnect(channel); TODO as above, issue #76
                     GUIMain.chatPanes.put(cp.getChannel(), cp);
                     GUIMain.channelSet.add(channel);
                     GUIMain.channelPane.insertTab(cp.getChannel(), null, cp.getScrollPane(), null, cp.getIndex());

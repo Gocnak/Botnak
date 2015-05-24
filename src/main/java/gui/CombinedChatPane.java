@@ -1,5 +1,6 @@
 package gui;
 
+import gui.listeners.ListenerFace;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
 import util.Utils;
@@ -195,6 +196,7 @@ public class CombinedChatPane extends ChatPane {
         pane.setFont(GUIMain.currentSettings.font);
         pane.addMouseListener(new ListenerURL());
         pane.addMouseListener(new ListenerName());
+        pane.addMouseListener(new ListenerFace());
         scrollPane.setViewportView(pane);
         for (ChatPane cp : panes) {
             cp.setTabVisible(false);

@@ -72,10 +72,8 @@ public class Timer {
      *
      * @param ms The number of milliseconds before the timer
      *           should stop running.
-     * @return The new end time.
      */
-    public long setEndIn(final long ms) {
+    public void setEndIn(final long ms) {
         end = System.currentTimeMillis() + ms;
-        return end;
     }
 }

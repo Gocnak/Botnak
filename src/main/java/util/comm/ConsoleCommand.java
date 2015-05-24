@@ -22,7 +22,7 @@ public class ConsoleCommand {
     public int classPermission;
     public String trigger;
 
-    public static enum Action { //one for each
+    public enum Action { //one for each
         ADD_FACE,
         CHANGE_FACE,
         REMOVE_FACE,

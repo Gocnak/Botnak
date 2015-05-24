@@ -169,13 +169,9 @@ public class Vote extends Thread {
 
     private ArrayList<Option> getSortedOptions() {
         ArrayList<Option> results = new ArrayList<>();
-        for (Option o : options) {
-            results.add(o);
-        }
+        options.forEach(results::add);
         Collections.sort(results);//sort into ascending based on votes
         Collections.reverse(results);//make it descending
         return results;
     }
-
-
 }

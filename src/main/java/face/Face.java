@@ -9,14 +9,12 @@ package face;
  */
 public class Face {
 
-
     private final String regex, filePath;
 
     public Face() {
         regex = "";
         filePath = "";
     }
-
 
     /**
      * This custom class was made to make Face storing a lot easier for Botnak.
@@ -42,6 +40,4 @@ public class Face {
         return (another instanceof Face) && ((Face) another).getRegex().equals(getRegex())
                 && ((Face) another).getFilePath().equals(getFilePath());
     }
-
-
 }

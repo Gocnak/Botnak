@@ -1,18 +1,19 @@
-2.3
+2.31
+
+IMPORTANT!! In your Botnak folder:
+Delete your TwitchFaces/ folder
+Delete your TwitchFaces.txt file
 
 Added:
 
-Full !song support with last.fm (closes #53 but see the wiki on github)
-Icon enums (one step closer towards #57, thanks @jbzdarkid!)
-Donation total for a user printed out upon another donation
+IRCv3 Support (closes #83 and closes #84)
+FrankerFaceZ Support (closes #77 thanks @jbzdarkid)
+Reconnect threads (closes #62)
+URL-Unshortener, Twitch VOD and YouTube video data info (closes #24)
+Emote pop-up menus (try clicking an emote!)
 
 Fixed:
 
-FileChooser for Sounds now compares correctly (closes #71)
-Channel manager null fix (closes #73)
-User Chat index sets correctly (you can up arrow -> enter spam again)
-Issue with User Suggestion panel still showing
-Imgur URLs are corrected to i.imgur URLs (namefaces)
-Luminosity values should be better now
-Subscriber count streak does not increase for repeat messages
-Minor code improvements (thanks @jbzdarkid and @tsteinholz !)
+Donation formatting fixed (thanks @dr-kegel & @jbzdarkid)
+Potential issue with imgur links (thanks @dr-kegel)
+General code cleanup

@@ -10,15 +10,15 @@ public interface HeartbeatThread {
      *
      * @return True to beat, false to not beat.
      */
-    public boolean shouldBeat();
+    boolean shouldBeat();
 
     /**
      * What to do every "beat" when #shouldBeat() is true.
      */
-    public void beat();
+    void beat();
 
     /**
      * What to do after #beat() is called.
      */
-    public void afterBeat();
+    void afterBeat();
 }

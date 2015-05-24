@@ -93,7 +93,8 @@ public class ChannelManager {
      * @param user    The name of the user.
      */
     public void handleSubscriber(String channel, String user) {
-        getChannel(channel).addSubscriber(user);
+        Channel c = getChannel(channel);
+        if (c != null) c.addSubscriber(user);
     }
 
     /**

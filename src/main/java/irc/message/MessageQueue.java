@@ -45,7 +45,9 @@ public class MessageQueue extends Thread {
                 MessageWrapper wrap = new MessageWrapper(mess);
                 try {//try catch for security, if one message fails, we still want to receive messages
                     if (mess.getType() == Message.MessageType.LOG_MESSAGE) {
-                        GUIMain.chatPanes.get("System Logs").log(wrap, true);
+                        if (mess.getChannel() != null)
+                            GUIMain.chatPanes.get(mess.getChannel().substring(1)).log(wrap, true);
+                        else GUIMain.chatPanes.get("System Logs").log(wrap, true);
                     } else if (mess.getType() == Message.MessageType.NORMAL_MESSAGE ||
                             mess.getType() == Message.MessageType.ACTION_MESSAGE) {
                         if (!GUIMain.combinedChatPanes.isEmpty()) {

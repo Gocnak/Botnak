@@ -352,7 +352,7 @@ public class Scalr {
      * @author Riyad Kalla (software@thebuzzmedia.com)
      * @since 1.1
      */
-    public static enum Method {
+    public enum Method {
         /**
          * Used to indicate that the scaling implementation should decide which
          * method to use in order to get the best looking scaled image in the
@@ -415,7 +415,7 @@ public class Scalr {
      * @author Riyad Kalla (software@thebuzzmedia.com)
      * @since 3.1
      */
-    public static enum Mode {
+    public enum Mode {
         /**
          * Used to indicate that the scaling implementation should calculate
          * dimensions for the resultant image by looking at the image's
@@ -459,7 +459,7 @@ public class Scalr {
      * @author Riyad Kalla (software@thebuzzmedia.com)
      * @since 3.2
      */
-    public static enum Rotation {
+    public enum Rotation {
         /**
          * 90-degree, clockwise rotation (to the right). This is equivalent to a
          * quarter-turn of the image to the right; moving the picture on to its

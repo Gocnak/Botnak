@@ -2,8 +2,8 @@ package thread.heartbeat;
 
 import gui.ChatPane;
 import gui.GUIMain;
+import util.APIRequests;
 import util.Timer;
-import util.Utils;
 
 import java.util.Set;
 
@@ -33,8 +33,8 @@ public class ViewerCount implements HeartbeatThread {
             if (s.equalsIgnoreCase("system logs")) continue;
             ChatPane cp = GUIMain.chatPanes.get(s);
             if (cp == null) continue;
-            if (Utils.isChannelLive(s)) {
-                int count = Utils.countViewers(s);
+            if (APIRequests.Twitch.isChannelLive(s)) {
+                int count = APIRequests.Twitch.countViewers(s);
                 if (count >= 0) {
                     cp.setViewerCount(count);
                 }

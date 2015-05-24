@@ -30,87 +30,87 @@ import javax.swing.*;
  */
 public interface AbstractIconFactory {
 
-    public Icon getOptionPaneErrorIcon();
+    Icon getOptionPaneErrorIcon();
 
-    public Icon getOptionPaneWarningIcon();
+    Icon getOptionPaneWarningIcon();
 
-    public Icon getOptionPaneInformationIcon();
+    Icon getOptionPaneInformationIcon();
 
-    public Icon getOptionPaneQuestionIcon();
+    Icon getOptionPaneQuestionIcon();
 
-    public Icon getFileChooserDetailViewIcon();
+    Icon getFileChooserDetailViewIcon();
 
-    public Icon getFileChooserHomeFolderIcon();
+    Icon getFileChooserHomeFolderIcon();
 
-    public Icon getFileChooserListViewIcon();
+    Icon getFileChooserListViewIcon();
 
-    public Icon getFileChooserNewFolderIcon();
+    Icon getFileChooserNewFolderIcon();
 
-    public Icon getFileChooserUpFolderIcon();
+    Icon getFileChooserUpFolderIcon();
 
-    public Icon getMenuIcon();
+    Icon getMenuIcon();
 
-    public Icon getIconIcon();
+    Icon getIconIcon();
 
-    public Icon getMaxIcon();
+    Icon getMaxIcon();
 
-    public Icon getMinIcon();
+    Icon getMinIcon();
 
-    public Icon getCloseIcon();
+    Icon getCloseIcon();
 
-    public Icon getPaletteCloseIcon();
+    Icon getPaletteCloseIcon();
 
-    public Icon getRadioButtonIcon();
+    Icon getRadioButtonIcon();
 
-    public Icon getCheckBoxIcon();
+    Icon getCheckBoxIcon();
 
-    public Icon getComboBoxIcon();
+    Icon getComboBoxIcon();
 
-    public Icon getTreeComputerIcon();
+    Icon getTreeComputerIcon();
 
-    public Icon getTreeFloppyDriveIcon();
+    Icon getTreeFloppyDriveIcon();
 
-    public Icon getTreeHardDriveIcon();
+    Icon getTreeHardDriveIcon();
 
-    public Icon getTreeFolderIcon();
+    Icon getTreeFolderIcon();
 
-    public Icon getTreeLeafIcon();
+    Icon getTreeLeafIcon();
 
-    public Icon getTreeCollapsedIcon();
+    Icon getTreeCollapsedIcon();
 
-    public Icon getTreeExpandedIcon();
+    Icon getTreeExpandedIcon();
 
-    public Icon getMenuArrowIcon();
+    Icon getMenuArrowIcon();
 
-    public Icon getMenuCheckBoxIcon();
+    Icon getMenuCheckBoxIcon();
 
-    public Icon getMenuRadioButtonIcon();
+    Icon getMenuRadioButtonIcon();
 
-    public Icon getUpArrowIcon();
+    Icon getUpArrowIcon();
 
-    public Icon getDownArrowIcon();
+    Icon getDownArrowIcon();
 
-    public Icon getLeftArrowIcon();
+    Icon getLeftArrowIcon();
 
-    public Icon getRightArrowIcon();
+    Icon getRightArrowIcon();
 
-    public Icon getSplitterUpArrowIcon();
+    Icon getSplitterUpArrowIcon();
 
-    public Icon getSplitterDownArrowIcon();
+    Icon getSplitterDownArrowIcon();
 
-    public Icon getSplitterLeftArrowIcon();
+    Icon getSplitterLeftArrowIcon();
 
-    public Icon getSplitterRightArrowIcon();
+    Icon getSplitterRightArrowIcon();
 
-    public Icon getSplitterHorBumpIcon();
+    Icon getSplitterHorBumpIcon();
 
-    public Icon getSplitterVerBumpIcon();
+    Icon getSplitterVerBumpIcon();
 
-    public Icon getThumbHorIcon();
+    Icon getThumbHorIcon();
 
-    public Icon getThumbVerIcon();
+    Icon getThumbVerIcon();
 
-    public Icon getThumbHorIconRollover();
+    Icon getThumbHorIconRollover();
 
-    public Icon getThumbVerIconRollover();
+    Icon getThumbVerIconRollover();
 }

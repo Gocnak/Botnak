@@ -16,7 +16,7 @@ import java.net.URL;
  * levels.
  *
  * @author Joseph Blackman
- * @date 4/10/2015
+ * @version 4/10/2015
  */
 
 public class Icons {
@@ -104,8 +104,8 @@ public class Icons {
 
     //Wrapper class for logging purposes
     public static class BotnakIcon {
-        public IconEnum t;
-        public ImageIcon ii;
+        public final IconEnum t;
+        public final ImageIcon ii;
 
         public IconEnum getType() {
             return t;

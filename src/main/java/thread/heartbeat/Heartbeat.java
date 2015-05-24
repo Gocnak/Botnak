@@ -9,18 +9,12 @@ import java.util.concurrent.Executors;
 /**
  * Created by Nick on 3/12/14.
  * This class will be used to do normal checkups on things.
- * <p>
- * The things to check include and are not limited to:
- * 1. Connection
- * 2. Points for Users (TODO)
- * 4. Emote downloads
- * 5. TODO: increse this list
  */
 public class Heartbeat extends Thread {
 
     private ExecutorService executor;
     private ArrayList<HeartbeatThread> heartbeatThreads;
-    private int delay;
+    private final int delay;
 
     /**
      * Constructs a heartbeat monitor with a delay of half a second between beats.

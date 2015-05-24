@@ -142,11 +142,8 @@ public class JTattooUtilities {
     public static boolean isWindowActive(Window window) {
         if (getJavaVersion() >= 1.4) {
             try {
-                Class paramTypes[] = null;
-                Object args[] = null;
-                Method m = window.getClass().getMethod("isActive", paramTypes);
-                Boolean b = (Boolean) m.invoke(window, args);
-                return b;
+                Method m = window.getClass().getMethod("isActive", null);
+                return (Boolean) m.invoke(window, null);
             } catch (Exception ex) {
             }
         }

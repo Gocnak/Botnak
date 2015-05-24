@@ -127,7 +127,7 @@ public class JSONObject {
     /**
      * The map where the JSONObject's properties are kept.
      */
-    private final Map map;
+    private final Map<String, Object> map;
 
     /**
      * It is sometimes more convenient and less ambiguous to have a
@@ -141,7 +141,7 @@ public class JSONObject {
      * Construct an empty JSONObject.
      */
     public JSONObject() {
-        this.map = new HashMap();
+        this.map = new HashMap<>();
     }
 
     /**
@@ -224,14 +224,13 @@ public class JSONObject {
      *            the JSONObject.
      * @throws JSONException
      */
-    public JSONObject(Map map) {
-        this.map = new HashMap();
+    public JSONObject(Map<String, Object> map) {
+        this.map = new HashMap<>();
         if (map != null) {
-            for (Object o : map.entrySet()) {
-                Map.Entry e = (Map.Entry) o;
-                Object value = e.getValue();
+            for (Map.Entry<String, Object> o : map.entrySet()) {
+                Object value = o.getValue();
                 if (value != null) {
-                    this.map.put(e.getKey(), wrap(value));
+                    this.map.put(o.getKey(), wrap(value));
                 }
             }
         }
@@ -666,7 +665,7 @@ public class JSONObject {
      *
      * @return An iterator of the keys.
      */
-    public Iterator keys() {
+    public Iterator<String> keys() {
         return this.keySet().iterator();
     }
 
@@ -675,7 +674,7 @@ public class JSONObject {
      *
      * @return A keySet.
      */
-    public Set keySet() {
+    public Set<String> keySet() {
         return this.map.keySet();
     }
 
@@ -1060,9 +1059,9 @@ public class JSONObject {
      * are both non-null, and only if there is not already a member with that
      * name.
      *
-     * @param key
-     * @param value
-     * @return his.
+     * @param key The string key.
+     * @param value The object value.
+     * @return this.
      * @throws JSONException if the key is a duplicate
      */
     public JSONObject putOnce(String key, Object value) throws JSONException {
@@ -1340,7 +1339,7 @@ public class JSONObject {
      * @throws JSONException If the value is or contains an invalid number.
      */
     public static String valueToString(Object value) throws JSONException {
-        if (value == null || value.equals(null)) {
+        if (value == null) {
             return "null";
         }
         if (value instanceof JSONString) {
@@ -1350,10 +1349,10 @@ public class JSONObject {
             } catch (Exception e) {
                 throw new JSONException(e);
             }
-            if (object instanceof String) {
+            if (object != null) {
                 return (String) object;
             }
-            throw new JSONException("Bad value from toJSONString: " + object);
+            throw new JSONException("Bad value from toJSONString: " + value);
         }
         if (value instanceof Number) {
             return numberToString((Number) value);
@@ -1407,7 +1406,7 @@ public class JSONObject {
                 return new JSONArray(object);
             }
             if (object instanceof Map) {
-                return new JSONObject((Map) object);
+                return new JSONObject((Map<String, Object>) object);
             }
             Package objectPackage = object.getClass().getPackage();
             String objectPackageName = objectPackage != null ? objectPackage
@@ -1436,7 +1435,7 @@ public class JSONObject {
         return this.write(writer, 0, 0);
     }
 
-    static final Writer writeValue(Writer writer, Object value,
+    static Writer writeValue(Writer writer, Object value,
                                    int indentFactor, int indent) throws JSONException, IOException {
         if (value == null || value.equals(null)) {
             writer.write("null");
@@ -1445,7 +1444,7 @@ public class JSONObject {
         } else if (value instanceof JSONArray) {
             ((JSONArray) value).write(writer, indentFactor, indent);
         } else if (value instanceof Map) {
-            new JSONObject((Map) value).write(writer, indentFactor, indent);
+            new JSONObject((Map<String, Object>) value).write(writer, indentFactor, indent);
         } else if (value instanceof Collection) {
             new JSONArray((Collection) value).write(writer, indentFactor,
                     indent);
@@ -1469,7 +1468,7 @@ public class JSONObject {
         return writer;
     }
 
-    static final void indent(Writer writer, int indent) throws IOException {
+    static void indent(Writer writer, int indent) throws IOException {
         for (int i = 0; i < indent; i += 1) {
             writer.write(' ');
         }
@@ -1489,12 +1488,12 @@ public class JSONObject {
         try {
             boolean commanate = false;
             final int length = this.length();
-            Iterator keys = this.keys();
+            Iterator<String> keys = this.keys();
             writer.write('{');
 
             if (length == 1) {
-                Object key = keys.next();
-                writer.write(quote(key.toString()));
+                String key = keys.next();
+                writer.write(quote(key));
                 writer.write(':');
                 if (indentFactor > 0) {
                     writer.write(' ');
@@ -1503,7 +1502,7 @@ public class JSONObject {
             } else if (length != 0) {
                 final int newindent = indent + indentFactor;
                 while (keys.hasNext()) {
-                    Object key = keys.next();
+                    String key = keys.next();
                     if (commanate) {
                         writer.write(',');
                     }
@@ -1511,7 +1510,7 @@ public class JSONObject {
                         writer.write('\n');
                     }
                     indent(writer, newindent);
-                    writer.write(quote(key.toString()));
+                    writer.write(quote(key));
                     writer.write(':');
                     if (indentFactor > 0) {
                         writer.write(' ');

@@ -17,7 +17,7 @@ public class Task {
         this.message = message;
     }
 
-    public static enum Type {
+    public enum Type {
         CREATE_VIEWER_ACCOUNT,
         CREATE_BOT_ACCOUNT,
         CONNECT,

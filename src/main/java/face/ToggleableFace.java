@@ -2,6 +2,7 @@ package face;
 
 /**
  * Created by Nick on 3/12/14.
+ * Represents a face that can be toggled ON (to display) or OFF (not display).
  */
 public class ToggleableFace extends Face {
 
@@ -15,7 +16,6 @@ public class ToggleableFace extends Face {
         super(regex, filepath);
         isEnabled = enabled;
     }
-
 
     public boolean isEnabled() {
         return isEnabled;

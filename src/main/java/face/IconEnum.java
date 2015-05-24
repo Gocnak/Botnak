@@ -15,7 +15,7 @@ public enum IconEnum {
     DONOR_HIGH("Donor"),
     DONOR_INSANE("Donor");
 
-    public String type;
+    public final String type;
     IconEnum(String type) {
         this.type = type;
     }

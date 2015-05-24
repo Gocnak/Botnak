@@ -29,12 +29,13 @@ import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class GUIMain extends JFrame {
 
     public static HashMap<String, Color> userColMap;
     public static HashSet<Command> commandSet;
-    public static HashSet<String> channelSet;
+    public static CopyOnWriteArraySet<String> channelSet;
     public static HashMap<String, ChatPane> chatPanes;
     public static HashSet<CombinedChatPane> combinedChatPanes;
     public static HashMap<String, Color> keywordMap;
@@ -54,8 +55,6 @@ public class GUIMain extends JFrame {
 
     public static SimpleAttributeSet norm = new SimpleAttributeSet();
 
-    public static String lastSoundDir = "";
-
     public static GUIMain instance;
 
     public static Settings currentSettings;
@@ -67,7 +66,7 @@ public class GUIMain extends JFrame {
     public GUIMain() {
         new MessageQueue().start();
         instance = this;
-        channelSet = new HashSet<>();
+        channelSet = new CopyOnWriteArraySet<>();
         userColMap = new HashMap<>();
         commandSet = new HashSet<>();
         conCommands = new HashSet<>();
@@ -109,8 +108,12 @@ public class GUIMain extends JFrame {
 
     public void chatButtonActionPerformed() {
         userResponsesIndex = 0;
-        if (GUIMain.currentSettings.accountManager.getViewer() == null) return;
         String channel = channelPane.getTitleAt(channelPane.getSelectedIndex());
+        if (GUIMain.currentSettings.accountManager.getViewer() == null) return;
+        if (!GUIMain.currentSettings.accountManager.getViewer().isConnected()) {
+            logCurrent("Failed to send message, currently trying to reconnect!");
+            return;
+        }
         String userInput = userChat.getText().replaceAll("\n", "");
         if (channel != null && !channel.equalsIgnoreCase("system logs")) {
             CombinedChatPane ccp = Utils.getCombinedChatPane(channelPane.getSelectedIndex());
@@ -137,6 +140,18 @@ public class GUIMain extends JFrame {
                 userChat.setText("");
             }
         }
+    }
+
+    /**
+     * Logs a message to the current chat pane.
+     *
+     * @param message The message to log.
+     */
+    public static void logCurrent(Object message) {
+        String channel = channelPane.getTitleAt(channelPane.getSelectedIndex());
+        if (message != null && GUIMain.chatPanes != null && !GUIMain.chatPanes.isEmpty())
+            MessageQueue.addMessage(new Message().setChannel("#" + channel)
+                    .setContent(message.toString()).setType(Message.MessageType.LOG_MESSAGE));
     }
 
     /**

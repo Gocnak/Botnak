@@ -44,6 +44,5 @@ public class ListenerURL extends MouseAdapter {
                 }
             }
         }
-        super.mouseReleased(e);
     }
 }

@@ -14,7 +14,6 @@ found at http://www.jibble.org/licenses/
 
 package lib.pircbot.org.jibble.pircbot;
 
-import face.FaceManager;
 import gui.GUIMain;
 import irc.message.MessageHandler;
 import util.Constants;
@@ -23,34 +22,33 @@ import java.awt.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 /**
  * PircBot is a Java framework for writing IRC bots quickly and easily.
- * <p>
+ * <p/>
  * It provides an event-driven architecture to handle common IRC
  * events, flood protection, DCC support, ident support, and more.
  * The comprehensive logfile format is suitable for use with pisg to generate
  * channel statistics.
- * <p>
+ * <p/>
  * Methods of the PircBot class can be called to send events to the IRC server
  * that it connects to.  For example, calling the sendMessage method will
  * send a message to a channel or user on the IRC server.  Multiple servers
  * can be supported using multiple instances of PircBot.
- * <p>
+ * <p/>
  * To perform an action when the PircBot receives a normal message from the IRC
  * server, you would override the onMessage method defined in the PircBot
  * class.  All on<i>XYZ</i> methods in the PircBot class are automatically called
  * when the event <i>XYZ</i> happens, so you would override these if you wish
  * to do something when it does happen.
- * <p>
+ * <p/>
  * Some event methods, such as onPing, should only really perform a specific
  * function (i.e. respond to a PING from the server).  For your convenience, such
  * methods are already correctly implemented in the PircBot and should not
  * normally need to be overridden.  Please read the full documentation for each
  * method to see which ones are already implemented by the PircBot class.
- * <p>
+ * <p/>
  * Please visit the PircBot homepage at
  * <a href="http://www.jibble.org/pircbot.php">http://www.jibble.org/pircbot.php</a>
  * for full revision history, a beginners guide to creating your first PircBot
@@ -61,7 +59,7 @@ import java.util.StringTokenizer;
  *         <a href="http://www.jibble.org/">http://www.jibble.org/</a>
  * @version 1.5.0 (Build time: Mon Dec 14 20:07:17 2009)
  */
-public class PircBot implements ReplyConstants {
+public class PircBot {
 
     public ChannelManager getChannelManager() {
         return GUIMain.currentSettings.channelManager;
@@ -124,20 +122,14 @@ public class PircBot implements ReplyConstants {
 
         InputStreamReader inputStreamReader;
         OutputStreamWriter outputStreamWriter;
-        if (getEncoding() != null) {
+
             // Assume the specified encoding is valid for this JVM.
             try {
-                inputStreamReader = new InputStreamReader(socketIn, getEncoding());
-                outputStreamWriter = new OutputStreamWriter(socketOut, getEncoding());
+                inputStreamReader = new InputStreamReader(socketIn, "UTF-8");
+                outputStreamWriter = new OutputStreamWriter(socketOut, "UTF-8");
             } catch (Exception e) {
                 return false;
             }
-        } else {
-            // Otherwise, just use the JVM's default encoding.
-            inputStreamReader = new InputStreamReader(socketIn);
-            outputStreamWriter = new OutputStreamWriter(socketOut);
-        }
-
         BufferedReader breader = new BufferedReader(inputStreamReader);
         BufferedWriter bwriter = new BufferedWriter(outputStreamWriter);
         _outputThread = new OutputThread(this, _outQueue, bwriter);
@@ -200,8 +192,9 @@ public class PircBot implements ReplyConstants {
 
         // Now start the outputThread that will be used to send all messages.
         _outputThread.start();
+        sendRawLine("CAP REQ :twitch.tv/commands");
+        sendRawLine("CAP REQ :twitch.tv/tags");
         getMessageHandler().onConnect();
-        getChannelManager().addUser(new User(getNick()));
         return true;
     }
 
@@ -214,7 +207,7 @@ public class PircBot implements ReplyConstants {
      *
      * @since PircBot 0.9.9
      */
-    public final void reconnect() throws IOException {
+    public final void reconnect() {
         if (getServer() == null || getPassword() == null || getPort() == -1) {
             return;
         }
@@ -311,14 +304,14 @@ public class PircBot implements ReplyConstants {
      * Sends a message to a channel or a private message to a user.  These
      * messages are added to the outgoing message queue and sent at the
      * earliest possible opportunity.
-     * <p>
+     * <p/>
      * Some examples: -
      * <pre>    // Send the message "Hello!" to the channel #cs.
      *    sendMessage("#cs", "Hello!");
-     * <p>
+     * <p/>
      *    // Send a private message to Paul that says "Hi".
      *    sendMessage("Paul", "Hi");</pre>
-     * <p>
+     * <p/>
      * You may optionally apply colours, boldness, underlining, etc to
      * the message by using the <code>Colors</code> class.
      *
@@ -356,7 +349,7 @@ public class PircBot implements ReplyConstants {
      * by a log entry that has ">>>" immediately following the space character
      * after the timestamp.  DCC events use "+++" and warnings about unhandled
      * Exceptions and Errors use "###".
-     * <p>
+     * <p/>
      * This implementation of the method will only cause log entries to be
      * output if the PircBot has had its verbose mode turned on by calling
      * setVerbose(true);
@@ -372,7 +365,7 @@ public class PircBot implements ReplyConstants {
      * This method handles events when any line of text arrives from the server,
      * then calling the appropriate method in the PircBot.  This method is
      * protected and only called by the InputThread for this instance.
-     * <p>
+     * <p/>
      * This method may not be overridden!
      *
      * @param line The raw line of text from the server.
@@ -391,11 +384,32 @@ public class PircBot implements ReplyConstants {
         String sourceNick = "";
         String sourceLogin = "";
         String sourceHostname = "";
-
         StringTokenizer tokenizer = new StringTokenizer(line);
+        String tags = null;
+        String content = null;
+        if (line.startsWith("@")) {
+            tags = tokenizer.nextToken();
+            if (line.contains("USERSTATE")) {
+                parseUserstate(line);
+                return;
+            } else {
+                content = line.substring(line.indexOf(" :", line.indexOf(" :") + 2) + 2);
+            }
+        } else {
+            content = line.substring(line.indexOf(" :") + 2);
+        }
         String senderInfo = tokenizer.nextToken();
         String command = tokenizer.nextToken();
         String target = null;
+        if (command.equals("CLEARCHAT")) {
+            target = tokenizer.nextToken();
+            getMessageHandler().onClearChat(target, (line.contains(" :")) ? content : null);
+            return;
+        } else if (command.equals("HOSTTARGET")) {
+            target = tokenizer.nextToken();
+            getMessageHandler().onHosting(target.substring(1), content.split(" ")[0]);
+            return;
+        }
 
         int exclamation = senderInfo.indexOf("!");
         int at = senderInfo.indexOf("@");
@@ -431,11 +445,10 @@ public class PircBot implements ReplyConstants {
                 }
             }
         }
-
-        command = command.toUpperCase();
         if (sourceNick.startsWith(":")) {
             sourceNick = sourceNick.substring(1);
         }
+        command = command.toUpperCase();
         if (target == null) {
             target = tokenizer.nextToken();
         }
@@ -443,10 +456,8 @@ public class PircBot implements ReplyConstants {
             target = target.substring(1);
         }
         String _channelPrefixes = "#&+!";
-        String content = line.substring(line.indexOf(" :") + 2);
-        if (command.equals("PRIVMSG") && line.contains("SPECIALUSER") && !line.contains("subscriber")) {//this is for setting staff/admin
-            handleSpecial(null, content);
-        }
+
+        parseTags(tags, sourceNick, target);
         // Check for CTCP requests.
         if (command.equals("PRIVMSG") && line.indexOf(":\u0001") > 0 && line.endsWith("\u0001")) {
             String request = line.substring(line.indexOf(":\u0001") + 2, line.length() - 1);
@@ -456,19 +467,7 @@ public class PircBot implements ReplyConstants {
             }
         } else if (command.equals("PRIVMSG") && _channelPrefixes.indexOf(target.charAt(0)) >= 0) {
             if (sourceNick.equalsIgnoreCase("jtv")) {
-                if (line.contains("SPECIALUSER")) {
-                    handleSpecial(target, content);
-                } else if (line.contains("USERCOLOR")) {
-                    handleColor(target, content);
-                } else if (line.contains("EMOTESET")) {
-                    handleEmoteSet(line);
-                } else if (line.contains("HISTORYEND") || line.contains("Now hosting") || line.contains("Exited host")) {
-                    //do nothing
-                } else if (line.contains("CLEARCHAT")) {
-                    getMessageHandler().onClearChat(target, content);
-                } else if (line.contains("HOSTTARGET")) {
-                    getMessageHandler().onHosting(target.substring(1), content.split(" ")[1]);
-                } else if (line.contains("The moderators of this ")) {
+                if (line.contains("The moderators of this ")) {
                     buildMods(target, content);
                 } else {
                     getMessageHandler().onJTVMessage(target.substring(1), content);
@@ -483,19 +482,21 @@ public class PircBot implements ReplyConstants {
                     String user = content.split(" ")[0];
                     getChannelManager().handleSubscriber(target, user);
                     getMessageHandler().onNewSubscriber(target, content, user);
+                } else if (line.contains("resubscribed")) {
+                    getMessageHandler().onJTVMessage(target.substring(1), content);
                 }
                 return;
             }
             // This is a normal message to a channel.
-            getMessageHandler().onMessage(target, sourceNick, line.substring(line.indexOf(" :") + 2));
+            getMessageHandler().onMessage(target, sourceNick, content);
         } else if (command.equals("PRIVMSG")) {
             if (sourceNick.equals("jtv")) {
                 if (line.contains("now hosting you")) {
-                    getMessageHandler().onBeingHosted(line.substring(line.indexOf(" :") + 2));
+                    getMessageHandler().onBeingHosted(content);
                 }
             }
             // This is a private message to us.
-            getMessageHandler().onPrivateMessage(sourceNick, sourceLogin, sourceHostname, line.substring(line.indexOf(" :") + 2));
+            getMessageHandler().onPrivateMessage(sourceNick, sourceLogin, sourceHostname, content);
         } else if (command.equals("MODE")) {
             // Somebody is changing the mode on a channel or user.
             String mode = line.substring(line.indexOf(target, 2) + target.length() + 1);
@@ -515,7 +516,7 @@ public class PircBot implements ReplyConstants {
      * is received from the IRC server.  We use this method to
      * allow PircBot to process various responses from the server
      * before then passing them on to the onServerResponse method.
-     * <p>
+     * <p/>
      * Note that this method is private and should not appear in any
      * of the javadoc generated documenation.
      *
@@ -523,12 +524,58 @@ public class PircBot implements ReplyConstants {
      * @param response The full response from the IRC server.
      */
     private void processServerResponse(int code, String response) {
-        if (code == RPL_ENDOFNAMES) {
+        if (code == 366) {//"END OF NAMES"
             int channelEndIndex = response.indexOf(" :");
             String channel = response.substring(response.lastIndexOf(' ', channelEndIndex - 1) + 1, channelEndIndex);
             sendRawMessage(channel, ".mods");//start building mod list
         }
         onServerResponse(code, response);
+    }
+
+    private void parseUserstate(String line) {
+        String[] parts = line.split(" ");
+        String tags = parts[0];
+        String channel = parts[3];
+        parseTags(tags, GUIMain.currentSettings.accountManager.getUserAccount().getName(), channel);
+    }
+
+    private void parseTags(String line, String user, String channel) {
+        if (line != null) {
+            line = line.substring(1);
+            String[] parts = line.split(";");
+            for (String part : parts) {
+                String[] tags = part.split("=");
+                String key = tags[0].toLowerCase();
+                if (tags.length <= 1) continue;
+                String value = tags[1];
+                switch (key.toLowerCase()) {
+                    case "color":
+                        handleColor(value, user);
+                        break;
+                    case "display-name":
+                        handleDisplayName(value, user);
+                        break;
+                    case "emotes":
+                        handleEmotes(value, user);
+                        break;
+                    case "subscriber":
+                        if ("1".equals(value)) {
+                            handleSpecial(channel, key, user);
+                        }
+                        break;
+                    case "turbo":
+                        if ("1".equals(value)) {
+                            handleSpecial(null, key, user);
+                        }
+                        break;
+                    case "user-type":
+                        handleSpecial(null, value, user);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
     }
 
     private void buildMods(String channel, String line) {
@@ -542,12 +589,12 @@ public class PircBot implements ReplyConstants {
     /**
      * This method is called when we receive a numeric response from the
      * IRC server.
-     * <p>
+     * <p/>
      * Numerics in the range from 001 to 099 are used for client-server
      * connections only and should never travel between servers.  Replies
      * generated in response to commands are found in the range from 200
      * to 399.  Error replies are found in the range from 400 to 599.
-     * <p>
+     * <p/>
      * For example, we can use this method to discover the topic of a
      * channel when we join it.  If we join the channel #test which
      * has a topic of &quot;I am King of Test&quot; then the response
@@ -557,16 +604,15 @@ public class PircBot implements ReplyConstants {
      * <code>onTopic</code> method is an easier way of finding the
      * topic for a channel). Check the IRC RFC for the full list of other
      * command response codes.
-     * <p>
+     * <p/>
      * PircBot implements the interface ReplyConstants, which contains
      * contstants that you may find useful here.
-     * <p>
+     * <p/>
      * The implementation of this method in the PircBot abstract class
      * performs no actions and may be overridden as required.
      *
      * @param code     The three-digit numerical code for the response.
      * @param response The full response from the IRC server.
-     * @see ReplyConstants
      */
     protected void onServerResponse(int code, String response) {
     }
@@ -576,10 +622,10 @@ public class PircBot implements ReplyConstants {
      * Called when the mode of a channel is set.  We process this in
      * order to call the appropriate onOp, onDeop, etc method before
      * finally calling the override-able onMode method.
-     * <p>
+     * <p/>
      * Note that this method is private and is not intended to appear
      * in the javadoc generated documentation.
-     * <p>
+     * <p/>
      * YEAH I'M GUESSING IT'S BECAUSE YOU HALF-ASSED IT SO HARD
      *
      * @param target         The channel or nick that the mode operation applies to.
@@ -634,12 +680,12 @@ public class PircBot implements ReplyConstants {
 
     /**
      * Called when the mode of a channel is set.
-     * <p>
+     * <p/>
      * You may find it more convenient to decode the meaning of the mode
      * string by overriding the onOp, onDeOp, onVoice, onDeVoice,
      * onChannelKey, onDeChannelKey, onChannelLimit, onDeChannelLimit,
      * onChannelBan or onDeChannelBan methods as appropriate.
-     * <p>
+     * <p/>
      * The implementation of this method in the PircBot abstract class
      * performs no actions and may be overridden as required.
      *
@@ -655,7 +701,7 @@ public class PircBot implements ReplyConstants {
 
     /**
      * Called when the mode of a user is set.
-     * <p>
+     * <p/>
      * The implementation of this method in the PircBot abstract class
      * performs no actions and may be overridden as required.
      *
@@ -672,7 +718,7 @@ public class PircBot implements ReplyConstants {
 
     /**
      * The actions to perform when a PING request comes from the server.
-     * <p>
+     * <p/>
      * This sends back a correct response, so if you override this method,
      * be sure to either mimic its functionality or to call
      * super.onServerPing(response);
@@ -687,7 +733,7 @@ public class PircBot implements ReplyConstants {
     /**
      * This method is called whenever we receive a line from the server that
      * the PircBot has not been programmed to recognise.
-     * <p>
+     * <p/>
      * The implementation of this method in the PircBot abstract class
      * performs no actions and may be overridden as required.
      *
@@ -742,7 +788,7 @@ public class PircBot implements ReplyConstants {
      * Returns the current nick of the bot. Note that if you have just changed
      * your nick, this method will still return the old nick until confirmation
      * of the nick change is received from the server.
-     * <p>
+     * <p/>
      * The nick returned by this method is maintained only by the PircBot
      * class and is guaranteed to be correct in the context of the IRC server.
      *
@@ -867,19 +913,6 @@ public class PircBot implements ReplyConstants {
     }
 
     /**
-     * Returns the encoding used to send and receive lines from
-     * the IRC server, or null if not set.  Use the setEncoding
-     * method to change the encoding charset.
-     *
-     * @return The encoding used to send outgoing messages, or
-     * null if not set.
-     * @since PircBot 1.0.4
-     */
-    public String getEncoding() {
-        return "UTF-8";
-    }
-
-    /**
      * Returns the InetAddress used by the PircBot.
      * This can be used to find the I.P. address from which the PircBot is
      * connected to a server.
@@ -969,14 +1002,14 @@ public class PircBot implements ReplyConstants {
      * useful when writing bots or clients that use multiple servers (and
      * therefore multiple PircBot instances) or when integrating a PircBot
      * with an existing program.
-     * <p>
+     * <p/>
      * Each PircBot runs its own threads for dispatching messages from its
      * outgoing message queue and receiving messages from the server.
      * Calling dispose() ensures that these threads are
      * stopped, thus freeing up system resources and allowing the PircBot
      * object to be garbage collected if there are no other references to
      * it.
-     * <p>
+     * <p/>
      * Once a PircBot object has been disposed, it should not be used again.
      * Attempting to use a PircBot that has been disposed may result in
      * unpredictable behaviour.
@@ -994,29 +1027,33 @@ public class PircBot implements ReplyConstants {
      *
      * @param line The line to parse.
      */
-    public void handleSpecial(String channel, String line) {
-        if (line != null) {//SPECIALUSER name type
-            String[] split = line.split(" ");
-            String user = split[1].toLowerCase();
-            if (split[2].equalsIgnoreCase("admin")) {
-                getChannelManager().getUser(user, true).setAdmin(true);
-            } else if (split[2].equalsIgnoreCase("staff")) {
-                getChannelManager().getUser(user, true).setStaff(true);
-            } else if (split[2].equalsIgnoreCase("turbo")) {
-                getChannelManager().getUser(user, true).setTurbo(true);
-            } else if (split[2].equalsIgnoreCase("subscriber")) {
-                getChannelManager().getChannel(channel).addSubscriber(user);
-            } else if (split[2].equalsIgnoreCase("global_mod")) {
-                getChannelManager().getUser(user, true).setGlobalMod(true);
+    public void handleSpecial(String channel, String type, String user) {
+        if (user != null) {//SPECIALUSER name type
+            switch (type) {
+                case "subscriber":
+                    Channel c = getChannelManager().getChannel(channel);
+                    if (c != null) c.addSubscriber(user);
+                    break;
+                case "turbo":
+                    getChannelManager().getUser(user, true).setTurbo(true);
+                    break;
+                case "admin":
+                    getChannelManager().getUser(user, true).setAdmin(true);
+                    break;
+                case "global_mod":
+                    getChannelManager().getUser(user, true).setGlobalMod(true);
+                    break;
+                case "staff":
+                    getChannelManager().getUser(user, true).setStaff(true);
+                    break;
+                default:
+                    break;
             }
         }
     }
 
-    public void handleColor(String channel, String line) {
-        if (channel != null && line != null) {
-            String[] split = line.split(" ");
-            String user = split[1];
-            String color = split[2];
+    public void handleColor(String color, String user) {
+        if (color != null) {
             Color c;
             try {
                 c = Color.decode(color);
@@ -1027,15 +1064,24 @@ public class PircBot implements ReplyConstants {
         }
     }
 
-    public void handleEmoteSet(String line) {
+    public void handleDisplayName(String name, String user) {
+        if (name != null) {
+            getChannelManager().getUser(user, true).setDisplayName(name.replaceAll("\\\\s", " ").trim());
+        }
+    }
+
+    public void handleEmotes(String numbers, String user) {
         try {
-            String user = line.substring(line.indexOf(" :") + 2).split(" ")[1];
-            String[] toParse = line.substring(line.indexOf("[") + 1, line.indexOf("]")).split(",");
-            ArrayList<Integer> emoteSets = new ArrayList<>();
-            for (String s : toParse) emoteSets.add(Integer.parseInt(s));
-            Integer[] toHandle = emoteSets.toArray(new Integer[emoteSets.size()]);
-            getChannelManager().getUser(user, true).setEmotes(toHandle);
-            FaceManager.handleEmoteset(toHandle);
+            String[] parts = numbers.split("/");
+            for (String emote : parts) {
+                String emoteID = emote.split(":")[0];
+                try {
+                    int id = Integer.parseInt(emoteID);
+                    getChannelManager().getUser(user, true).setEmotes(id);
+                } catch (Exception e) {
+                    GUIMain.log("Cannot parse emote ID given by IRCv3 tags!");
+                }
+            }
         } catch (Exception ignored) {
         }
     }

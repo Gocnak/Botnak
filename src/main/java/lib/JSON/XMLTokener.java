@@ -24,6 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+import java.util.HashMap;
+
 /**
  * The XMLTokener extends the JSONTokener to provide additional methods
  * for the parsing of XML texts.
@@ -38,10 +40,10 @@ public class XMLTokener extends JSONTokener {
      * The table of entity values. It initially contains Character values for
      * amp, apos, gt, lt, quot.
      */
-    public static final java.util.HashMap entity;
+    public static final HashMap<String, Character> entity;
 
     static {
-        entity = new java.util.HashMap(8);
+        entity = new HashMap<>(8);
         entity.put("amp", XML.AMP);
         entity.put("apos", XML.APOS);
         entity.put("gt", XML.GT);
