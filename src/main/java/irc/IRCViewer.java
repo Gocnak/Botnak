@@ -10,6 +10,8 @@ import lib.pircbot.org.jibble.pircbot.User;
 import thread.heartbeat.BanQueue;
 import util.Utils;
 
+import java.util.Optional;
+
 
 public class IRCViewer extends MessageHandler {
 
@@ -20,7 +22,7 @@ public class IRCViewer extends MessageHandler {
         if (GUIMain.currentSettings.logChat) Utils.logChat(null, channel, 0);
         if (!GUIMain.channelSet.contains(channel)) GUIMain.channelSet.add(channel);
         //TODO if currentSettings.FFZFacesEnable
-        if (FaceManager.doneWithFrankerFaces && FaceManager.ffzChannels.contains(channel.substring(1)))
+        if (FaceManager.doneWithFrankerFaces)
             FaceManager.handleFFZChannel(channel.substring(1));
     }
 
@@ -69,12 +71,22 @@ public class IRCViewer extends MessageHandler {
     }
 
     @Override
-    public void onHosting(final String channel, final String target) {
-        if (!target.equals("-")) {
-            MessageQueue.addMessage(new Message(channel + " is now hosting " + target + ".", Message.MessageType.HOSTING_NOTIFY).setChannel(channel));
-        } else {
-            MessageQueue.addMessage(new Message("Exited host mode.", Message.MessageType.HOSTING_NOTIFY).setChannel(channel));
+    public void onHosting(final String channel, final String target, String viewers) {
+        Message m = new Message().setChannel(channel).setType(Message.MessageType.HOSTING_NOTIFY);
+        if ("-".equals(target)) m.setContent("Exited host mode.");
+        else {
+            String content = channel + " is now hosting " + target;
+            String viewCount;
+            if ("-".equals(viewers)) {
+                viewCount = ".";
+            } else if (viewers.compareTo("1") > 0) {
+                viewCount = " for " + viewers + " viewers.";
+            } else {
+                viewCount = " for " + viewers + " viewer.";
+            }
+            m.setContent(content + viewCount);
         }
+        MessageQueue.addMessage(m);
     }
 
     @Override
@@ -95,6 +107,12 @@ public class IRCViewer extends MessageHandler {
                 //to tell us they've remained subbed... again
                 //the catch is the message they send isn't automatic, so there's a chance it won't be sent (ex: on an IRC client, shy, etc)
                 //HOWEVER, we will make sure Botnak does not increment the sub counter for this
+                Optional<Subscriber> s = GUIMain.currentSettings.subscriberManager.getSubscriber(newSub);
+                if (s.isPresent()) {
+                    if (!s.get().isActive()) {
+                        s.get().setActive(true);//fixes issue #87 (I hope)
+                    }
+                }
                 m.setExtra(false);//anything other than "null" works
             }
         } //else it's someone else's channel, just print the message

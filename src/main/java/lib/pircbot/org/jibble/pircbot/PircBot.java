@@ -123,13 +123,13 @@ public class PircBot {
         InputStreamReader inputStreamReader;
         OutputStreamWriter outputStreamWriter;
 
-            // Assume the specified encoding is valid for this JVM.
-            try {
-                inputStreamReader = new InputStreamReader(socketIn, "UTF-8");
-                outputStreamWriter = new OutputStreamWriter(socketOut, "UTF-8");
-            } catch (Exception e) {
-                return false;
-            }
+        // Assume the specified encoding is valid for this JVM.
+        try {
+            inputStreamReader = new InputStreamReader(socketIn, "UTF-8");
+            outputStreamWriter = new OutputStreamWriter(socketOut, "UTF-8");
+        } catch (Exception e) {
+            return false;
+        }
         BufferedReader breader = new BufferedReader(inputStreamReader);
         BufferedWriter bwriter = new BufferedWriter(outputStreamWriter);
         _outputThread = new OutputThread(this, _outQueue, bwriter);
@@ -401,14 +401,21 @@ public class PircBot {
         String senderInfo = tokenizer.nextToken();
         String command = tokenizer.nextToken();
         String target = null;
-        if (command.equals("CLEARCHAT")) {
+        if ("CLEARCHAT".equals(command)) {
             target = tokenizer.nextToken();
             getMessageHandler().onClearChat(target, (line.contains(" :")) ? content : null);
             return;
-        } else if (command.equals("HOSTTARGET")) {
+        } else if ("HOSTTARGET".equals(command)) {
             target = tokenizer.nextToken();
-            getMessageHandler().onHosting(target.substring(1), content.split(" ")[0]);
+            String[] split = content.split(" ");
+            getMessageHandler().onHosting(target.substring(1), split[0], split[1]);
             return;
+        } else if ("NOTICE".equals(command)) {
+            if (!tags.contains("host_on") && !tags.contains("host_off")) {//handled above
+                target = tokenizer.nextToken();
+                getMessageHandler().onJTVMessage(target.substring(1), content);
+                return;
+            }
         }
 
         int exclamation = senderInfo.indexOf("!");
@@ -459,7 +466,7 @@ public class PircBot {
 
         parseTags(tags, sourceNick, target);
         // Check for CTCP requests.
-        if (command.equals("PRIVMSG") && line.indexOf(":\u0001") > 0 && line.endsWith("\u0001")) {
+        if ("PRIVMSG".equals(command) && line.indexOf(":\u0001") > 0 && line.endsWith("\u0001")) {
             String request = line.substring(line.indexOf(":\u0001") + 2, line.length() - 1);
             if (request.startsWith("ACTION ")) {
                 // ACTION request
@@ -489,7 +496,7 @@ public class PircBot {
             }
             // This is a normal message to a channel.
             getMessageHandler().onMessage(target, sourceNick, content);
-        } else if (command.equals("PRIVMSG")) {
+        } else if ("PRIVMSG".equals(command)) {
             if (sourceNick.equals("jtv")) {
                 if (line.contains("now hosting you")) {
                     getMessageHandler().onBeingHosted(content);
@@ -497,7 +504,7 @@ public class PircBot {
             }
             // This is a private message to us.
             getMessageHandler().onPrivateMessage(sourceNick, sourceLogin, sourceHostname, content);
-        } else if (command.equals("MODE")) {
+        } else if ("MODE".equals(command)) {
             // Somebody is changing the mode on a channel or user.
             String mode = line.substring(line.indexOf(target, 2) + target.length() + 1);
             if (mode.startsWith(":")) {

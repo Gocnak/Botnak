@@ -5,6 +5,7 @@ import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import lib.pircbot.org.jibble.pircbot.User;
 import util.Timer;
+import util.Utils;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -14,7 +15,7 @@ import java.util.HashSet;
 /**
  * Created by Nick on 8/9/2014.
  * <p>
- * Handles removing users.
+ * Handles assigning the userlist for a channel.
  */
 public class UserManager implements HeartbeatThread {
 
@@ -48,11 +49,7 @@ public class UserManager implements HeartbeatThread {
 
                 BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
                 StringBuilder stanSB = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    stanSB.append(line);
-                }
-                br.close();
+                Utils.parseBufferedReader(br, stanSB);
                 JSONObject site = new JSONObject(stanSB.toString());
                 JSONObject chatters = site.getJSONObject("chatters");
                 JSONArray mods = chatters.getJSONArray("moderators");

@@ -35,7 +35,7 @@ public class MessageQueue extends Thread {
         }
     }
 
-    public static synchronized void addToQueue(MessageWrapper mw) {
+    private static synchronized void addToQueue(MessageWrapper mw) {
         queue.add(mw);
     }
 

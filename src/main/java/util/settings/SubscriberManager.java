@@ -90,11 +90,15 @@ public class SubscriberManager {
         if (s.isPresent()) {
             if (s.get().isActive()) {
                 if (!currentlyActive) {
-                    s.get().setActive(false);
-                    s.get().resetStreak();
+                    int remainder = (int) (s.get().getStarted().until(LocalDateTime.now(), ChronoUnit.DAYS) - 33);
+                    if (remainder > 30) { //we're offering a 30-day-grace period for re-subbing
+                        s.get().setActive(false);
+                        s.get().resetStreak();
+                    }
                 } else {
                     int streak = s.get().getStreak();
-                    int monthsSince = (int) s.get().getStarted().until(LocalDateTime.now(), ChronoUnit.MONTHS);
+                    //int monthsSince = (int) s.get().getStarted().until(LocalDateTime.now(), ChronoUnit.MONTHS);
+                    int monthsSince = (int) (s.get().getStarted().until(LocalDateTime.now(), ChronoUnit.DAYS) / 33);
                     if (monthsSince > streak) {
                         String content = s.get().getName() + " has continued their subscription for over "
                                 + (monthsSince) + ((monthsSince) > 1 ? " months!" : " month!");

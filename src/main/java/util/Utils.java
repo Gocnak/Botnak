@@ -863,4 +863,22 @@ public class Utils {
         Matcher m = Constants.fileExclPattern.matcher(toCheck);
         return m.find();
     }
+
+    /**
+     * Parses a buffered reader and adds what is read to the provided StringBuilder.
+     *
+     * @param toRead  The stream to read.
+     * @param builder The builder to add to.
+     */
+    public static void parseBufferedReader(BufferedReader toRead, StringBuilder builder) {
+        try {
+            String line;
+            while ((line = toRead.readLine()) != null) {
+                builder.append(line);
+            }
+            toRead.close();
+        } catch (Exception e) {
+            GUIMain.log("Failed to read buffered reader due to exception: " + e.getMessage());
+        }
+    }
 }

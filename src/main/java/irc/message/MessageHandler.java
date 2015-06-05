@@ -146,7 +146,7 @@ public abstract class MessageHandler {
      * @param channel The channel you're in.
      * @param target  The person being hosted.
      */
-    public void onHosting(String channel, String target) {
+    public void onHosting(String channel, String target, String count) {
     }
 
     /**

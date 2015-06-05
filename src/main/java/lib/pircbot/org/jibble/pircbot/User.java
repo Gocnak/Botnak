@@ -18,7 +18,7 @@ import gui.GUIMain;
 import irc.Donor;
 
 import java.awt.*;
-import java.util.HashSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * This class is used to represent a user on an IRC server.
@@ -38,7 +38,7 @@ public class User implements Comparable<User> {
     private boolean staff = false, admin = false, global_mod = false, turbo = false;
     private String _nick, _lowerNick, displayName = null;
 
-    private HashSet<Integer> emotes = new HashSet<>();
+    private CopyOnWriteArraySet<Integer> emotes = new CopyOnWriteArraySet<>();
 
     private Color color = null;
     private Donor donor = null;

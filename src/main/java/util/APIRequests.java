@@ -86,8 +86,8 @@ public class APIRequests {
                 URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName
                         + "?client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
                 BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
-                String line;
-                line = br.readLine();
+                String line = br.readLine();
+                br.close();
                 if (line != null) {
                     Matcher m = Constants.viewerTwitchPattern.matcher(line);
                     if (m.find()) {
@@ -97,7 +97,6 @@ public class APIRequests {
                         }//bad Int parsing
                     }
                 }
-                br.close();
             } catch (Exception e) {
                 count = -1;
             }
@@ -118,6 +117,7 @@ public class APIRequests {
                         + "?client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
                 BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
                 String line = br.readLine();
+                br.close();
                 if (line != null) {
                     JSONObject base = new JSONObject(line);
                     if (!base.isNull("status")) {
@@ -133,7 +133,6 @@ public class APIRequests {
                         toRet[1] = base.getString("game");
                     }
                 }
-                br.close();
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
             }
@@ -384,11 +383,7 @@ public class APIRequests {
                         "&fields=items(snippet(title,channelTitle),contentDetails(duration))");
                 BufferedReader br = new BufferedReader(new InputStreamReader(request.openStream()));
                 StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                }
-                br.close();
+                Utils.parseBufferedReader(br, sb);
                 JSONObject initial = new JSONObject(sb.toString());
                 JSONArray items = initial.getJSONArray("items");
                 if (items.length() < 1) {

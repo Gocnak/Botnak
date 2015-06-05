@@ -441,7 +441,8 @@ public class ChatPane implements DocumentListener {
 
     private void findEmoticons(String text, Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangesStyle, User u, String channel) {
         FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.NORMAL_FACE, null, null);
-        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE, u.getEmotes(), null);
+        if (u != null && u.getEmotes() != null)
+            FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE, u.getEmotes(), null);
         //TODO if (currentSettings.FFZFaceEnabled)
         FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.FRANKER_FACE, null, channel);
     }

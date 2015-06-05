@@ -11,7 +11,10 @@ import irc.message.Message;
 import irc.message.MessageQueue;
 import sound.SoundEngine;
 import thread.TabPulse;
-import thread.heartbeat.*;
+import thread.heartbeat.BanQueue;
+import thread.heartbeat.DonationCheck;
+import thread.heartbeat.Heartbeat;
+import thread.heartbeat.ViewerCount;
 import util.Constants;
 import util.Utils;
 import util.comm.Command;
@@ -86,7 +89,7 @@ public class GUIMain extends JFrame {
         StyleConstants.setFontSize(norm, currentSettings.font.getSize());
         heartbeat = new Heartbeat();
         heartbeat.addHeartbeatThread(new ViewerCount());
-        heartbeat.addHeartbeatThread(new UserManager());
+        //heartbeat.addHeartbeatThread(new UserManager()); TODO implement with user lists
         heartbeat.addHeartbeatThread(new BanQueue());
         //TODO if (GUISettings.trackDonations)
         heartbeat.addHeartbeatThread(new DonationCheck());

@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,12 +40,12 @@ public class FaceManager {
     //faces
     public static ConcurrentHashMap<String, Face> faceMap;
     public static ConcurrentHashMap<String, Face> nameFaceMap;
+    //  twitch
     public static CopyOnWriteArraySet<SubscriberIcon> subIconSet;
     public static ConcurrentHashMap<Integer, TwitchFace> twitchFaceMap;
     public static ConcurrentHashMap<Integer, TwitchFace> onlineTwitchFaces;
-
+    //  ffz
     public static ConcurrentHashMap<String, ArrayList<FrankerFaceZ>> ffzFaceMap;
-    public static CopyOnWriteArrayList<String> ffzChannels;
 
     public static void init() {
         faceMap = new ConcurrentHashMap<>();
@@ -54,7 +53,6 @@ public class FaceManager {
         twitchFaceMap = new ConcurrentHashMap<>();
         onlineTwitchFaces = new ConcurrentHashMap<>();
         ffzFaceMap = new ConcurrentHashMap<>();
-        ffzChannels = new CopyOnWriteArrayList<>();
         subIconSet = new CopyOnWriteArraySet<>();
     }
 
@@ -165,17 +163,6 @@ public class FaceManager {
                     GUIMain.log("Failed to load online Twitch faces, is the API endpoint down?");
                 }
             }
-            //TODO if currentSettings.FFZFacesEnable
-            // Load FFZ faces
-            url = new URL("http://frankerfacez.com/users.txt");
-            reader = new BufferedReader(new InputStreamReader(url.openStream()));
-            while ((line = reader.readLine()) != null) {
-                if (!line.startsWith(".")) {
-                    ffzChannels.add(line);
-                }
-            }
-            reader.close();
-
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }
@@ -206,7 +193,7 @@ public class FaceManager {
 
         //TODO if currentSettings.FFZFacesEnable
         handleFFZChannel("global");//this corrects the global emotes and downloads them if we don't have them
-        GUIMain.channelSet.stream().filter(ffzChannels::contains).forEach(face.FaceManager::handleFFZChannel);
+        GUIMain.channelSet.stream().forEach(s -> handleFFZChannel(s.replaceAll("#", "")));
         doneWithFrankerFaces = true;
         GUIMain.log("Loaded FrankerFaceZ faces!");
         // END TODO
@@ -271,6 +258,39 @@ public class FaceManager {
                 break;
             }
         }
+    }
+
+    public static void handleFFZChannel(String channel) {
+        new Thread(() -> {
+            ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(channel);
+            ArrayList<FrankerFaceZ> fromOnline = new ArrayList<>();
+            FrankerFaceZ.FFZParser.parse(channel, fromOnline);
+            if (faces != null) { //already have the faces
+                for (FrankerFaceZ online : fromOnline) {
+                    boolean haveIt = false;
+                    for (FrankerFaceZ f : faces) {//get the ones I need
+                        if (online.getRegex().equalsIgnoreCase(f.getRegex())) {
+                            haveIt = true;
+                            break;
+                        }
+                    }
+                    if (!haveIt) {
+                        FrankerFaceZ downloaded = downloadFFZFace(channel, online);
+                        if (downloaded != null) {
+                            faces.add(downloaded);
+                        }
+                    }
+
+                }
+            } else { //don't have any of them
+                faces = new ArrayList<>();
+                for (FrankerFaceZ online : fromOnline) {
+                    FrankerFaceZ downloaded = downloadFFZFace(channel, online);
+                    if (downloaded != null) faces.add(downloaded);
+                }
+                ffzFaceMap.put(channel, faces);
+            }
+        }).start();
     }
 
     public static void handleFaces(Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangeStyles,
@@ -422,39 +442,6 @@ public class FaceManager {
             GUIMain.log("Failed to download emote ID " + emote + " due to exception " + e.getMessage());
         }
         return null;
-    }
-
-    public static void handleFFZChannel(String channel) {
-        new Thread(() -> {
-            ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(channel);
-            ArrayList<FrankerFaceZ> fromOnline = new ArrayList<>();
-            FrankerFaceZ.FFZParser.parse(channel, fromOnline);
-            if (faces != null) { //already have the faces
-                for (FrankerFaceZ online : fromOnline) {
-                    boolean haveIt = false;
-                    for (FrankerFaceZ f : faces) {//get the ones I need
-                        if (online.getRegex().equalsIgnoreCase(f.getRegex())) {
-                            haveIt = true;
-                            break;
-                        }
-                    }
-                    if (!haveIt) {
-                        FrankerFaceZ downloaded = downloadFFZFace(channel, online);
-                        if (downloaded != null) {
-                            faces.add(downloaded);
-                        }
-                    }
-
-                }
-            } else { //don't have any of them
-                faces = new ArrayList<>();
-                for (FrankerFaceZ online : fromOnline) {
-                    FrankerFaceZ downloaded = downloadFFZFace(channel, online);
-                    if (downloaded != null) faces.add(downloaded);
-                }
-                ffzFaceMap.put(channel, faces);
-            }
-        }).start();
     }
 
     private static FrankerFaceZ downloadFFZFace(String channel, FrankerFaceZ face) {//URL is stored in the FFZ face
