@@ -1,19 +1,11 @@
-2.31
-
-IMPORTANT!! In your Botnak folder:
-Delete your TwitchFaces/ folder
-Delete your TwitchFaces.txt file
+2.32
 
 Added:
 
-IRCv3 Support (closes #83 and closes #84)
-FrankerFaceZ Support (closes #77 thanks @jbzdarkid)
-Reconnect threads (closes #62)
-URL-Unshortener, Twitch VOD and YouTube video data info (closes #24)
-Emote pop-up menus (try clicking an emote!)
+FrankerFaceZ API Support (closes #88)
+NOTICE JTV messages support
 
 Fixed:
 
-Donation formatting fixed (thanks @dr-kegel & @jbzdarkid)
-Potential issue with imgur links (thanks @dr-kegel)
-General code cleanup
+Subscriber streaks are now Twitch-tier in forgiveness (closes #87)
+Accidental Shadowbans (hopefully)
