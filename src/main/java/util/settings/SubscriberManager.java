@@ -184,7 +184,7 @@ public class SubscriberManager {
     private void addSubDonation(String who, String content, double amt) {
         GUIMain.currentSettings.donationManager.addDonation(
                 new Donation("SUBSCRIBER", who, content, amt, Date.from(Instant.now())), true);
-        if (GUIMain.currentSettings.subSound != null)
+        if (GUIMain.currentSettings.loadedSubSounds)
             SoundEngine.getEngine().playSpecialSound(true);
     }
 

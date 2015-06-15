@@ -13,6 +13,7 @@ import irc.account.Task;
 import lib.pircbot.org.jibble.pircbot.ChannelManager;
 import sound.Sound;
 import sound.SoundEngine;
+import thread.ThreadEngine;
 import util.Constants;
 import util.Utils;
 import util.comm.Command;
@@ -43,18 +44,18 @@ public class Settings {
     public AccountManager accountManager = null;
     public ChannelManager channelManager = null;
     public String lastFMAccount = "";
+    public int botReplyType = 0; //TODO set this
+    //0 = none, 1 = botnak user only, 2 = everyone
 
     //donations
     public DonationManager donationManager = null;
+    public boolean loadedDonationSounds = false;
     public SubscriberManager subscriberManager = null;
+    public boolean loadedSubSounds = false;
 
     //custom directories
     public String defaultSoundDir = "";
     public String defaultFaceDir = "";
-
-    //custom sound
-    public Sound subSound = null;
-    public Sound donationSound = null;
 
     //icons
     public URL modIcon;
@@ -135,7 +136,7 @@ public class Settings {
      * This void loads everything Botnak will use, and sets the appropriate settings.
      */
     public void load() {
-        new Thread(() -> {
+        ThreadEngine.submit(() -> {
             loadWindow();
             accountManager = new AccountManager();
             channelManager = new ChannelManager();
@@ -160,11 +161,11 @@ public class Settings {
             }
             if (subSoundDir.exists() && subSoundDir.list().length > 0) {
                 GUIMain.log("Loading sub sounds...");
-                loadSubSounds();
+                doLoadSubSounds();
             }
             if (donationSoundDir.exists() && donationSoundDir.list().length > 0) {
                 GUIMain.log("Loading donation sounds...");
-                loadDonationSounds();
+                doLoadDonationSounds();
             }
             if (Utils.areFilesGood(userColFile.getAbsolutePath())) {
                 GUIMain.log("Loading user colors...");
@@ -221,7 +222,7 @@ public class Settings {
                 loadDefaultTwitchFaces();
             }
             FaceManager.loadDefaultFaces();
-        }).start();
+        });
     }
 
     /**
@@ -428,18 +429,24 @@ public class Settings {
         }
     }
 
+    public boolean doLoadSubSounds() {
+        if (loadSubSounds()) {
+            GUIMain.log("Loaded sub sounds!");
+            loadedSubSounds = true;
+            return true;
+        } else return false;
+    }
+
     public boolean loadSubSounds() {
         boolean toReturn = false;
         try {
             File[] files = subSoundDir.listFiles();
             if (files != null && files.length > 0) {
-                ArrayList<String> temp = new ArrayList<>();
                 for (File f : files) {
-                    temp.add(f.getAbsolutePath());
+                    SoundEngine.getEngine().getSubStack().add(new Sound(5, f.getAbsolutePath()));
                 }
-                subSound = new Sound(5, temp.toArray(new String[temp.size()]));
+                Collections.shuffle(SoundEngine.getEngine().getSubStack());
                 toReturn = true;
-                GUIMain.log("Loaded sub sounds!");
             }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -447,16 +454,20 @@ public class Settings {
         return toReturn;
     }
 
+    private void doLoadDonationSounds() {
+        loadDonationSounds();
+        loadedDonationSounds = true;
+        GUIMain.log("Loaded donation sounds!");
+    }
+
     public void loadDonationSounds() {
         try {
             File[] files = donationSoundDir.listFiles();
             if (files != null && files.length > 0) {
-                ArrayList<String> temp = new ArrayList<>();
                 for (File f : files) {
-                    temp.add(f.getAbsolutePath());
+                    SoundEngine.getEngine().getDonationStack().add(new Sound(5, f.getAbsolutePath()));
                 }
-                donationSound = new Sound(5, temp.toArray(new String[temp.size()]));
-                GUIMain.log("Loaded donation sounds!");
+                Collections.shuffle(SoundEngine.getEngine().getDonationStack());
             }
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
@@ -724,6 +735,8 @@ public class Settings {
         hardcoded.add(new ConsoleCommand("song", ConsoleCommand.Action.NOW_PLAYING, Constants.PERMISSION_ALL, null));
         hardcoded.add(new ConsoleCommand("soundstate", ConsoleCommand.Action.SEE_SOUND_STATE, Constants.PERMISSION_MOD, null));
         hardcoded.add(new ConsoleCommand("uptime", ConsoleCommand.Action.SHOW_UPTIME, Constants.PERMISSION_ALL, null));
+        hardcoded.add(new ConsoleCommand("lastsubsound", ConsoleCommand.Action.SEE_PREV_SOUND_SUB, Constants.PERMISSION_ALL, null));
+        hardcoded.add(new ConsoleCommand("lastdonationsound", ConsoleCommand.Action.SEE_PREV_SOUND_DON, Constants.PERMISSION_ALL, null));
 
         if (Utils.areFilesGood(ccommandsFile.getAbsolutePath())) {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(ccommandsFile.toURI().toURL().openStream()))) {

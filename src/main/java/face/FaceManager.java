@@ -4,19 +4,24 @@ import gui.GUIMain;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import lib.scalr.Scalr;
+import thread.ThreadEngine;
 import util.Response;
 import util.Utils;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -178,26 +183,20 @@ public class FaceManager {
      * This process is threaded, and will only show the faces when it's done downloading.
      */
     public static void loadDefaultFaces() {
-        try {
-            faceCheck.start();
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
+        ThreadEngine.submit(() -> {
+            buildMap();
+            GUIMain.log("Loaded Twitch faces!");
+            GUIMain.currentSettings.saveTwitchFaces();
+            doneWithTwitchFaces = true;
+
+            //TODO if currentSettings.FFZFacesEnable
+            handleFFZChannel("global");//this corrects the global emotes and downloads them if we don't have them
+            GUIMain.channelSet.stream().forEach(s -> handleFFZChannel(s.replaceAll("#", "")));
+            doneWithFrankerFaces = true;
+            GUIMain.log("Loaded FrankerFaceZ faces!");
+            // END TODO
+        });
     }
-
-    public static Thread faceCheck = new Thread(() -> {
-        buildMap();
-        GUIMain.log("Loaded Twitch faces!");
-        GUIMain.currentSettings.saveTwitchFaces();
-        doneWithTwitchFaces = true;
-
-        //TODO if currentSettings.FFZFacesEnable
-        handleFFZChannel("global");//this corrects the global emotes and downloads them if we don't have them
-        GUIMain.channelSet.stream().forEach(s -> handleFFZChannel(s.replaceAll("#", "")));
-        doneWithFrankerFaces = true;
-        GUIMain.log("Loaded FrankerFaceZ faces!");
-        // END TODO
-    });
 
     /**
      * Toggles a twitch face on/off.
@@ -261,7 +260,7 @@ public class FaceManager {
     }
 
     public static void handleFFZChannel(String channel) {
-        new Thread(() -> {
+        ThreadEngine.submit(() -> {
             ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(channel);
             ArrayList<FrankerFaceZ> fromOnline = new ArrayList<>();
             FrankerFaceZ.FFZParser.parse(channel, fromOnline);
@@ -290,7 +289,7 @@ public class FaceManager {
                 }
                 ffzFaceMap.put(channel, faces);
             }
-        }).start();
+        });
     }
 
     public static void handleFaces(Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangeStyles,
@@ -523,15 +522,42 @@ public class FaceManager {
             if (URL.getHost().equals("imgur.com")) {
                 URL = new URL(Utils.setExtension("http://i.imgur.com" + URL.getPath(), ".png"));
             }
-            image = ImageIO.read(URL);//just incase the file is null/it can't read it
-            if (image.getHeight() > DOWNLOAD_MAX_FACE_HEIGHT) {//if it's too big, scale it
-                image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY,
-                        Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_FACE_HEIGHT);
+            if (sanityCheck(URL)) {
+                image = ImageIO.read(URL);//just incase the file is null/it can't read it
+                if (image.getHeight() > DOWNLOAD_MAX_FACE_HEIGHT) {//if it's too big, scale it
+                    image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY,
+                            Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_FACE_HEIGHT);
+                }
+                return ImageIO.write(image, "PNG", toSave);//save it
             }
-            return ImageIO.write(image, "PNG", toSave);//save it
         } catch (Exception e) {
             if (!e.getMessage().contains("Unsupported"))
                 GUIMain.log(e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * Tests to see if an image is within reasonable downloading bounds (5000x5000)
+     *
+     * @param url The URL to the image to check.
+     * @return True if within downloadable bounds else false.
+     */
+    private static boolean sanityCheck(URL url) {
+        try (ImageInputStream in = ImageIO.createImageInputStream(url.openStream())) {
+            final Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
+            if (readers.hasNext()) {
+                ImageReader reader = readers.next();
+                try {
+                    reader.setInput(in);
+                    Dimension d = new Dimension(reader.getWidth(0), reader.getHeight(0));
+                    return d.getHeight() < 5000 && d.getWidth() < 5000;
+                } finally {
+                    reader.dispose();
+                }
+            }
+        } catch (Exception e) {
+            return false;
         }
         return false;
     }

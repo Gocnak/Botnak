@@ -53,8 +53,9 @@ public class AccountManager extends Thread {
             if (t.doer != null) {
                 ReconnectThread rt = reconnectThreads.get(t.doer.getNick());
                 if (rt != null) {
-                    if (t.type != Task.Type.CONNECT) //since the reconnect thread already handles this...
+                    if (t.type != Task.Type.CONNECT) {//since the reconnect thread already handles this...
                         rt.addTask(t);
+                    }
                     return;
                 }
             }
@@ -126,7 +127,7 @@ public class AccountManager extends Thread {
                         }
                         break;
                     case CONNECT:
-                        if (t.doer.connect("irc.twitch.tv", 80)) {
+                        if (t.doer.connect("irc.twitch.tv", 6667)) {
                             GUIMain.log(t.message);
                         } else {
                             if (!t.doer.isConnected()) {

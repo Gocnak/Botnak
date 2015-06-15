@@ -7,10 +7,7 @@ import util.Timer;
 import util.Utils;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * Created by Nick on 12/20/13.
@@ -29,6 +26,8 @@ public class SoundEngine {
     private boolean soundToggle = true;
     private Timer soundTimer = new Timer(delay);
     private HashMap<String, Sound> soundMap;
+    private Stack<Sound> subStack, donationStack;
+    private Sound lastSubSound, lastDonationSound;
 
     public static void init() {
         engine = new SoundEngine();
@@ -37,6 +36,9 @@ public class SoundEngine {
     public SoundEngine() {
         soundMap = new HashMap<>();
         player = new SoundPlayer();
+        subStack = new Stack<>();
+        donationStack = new Stack<>();
+        lastSubSound = lastDonationSound = null;
     }
 
     public void setDelay(int newDelay) {
@@ -46,6 +48,14 @@ public class SoundEngine {
 
     public HashMap<String, Sound> getSoundMap() {
         return soundMap;
+    }
+
+    public Stack<Sound> getSubStack() {
+        return subStack;
+    }
+
+    public Stack<Sound> getDonationStack() {
+        return donationStack;
     }
 
     public Timer getSoundTimer() {
@@ -93,14 +103,47 @@ public class SoundEngine {
     }
 
     /**
-     * Plays the new subscriber sound, ignoring the current playing ones.
+     * Plays the new subscriber/donation sound, overrides current ruleset for engine.
      */
     public void playSpecialSound(boolean isSub) {
-        File f = (isSub ? GUIMain.currentSettings.subSound.getFile() : GUIMain.currentSettings.donationSound.getFile());
+        Sound s = getSpecialSound(isSub);
         try {
-            player.play(f, SoundPlayer.PlayMode.Force);
+            player.play(s.getFile(), SoundPlayer.PlayMode.Force);
         } catch (Exception ignored) {
         }
+    }
+
+    private Sound getSpecialSound(boolean isSub) {
+        if ((isSub ? subStack : donationStack).isEmpty()) {//refreshes and reshuffles
+            if (isSub) GUIMain.currentSettings.loadSubSounds();
+            else GUIMain.currentSettings.loadDonationSounds();
+        }
+        Sound sound = (isSub ? subStack : donationStack).pop();
+        if (isSub) lastSubSound = sound;
+        else lastDonationSound = sound;
+        return sound;
+    }
+
+    public Response getLastDonationSound() {
+        Response toReturn = new Response();
+        if (lastDonationSound != null) {
+            toReturn.setResponseText("The previous donation notification sound was taken from the song: " +
+                    Utils.removeExt(lastDonationSound.getFile().getName()));
+        } else {
+            toReturn.setResponseText("There is no previous donation sound!");
+        }
+        return toReturn;
+    }
+
+    public Response getLastSubSound() {
+        Response toReturn = new Response();
+        if (lastSubSound != null) {
+            toReturn.setResponseText("The previous subscriber notification sound was taken from the song: " +
+                    Utils.removeExt(lastSubSound.getFile().getName()));
+        } else {
+            toReturn.setResponseText("There is no previous donation sound!");
+        }
+        return toReturn;
     }
 
     /**

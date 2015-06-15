@@ -11,6 +11,7 @@ import irc.message.Message;
 import irc.message.MessageQueue;
 import sound.SoundEngine;
 import thread.TabPulse;
+import thread.ThreadEngine;
 import thread.heartbeat.BanQueue;
 import thread.heartbeat.DonationCheck;
 import thread.heartbeat.Heartbeat;
@@ -77,6 +78,7 @@ public class GUIMain extends JFrame {
         tabPulses = new HashSet<>();
         combinedChatPanes = new HashSet<>();
         userResponses = new ArrayList<>();
+        ThreadEngine.init();
         FaceManager.init();
         SoundEngine.init();
         StyleConstants.setForeground(norm, Color.white);
@@ -224,7 +226,6 @@ public class GUIMain extends JFrame {
         SoundEngine.getEngine().close();
         currentSettings.save();
         heartbeat.interrupt();
-        if (FaceManager.faceCheck != null && FaceManager.faceCheck.isAlive()) FaceManager.faceCheck.interrupt();
         if (currentSettings.logChat) {
             String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
             for (String s : keys) {

@@ -73,7 +73,7 @@ public class MessageQueue extends Thread {
                         GUIMain.chatPanes.get(mess.getChannel()).log(wrap, false);
                     } else if (mess.getType() == Message.MessageType.DONATION_NOTIFY) {
                         GUIMain.chatPanes.get(mess.getChannel()).onDonation(wrap);
-                        if (GUIMain.currentSettings.donationSound != null) {
+                        if (GUIMain.currentSettings.loadedDonationSounds) {
                             SoundEngine.getEngine().playSpecialSound(false);
                         }
                     } else if (mess.getType() == Message.MessageType.CLEAR_TEXT) {

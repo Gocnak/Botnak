@@ -1558,6 +1558,8 @@ public class GUISettings extends JFrame {
             //---- permissionBox ----
             permissionBox.setModel(new DefaultComboBoxModel<>(new String[]{
                     "Everyone",
+                    "Subscribers/Donors/Mods/Broadcaster",
+                    "Donors/Mods/Broadcaster",
                     "Mods/Broadcaster",
                     "Broadcaster Only"
             }));

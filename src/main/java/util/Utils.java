@@ -59,7 +59,8 @@ public class Utils {
         String ext = null;
         int i = fileName.lastIndexOf('.');
         int len = fileName.length();
-        if (i > 0 && (i < len - 1) && (i >= len / 2)) {//has to be near the end
+        int after = len - i;
+        if (i > 0 && (i < len - 1) && after < 5) {//has to be near the end
             ext = fileName.substring(i).toLowerCase();
         }
         return ext;

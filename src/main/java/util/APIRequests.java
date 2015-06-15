@@ -427,14 +427,28 @@ public class APIRequests {
             Response toReturn = new Response();
             toReturn.setResponseText("Failed to un-shorten URL! Click with caution!");
             try {
-                URL request = new URL("http://api.unshorten.it/?shortURL=" + shortenedURL +
-                        "&return=domainonly&apiKey=25Vr95jzxnWek79hpA2PDOFaMMqhdiCk");
+                URL request = new URL("https://therealurl.appspot.com/?url=" + shortenedURL);
                 BufferedReader br = new BufferedReader(new InputStreamReader(request.openStream()));
                 String line = br.readLine();
                 br.close();
-                if (line != null && !line.contains("error (")) {
-                    toReturn.setResponseText("Linked Shortened URL directs to: " + line + " !");
+                if (line != null) {
+                    if (!line.equals(shortenedURL)) {
+                        line = getHost(line);
+                        toReturn.setResponseText("Linked Shortened URL directs to: " + line + " !");
+                    } else {
+                        toReturn.setResponseText("Invalid shortened URL!");
+                    }
                 }
+            } catch (Exception ignored) {
+            }
+            return toReturn;
+        }
+
+        private static String getHost(String webURL) {
+            String toReturn = webURL;
+            try {
+                URL url = new URL(webURL);
+                toReturn = url.getHost();
             } catch (Exception ignored) {
             }
             return toReturn;

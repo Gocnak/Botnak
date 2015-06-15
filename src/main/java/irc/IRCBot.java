@@ -9,6 +9,7 @@ import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
 import sound.Sound;
 import sound.SoundEngine;
+import thread.ThreadEngine;
 import util.APIRequests;
 import util.Response;
 import util.StringArray;
@@ -43,16 +44,13 @@ public class IRCBot extends MessageHandler {
 
     @Override
     public void onConnect() {
-        //TODO do people want it to follow? See Issue #76
-        if (GUIMain.currentSettings.accountManager.getUserAccount() != null)
-            doConnect(GUIMain.currentSettings.accountManager.getUserAccount().getName());
+        GUIMain.channelSet.forEach(this::doConnect);
         GUIMain.updateTitle(null);
     }
 
     public void doConnect(String channel) {
-        String channelName = "#" + channel;
-        GUIMain.currentSettings.accountManager.addTask(
-                new Task(GUIMain.currentSettings.accountManager.getBot(), Task.Type.JOIN_CHANNEL, channelName));
+        if (!channel.startsWith("#")) channel = "#" + channel;
+        GUIMain.currentSettings.accountManager.addTask(new Task(getBot(), Task.Type.JOIN_CHANNEL, channel));
     }
 
     /**
@@ -63,8 +61,7 @@ public class IRCBot extends MessageHandler {
      */
     public void doLeave(String channel) {
         if (!channel.startsWith("#")) channel = "#" + channel;
-        GUIMain.currentSettings.accountManager.addTask(
-                new Task(GUIMain.currentSettings.accountManager.getBot(), Task.Type.LEAVE_CHANNEL, channel));
+        GUIMain.currentSettings.accountManager.addTask(new Task(getBot(), Task.Type.LEAVE_CHANNEL, channel));
     }
 
     /**
@@ -77,25 +74,30 @@ public class IRCBot extends MessageHandler {
         if (forget) {
             GUIMain.currentSettings.accountManager.setBotAccount(null);
         }
-        GUIMain.currentSettings.accountManager.addTask(
-                new Task(GUIMain.currentSettings.accountManager.getBot(), Task.Type.DISCONNECT, null));
+        GUIMain.currentSettings.accountManager.addTask(new Task(getBot(), Task.Type.DISCONNECT, null));
         GUIMain.bot = null;
     }
 
     public void onDisconnect() {
-        if (!GUIMain.shutDown && GUIMain.currentSettings.accountManager.getBot() != null) {
-            GUIMain.currentSettings.accountManager.createReconnectThread(GUIMain.currentSettings.accountManager.getBot());
+        if (!GUIMain.shutDown && getBot() != null) {
+            GUIMain.currentSettings.accountManager.createReconnectThread(getBot());
         }
     }
 
     @Override
     public void onMessage(String channel, String sender, String message) {
         if (message != null && channel != null && sender != null && GUIMain.currentSettings.accountManager.getViewer() != null) {
+            String botnakUserName = GUIMain.currentSettings.accountManager.getUserAccount().getName();
             sender = sender.toLowerCase();
+            if (!channel.contains(botnakUserName.toLowerCase())) {
+                int replyType = GUIMain.currentSettings.botReplyType;
+                if (replyType == 0) return;
+
+                if (replyType == 1 && !sender.equalsIgnoreCase(botnakUserName)) return;
+            }
 
             boolean senderIsBot = sender.equalsIgnoreCase(getBot().getNick());
-            boolean userIsBot = GUIMain.currentSettings.accountManager.getUserAccount().getName()
-                    .equalsIgnoreCase(GUIMain.currentSettings.accountManager.getBotAccount().getName());
+            boolean userIsBot = botnakUserName.equalsIgnoreCase(GUIMain.currentSettings.accountManager.getBotAccount().getName());
             //if the sender of the message is the bot, but
             //the user account is NOT the bot, just return, we don't want the bot to trigger anything
             if (senderIsBot && !userIsBot) return;
@@ -133,20 +135,22 @@ public class IRCBot extends MessageHandler {
             String[] split = message.split(" ");
 
             //URL Checking TODO could this be threaded?
-            for (String part : split) {
-                if (part.startsWith("http") || part.startsWith("www")) {
-                    if (part.contains("youtu.be") || part.contains("youtube.com/watch")
-                            || part.contains("youtube.com/v") || part.contains("youtube.com/embed/")) {
-                        getBot().sendMessage(channel, APIRequests.YouTube.getVideoData(part).getResponseText());
-                    } else if (part.contains("bit.ly") || part.contains("tinyurl")) {
-                        getBot().sendMessage(channel, APIRequests.UnshortenIt.getUnshortened(part).getResponseText());
-                    } else if (part.contains("twitch.tv/")) {
-                        if (part.contains("/v/") || part.contains("/c/") || part.contains("/b/")) {
-                            getBot().sendMessage(channel, APIRequests.Twitch.getTitleOfVOD(part).getResponseText());
+            ThreadEngine.submit(() -> {
+                for (String part : split) {
+                    if (part.startsWith("http") || part.startsWith("www")) {
+                        if (part.contains("youtu.be") || part.contains("youtube.com/watch")
+                                || part.contains("youtube.com/v") || part.contains("youtube.com/embed/")) {
+                            getBot().sendMessage(channel, APIRequests.YouTube.getVideoData(part).getResponseText());
+                        } else if (part.contains("bit.ly") || part.contains("tinyurl") || part.contains("goo.gl")) {
+                            getBot().sendMessage(channel, APIRequests.UnshortenIt.getUnshortened(part).getResponseText());
+                        } else if (part.contains("twitch.tv/")) {
+                            if (part.contains("/v/") || part.contains("/c/") || part.contains("/b/")) {
+                                getBot().sendMessage(channel, APIRequests.Twitch.getTitleOfVOD(part).getResponseText());
+                            }
                         }
                     }
                 }
-            }
+            });
 
             String first = "";
             if (split.length > 1) first = split[1];
@@ -420,6 +424,16 @@ public class IRCBot extends MessageHandler {
                             break;
                         case SHOW_UPTIME:
                             commandResponse = APIRequests.Twitch.getUptimeString(channel.substring(1));
+                            break;
+                        case SEE_PREV_SOUND_DON:
+                            //TODO if currentSettings.seePreviousDonEnable
+                            if (!SoundEngine.getEngine().getDonationStack().isEmpty())
+                                commandResponse = SoundEngine.getEngine().getLastDonationSound();
+                            break;
+                        case SEE_PREV_SOUND_SUB:
+                            //TODO if currentSettings.seePreviousSubEnable
+                            if (!SoundEngine.getEngine().getSubStack().isEmpty())
+                                commandResponse = SoundEngine.getEngine().getLastSubSound();
                             break;
                         default:
                             break;

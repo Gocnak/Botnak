@@ -1,11 +1,10 @@
-2.32
+2.33
 
 Added:
 
-FrankerFaceZ API Support (closes #88)
-NOTICE JTV messages support
+Special Sounds Overhaul (closes #89)
+Sanity checks to face downloads (closes #91)
 
 Fixed:
 
-Subscriber streaks are now Twitch-tier in forgiveness (closes #87)
-Accidental Shadowbans (hopefully)
+Port switched to 6667 (dedicated IRC)
