@@ -63,7 +63,8 @@ public class ConsoleCommand {
         SEE_SOUND_STATE,
         SHOW_UPTIME,
         SEE_PREV_SOUND_SUB,
-        SEE_PREV_SOUND_DON
+        SEE_PREV_SOUND_DON,
+        SEE_OR_SET_REPLY_TYPE
     }
 
     /**

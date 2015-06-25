@@ -1,5 +1,6 @@
 package irc;
 
+import face.Face;
 import face.FaceManager;
 import gui.GUIMain;
 import irc.account.Oauth;
@@ -19,6 +20,7 @@ import util.comm.ConsoleCommand;
 import util.misc.Raffle;
 import util.misc.Vote;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -89,10 +91,10 @@ public class IRCBot extends MessageHandler {
         if (message != null && channel != null && sender != null && GUIMain.currentSettings.accountManager.getViewer() != null) {
             String botnakUserName = GUIMain.currentSettings.accountManager.getUserAccount().getName();
             sender = sender.toLowerCase();
-            if (!channel.contains(botnakUserName.toLowerCase())) {
+            if (!channel.contains(botnakUserName.toLowerCase())) {//in other channels
                 int replyType = GUIMain.currentSettings.botReplyType;
                 if (replyType == 0) return;
-
+                //0 = reply to nobody (just spectate), 1 = reply to just the Botnak user, 2 = reply to everyone
                 if (replyType == 1 && !sender.equalsIgnoreCase(botnakUserName)) return;
             }
 
@@ -134,18 +136,23 @@ public class IRCBot extends MessageHandler {
             Oauth key = GUIMain.currentSettings.accountManager.getUserAccount().getKey();
             String[] split = message.split(" ");
 
-            //URL Checking TODO could this be threaded?
+            //URL Checking
             ThreadEngine.submit(() -> {
+                int count = 0;
                 for (String part : split) {
+                    if (count > 1) break;//only allowing 2 requests here; don't want spam
                     if (part.startsWith("http") || part.startsWith("www")) {
                         if (part.contains("youtu.be") || part.contains("youtube.com/watch")
                                 || part.contains("youtube.com/v") || part.contains("youtube.com/embed/")) {
                             getBot().sendMessage(channel, APIRequests.YouTube.getVideoData(part).getResponseText());
+                            count++;
                         } else if (part.contains("bit.ly") || part.contains("tinyurl") || part.contains("goo.gl")) {
                             getBot().sendMessage(channel, APIRequests.UnshortenIt.getUnshortened(part).getResponseText());
+                            count++;
                         } else if (part.contains("twitch.tv/")) {
                             if (part.contains("/v/") || part.contains("/c/") || part.contains("/b/")) {
                                 getBot().sendMessage(channel, APIRequests.Twitch.getTitleOfVOD(part).getResponseText());
+                                count++;
                             }
                         }
                     }
@@ -246,14 +253,18 @@ public class IRCBot extends MessageHandler {
                                 commandResponse = FaceManager.downloadFace(first,
                                         GUIMain.currentSettings.nameFaceDir.getAbsolutePath(),
                                         Utils.setExtension(sender, ".png"), sender, FaceManager.FACE_TYPE.NAME_FACE);
-                                if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveNameFaces();
                             }
                             break;
                         case REMOVE_NAME_FACE:
                             if (FaceManager.nameFaceMap.containsKey(sender)) {
-                                FaceManager.nameFaceMap.remove(sender);
-                                GUIMain.currentSettings.saveNameFaces();
-                                getBot().sendMessage(channel, "Removed face for user: " + sender + " !");
+                                try {
+                                    Face f = FaceManager.nameFaceMap.remove(sender);
+                                    if (f != null && new File(f.getFilePath()).delete())
+                                        getBot().sendMessage(channel, "Removed face for user: " + sender + " !");
+                                } catch (Exception e) {
+                                    getBot().sendMessage(channel, "Name face for user " + sender +
+                                            " could not be removed due to an exception!");
+                                }
                             } else {
                                 getBot().sendMessage(channel, "The user " + sender + " has no name face!");
                             }
@@ -307,7 +318,7 @@ public class IRCBot extends MessageHandler {
                                 String timeString = split[2];
                                 int time = Utils.getTime(timeString);
                                 if (time < 1) {
-                                    getBot().sendMessage(channel, "Failed to start raffle, usage: !startraffle (name) (time) (permission?)");
+                                    getBot().sendMessage(channel, "Failed to start raffle, usage: !startraffle (key) (time) (permission?)");
                                     break;
                                 }
                                 int perm = 0;//TODO select a parameter in Settings GUI that defines the default raffle
@@ -326,7 +337,7 @@ public class IRCBot extends MessageHandler {
                                 getBot().sendMessage(channel, "NOTE: This is a promotion from " + channel.substring(1) +
                                         ". Twitch does not sponsor or endorse broadcaster promotions and is not responsible for them.");
                             } else {
-                                getBot().sendMessage(channel, "Failed to start raffle, usage: !startraffle (name) (time) (permission?)");
+                                getBot().sendMessage(channel, "Failed to start raffle, usage: !startraffle (key) (time) (permission?)");
                             }
                             break;
                         case ADD_RAFFLE_WINNER:
@@ -427,13 +438,16 @@ public class IRCBot extends MessageHandler {
                             break;
                         case SEE_PREV_SOUND_DON:
                             //TODO if currentSettings.seePreviousDonEnable
-                            if (!SoundEngine.getEngine().getDonationStack().isEmpty())
+                            if (GUIMain.currentSettings.loadedDonationSounds)
                                 commandResponse = SoundEngine.getEngine().getLastDonationSound();
                             break;
                         case SEE_PREV_SOUND_SUB:
                             //TODO if currentSettings.seePreviousSubEnable
-                            if (!SoundEngine.getEngine().getSubStack().isEmpty())
+                            if (GUIMain.currentSettings.loadedSubSounds)
                                 commandResponse = SoundEngine.getEngine().getLastSubSound();
+                            break;
+                        case SEE_OR_SET_REPLY_TYPE:
+                            commandResponse = parseReplyType(first, botnakUserName);
                             break;
                         default:
                             break;
@@ -448,7 +462,6 @@ public class IRCBot extends MessageHandler {
                 //but we don't want the bot to trigger its own text commands, which
                 //could infinite loop (two commands calling each other over and over)
                 if (c != null && !senderIsBot && c.getMessage().data.length > 0 && !c.getDelayTimer().isRunning()) {
-                    //TODO add a check to see if people want it only to react in their channel. See Issue #76
                     StringArray sa = c.getMessage();
                     if (c.hasArguments()) {
                         //build arguments if it has any
@@ -471,9 +484,8 @@ public class IRCBot extends MessageHandler {
         }
     }
 
-
     //!startpoll time options
-    public void createPoll(String channel, String message) {
+    private void createPoll(String channel, String message) {
         if (message.contains("]")) {//because what's the point of a poll with one option?
             int first = message.indexOf(" ") + 1;
             int second = message.indexOf(" ", first) + 1;
@@ -483,6 +495,35 @@ public class IRCBot extends MessageHandler {
                 poll = new Vote(channel, time, message.substring(second).split("\\]"));
                 poll.start();
             }
+        }
+    }
+
+    private Response parseReplyType(String first, String botnakUser) {
+        Response toReturn = new Response();
+        try {
+            if (!"".equals(first)) {
+                int perm = Integer.parseInt(first);
+                if (perm > 2) perm = 2;
+                else if (perm < 0) perm = 0;
+                GUIMain.currentSettings.botReplyType = perm;
+                toReturn.setResponseText("Successfully changed the bot reply type (for other channels) to: " + getReplyType(perm, botnakUser));
+            } else {
+                toReturn.setResponseText("Current bot reply type for other channels is: " +
+                        getReplyType(GUIMain.currentSettings.botReplyType, botnakUser));
+            }
+        } catch (Exception ignored) {
+            toReturn.setResponseText("Failed to set bot reply type due to an exception!");
+        }
+        return toReturn;
+    }
+
+    private String getReplyType(int perm, String botnakUser) {
+        if (perm > 1) {
+            return "Reply to everybody (" + perm + ")";
+        } else if (perm > 0) {
+            return "Reply to just " + botnakUser + " (" + perm + ")";
+        } else {
+            return "Reply to nobody (" + perm + ")";
         }
     }
 }

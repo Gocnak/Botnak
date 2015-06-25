@@ -95,7 +95,7 @@ public class Raffle extends Thread {
         int size = entrants.size();
         if (size > 0) {
             winner = entrants.get(Utils.random(0, size));
-            bot.sendMessage(channel, "CONGRATULATIONS TO " + winner + " !!!");
+            bot.sendMessage(channel, "!!! CONGRATULATIONS TO " + winner + " !!!");
         } else {
             bot.sendMessage(channel, "Nobody entered the giveaway... BibleThump");
         }

@@ -46,33 +46,30 @@ public class MessageQueue extends Thread {
                 try {//try catch for security, if one message fails, we still want to receive messages
                     if (mess.getType() == Message.MessageType.LOG_MESSAGE) {
                         if (mess.getChannel() != null)
-                            GUIMain.chatPanes.get(mess.getChannel().substring(1)).log(wrap, true);
-                        else GUIMain.chatPanes.get("System Logs").log(wrap, true);
+                            GUIMain.getChatPane(mess.getChannel()).log(wrap, true);
+                        else GUIMain.getSystemLogsPane().log(wrap, true);
                     } else if (mess.getType() == Message.MessageType.NORMAL_MESSAGE ||
                             mess.getType() == Message.MessageType.ACTION_MESSAGE) {
                         if (!GUIMain.combinedChatPanes.isEmpty()) {
                             for (CombinedChatPane cc : GUIMain.combinedChatPanes) {
                                 for (String chan : cc.getChannels()) {
                                     if (mess.getChannel().substring(1).equalsIgnoreCase(chan)) {
-                                        //TODO a "don't show channel source" setting?
                                         cc.onMessage(wrap, true);
                                         break;
                                     }
                                 }
                             }
                         }
-                        if (GUIMain.chatPanes.get(mess.getChannel().substring(1)) != null)
-                            GUIMain.chatPanes.get(mess.getChannel().substring(1)).onMessage(wrap, false);
+                        GUIMain.getChatPane(mess.getChannel()).onMessage(wrap, false);
                     } else if (mess.getType() == Message.MessageType.SUB_NOTIFY) {
-                        String channel = mess.getChannel().substring(1);
-                        GUIMain.chatPanes.get(channel).onSub(wrap);
+                        GUIMain.getChatPane(mess.getChannel()).onSub(wrap);
                     } else if (mess.getType() == Message.MessageType.BAN_NOTIFY ||
                             mess.getType() == Message.MessageType.HOSTED_NOTIFY ||
                             mess.getType() == Message.MessageType.HOSTING_NOTIFY ||
                             mess.getType() == Message.MessageType.JTV_NOTIFY) {
-                        GUIMain.chatPanes.get(mess.getChannel()).log(wrap, false);
+                        GUIMain.getChatPane(mess.getChannel()).log(wrap, false);
                     } else if (mess.getType() == Message.MessageType.DONATION_NOTIFY) {
-                        GUIMain.chatPanes.get(mess.getChannel()).onDonation(wrap);
+                        GUIMain.getChatPane(mess.getChannel()).onDonation(wrap);
                         if (GUIMain.currentSettings.loadedDonationSounds) {
                             SoundEngine.getEngine().playSpecialSound(false);
                         }

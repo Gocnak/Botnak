@@ -376,7 +376,7 @@ public class PircBot {
         // Check for server pings.
         if (line.startsWith("PING ")) {
             // Respond to the ping and return immediately.
-            onServerPing(line.substring(5));
+            sendRawLine("PONG " + line.substring(5));
             return;
         }
         line = line.replaceAll("\\s+", " ");
@@ -401,22 +401,8 @@ public class PircBot {
         String senderInfo = tokenizer.nextToken();
         String command = tokenizer.nextToken();
         String target = null;
-        if ("CLEARCHAT".equals(command)) {
-            target = tokenizer.nextToken();
-            getMessageHandler().onClearChat(target, (line.contains(" :")) ? content : null);
-            return;
-        } else if ("HOSTTARGET".equals(command)) {
-            target = tokenizer.nextToken();
-            String[] split = content.split(" ");
-            getMessageHandler().onHosting(target.substring(1), split[0], split[1]);
-            return;
-        } else if ("NOTICE".equals(command)) {
-            if (!tags.contains("host_on") && !tags.contains("host_off")) {//handled above
-                target = tokenizer.nextToken();
-                getMessageHandler().onJTVMessage(target.substring(1), content);
-                return;
-            }
-        }
+
+        if (checkCommand(command, tags, line, content, tokenizer)) return;
 
         int exclamation = senderInfo.indexOf("!");
         int at = senderInfo.indexOf("@");
@@ -474,16 +460,13 @@ public class PircBot {
             }
         } else if (command.equals("PRIVMSG") && _channelPrefixes.indexOf(target.charAt(0)) >= 0) {
             if (sourceNick.equalsIgnoreCase("jtv")) {
-                if (line.contains("The moderators of this ")) {
-                    buildMods(target, content);
-                } else {
-                    getMessageHandler().onJTVMessage(target.substring(1), content);
-                }
+                getMessageHandler().onJTVMessage(target.substring(1), content);
+                //TODO just incase, remove this if block if twitch no longer sends these
                 return;
             }
 
             //catch the subscriber message
-            if (sourceNick.equalsIgnoreCase("twitchnotify")) {
+            if (sourceNick.equalsIgnoreCase("twitchnotify")) {//THIS MAY CHANGE IN THE FUTURE
                 if (line.contains("subscribed!") || line.contains("subscribed for")) {
                     //we dont want to get the hosted sub messages, Botnak should be in that chat for that
                     String user = content.split(" ")[0];
@@ -499,18 +482,11 @@ public class PircBot {
         } else if ("PRIVMSG".equals(command)) {
             if (sourceNick.equals("jtv")) {
                 if (line.contains("now hosting you")) {
-                    getMessageHandler().onBeingHosted(content);
+                    getMessageHandler().onBeingHosted(content);//KEEP THIS
                 }
             }
             // This is a private message to us.
             getMessageHandler().onPrivateMessage(sourceNick, sourceLogin, sourceHostname, content);
-        } else if ("MODE".equals(command)) {
-            // Somebody is changing the mode on a channel or user.
-            String mode = line.substring(line.indexOf(target, 2) + target.length() + 1);
-            if (mode.startsWith(":")) {
-                mode = mode.substring(1);
-            }
-            processMode(target, sourceNick, sourceLogin, sourceHostname, mode);
         } else {
             // If we reach this point, then we've found something that the PircBot
             // Doesn't currently deal with.
@@ -537,6 +513,35 @@ public class PircBot {
             sendRawMessage(channel, ".mods");//start building mod list
         }
         onServerResponse(code, response);
+    }
+
+    private boolean checkCommand(String command, String tags, String line, String content, StringTokenizer tokenizer) {
+        String target;
+        if ("CLEARCHAT".equals(command)) {
+            target = tokenizer.nextToken();
+            getMessageHandler().onClearChat(target, (line.contains(" :")) ? content : null);
+            return true;
+        } else if ("HOSTTARGET".equals(command)) {
+            target = tokenizer.nextToken();
+            String[] split = content.split(" ");
+            getMessageHandler().onHosting(target.substring(1), split[0], split[1]);
+            return true;
+        } else if ("NOTICE".equals(command)) {
+            if (tags.contains("room_mods")) {
+                target = tokenizer.nextToken();
+                buildMods(target, content);
+                return true;
+            } else if (!tags.contains("host_on") && !tags.contains("host_off")) {//handled above
+                target = tokenizer.nextToken();
+                getMessageHandler().onJTVMessage(target.substring(1), content);
+                return true;
+            }
+        } else if ("ROOMSTATE".equals(command)) {
+            target = tokenizer.nextToken();
+            parseTags(tags, null, target);
+            return true;
+        }
+        return false;
     }
 
     private void parseUserstate(String line) {
@@ -576,7 +581,27 @@ public class PircBot {
                         }
                         break;
                     case "user-type":
-                        handleSpecial(null, value, user);
+                        handleSpecial(channel, value, user);
+                        break;
+                    case "native-lang":
+                        //TODO once implemented in IRC (seems to not be yet)
+                        break;
+                    case "r9k":
+                        if ("1".equals(value)) {
+                            getMessageHandler().onJTVMessage(channel, "This room is in r9k mode.");
+                        }
+                        break;
+                    case "slow":
+                        if (!"0".equals(value)) {
+                            getMessageHandler().onJTVMessage(channel,
+                                    "This room is in slow mode. You may send messages every " + value + " seconds.");
+                        }
+                        break;
+                    case "subs-only":
+                        if ("1".equals(value)) {
+                            getMessageHandler().onJTVMessage(channel,
+                                    "This room is in subscribers-only mode.");
+                        }
                         break;
                     default:
                         break;
@@ -623,119 +648,6 @@ public class PircBot {
      */
     protected void onServerResponse(int code, String response) {
     }
-
-
-    /**
-     * Called when the mode of a channel is set.  We process this in
-     * order to call the appropriate onOp, onDeop, etc method before
-     * finally calling the override-able onMode method.
-     * <p/>
-     * Note that this method is private and is not intended to appear
-     * in the javadoc generated documentation.
-     * <p/>
-     * YEAH I'M GUESSING IT'S BECAUSE YOU HALF-ASSED IT SO HARD
-     *
-     * @param target         The channel or nick that the mode operation applies to.
-     * @param sourceNick     The nick of the user that set the mode.
-     * @param sourceLogin    The login of the user that set the mode.
-     * @param sourceHostname The hostname of the user that set the mode.
-     * @param mode           The mode that has been set.
-     */
-    private void processMode(String target, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
-        if (mode.charAt(0) == '#') {
-            // The mode of a channel is being changed.
-            StringTokenizer tok = new StringTokenizer(mode);
-            String[] params = new String[tok.countTokens()];
-            int t = 0;
-            while (tok.hasMoreTokens()) {
-                params[t] = tok.nextToken();
-                t++;
-            }
-            if (getChannelManager().getChannel(params[0]) == null)
-                getChannelManager().addChannel(new Channel(params[0]));
-            Channel c = getChannelManager().getChannel(params[0]);
-            /**
-             * #gocnak +o gocnak
-             * PARAMS[0] IS THE CHANNEL
-             * PARAMS[1] IS THE MODE
-             * PARAMS[2] IS THE TARGET
-             */
-            target = params[0];
-            char pn = ' ';
-            for (int i = 0; i < params[1].length(); i++) {
-                char atPos = params[1].charAt(i);
-                if (atPos == '+' || atPos == '-') {
-                    pn = atPos;
-                } else if (atPos == 'o') {
-                    if (pn == '+') {
-                        if (!c.isMod(params[2])) {
-                            c.addMods(params[2]);
-                        }
-                        getMessageHandler().onOp(target, params[2]);
-                    } else {
-                        getMessageHandler().onDeop(target, params[2]);
-                    }
-                }
-            }
-            onMode(target, sourceNick, sourceLogin, sourceHostname, mode);
-        } else {
-            // The mode of a user is being changed.
-            onUserMode(target, sourceNick, sourceLogin, sourceHostname, mode);
-        }
-    }
-
-
-    /**
-     * Called when the mode of a channel is set.
-     * <p/>
-     * You may find it more convenient to decode the meaning of the mode
-     * string by overriding the onOp, onDeOp, onVoice, onDeVoice,
-     * onChannelKey, onDeChannelKey, onChannelLimit, onDeChannelLimit,
-     * onChannelBan or onDeChannelBan methods as appropriate.
-     * <p/>
-     * The implementation of this method in the PircBot abstract class
-     * performs no actions and may be overridden as required.
-     *
-     * @param channel        The channel that the mode operation applies to.
-     * @param sourceNick     The nick of the user that set the mode.
-     * @param sourceLogin    The login of the user that set the mode.
-     * @param sourceHostname The hostname of the user that set the mode.
-     * @param mode           The mode that has been set.
-     */
-    protected void onMode(String channel, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
-    }
-
-
-    /**
-     * Called when the mode of a user is set.
-     * <p/>
-     * The implementation of this method in the PircBot abstract class
-     * performs no actions and may be overridden as required.
-     *
-     * @param targetNick     The nick that the mode operation applies to.
-     * @param sourceNick     The nick of the user that set the mode.
-     * @param sourceLogin    The login of the user that set the mode.
-     * @param sourceHostname The hostname of the user that set the mode.
-     * @param mode           The mode that has been set.
-     * @since PircBot 1.2.0
-     */
-    protected void onUserMode(String targetNick, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
-    }
-
-
-    /**
-     * The actions to perform when a PING request comes from the server.
-     * <p/>
-     * This sends back a correct response, so if you override this method,
-     * be sure to either mimic its functionality or to call
-     * super.onServerPing(response);
-     *
-     * @param response The response that should be given back in your PONG.
-     */
-    protected void onServerPing(String response) {
-        sendRawLine("PONG " + response);
-    }
-
 
     /**
      * This method is called whenever we receive a line from the server that
@@ -1035,10 +947,13 @@ public class PircBot {
      * @param line The line to parse.
      */
     public void handleSpecial(String channel, String type, String user) {
-        if (user != null) {//SPECIALUSER name type
+        if (user != null) {
+            Channel c = getChannelManager().getChannel(channel);
             switch (type) {
+                case "mod":
+                    if (c != null) c.addMods(user);
+                    break;
                 case "subscriber":
-                    Channel c = getChannelManager().getChannel(channel);
                     if (c != null) c.addSubscriber(user);
                     break;
                 case "turbo":

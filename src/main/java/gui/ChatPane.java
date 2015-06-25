@@ -302,6 +302,7 @@ public class ChatPane implements DocumentListener {
      * @param m The message from the chat.
      */
     public void onMessage(MessageWrapper m, boolean showChannel) {
+        if (textPane == null) return;
         Message message = m.getLocal();
         SimpleAttributeSet user = new SimpleAttributeSet();
         StyleConstants.setFontFamily(user, GUIMain.currentSettings.font.getFamily());
@@ -338,6 +339,7 @@ public class ChatPane implements DocumentListener {
             if (u.isGlobalMod()) {
                 insertIcon(m, IconEnum.GLOBALMOD, null);
             }
+            //TODO if GUIMain.currentSettings.donorsEnabled
             if (u.isDonor()) {
                 insertIcon(m, u.getDonationStatus(), null);
             }
@@ -441,13 +443,17 @@ public class ChatPane implements DocumentListener {
 
     private void findEmoticons(String text, Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangesStyle, User u, String channel) {
         FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.NORMAL_FACE, null, null);
-        if (u != null && u.getEmotes() != null)
-            FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE, u.getEmotes(), null);
+        if (u != null && u.getEmotes() != null) {
+            boolean isBotnakUser = u.getNick().equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName());
+            FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE, null,
+                    (isBotnakUser ? FaceManager.twitchFaceMap.keySet() : u.getEmotes()));
+        }
         //TODO if (currentSettings.FFZFaceEnabled)
-        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.FRANKER_FACE, null, channel);
+        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.FRANKER_FACE, channel, null);
     }
 
     protected void print(MessageWrapper wrapper, String string, SimpleAttributeSet set) {
+        if (textPane == null) return;
         Runnable r = () -> {
             try {
                 textPane.getStyledDocument().insertString(textPane.getStyledDocument().getLength(), string, set);

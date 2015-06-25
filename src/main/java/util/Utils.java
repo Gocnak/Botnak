@@ -28,15 +28,13 @@ import java.util.regex.Pattern;
  */
 public class Utils {
 
-    static Random r = new Random();
-
     /**
      * Returns a random number from 0 to the specified.
      *
      * @param param The max number to choose.
      */
     public static int nextInt(int param) {
-        return r.nextInt(param);
+        return new Random().nextInt(param);
     }
 
     /**
@@ -100,12 +98,13 @@ public class Utils {
     public static String fontToString(Font f) {
         String toRet = "";
         if (f != null) {
-            if (f.isBold()) { //a little bit of recycling
-                toRet = f.isItalic() ? "Bold Italic" : "Bold";
+            String type;
+            if (f.isBold()) {
+                type = f.isItalic() ? "Bold Italic" : "Bold";
             } else {
-                toRet = f.isItalic() ? "Italic" : "Plain";
+                type = f.isItalic() ? "Italic" : "Plain";
             }
-            toRet = f.getName() + ", " + f.getSize() + ", " + toRet;
+            toRet = f.getName() + "," + f.getSize() + "," + type;
         }
         return toRet;
     }
@@ -276,7 +275,7 @@ public class Utils {
      * @return Some random number between the given numbers.
      */
     public static int random(int min, int max) {
-        return min + (max == min ? 0 : r.nextInt(max - min));
+        return min + (max == min ? 0 : new Random().nextInt(max - min));
     }
 
     /**
@@ -485,7 +484,7 @@ public class Utils {
         if (!GUIMain.chatPanes.isEmpty()) {
             Set<String> keys = GUIMain.chatPanes.keySet();
             for (String s : keys) {
-                ChatPane cp = GUIMain.chatPanes.get(s);
+                ChatPane cp = GUIMain.getChatPane(s);
                 if (cp.getChannel().equalsIgnoreCase(name)) {
                     return cp.isTabVisible();
                 }
@@ -504,7 +503,7 @@ public class Utils {
         if (GUIMain.chatPanes != null && !GUIMain.chatPanes.isEmpty()) {
             Set<String> keys = GUIMain.chatPanes.keySet();
             for (String s : keys) {
-                ChatPane cp = GUIMain.chatPanes.get(s);
+                ChatPane cp = GUIMain.getChatPane(s);
                 if (cp.isTabVisible() && cp.getIndex() == index) return cp;
             }
         }
@@ -581,7 +580,7 @@ public class Utils {
     /**
      * Gets the permission of the user based on their status.
      *
-     * @param u The user to check.
+     * @param u       The user to check.
      * @param channel The channel this is for.
      * @return The permission they have.
      */
@@ -602,6 +601,21 @@ public class Utils {
             permission = Constants.PERMISSION_DEV;
         }
         return permission;
+    }
+
+    /**
+     * Gets the String value of the integer permission.
+     *
+     * @param permission The permission to get the String representation of.
+     * @return The String representation of the permission.
+     */
+    public static String getPermissionString(int permission) {
+        return (permission > 0 ? (permission > 1 ? (permission > 2 ? (permission > 3 ?
+                "Only the Broadcaster" :
+                "Only Mods and the Broadcaster") :
+                "Donators, Mods, and the Broadcaster") :
+                "Subscribers, Donators, Mods, and the Broadcaster") :
+                "Everyone");
     }
 
     /**

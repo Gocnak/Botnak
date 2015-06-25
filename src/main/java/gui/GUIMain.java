@@ -31,23 +31,23 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class GUIMain extends JFrame {
 
-    public static HashMap<String, Color> userColMap;
-    public static HashSet<Command> commandSet;
+    public static ConcurrentHashMap<String, Color> userColMap;
+    public static CopyOnWriteArraySet<Command> commandSet;
     public static CopyOnWriteArraySet<String> channelSet;
-    public static HashMap<String, ChatPane> chatPanes;
-    public static HashSet<CombinedChatPane> combinedChatPanes;
-    public static HashMap<String, Color> keywordMap;
+    public static ConcurrentHashMap<String, ChatPane> chatPanes;
+    public static CopyOnWriteArraySet<CombinedChatPane> combinedChatPanes;
+    public static ConcurrentHashMap<String, Color> keywordMap;
 
     public static int userResponsesIndex = 0;
     public static ArrayList<String> userResponses;
 
-    public static HashSet<ConsoleCommand> conCommands;
+    public static CopyOnWriteArraySet<ConsoleCommand> conCommands;
 
     public static IRCBot bot;
     public static IRCViewer viewer;
@@ -67,28 +67,29 @@ public class GUIMain extends JFrame {
 
     public static Heartbeat heartbeat;
 
+    private static ChatPane systemLogsPane;
+
     public GUIMain() {
         new MessageQueue().start();
         instance = this;
         channelSet = new CopyOnWriteArraySet<>();
-        userColMap = new HashMap<>();
-        commandSet = new HashSet<>();
-        conCommands = new HashSet<>();
-        keywordMap = new HashMap<>();
+        userColMap = new ConcurrentHashMap<>();
+        commandSet = new CopyOnWriteArraySet<>();
+        conCommands = new CopyOnWriteArraySet<>();
+        keywordMap = new ConcurrentHashMap<>();
         tabPulses = new HashSet<>();
-        combinedChatPanes = new HashSet<>();
+        combinedChatPanes = new CopyOnWriteArraySet<>();
         userResponses = new ArrayList<>();
         ThreadEngine.init();
         FaceManager.init();
         SoundEngine.init();
         StyleConstants.setForeground(norm, Color.white);
         initComponents();
-        chatPanes = new HashMap<>();
-        chatPanes.put("System Logs", new ChatPane("System Logs", allChatsScroll, allChats, 0));
+        chatPanes = new ConcurrentHashMap<>();
+        systemLogsPane = new ChatPane("System Logs", allChatsScroll, allChats, 0);
+        chatPanes.put("System Logs", systemLogsPane);
         currentSettings = new Settings();
         currentSettings.load();
-        StyleConstants.setFontFamily(norm, currentSettings.font.getFamily());
-        StyleConstants.setFontSize(norm, currentSettings.font.getSize());
         heartbeat = new Heartbeat();
         heartbeat.addHeartbeatThread(new ViewerCount());
         //heartbeat.addHeartbeatThread(new UserManager()); TODO implement with user lists
@@ -145,6 +146,25 @@ public class GUIMain extends JFrame {
                 userChat.setText("");
             }
         }
+    }
+
+    /**
+     * Wrapper for ensuring no null chat pane is produced due to hash tags.
+     *
+     * @param channel The channel, either inclusive of the hash tag or not.
+     * @return The chat pane if existent, otherwise to System Logs to prevent null pointers.
+     * (Botnak will just print out to System Logs the message that was eaten)
+     */
+    public static ChatPane getChatPane(String channel) {
+        ChatPane toReturn = chatPanes.get(channel.replaceAll("#", ""));
+        return toReturn == null ? getSystemLogsPane() : toReturn;
+    }
+
+    /**
+     * @return The System Logs chat pane.
+     */
+    public static ChatPane getSystemLogsPane() {
+        return systemLogsPane;
     }
 
     /**
@@ -312,7 +332,7 @@ public class GUIMain extends JFrame {
             //======== scrollPane1 ========
             {
                 //---- userChat ----
-                userChat.setFont(new Font("Consolas", Font.PLAIN, 10));
+                userChat.setFont(new Font("Consolas", Font.PLAIN, 12));
                 userChat.setLineWrap(true);
                 userChat.setWrapStyleWord(true);
                 userChat.addKeyListener(new ListenerUserChat(userChat));

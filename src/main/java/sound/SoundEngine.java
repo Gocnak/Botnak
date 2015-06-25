@@ -7,7 +7,11 @@ import util.Timer;
 import util.Utils;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Nick on 12/20/13.
@@ -25,7 +29,7 @@ public class SoundEngine {
     private int permission = 1;//default to sub+ permission
     private boolean soundToggle = true;
     private Timer soundTimer = new Timer(delay);
-    private HashMap<String, Sound> soundMap;
+    private ConcurrentHashMap<String, Sound> soundMap;
     private Stack<Sound> subStack, donationStack;
     private Sound lastSubSound, lastDonationSound;
 
@@ -34,7 +38,7 @@ public class SoundEngine {
     }
 
     public SoundEngine() {
-        soundMap = new HashMap<>();
+        soundMap = new ConcurrentHashMap<>();
         player = new SoundPlayer();
         subStack = new Stack<>();
         donationStack = new Stack<>();
@@ -46,7 +50,11 @@ public class SoundEngine {
         soundTimer = new Timer(delay);
     }
 
-    public HashMap<String, Sound> getSoundMap() {
+    public int getDelay() {
+        return delay;
+    }
+
+    public ConcurrentHashMap<String, Sound> getSoundMap() {
         return soundMap;
     }
 
@@ -184,13 +192,7 @@ public class SoundEngine {
         int permission = getPermission();
         String numSounds = (numSound > 0 ? (numSound == 1 ? "one sound" : (numSound + " sounds")) : "no sounds") + " currently playing";
         String delayS = (delay < 2 ? (delay == 0 ? "no delay." : "a delay of 1 second.") : ("a delay of " + delay + " seconds."));
-        String perm = (permission > 0 ? (permission > 1 ? (permission > 2 ? (permission > 3 ?
-                "Only the Broadcaster" :
-                "Only Mods and the Broadcaster") :
-                "Donators, Mods, and the Broadcaster") :
-                "Subscribers, Donators, Mods, and the Broadcaster") :
-                "Everyone")
-                + " can play sounds.";
+        String perm = Utils.getPermissionString(permission) + " can play sounds.";
         return "Sound is currently turned " + onOrOff + " with " + numSounds + " with " + delayS + " " + perm;
     }
 
@@ -495,7 +497,7 @@ public class SoundEngine {
             if (perm > -1 && perm < 5) {
                 setPermission(perm);
                 toReturn.wasSuccessful();
-                toReturn.setResponseText("Sound permission successfully changed to: " + perm);
+                toReturn.setResponseText("Sound permission successfully changed to: " + Utils.getPermissionString(perm));
             } else {
                 toReturn.setResponseText("Failed to set sound permission, the permission must be from 0 to 4!");
             }
@@ -537,7 +539,8 @@ public class SoundEngine {
         } else {
             if (soundMap.containsKey(name)) {
                 Sound toCheck = soundMap.get(name);
-                toReturn.setResponseText("The sound \"!" + name + "\" is currently turned " + (toCheck.isEnabled() ? "ON" : "OFF"));
+                toReturn.setResponseText("The sound \"!" + name + "\" is currently turned "
+                        + (toCheck.isEnabled() ? "ON" : "OFF"));
                 toReturn.wasSuccessful();
             } else {
                 toReturn.setResponseText("The sound \"!" + name + "\" does not exist!");

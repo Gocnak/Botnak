@@ -161,8 +161,8 @@ public class User implements Comparable<User> {
         for (int i : emotes) this.emotes.add(i);
     }
 
-    public Integer[] getEmotes() {
-        return emotes.toArray(new Integer[emotes.size()]);
+    public CopyOnWriteArraySet<Integer> getEmotes() {
+        return emotes;
     }
 
     public IconEnum getDonationStatus() {

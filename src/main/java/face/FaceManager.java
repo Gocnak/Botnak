@@ -20,10 +20,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Matcher;
@@ -121,17 +118,18 @@ public class FaceManager {
         try {
             URL toRead = new URL("https://api.twitch.tv/kraken/chat/" + channel.replace("#", "") + "/badges");
             BufferedReader irs = new BufferedReader(new InputStreamReader(toRead.openStream()));
-            String line;
+            String line = irs.readLine();
+            irs.close();
             String path = null;
-            while (!GUIMain.shutDown && (line = irs.readLine()) != null) {
+            if (line != null) {
                 JSONObject init = new JSONObject(line);
-                JSONObject sub = init.getJSONObject("subscriber");
-                if (!sub.getString("image").equalsIgnoreCase("null")) {
-                    path = downloadIcon(sub.getString("image"), channel);
-                    break;
+                if (init.has("subscriber")) {
+                    JSONObject sub = init.getJSONObject("subscriber");
+                    if (!sub.getString("image").equalsIgnoreCase("null")) {
+                        path = downloadIcon(sub.getString("image"), channel);
+                    }
                 }
             }
-            irs.close();
             if (path != null) {
                 subIconSet.add(new SubscriberIcon(channel, path));
                 return getSubIcon(channel);
@@ -175,11 +173,11 @@ public class FaceManager {
 
     /**
      * Loads the default Twitch faces. This downloads to the local folder in
-     * <p/>
+     * <p>
      * /My Documents/Botnak/TwitchFaces/
-     * <p/>
+     * <p>
      * It also checks to see if you may be missing a default face, and downloads it.
-     * <p/>
+     * <p>
      * This process is threaded, and will only show the faces when it's done downloading.
      */
     public static void loadDefaultFaces() {
@@ -200,7 +198,7 @@ public class FaceManager {
 
     /**
      * Toggles a twitch face on/off.
-     * <p/>
+     * <p>
      * Ex: !toggleface RitzMitz
      * would toggle RitzMitz off/on in showing up on botnak,
      * depending on current state.
@@ -293,7 +291,7 @@ public class FaceManager {
     }
 
     public static void handleFaces(Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangeStyles,
-                                   String object, FACE_TYPE type, Integer[] emotes, String channel) {
+                                   String object, FACE_TYPE type, String channel, Collection<Integer> emotes) {
         switch (type) {
             case TWITCH_FACE:
                 if (doneWithTwitchFaces) {
@@ -477,7 +475,7 @@ public class FaceManager {
      * Downloads a face off of the internet using the given URL and stores it in the given
      * directory with the given filename and extension. The regex (or "name") of the face is put in the map
      * for later use/comparison.
-     * <p/>
+     * <p>
      *
      * @param url       The URL to the face.
      * @param directory The directory to save the face in.

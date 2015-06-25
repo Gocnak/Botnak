@@ -8,14 +8,27 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class Channel {
 
-    private CopyOnWriteArraySet<String> mods = new CopyOnWriteArraySet<>();
-    private CopyOnWriteArraySet<String> subscribers = new CopyOnWriteArraySet<>();
-    private String name = "";
+    private CopyOnWriteArraySet<String> mods;
+    private CopyOnWriteArraySet<String> subscribers;
+    private String name;
 
+    /**
+     * Constructs a channel object of the given name.
+     *
+     * @param name The name to assign to the channel (includes the hashtag).
+     */
     public Channel(String name) {
         this.name = name;
+        this.mods = new CopyOnWriteArraySet<>();
+        this.subscribers = new CopyOnWriteArraySet<>();
     }
 
+    /**
+     * Checks to see if a given user is a moderator of a channel.
+     *
+     * @param user The user to check.
+     * @return True if the user is a mod, else false.
+     */
     public boolean isMod(String user) {
         for (String s : mods) {
             if (user.equalsIgnoreCase(s)) {
@@ -25,6 +38,12 @@ public class Channel {
         return false;
     }
 
+    /**
+     * Checks to see if a given user is a subscriber to a channel.
+     *
+     * @param u The user to check.
+     * @return True if the user is a subscriber, else false.
+     */
     public boolean isSubscriber(User u) {
         for (String s : subscribers) {
             if (s.equals(u.getNick().toLowerCase())) {

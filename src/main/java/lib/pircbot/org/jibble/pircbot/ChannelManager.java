@@ -55,6 +55,7 @@ public class ChannelManager {
      * @return The channel object if it exists, else null.
      */
     public Channel getChannel(String name) {
+        if (name == null || "".equals(name)) return null;
         if (!name.startsWith("#")) name = "#" + name;
         for (Channel c : channels) {
             if (c.getName().equalsIgnoreCase(name)) {

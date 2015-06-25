@@ -30,7 +30,7 @@ public class GUIStreams extends JFrame {
                     //create the ChatPane but do not add to the tabbed pane
                     if (GUIMain.chatPanes.containsKey(channel)) {
                         //if the pane exists just use it, no need to create multiple
-                        panes.add(GUIMain.chatPanes.get(channel));
+                        panes.add(GUIMain.getChatPane(channel));
                         //note: since they're adding the combined tab and the tab
                         //already exists, they know full well that it does, so
                         //we're not removing/setting visible to false for the tab

@@ -31,7 +31,7 @@ public class ViewerCount implements HeartbeatThread {
         Set<String> keys = GUIMain.chatPanes.keySet();
         for (String s : keys) {
             if (s.equalsIgnoreCase("system logs")) continue;
-            ChatPane cp = GUIMain.chatPanes.get(s);
+            ChatPane cp = GUIMain.getChatPane(s);
             if (cp == null) continue;
             if (APIRequests.Twitch.isChannelLive(s)) {
                 int count = APIRequests.Twitch.countViewers(s);

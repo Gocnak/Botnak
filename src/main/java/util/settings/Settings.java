@@ -21,6 +21,7 @@ import util.comm.ConsoleCommand;
 import util.misc.Donation;
 
 import javax.swing.filechooser.FileSystemView;
+import javax.swing.text.StyleConstants;
 import java.awt.*;
 import java.io.*;
 import java.net.URL;
@@ -44,7 +45,7 @@ public class Settings {
     public AccountManager accountManager = null;
     public ChannelManager channelManager = null;
     public String lastFMAccount = "";
-    public int botReplyType = 0; //TODO set this
+    public int botReplyType = 0;
     //0 = none, 1 = botnak user only, 2 = everyone
 
     //donations
@@ -97,7 +98,6 @@ public class Settings {
     public File keywordsFile = new File(defaultDir + File.separator + "keywords.txt");
     public File subIconsFile = new File(defaultDir + File.separator + "subIcons.txt");
     public File donatorsFile = new File(defaultDir + File.separator + "donators.txt");
-    public File namefaceFile = new File(defaultDir + File.separator + "namefaces.txt");
     public File donationsFile = new File(defaultDir + File.separator + "donations.txt");
     public File subsFile = new File(defaultDir + File.separator + "subs.txt");
 
@@ -129,6 +129,7 @@ public class Settings {
         subIconsDir.mkdirs();
         subSoundDir.mkdirs();
         donationSoundDir.mkdirs();
+        //TODO if frankerFaceZEnable
         frankerFaceZDir.mkdirs();
     }
 
@@ -201,10 +202,11 @@ public class Settings {
                 GUIMain.log("Loading subscriber icons...");
                 loadSubIcons();
             }
-            if (Utils.areFilesGood(namefaceFile.getAbsolutePath())) {
+            if (nameFaceDir.exists() && nameFaceDir.length() > 0) {
                 GUIMain.log("Loading name faces...");
                 loadNameFaces();
             }
+            //TODO if frankerFaceZEnable
             if (frankerFaceZDir.exists() && frankerFaceZDir.length() > 0) {
                 GUIMain.log("Loading FrankerFaceZ faces...");
                 loadFFZFaces();
@@ -236,7 +238,6 @@ public class Settings {
         if (!SoundEngine.getEngine().getSoundMap().isEmpty()) saveSounds();
         if (!FaceManager.faceMap.isEmpty()) saveFaces();
         if (!FaceManager.twitchFaceMap.isEmpty()) saveTwitchFaces();
-        if (!FaceManager.nameFaceMap.isEmpty()) saveNameFaces();
         saveTabState();
         if (!GUIMain.userColMap.isEmpty()) saveUserColors();
         if (GUIMain.loadedCommands()) saveCommands();
@@ -321,7 +322,12 @@ public class Settings {
                 logChat = Boolean.parseBoolean(p.getProperty("LogChat", "false"));
                 chatMax = Integer.parseInt(p.getProperty("MaxChat", "100"));
                 faceMaxHeight = Integer.parseInt(p.getProperty("FaceMaxHeight", "20"));
-                font = Utils.stringToFont(p.getProperty("Font", "Calibri, 18, Plain").split(","));
+                font = Utils.stringToFont(p.getProperty("Font").split(","));
+                StyleConstants.setFontFamily(GUIMain.norm, font.getFamily());
+                StyleConstants.setFontSize(GUIMain.norm, font.getSize());
+                SoundEngine.getEngine().setPermission(Integer.parseInt(p.getProperty("SoundEnginePerm", "1")));
+                SoundEngine.getEngine().setDelay(Integer.parseInt(p.getProperty("SoundEngineDelay", "10000")));
+                botReplyType = Integer.parseInt(p.getProperty("BotReplyType", "0"));
                 GUIMain.log("Loaded defaults!");
             } catch (Exception e) {
                 GUIMain.log(e.getMessage());
@@ -376,6 +382,9 @@ public class Settings {
             p.put("ClearChat", String.valueOf(cleanupChat));
             p.put("LogChat", String.valueOf(logChat));
             p.put("Font", Utils.fontToString(font));
+            p.put("SoundEnginePerm", String.valueOf(SoundEngine.getEngine().getPermission()));
+            p.put("SoundEngineDelay", String.valueOf(SoundEngine.getEngine().getDelay()));
+            p.put("BotReplyType", String.valueOf(botReplyType));
             try {
                 p.store(new FileWriter(defaultsFile), "Default Settings");
             } catch (IOException e) {
@@ -737,6 +746,7 @@ public class Settings {
         hardcoded.add(new ConsoleCommand("uptime", ConsoleCommand.Action.SHOW_UPTIME, Constants.PERMISSION_ALL, null));
         hardcoded.add(new ConsoleCommand("lastsubsound", ConsoleCommand.Action.SEE_PREV_SOUND_SUB, Constants.PERMISSION_ALL, null));
         hardcoded.add(new ConsoleCommand("lastdonationsound", ConsoleCommand.Action.SEE_PREV_SOUND_DON, Constants.PERMISSION_ALL, null));
+        hardcoded.add(new ConsoleCommand("botreply", ConsoleCommand.Action.SEE_OR_SET_REPLY_TYPE, Constants.PERMISSION_DEV, null));
 
         if (Utils.areFilesGood(ccommandsFile.getAbsolutePath())) {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(ccommandsFile.toURI().toURL().openStream()))) {
@@ -1082,24 +1092,14 @@ public class Settings {
      * Name faces
      */
     public void loadNameFaces() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(namefaceFile.toURI().toURL().openStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split(",");
-                FaceManager.nameFaceMap.put(split[0], new Face(split[0], split[1]));
+        try {
+            File[] nameFaces = nameFaceDir.listFiles();
+            if (nameFaces == null) return;
+            for (File nameFace : nameFaces) {
+                String name = Utils.removeExt(nameFace.getName());
+                FaceManager.nameFaceMap.put(name, new Face(name, nameFace.getAbsolutePath()));
             }
-            GUIMain.log("Loaded namefaces!");
-        } catch (Exception e) {
-            GUIMain.log(e.getMessage());
-        }
-    }
-
-    public void saveNameFaces() {
-        try (PrintWriter br = new PrintWriter(namefaceFile)) {
-            FaceManager.nameFaceMap.keySet().stream().forEach(s -> {
-                Face toPrint = FaceManager.nameFaceMap.get(s);
-                br.println(s + "," + toPrint.getFilePath());
-            });
+            GUIMain.log("Loaded name faces!");
         } catch (Exception e) {
             GUIMain.log(e.getMessage());
         }

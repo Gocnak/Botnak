@@ -21,7 +21,7 @@ public class Vote extends Thread {
         return isDone;
     }
 
-    ArrayList<Option> options;
+    private ArrayList<Option> options;
 
     public Vote(String channel, int time, String... options) {
         this.channel = channel;
