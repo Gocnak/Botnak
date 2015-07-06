@@ -3,6 +3,7 @@ package face;
 import gui.GUIMain;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
+import lib.pircbot.org.jibble.pircbot.User;
 import lib.scalr.Scalr;
 import thread.ThreadEngine;
 import util.Response;
@@ -38,6 +39,7 @@ public class FaceManager {
     public static boolean doneWithFaces = false;
     public static boolean doneWithTwitchFaces = false;
     public static boolean doneWithFrankerFaces = false;
+    private static boolean checkedEmoteSets = false;
 
     //faces
     public static ConcurrentHashMap<String, Face> faceMap;
@@ -277,7 +279,6 @@ public class FaceManager {
                             faces.add(downloaded);
                         }
                     }
-
                 }
             } else { //don't have any of them
                 faces = new ArrayList<>();
@@ -286,6 +287,40 @@ public class FaceManager {
                     if (downloaded != null) faces.add(downloaded);
                 }
                 ffzFaceMap.put(channel, faces);
+            }
+        });
+    }
+
+    public static void handleEmoteSet(String emotes) {
+        if (checkedEmoteSets || !doneWithTwitchFaces) return;
+        ThreadEngine.submit(() -> {
+            try {
+                checkedEmoteSets = true;
+                URL url = new URL("https://api.twitch.tv/kraken/chat/emoticon_images?emotesets=" + emotes);
+                BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
+                String line = br.readLine();
+                br.close();
+                if (line != null) {
+                    User main = GUIMain.currentSettings.channelManager
+                            .getUser(GUIMain.currentSettings.accountManager.getUserAccount().getName(), false);
+                    JSONObject init = new JSONObject(line);
+                    String[] keys = emotes.split(",");
+                    JSONObject emote_sets = init.getJSONObject("emoticon_sets");
+                    for (String s : keys) {
+                        JSONArray set = emote_sets.getJSONArray(s);
+                        for (int i = 0; i < set.length(); i++) {
+                            JSONObject emote = set.getJSONObject(i);
+                            int ID = emote.getInt("id");
+                            main.addEmote(ID);
+                            if (twitchFaceMap.get(ID) == null) {
+                                downloadEmote(ID);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                GUIMain.log("FaceManager: Failed to download EmoteSets!");
+                checkedEmoteSets = false;
             }
         });
     }

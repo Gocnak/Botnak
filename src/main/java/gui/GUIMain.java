@@ -31,7 +31,6 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -63,7 +62,7 @@ public class GUIMain extends JFrame {
 
     public static Settings currentSettings;
 
-    public static HashSet<TabPulse> tabPulses;
+    public static CopyOnWriteArraySet<TabPulse> tabPulses;
 
     public static Heartbeat heartbeat;
 
@@ -77,7 +76,7 @@ public class GUIMain extends JFrame {
         commandSet = new CopyOnWriteArraySet<>();
         conCommands = new CopyOnWriteArraySet<>();
         keywordMap = new ConcurrentHashMap<>();
-        tabPulses = new HashSet<>();
+        tabPulses = new CopyOnWriteArraySet<>();
         combinedChatPanes = new CopyOnWriteArraySet<>();
         userResponses = new ArrayList<>();
         ThreadEngine.init();

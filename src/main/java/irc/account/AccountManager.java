@@ -193,7 +193,7 @@ public class AccountManager extends Thread {
                     } catch (Exception ignored) {
                     }
                 }
-                if (doer.connect("irc.twitch.tv", 80)) {
+                if (doer.connect("irc.twitch.tv", 6667)) {
                     isDone = true;
                 } else {
                     t.reset();

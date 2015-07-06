@@ -157,8 +157,8 @@ public class User implements Comparable<User> {
         return donor != null;
     }
 
-    public void setEmotes(Integer... emotes) {
-        for (int i : emotes) this.emotes.add(i);
+    public void addEmote(int emote) {
+        this.emotes.add(emote);
     }
 
     public CopyOnWriteArraySet<Integer> getEmotes() {

@@ -152,7 +152,7 @@ public class Settings {
                 GUIMain.log("Loading defaults...");
                 loadPropData(1);
             }
-            if (Utils.areFilesGood(tabsFile.getAbsolutePath())) {
+            if (Utils.areFilesGood(tabsFile.getAbsolutePath()) && accountManager.getUserAccount() != null) {
                 GUIMain.log("Loading tabs...");
                 loadTabState();
             }
@@ -202,7 +202,8 @@ public class Settings {
                 GUIMain.log("Loading subscriber icons...");
                 loadSubIcons();
             }
-            if (nameFaceDir.exists() && nameFaceDir.length() > 0) {
+            File[] nameFaces = nameFaceDir.listFiles();
+            if (nameFaces != null && nameFaces.length > 0) {
                 GUIMain.log("Loading name faces...");
                 loadNameFaces();
             }

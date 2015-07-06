@@ -73,10 +73,10 @@ public class IRCBot extends MessageHandler {
      */
     public void close(boolean forget) {
         GUIMain.log("Logging out of bot: " + GUIMain.currentSettings.accountManager.getBotAccount().getName());
+        GUIMain.currentSettings.accountManager.addTask(new Task(getBot(), Task.Type.DISCONNECT, null));
         if (forget) {
             GUIMain.currentSettings.accountManager.setBotAccount(null);
         }
-        GUIMain.currentSettings.accountManager.addTask(new Task(getBot(), Task.Type.DISCONNECT, null));
         GUIMain.bot = null;
     }
 

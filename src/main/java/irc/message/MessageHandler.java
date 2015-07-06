@@ -73,39 +73,6 @@ public abstract class MessageHandler {
     public void onAction(String sender, String target, String action) {
     }
 
-    /**
-     * Called when a user (possibly us) gets granted operator status for a channel.
-     * <p>
-     * This is a type of mode change and is also passed to the onMode
-     * method in the PircBot class.
-     * <p>
-     * The implementation of this method in the PircBot abstract class
-     * performs no actions and may be overridden as required.
-     *
-     * @param channel   The channel in which the mode change took place.
-     * @param recipient The nick of the user that got 'opped'.
-     * @since PircBot 0.9.5
-     */
-    public void onOp(String channel, String recipient) {
-    }
-
-
-    /**
-     * Called when a user (possibly us) gets operator status taken away.
-     * <p>
-     * This is a type of mode change and is also passed to the onMode
-     * method in the PircBot class.
-     * <p>
-     * The implementation of this method in the PircBot abstract class
-     * performs no actions and may be overridden as required.
-     *
-     * @param channel   The channel in which the mode change took place.
-     * @param recipient The nick of the user that got 'deopped'.
-     * @since PircBot 0.9.5
-     */
-    public void onDeop(String channel, String recipient) {
-    }
-
 
     /**
      * This method carries out the actions to be performed when the PircBot

@@ -14,6 +14,7 @@ found at http://www.jibble.org/licenses/
 
 package lib.pircbot.org.jibble.pircbot;
 
+import face.FaceManager;
 import gui.GUIMain;
 import irc.message.MessageHandler;
 import util.Constants;
@@ -603,6 +604,9 @@ public class PircBot {
                                     "This room is in subscribers-only mode.");
                         }
                         break;
+                    case "emote-sets":
+                        FaceManager.handleEmoteSet(value);
+                        break;
                     default:
                         break;
                 }
@@ -938,7 +942,6 @@ public class PircBot {
     public void dispose() {
         if (_outputThread != null) _outputThread.interrupt();
         if (_inputThread != null) _inputThread.dispose();
-        removeAllChannels();
     }
 
     /**
@@ -995,24 +998,18 @@ public class PircBot {
     public void handleEmotes(String numbers, String user) {
         try {
             String[] parts = numbers.split("/");
+            User u = getChannelManager().getUser(user, true);
             for (String emote : parts) {
                 String emoteID = emote.split(":")[0];
                 try {
                     int id = Integer.parseInt(emoteID);
-                    getChannelManager().getUser(user, true).setEmotes(id);
+                    u.addEmote(id);
                 } catch (Exception e) {
                     GUIMain.log("Cannot parse emote ID given by IRCv3 tags!");
                 }
             }
         } catch (Exception ignored) {
         }
-    }
-
-    /**
-     * Removes all channels from our memory of users.
-     */
-    private void removeAllChannels() {
-        if (getChannelManager() != null) getChannelManager().dispose();
     }
 
 

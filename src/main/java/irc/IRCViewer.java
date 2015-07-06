@@ -6,6 +6,7 @@ import irc.account.Task;
 import irc.message.Message;
 import irc.message.MessageHandler;
 import irc.message.MessageQueue;
+import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
 import thread.heartbeat.BanQueue;
 import util.Utils;
@@ -15,10 +16,13 @@ import java.util.Optional;
 
 public class IRCViewer extends MessageHandler {
 
+    private PircBot getViewer() {
+        return GUIMain.currentSettings.accountManager.getViewer();
+    }
+
     public void doConnect(String channel) {
         channel = channel.startsWith("#") ? channel : "#" + channel;
-        GUIMain.currentSettings.accountManager.addTask(
-                new Task(GUIMain.currentSettings.accountManager.getViewer(), Task.Type.JOIN_CHANNEL, channel));
+        GUIMain.currentSettings.accountManager.addTask(new Task(getViewer(), Task.Type.JOIN_CHANNEL, channel));
         if (GUIMain.currentSettings.logChat) Utils.logChat(null, channel, 0);
         if (!GUIMain.channelSet.contains(channel)) GUIMain.channelSet.add(channel);
         //TODO if currentSettings.FFZFacesEnable
@@ -34,8 +38,7 @@ public class IRCViewer extends MessageHandler {
      */
     public void doLeave(String channel) {
         if (!channel.startsWith("#")) channel = "#" + channel;
-        GUIMain.currentSettings.accountManager.addTask(
-                new Task(GUIMain.currentSettings.accountManager.getViewer(), Task.Type.LEAVE_CHANNEL, channel));
+        GUIMain.currentSettings.accountManager.addTask(new Task(getViewer(), Task.Type.LEAVE_CHANNEL, channel));
         GUIMain.channelSet.remove(channel);
     }
 
@@ -46,8 +49,7 @@ public class IRCViewer extends MessageHandler {
      */
     public synchronized void close(boolean forget) {
         GUIMain.log("Logging out of user: " + GUIMain.currentSettings.accountManager.getUserAccount().getName());
-        GUIMain.currentSettings.accountManager.addTask(
-                new Task(GUIMain.currentSettings.accountManager.getViewer(), Task.Type.DISCONNECT, null));
+        GUIMain.currentSettings.accountManager.addTask(new Task(getViewer(), Task.Type.DISCONNECT, null));
         if (forget) {
             GUIMain.currentSettings.accountManager.setUserAccount(null);
         }
@@ -67,7 +69,8 @@ public class IRCViewer extends MessageHandler {
 
     @Override
     public void onBeingHosted(final String line) {
-        MessageQueue.addMessage(new Message(line, Message.MessageType.HOSTED_NOTIFY).setChannel(GUIMain.currentSettings.accountManager.getUserAccount().getName()));
+        MessageQueue.addMessage(new Message(line, Message.MessageType.HOSTED_NOTIFY)
+                .setChannel(GUIMain.currentSettings.accountManager.getUserAccount().getName()));
     }
 
     @Override
@@ -87,12 +90,6 @@ public class IRCViewer extends MessageHandler {
             m.setContent(content + viewCount);
         }
         MessageQueue.addMessage(m);
-    }
-
-    @Override
-    public void onOp(String channel, String recepient) {
-        //TODO if they have GUIMain.currentSettings.showModGrants, print out who gets modded as a log.
-        //update the viewer list to re-organize, and put the name at the top.
     }
 
     @Override
@@ -119,15 +116,9 @@ public class IRCViewer extends MessageHandler {
         MessageQueue.addMessage(m);
     }
 
-    @Override
-    public void onDeop(String channel, String recipient) {
-        //TODO if they have GUIMain.currentSettings.showModGrants, print out who gets de-modded as a log.
-        //update the viewer list to re-organize, and put the name at the top.
-    }
-
     public void onDisconnect() {
-        if (!GUIMain.shutDown && GUIMain.currentSettings.accountManager.getViewer() != null) {
-            GUIMain.currentSettings.accountManager.createReconnectThread(GUIMain.currentSettings.accountManager.getViewer());
+        if (!GUIMain.shutDown && getViewer() != null) {
+            GUIMain.currentSettings.accountManager.createReconnectThread(getViewer());
         }
     }
 
@@ -148,7 +139,7 @@ public class IRCViewer extends MessageHandler {
 
     @Override
     public void onConnect() {
-        GUIMain.currentSettings.channelManager.addUser(new User(GUIMain.currentSettings.accountManager.getViewer().getNick()));
+        GUIMain.currentSettings.channelManager.addUser(new User(getViewer().getNick()));
         GUIMain.channelSet.forEach(this::doConnect);
         GUIMain.updateTitle(null);
     }
