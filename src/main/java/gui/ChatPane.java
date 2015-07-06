@@ -214,6 +214,8 @@ public class ChatPane implements DocumentListener {
         JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
         boolean scrollBarAtBottom = isScrollBarFullyExtended(scrollBar);
         if (scrollBarAtBottom) {
+            // We're back at the bottom, reset timer
+            scrollbarTimestamp = -1;
             scrollToBottom();
         } else if(scrollbarTimestamp != -1){
             if(System.currentTimeMillis() - scrollbarTimestamp >= 10 * 1000L) {
