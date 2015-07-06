@@ -36,6 +36,10 @@ public class ChatPane implements DocumentListener {
 
     private JFrame poppedOutPane = null;
 
+    // The timestamp of when we decided to wait to scroll back down
+    private long scrollbarTimestamp = -1;
+
+
     public void setPoppedOutPane(JFrame pane) {
         poppedOutPane = pane;
     }
@@ -201,11 +205,27 @@ public class ChatPane implements DocumentListener {
         maybeScrollToBottom();
     }
 
+    /**
+     * Used to queue a scrollToBottom only if the scroll bar is already at the bottom
+     * OR
+     * It's been more than 10 seconds since we've been scrolled up and have been receiving messages
+     */
     private void maybeScrollToBottom() {
         JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
         boolean scrollBarAtBottom = isScrollBarFullyExtended(scrollBar);
         if (scrollBarAtBottom) {
+            // We're back at the bottom, reset timer
+            scrollbarTimestamp = -1;
             scrollToBottom();
+        } else if(scrollbarTimestamp != -1){
+            if(System.currentTimeMillis() - scrollbarTimestamp >= 10 * 1000L) {
+                // If the time difference is more than 10 seconds, scroll to bottom anyway after resetting time
+                scrollbarTimestamp = -1;
+                GUIMain.log("Scrolled from timeout..");
+                scrollToBottom();
+            }
+        } else {
+            scrollbarTimestamp = System.currentTimeMillis();
         }
     }
 
