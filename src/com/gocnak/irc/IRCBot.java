@@ -165,7 +165,7 @@ public class IRCBot extends MessageHandler {
             if (message.startsWith("!")) {
                 String trigger = message.substring(1).split(" ")[0].toLowerCase();
                 String mess = message.substring(1);
-                //com.gocnak.sound
+                //sound
                 if (SoundEngine.getEngine().soundTrigger(trigger, sender, channel)) {
                     SoundEngine.getEngine().playSound(new Sound(SoundEngine.getEngine().getSoundMap().get(trigger)));
                 }
@@ -260,13 +260,13 @@ public class IRCBot extends MessageHandler {
                                 try {
                                     Face f = FaceManager.nameFaceMap.remove(sender);
                                     if (f != null && new File(f.getFilePath()).delete())
-                                        getBot().sendMessage(channel, "Removed com.gocnak.face for user: " + sender + " !");
+                                        getBot().sendMessage(channel, "Removed face for user: " + sender + " !");
                                 } catch (Exception e) {
-                                    getBot().sendMessage(channel, "Name com.gocnak.face for user " + sender +
+                                    getBot().sendMessage(channel, "Name face for user " + sender +
                                             " could not be removed due to an exception!");
                                 }
                             } else {
-                                getBot().sendMessage(channel, "The user " + sender + " has no name com.gocnak.face!");
+                                getBot().sendMessage(channel, "The user " + sender + " has no name face!");
                             }
                             break;
                         case SET_STREAM_TITLE:

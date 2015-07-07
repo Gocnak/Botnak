@@ -68,14 +68,14 @@ public class FaceManager {
     }
 
     /**
-     * Removes a com.gocnak.face from the Face HashMap and deletes the com.gocnak.face picture file.
+     * Removes a face from the Face HashMap and deletes the face picture file.
      *
-     * @param key The name of the com.gocnak.face to remove.
+     * @param key The name of the face to remove.
      */
     public static Response removeFace(String key) {
         Response toReturn = new Response();
         if (!faceMap.containsKey(key)) {
-            toReturn.setResponseText("Could not remove the com.gocnak.face, there is no such com.gocnak.face \"" + key + "\"!");
+            toReturn.setResponseText("Could not remove the face, there is no such face \"" + key + "\"!");
             return toReturn;
         }
         try {
@@ -84,12 +84,12 @@ public class FaceManager {
             if (f.delete()) {
                 faceMap.remove(key);
                 toReturn.wasSuccessful();
-                toReturn.setResponseText("Successfully removed com.gocnak.face \"" + key + "\"!");
+                toReturn.setResponseText("Successfully removed face \"" + key + "\"!");
             } else {
-                toReturn.setResponseText("Could not remove com.gocnak.face due to I/O error!");
+                toReturn.setResponseText("Could not remove face due to I/O error!");
             }
         } catch (Exception e) {
-            toReturn.setResponseText("Could not delete com.gocnak.face due to Exception: " + e.getMessage());
+            toReturn.setResponseText("Could not delete face due to Exception: " + e.getMessage());
         }
         return toReturn;
     }
@@ -178,7 +178,7 @@ public class FaceManager {
      * <p>
      * /My Documents/Botnak/TwitchFaces/
      * <p>
-     * It also checks to see if you may be missing a default com.gocnak.face, and downloads it.
+     * It also checks to see if you may be missing a default face, and downloads it.
      * <p>
      * This process is threaded, and will only show the faces when it's done downloading.
      */
@@ -199,19 +199,19 @@ public class FaceManager {
     }
 
     /**
-     * Toggles a twitch com.gocnak.face on/off.
+     * Toggles a twitch face on/off.
      * <p>
      * Ex: !toggleface RitzMitz
      * would toggle RitzMitz off/on in showing up on botnak,
      * depending on current state.
      *
-     * @param faceName The com.gocnak.face name to toggle.
+     * @param faceName The face name to toggle.
      */
     public static Response toggleFace(String faceName) {
         Response toReturn = new Response();
         if (faceName == null || !doneWithTwitchFaces) {
-            if (doneWithTwitchFaces) toReturn.setResponseText("Failed to toggle com.gocnak.face, the com.gocnak.face name is null!");
-            else toReturn.setResponseText("Failed to toggle com.gocnak.face, not done checking Twitch faces!");
+            if (doneWithTwitchFaces) toReturn.setResponseText("Failed to toggle face, the face name is null!");
+            else toReturn.setResponseText("Failed to toggle face, not done checking Twitch faces!");
             return toReturn;
         }
         Set<Integer> set = twitchFaceMap.keySet();
@@ -223,12 +223,12 @@ public class FaceManager {
             if (m.find()) {
                 boolean newStatus = !fa.isEnabled();
                 fa.setEnabled(newStatus);
-                toReturn.setResponseText("Toggled the com.gocnak.face " + faceName + (newStatus ? " ON" : " OFF"));
+                toReturn.setResponseText("Toggled the face " + faceName + (newStatus ? " ON" : " OFF"));
                 toReturn.wasSuccessful();
                 return toReturn;
             }
         }
-        String errorMessage = "Could not find com.gocnak.face " + faceName + " in the loaded Twitch faces ";
+        String errorMessage = "Could not find face " + faceName + " in the loaded Twitch faces ";
         //TODO if currentSettings.ffzEnable
         Set<String> channels = ffzFaceMap.keySet();
         for (String chan : channels) {
@@ -237,7 +237,7 @@ public class FaceManager {
                 if (f.getRegex().equalsIgnoreCase(faceName)) {
                     boolean newStatus = !f.isEnabled();
                     f.setEnabled(newStatus);
-                    toReturn.setResponseText("Toggled the FrankerFaceZ com.gocnak.face " + f.getRegex() + (newStatus ? " ON" : " OFF"));
+                    toReturn.setResponseText("Toggled the FrankerFaceZ face " + f.getRegex() + (newStatus ? " ON" : " OFF"));
                     toReturn.wasSuccessful();
                     return toReturn;
                 }
@@ -476,7 +476,7 @@ public class FaceManager {
         return null;
     }
 
-    private static FrankerFaceZ downloadFFZFace(String channel, FrankerFaceZ face) {//URL is stored in the FFZ com.gocnak.face
+    private static FrankerFaceZ downloadFFZFace(String channel, FrankerFaceZ face) {//URL is stored in the FFZ face
         FrankerFaceZ toReturn = null;
         try {
             String regex = face.getRegex();
@@ -500,28 +500,28 @@ public class FaceManager {
         try {
             return downloadFace(f.toURI().toURL().toString(), directory, name, regex, type);
         } catch (Exception e) {
-            toReturn.setResponseText("Failed to download com.gocnak.face due to a malformed URL!");
+            toReturn.setResponseText("Failed to download face due to a malformed URL!");
         }
         return toReturn;
     }
 
 
     /**
-     * Downloads a com.gocnak.face off of the internet using the given URL and stores it in the given
-     * directory with the given filename and extension. The regex (or "name") of the com.gocnak.face is put in the map
+     * Downloads a face off of the internet using the given URL and stores it in the given
+     * directory with the given filename and extension. The regex (or "name") of the face is put in the map
      * for later use/comparison.
      * <p>
      *
-     * @param url       The URL to the com.gocnak.face.
-     * @param directory The directory to save the com.gocnak.face in.
-     * @param name      The name of the file for the com.gocnak.face, including the extension.
-     * @param regex     The regex pattern ("name") of the com.gocnak.face.
-     * @param type      What type of com.gocnak.face it is.
+     * @param url       The URL to the face.
+     * @param directory The directory to save the face in.
+     * @param name      The name of the file for the face, including the extension.
+     * @param regex     The regex pattern ("name") of the face.
+     * @param type      What type of face it is.
      */
     public static Response downloadFace(String url, String directory, String name, String regex, FACE_TYPE type) {
         Response toReturn = new Response();
         if (directory == null || name == null || directory.equals("") || name.equals("")) {
-            toReturn.setResponseText("Failed to download com.gocnak.face, the directory or name is null!");
+            toReturn.setResponseText("Failed to download face, the directory or name is null!");
             return toReturn;
         }
         try {
@@ -531,7 +531,7 @@ public class FaceManager {
                     Face face = new Face(regex, toSave.getAbsolutePath());
                     name = Utils.removeExt(name);
                     faceMap.put(name, face);//put it
-                    toReturn.setResponseText("Successfully added the normal com.gocnak.face: " + name + " !");
+                    toReturn.setResponseText("Successfully added the normal face: " + name + " !");
                 } else {
                     Face face = new Face(regex, toSave.getAbsolutePath());
                     name = Utils.removeExt(name);
@@ -540,10 +540,10 @@ public class FaceManager {
                 }
                 toReturn.wasSuccessful();
             } else {
-                toReturn.setResponseText("Failed to download the com.gocnak.face, perhaps a bad URL!");
+                toReturn.setResponseText("Failed to download the face, perhaps a bad URL!");
             }
         } catch (Exception e) {
-            toReturn.setResponseText("Failed to download com.gocnak.face due to Exception: " + e.getMessage());
+            toReturn.setResponseText("Failed to download face due to Exception: " + e.getMessage());
         }
         return toReturn;
     }
@@ -571,9 +571,9 @@ public class FaceManager {
     }
 
     /**
-     * Tests to see if an com.gocnak.image is within reasonable downloading bounds (5000x5000)
+     * Tests to see if an image is within reasonable downloading bounds (5000x5000)
      *
-     * @param url The URL to the com.gocnak.image to check.
+     * @param url The URL to the image to check.
      * @return True if within downloadable bounds else false.
      */
     private static boolean sanityCheck(URL url) {
@@ -597,8 +597,8 @@ public class FaceManager {
 
 
     /**
-     * Either adds a com.gocnak.face to the com.gocnak.image map or changes a com.gocnak.face to another variant.
-     * If the com.gocnak.face com.gocnak.image size is too big, it is scaled (using Scalr) to fit the 26 pixel height limit.
+     * Either adds a face to the image map or changes a face to another variant.
+     * If the face image size is too big, it is scaled (using Scalr) to fit the 26 pixel height limit.
      *
      * @param s The string from the chat.
      * @return The response of the method.
@@ -611,14 +611,14 @@ public class FaceManager {
 
         String[] split = s.split(" ");
         String command = split[0];
-        String name = split[1];//name of the com.gocnak.face, used for file name, and if regex isn't supplied, becomes the regex
+        String name = split[1];//name of the face, used for file name, and if regex isn't supplied, becomes the regex
         String regex;
         String file;//or the URL...
 
-        if (command.equalsIgnoreCase("addface")) {//a new com.gocnak.face
+        if (command.equalsIgnoreCase("addface")) {//a new face
 
-            if (faceMap.containsKey(name)) {//!addface is not !changeface, remove the com.gocnak.face first or do changeface
-                toReturn.setResponseText("Failed to add com.gocnak.face, " + name + " already exists!");
+            if (faceMap.containsKey(name)) {//!addface is not !changeface, remove the face first or do changeface
+                toReturn.setResponseText("Failed to add face, " + name + " already exists!");
                 return toReturn;
             }
 
@@ -626,12 +626,12 @@ public class FaceManager {
                 regex = split[2];
                 //regex check
                 if (!Utils.checkRegex(regex)) {
-                    toReturn.setResponseText("Failed to add com.gocnak.face, the supplied regex does not compile!");
+                    toReturn.setResponseText("Failed to add face, the supplied regex does not compile!");
                     return toReturn;
                 }
                 //name check (for saving the file)
                 if (Utils.checkName(name)) {
-                    toReturn.setResponseText("Failed to add com.gocnak.face, the supplied name is not Windows-friendly!");
+                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
                     return toReturn;
                 }
 
@@ -643,8 +643,8 @@ public class FaceManager {
                 } else {//local
                     if (Utils.checkName(file) || localCheck) {
                         if (!localCheck)
-                            toReturn.setResponseText("Failed to add com.gocnak.face, the supplied name is not Windows-friendly!");
-                        else toReturn.setResponseText("Failed to add com.gocnak.face, the local directory is not set properly!");
+                            toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                        else toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
                         return toReturn;
                     }
                     return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
@@ -656,12 +656,12 @@ public class FaceManager {
                 file = split[2];
                 //regex (this should never be a problem, however...)
                 if (!Utils.checkRegex(name)) {
-                    toReturn.setResponseText("Failed to add com.gocnak.face, the supplied name is not a valid regex!");
+                    toReturn.setResponseText("Failed to add face, the supplied name is not a valid regex!");
                     return toReturn;
                 }
                 //name check (for saving the file)
                 if (Utils.checkName(name)) {
-                    toReturn.setResponseText("Failed to add com.gocnak.face, the supplied name is not Windows-friendly!");
+                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
                     return toReturn;
                 }
                 if (file.startsWith("http")) {//online
@@ -670,8 +670,8 @@ public class FaceManager {
                 } else {//local
                     if (Utils.checkName(file) || localCheck) {
                         if (!localCheck)
-                            toReturn.setResponseText("Failed to add com.gocnak.face, the supplied name is not Windows-friendly!");
-                        else toReturn.setResponseText("Failed to add com.gocnak.face, the local directory is not set properly!");
+                            toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
+                        else toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
                         return toReturn;
                     }
                     return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
@@ -686,24 +686,24 @@ public class FaceManager {
                 if (split.length == 5) {//!changeface <name> 2 <new regex> <new URL/file>
                     try {//gotta make sure the number is the ^
                         if (Integer.parseInt(split[2]) != 2) {
-                            toReturn.setResponseText("Failed to change com.gocnak.face, make sure to designate the \"2\" in the command!");
+                            toReturn.setResponseText("Failed to change face, make sure to designate the \"2\" in the command!");
                             return toReturn;
                         }
                     } catch (Exception e) {
-                        toReturn.setResponseText("Failed to change com.gocnak.face, the indicator number cannot be parsed!");
+                        toReturn.setResponseText("Failed to change face, the indicator number cannot be parsed!");
                         return toReturn;
                     }
 
                     regex = split[3];
                     //regex check
                     if (!Utils.checkRegex(regex)) {
-                        toReturn.setResponseText("Failed to add com.gocnak.face, the supplied regex does not compile!");
+                        toReturn.setResponseText("Failed to add face, the supplied regex does not compile!");
                         return toReturn;
                     }
 
                     //name check (for saving the file)
                     if (Utils.checkName(name)) {
-                        toReturn.setResponseText("Failed to add com.gocnak.face, the supplied name is not Windows-friendly!");
+                        toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
                         return toReturn;
                     }
 
@@ -714,9 +714,9 @@ public class FaceManager {
                     } else {//local
                         if (Utils.checkName(file) || localCheck) {
                             if (!localCheck)
-                                toReturn.setResponseText("Failed to add com.gocnak.face, the supplied name is not Windows-friendly!");
+                                toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
                             else
-                                toReturn.setResponseText("Failed to add com.gocnak.face, the local directory is not set properly!");
+                                toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
                             return toReturn;
                         }
                         return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
@@ -730,7 +730,7 @@ public class FaceManager {
                     try {//gotta check the number
                         type = Integer.parseInt(split[2]);
                     } catch (Exception e) {
-                        toReturn.setResponseText("Failed to change com.gocnak.face, the indicator number cannot be parsed!");
+                        toReturn.setResponseText("Failed to change face, the indicator number cannot be parsed!");
                         return toReturn;
                     }
                     Face face = faceMap.get(name);
@@ -738,7 +738,7 @@ public class FaceManager {
                         regex = split[3];
                         if (Utils.checkRegex(regex)) {
                             faceMap.put(name, new Face(regex, face.getFilePath()));
-                            toReturn.setResponseText("Successfully changed the regex for com.gocnak.face: " + name + " !");
+                            toReturn.setResponseText("Successfully changed the regex for face: " + name + " !");
                             toReturn.wasSuccessful();
                         } else {
                             toReturn.setResponseText("Failed to change the regex, the new regex could not be compiled!");
@@ -751,9 +751,9 @@ public class FaceManager {
                         } else {//local
                             if (Utils.checkName(file) || localCheck) {
                                 if (!localCheck)
-                                    toReturn.setResponseText("Failed to add com.gocnak.face, the supplied name is not Windows-friendly!");
+                                    toReturn.setResponseText("Failed to add face, the supplied name is not Windows-friendly!");
                                 else
-                                    toReturn.setResponseText("Failed to add com.gocnak.face, the local directory is not set properly!");
+                                    toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
                                 return toReturn;
                             }
                             return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
@@ -764,7 +764,7 @@ public class FaceManager {
                     }
                 }
             } else {
-                toReturn.setResponseText("Failed to change com.gocnak.face, the com.gocnak.face " + name + " does not exist!");
+                toReturn.setResponseText("Failed to change face, the face " + name + " does not exist!");
             }
         }
         return toReturn;

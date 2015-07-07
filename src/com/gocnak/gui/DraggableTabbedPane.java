@@ -48,7 +48,7 @@ public class DraggableTabbedPane extends JTabbedPane {
                         Image totalImage = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
                         Graphics totalGraphics = totalImage.getGraphics();
                         totalGraphics.setClip(bounds);
-                        // Don't be double buffered when painting to a static com.gocnak.image.
+                        // Don't be double buffered when painting to a static image.
                         setDoubleBuffered(false);
                         paintComponent(totalGraphics);
 

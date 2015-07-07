@@ -424,7 +424,7 @@ public class Settings {
         try (PrintWriter br = new PrintWriter(soundsFile)) {
             Set<String> keys = SoundEngine.getEngine().getSoundMap().keySet();
             keys.stream().filter(s -> s != null && SoundEngine.getEngine().getSoundMap().get(s) != null).forEach(s -> {
-                Sound boii = SoundEngine.getEngine().getSoundMap().get(s);//you're too young to play that com.gocnak.sound, boy
+                Sound boii = SoundEngine.getEngine().getSoundMap().get(s);//you're too young to play that sound, boy
                 StringBuilder sb = new StringBuilder();
                 sb.append(s);
                 sb.append(",");
@@ -518,7 +518,7 @@ public class Settings {
 
     /**
      * Saves the faces to the given text file.
-     * The map is unique, as the key is the name of the com.gocnak.face, which could be the same as the regex
+     * The map is unique, as the key is the name of the face, which could be the same as the regex
      * if it was added via !addface and no regex was specified.
      */
     public void saveFaces() {
@@ -533,7 +533,7 @@ public class Settings {
     }
 
     /**
-     * Loads the com.gocnak.face data stored in the faces.txt file. This only gets called
+     * Loads the face data stored in the faces.txt file. This only gets called
      * if that file exists.
      */
     public void loadFaces() {

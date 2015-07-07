@@ -2,7 +2,7 @@ package com.gocnak.face;
 
 /**
  * Created by Nick on 3/12/14.
- * Represents a com.gocnak.face that can be toggled ON (to display) or OFF (not display).
+ * Represents a face that can be toggled ON (to display) or OFF (not display).
  */
 public class ToggleableFace extends Face {
 

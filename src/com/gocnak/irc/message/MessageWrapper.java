@@ -8,7 +8,7 @@ import java.util.ArrayList;
 /**
  * Created by Nick on 1/14/2015.
  * <p>
- * Created for the MessageQueue class which handles messages on a com.gocnak.thread
+ * Created for the MessageQueue class which handles messages on a thread
  * to ensure better GUI performance while large amounts of text come in.
  */
 public class MessageWrapper {

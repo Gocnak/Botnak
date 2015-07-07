@@ -42,7 +42,7 @@ public class GUISettings extends JFrame {
         mainAccGUI = null;
     }
 
-    // builds the com.gocnak.sound tree
+    // builds the sound tree
     public void buildTree() {
         if (!SoundEngine.getEngine().getSoundMap().isEmpty()) {
             DefaultTreeModel model = (DefaultTreeModel) soundTree.getModel();
@@ -130,7 +130,7 @@ public class GUISettings extends JFrame {
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) soundTree.getModel().getRoot();
         DefaultTreeModel model = (DefaultTreeModel) soundTree.getModel();
         int childrenOfRoot = root.getChildCount();
-        for (int i = 0; i < childrenOfRoot; i++) {// for each com.gocnak.sound...
+        for (int i = 0; i < childrenOfRoot; i++) {// for each sound...
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) model.getChild(root, i);
             if (child != null && child.getUserObject() != null) {// gaben-0
                 String[] split = child.getUserObject().toString().split("-");
@@ -289,7 +289,7 @@ public class GUISettings extends JFrame {
                     if (!botpass.contains("oauth")) {
                         JOptionPane.showMessageDialog(this,
                                 "The password must be the entire oauth string!" +
-                                        "\n See http://help.twitch.tv/customer/portal/articles/1302780-twitch-com.gocnak.irc for more info.",
+                                        "\n See http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc for more info.",
                                 "Password Needs Oauth", JOptionPane.ERROR_MESSAGE);
                         botPass.setText("");
                     } else {
@@ -324,9 +324,9 @@ public class GUISettings extends JFrame {
                     node.removeAllChildren();
                     node.removeFromParent();
                     model.reload();
-                } else { //one com.gocnak.sound clip
+                } else { //one sound clip
                     if (node.getParent().getChildCount() == 1) {
-                        //this is one com.gocnak.sound clip; they decided to delete the file, so let's delete the parent.
+                        //this is one sound clip; they decided to delete the file, so let's delete the parent.
                         DefaultMutableTreeNode node1 = ((DefaultMutableTreeNode) node.getParent());
                         SoundEngine.getEngine().getSoundMap().remove(node1.getUserObject().toString().split("-")[0]);
                         node1.removeAllChildren();
@@ -1102,7 +1102,7 @@ public class GUISettings extends JFrame {
                 //---- searchFile ----
                 searchFile.setText("Add Sound(s)");
                 searchFile.setFocusable(false);
-                searchFile.setToolTipText("Add com.gocnak.sound(s) to the com.gocnak.sound tree.");
+                searchFile.setToolTipText("Add sound(s) to the sound tree.");
                 searchFile.addActionListener(e -> searchFileActionPerformed());
 
                 //---- removeSoundButton ----

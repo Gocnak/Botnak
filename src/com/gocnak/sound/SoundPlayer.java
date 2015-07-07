@@ -9,20 +9,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
- * A simple com.gocnak.sound system.
+ * A simple sound system.
  *
  * @author Dr. Kegel
  */
 public final class SoundPlayer implements Closeable {
 
     /**
-     * Provides strategies how to react, if being requested to play a com.gocnak.sound file, which is already running.
+     * Provides strategies how to react, if being requested to play a sound file, which is already running.
      *
      * @author Dr. Kegel
      */
     public enum PlayMode {
         /**
-         * Restarts the com.gocnak.sound from the beginning.
+         * Restarts the sound from the beginning.
          */
         Restart,
         /**
@@ -30,7 +30,7 @@ public final class SoundPlayer implements Closeable {
          */
         Ignore,
         /**
-         * Stops the first com.gocnak.sound.
+         * Stops the first sound.
          */
         Toggle,
         /**
@@ -49,7 +49,7 @@ public final class SoundPlayer implements Closeable {
      */
     public static AtomicInteger sepl = new AtomicInteger();
     /**
-     * SoundEntries closed (should be sector - number of com.gocnak.sound files)
+     * SoundEntries closed (should be sector - number of sound files)
      */
     public static AtomicInteger secl = new AtomicInteger();
 
@@ -91,10 +91,10 @@ public final class SoundPlayer implements Closeable {
     }
 
     /**
-     * Plays a com.gocnak.sound file.
+     * Plays a sound file.
      *
-     * @param file The com.gocnak.sound file.
-     * @param mode The strategy for handling the case that the com.gocnak.sound is already playing.
+     * @param file The sound file.
+     * @param mode The strategy for handling the case that the sound is already playing.
      * @throws IOException
      */
     public void play(File file, PlayMode mode) throws IOException {
@@ -103,7 +103,7 @@ public final class SoundPlayer implements Closeable {
 
 
     /**
-     * @param file The com.gocnak.sound file.
+     * @param file The sound file.
      */
     public void stop(File file) {
         SoundEntry entry = clips.get(file);

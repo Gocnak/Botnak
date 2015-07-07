@@ -10,7 +10,7 @@ import java.util.Arrays;
 /**
  * The Sound Wrapper Class
  * <p>
- * Constructed to make com.gocnak.sound playing in Botnak a lot easier.
+ * Constructed to make sound playing in Botnak a lot easier.
  */
 public class Sound {
 
@@ -21,8 +21,8 @@ public class Sound {
     /**
      * Construct the sounds here. The Sound info itself should be stored here.
      *
-     * @param permission The permission level for the com.gocnak.sound. Use the PERMISSION constants.
-     * @param file       The file path(s) of the com.gocnak.sound file(s).
+     * @param permission The permission level for the sound. Use the PERMISSION constants.
+     * @param file       The file path(s) of the sound file(s).
      */
     public Sound(int permission, String... file) {
         userPermission = permission;
@@ -32,7 +32,7 @@ public class Sound {
     /**
      * Allows for duplication of sounds.
      *
-     * @param other The other com.gocnak.sound to play.
+     * @param other The other sound to play.
      */
     public Sound(Sound other) {
         userPermission = other.getPermission();
@@ -49,9 +49,9 @@ public class Sound {
     }
 
     /**
-     * Constructs a com.gocnak.sound with default PERMISSION_ALL.
+     * Constructs a sound with default PERMISSION_ALL.
      *
-     * @param files The file path(s) of the com.gocnak.sound(s).
+     * @param files The file path(s) of the sound(s).
      */
     public Sound(String... files) {
         this(Constants.PERMISSION_ALL, files);

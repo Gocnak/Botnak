@@ -23,7 +23,7 @@ public class Icons {
 
     /**
      * For a specified icon, returns the file containing the
-     * com.gocnak.image, resized to fit into the chat window.
+     * image, resized to fit into the chat window.
      *
      * @param i the type of icon to get
      * @return the icon along with what type it is
@@ -83,8 +83,8 @@ public class Icons {
      * Resize an icon to match the chat font size. This has the
      * effect of allowing users to submit images of any size.
      *
-     * @param image the com.gocnak.image URL
-     * @return ImageIcon the resized com.gocnak.image
+     * @param image the image URL
+     * @return ImageIcon the resized image
      */
 
     private static ImageIcon sizeIcon(URL image) {

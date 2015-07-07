@@ -53,7 +53,7 @@ public class AccountManager extends Thread {
             if (t.doer != null) {
                 ReconnectThread rt = reconnectThreads.get(t.doer.getNick());
                 if (rt != null) {
-                    if (t.type != Task.Type.CONNECT) {//since the reconnect com.gocnak.thread already handles this...
+                    if (t.type != Task.Type.CONNECT) {//since the reconnect thread already handles this...
                         rt.addTask(t);
                     }
                     return;
@@ -122,7 +122,7 @@ public class AccountManager extends Thread {
                                 t.doer.joinChannel(channel);
                             } else {
                                 createReconnectThread(t.doer);
-                                addTask(t);//loops back around, adds to the reconnect com.gocnak.thread
+                                addTask(t);//loops back around, adds to the reconnect thread
                             }
                         }
                         break;
@@ -143,7 +143,7 @@ public class AccountManager extends Thread {
                                 t.doer.partChannel(chaan);
                             } else {
                                 createReconnectThread(t.doer);
-                                addTask(t);//loops back around, adds to the reconnect com.gocnak.thread
+                                addTask(t);//loops back around, adds to the reconnect thread
                             }
                         }
                         break;

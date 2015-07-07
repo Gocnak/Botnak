@@ -55,7 +55,7 @@ public class ListenerFace extends MouseAdapter {
                         item = new JMenuItem(regex);
                         item.setEnabled(false);
                         popupMenu.add(item);
-                    } else {//normal com.gocnak.face
+                    } else {//normal face
                         String regex = (String) a.getAttribute("regex");
                         JMenuItem item = new JMenuItem("Normal Face");
                         item.setEnabled(false);

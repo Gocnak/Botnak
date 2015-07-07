@@ -127,7 +127,7 @@ public class BaseToolTipUI extends MetalToolTipUI {
             g2D.drawRect(borderSize + shadowSize - 1, borderSize - 1, w - (2 * borderSize) - (2 * shadowSize) + 1, h - (2 * borderSize) - shadowSize + 1);
 
             g2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, savedRederingHint);
-            // Draw the text. This must be done within an offscreen com.gocnak.image because of a bug
+            // Draw the text. This must be done within an offscreen image because of a bug
             // in the jdk, wich causes ugly antialiased font rendering when background is
             // transparent and popup is heavy weight.
             BufferedImage bi = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);

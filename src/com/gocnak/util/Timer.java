@@ -13,7 +13,7 @@ public class Timer {
     public final long period;
 
     /**
-     * Instantiates a new com.gocnak.util.Timer with a given time
+     * Instantiates a new util.Timer with a given time
      * period in milliseconds.
      *
      * @param period Time period in milliseconds.

@@ -87,11 +87,11 @@ public class SoundEngine {
     }
 
     /**
-     * Adds a com.gocnak.sound to the com.gocnak.sound set.
+     * Adds a sound to the sound set.
      * This respects the "one at a time" but
-     * also can allow spam if the com.gocnak.sound delay is 0
+     * also can allow spam if the sound delay is 0
      *
-     * @param s The com.gocnak.sound to add.
+     * @param s The sound to add.
      */
     public void playSound(Sound s) {
         if (!soundTimer.isRunning()) {
@@ -111,7 +111,7 @@ public class SoundEngine {
     }
 
     /**
-     * Plays the new subscriber/donation com.gocnak.sound, overrides current ruleset for engine.
+     * Plays the new subscriber/donation sound, overrides current ruleset for engine.
      */
     public void playSpecialSound(boolean isSub) {
         Sound s = getSpecialSound(isSub);
@@ -135,10 +135,10 @@ public class SoundEngine {
     public Response getLastDonationSound() {
         Response toReturn = new Response();
         if (lastDonationSound != null) {
-            toReturn.setResponseText("The previous donation notification com.gocnak.sound was taken from the song: " +
+            toReturn.setResponseText("The previous donation notification sound was taken from the song: " +
                     Utils.removeExt(lastDonationSound.getFile().getName()));
         } else {
-            toReturn.setResponseText("There is no previous donation com.gocnak.sound!");
+            toReturn.setResponseText("There is no previous donation sound!");
         }
         return toReturn;
     }
@@ -146,18 +146,18 @@ public class SoundEngine {
     public Response getLastSubSound() {
         Response toReturn = new Response();
         if (lastSubSound != null) {
-            toReturn.setResponseText("The previous subscriber notification com.gocnak.sound was taken from the song: " +
+            toReturn.setResponseText("The previous subscriber notification sound was taken from the song: " +
                     Utils.removeExt(lastSubSound.getFile().getName()));
         } else {
-            toReturn.setResponseText("There is no previous donation com.gocnak.sound!");
+            toReturn.setResponseText("There is no previous donation sound!");
         }
         return toReturn;
     }
 
     /**
-     * Gets the first playing com.gocnak.sound in the queue.
+     * Gets the first playing sound in the queue.
      *
-     * @return The first playing com.gocnak.sound.
+     * @return The first playing sound.
      */
     public SoundEntry getCurrentPlayingSound() {
         Collection<SoundEntry> coll = player.getPlayingSounds();
@@ -190,23 +190,23 @@ public class SoundEngine {
         String onOrOff = (shouldPlay() ? "ON" : "OFF");
         int numSound = getCurrentPlayingSounds().size();
         int permission = getPermission();
-        String numSounds = (numSound > 0 ? (numSound == 1 ? "one com.gocnak.sound" : (numSound + " sounds")) : "no sounds") + " currently playing";
+        String numSounds = (numSound > 0 ? (numSound == 1 ? "one sound" : (numSound + " sounds")) : "no sounds") + " currently playing";
         String delayS = (delay < 2 ? (delay == 0 ? "no delay." : "a delay of 1 second.") : ("a delay of " + delay + " seconds."));
         String perm = Utils.getPermissionString(permission) + " can play sounds.";
         return "Sound is currently turned " + onOrOff + " with " + numSounds + " with " + delayS + " " + perm;
     }
 
     /**
-     * Base trigger for sounds. Checks if a dev com.gocnak.sound is not playing, if the general delay is up,
-     * if the channel is yours, and if the user can even play the com.gocnak.sound if it exists.
+     * Base trigger for sounds. Checks if a dev sound is not playing, if the general delay is up,
+     * if the channel is yours, and if the user can even play the sound if it exists.
      *
      * @param s       Sound command trigger/name.
      * @param send    The sender of the command.
      * @param channel Channel the command was in.
-     * @return true to play the com.gocnak.sound, else false
+     * @return true to play the sound, else false
      */
     public boolean soundTrigger(String s, String send, String channel) {
-        if (SoundEngine.getEngine().shouldPlay()) {//com.gocnak.sound not turned off
+        if (SoundEngine.getEngine().shouldPlay()) {//sound not turned off
             if (channel.equalsIgnoreCase("#" + GUIMain.currentSettings.accountManager.getUserAccount().getName())) {//is in main channel
                 if (soundCheck(s, send, channel)) {//let's check the existence/permission
                     return true;//HIT THAT
@@ -217,11 +217,11 @@ public class SoundEngine {
     }
 
     /**
-     * Checks the existence of a com.gocnak.sound, and the permission of the requester.
+     * Checks the existence of a sound, and the permission of the requester.
      *
      * @param sound  Sound trigger
      * @param sender Sender of the command trigger.
-     * @return false if the com.gocnak.sound is not allowed, else true if it is.
+     * @return false if the sound is not allowed, else true if it is.
      */
     private boolean soundCheck(String sound, String sender, String channel) {
         //set the permission
@@ -236,7 +236,7 @@ public class SoundEngine {
                     //check permission
                     if (permission >= perm && permission >= SoundEngine.getEngine().getPermission()) {
                         //descending permission, this should work; devs can play mod and all sounds, etc.
-                        //this also checks to see if they can even play the com.gocnak.sound given the certain circumstance.
+                        //this also checks to see if they can even play the sound given the certain circumstance.
                         return true;
                     }
                 }
@@ -246,10 +246,10 @@ public class SoundEngine {
     }
 
     /**
-     * Handles the adding/changing of a com.gocnak.sound, its permission, and/or its files.
+     * Handles the adding/changing of a sound, its permission, and/or its files.
      *
      * @param s      The string from the chat to manipulate.
-     * @param change True for changing a com.gocnak.sound, false for adding.
+     * @param change True for changing a sound, false for adding.
      */
     public Response handleSound(String s, boolean change) {
         Response toReturn = new Response();
@@ -260,47 +260,47 @@ public class SoundEngine {
                 String[] split = s.split(" ");
                 String name = split[1];//both commands have this in common.
                 int perm;
-                if (split.length > 3) {//!add/changesound com.gocnak.sound 0 com.gocnak.sound(,maybe,more)
+                if (split.length > 3) {//!add/changesound sound 0 sound(,maybe,more)
                     try {
                         perm = Integer.parseInt(split[2]);
                     } catch (Exception e) {
-                        toReturn.setResponseText("Failed to handle com.gocnak.sound, could not parse the permission!");
+                        toReturn.setResponseText("Failed to handle sound, could not parse the permission!");
                         return toReturn;
                     }
                     String files = split[3];
                     if (perm < 0 || permission > 4) {
-                        toReturn.setResponseText("Failed to handle com.gocnak.sound due to a bad permission!");
+                        toReturn.setResponseText("Failed to handle sound due to a bad permission!");
                         return toReturn;
                     }
                     if (!files.contains(",")) {//isn't multiple
-                        //this can be !addsound com.gocnak.sound 0 com.gocnak.sound or !changesound com.gocnak.sound 0 newsound
+                        //this can be !addsound sound 0 sound or !changesound sound 0 newsound
                         String filename = GUIMain.currentSettings.defaultSoundDir + File.separator + Utils.setExtension(files, ".wav");
                         if (Utils.areFilesGood(filename)) {
                             if (soundMap.containsKey(name)) {//they could technically change the permission here as well
                                 if (!change) {//!addsound
                                     soundMap.put(name, new Sound(perm,// add it tooo it maaan
                                             Utils.addStringsToArray(soundMap.get(name).getSounds().data, filename)));
-                                    toReturn.setResponseText("Successfully added the com.gocnak.sound \"" + filename + "\" to the command \"!" + name + "\" !");
+                                    toReturn.setResponseText("Successfully added the sound \"" + filename + "\" to the command \"!" + name + "\" !");
                                     toReturn.wasSuccessful();
                                 } else {//!changesound
                                     soundMap.put(name, new Sound(perm, filename));//replace it
-                                    toReturn.setResponseText("Successfully changed the com.gocnak.sound \"!" + name + "\" !");
+                                    toReturn.setResponseText("Successfully changed the sound \"!" + name + "\" !");
                                     toReturn.wasSuccessful();
                                 }
                             } else { //*gasp* A NEW SOUND!?
                                 if (!change) {//can't have !changesound act like !addsound
                                     soundMap.put(name, new Sound(perm, filename));
-                                    toReturn.setResponseText("Successfully added the new com.gocnak.sound \"!" + name + "\" !");
+                                    toReturn.setResponseText("Successfully added the new sound \"!" + name + "\" !");
                                     toReturn.wasSuccessful();
                                 } else {
-                                    toReturn.setResponseText("The com.gocnak.sound \"!" + name + "\" does not exist; cannot change it!");
+                                    toReturn.setResponseText("The sound \"!" + name + "\" does not exist; cannot change it!");
                                 }
                             }
                         } else {
-                            toReturn.setResponseText("Failed to handle com.gocnak.sound, the file \"" + filename + "\" does not exist!");
+                            toReturn.setResponseText("Failed to handle sound, the file \"" + filename + "\" does not exist!");
                         }
                     } else {//is multiple
-                        //this can be !addsound com.gocnak.sound 0 multi,com.gocnak.sound or !changesound com.gocnak.sound 0 multi,com.gocnak.sound
+                        //this can be !addsound sound 0 multi,sound or !changesound sound 0 multi,sound
                         ArrayList<String> list = new ArrayList<>();
                         String[] filesSplit = files.split(",");
                         for (String str : filesSplit) {
@@ -320,46 +320,46 @@ public class SoundEngine {
                         } else {//!changesound, so replace it if it's in there
                             if (soundMap.containsKey(name)) {
                                 soundMap.put(name, new Sound(perm, filesSplit));
-                                toReturn.setResponseText("Successfully changed the com.gocnak.sound \"!" + name +
+                                toReturn.setResponseText("Successfully changed the sound \"!" + name +
                                         "\" to have the new files!");
                                 toReturn.wasSuccessful();
                             } else {
-                                toReturn.setResponseText("Failed to change com.gocnak.sound, the com.gocnak.sound \"" + name + "\" does not exist!");
+                                toReturn.setResponseText("Failed to change sound, the sound \"" + name + "\" does not exist!");
                             }
                         }
                     }
-                } else if (split.length == 3) {//add/changesound com.gocnak.sound perm/newsound
+                } else if (split.length == 3) {//add/changesound sound perm/newsound
                     if (split[2].length() == 1) {//ASSUMING it's a permission change.
                         try {
-                            perm = Integer.parseInt(split[2]);//I mean come on. What com.gocnak.sound will have a 1 char name?
+                            perm = Integer.parseInt(split[2]);//I mean come on. What sound will have a 1 char name?
                             if (perm != -1 && perm >= 0 && perm < 5) {
-                                if (change) {//because adding just a com.gocnak.sound name and a permission is silly
+                                if (change) {//because adding just a sound name and a permission is silly
                                     soundMap.put(name, new Sound(perm, soundMap.get(name).getSounds().data));//A pretty bad one...
-                                    toReturn.setResponseText("Successfully changed the com.gocnak.sound \"!" + name +
+                                    toReturn.setResponseText("Successfully changed the sound \"!" + name +
                                             "\" to have the new permission: " + perm);
                                     toReturn.wasSuccessful();
                                 } else {
-                                    toReturn.setResponseText("Failed to add com.gocnak.sound, cannot add a permission as a com.gocnak.sound!");
+                                    toReturn.setResponseText("Failed to add sound, cannot add a permission as a sound!");
                                 }
                             } else {
                                 toReturn.setResponseText("Failed to change the permission, please give a permission from 0 to 4!");
                             }
-                        } catch (NumberFormatException e) {//maybe it really is a 1-char-named com.gocnak.sound?
+                        } catch (NumberFormatException e) {//maybe it really is a 1-char-named sound?
                             String test = GUIMain.currentSettings.defaultSoundDir + File.separator + Utils.setExtension(split[2], ".wav");
                             if (Utils.areFilesGood(test)) { //wow...
                                 if (change) {
                                     soundMap.put(name, new Sound(soundMap.get(name).getPermission(), test));
-                                    toReturn.setResponseText("Successfully changed the com.gocnak.sound for \"!" + name + "\" !");
+                                    toReturn.setResponseText("Successfully changed the sound for \"!" + name + "\" !");
                                     toReturn.wasSuccessful();
-                                } else {//adding a 1 char com.gocnak.sound that exists to the pool...
+                                } else {//adding a 1 char sound that exists to the pool...
                                     soundMap.put(name, new Sound(soundMap.get(name).getPermission(),
                                             Utils.addStringsToArray(soundMap.get(name).getSounds().data, test)));
-                                    toReturn.setResponseText("Successfully added the com.gocnak.sound \"" + split[2] +
+                                    toReturn.setResponseText("Successfully added the sound \"" + split[2] +
                                             "\" to the command \"!" + name + "\" !");
                                     toReturn.wasSuccessful();
                                 }
                             } else {
-                                toReturn.setResponseText("Failed to handle com.gocnak.sound, invalid permission!");
+                                toReturn.setResponseText("Failed to handle sound, invalid permission!");
                             }
                         }
                     } else { //it's a/some new file(s) as replacement/to add!
@@ -376,7 +376,7 @@ public class SoundEngine {
                                     soundMap.put(name, new Sound(soundMap.get(name).getPermission(), filesSplit));
                                     toReturn.wasSuccessful();
                                     toReturn.setResponseText("Successfully added " + filesSplit.length +
-                                            " new sounds to the com.gocnak.sound \"!" + name + "\" !");
+                                            " new sounds to the sound \"!" + name + "\" !");
                                 } else { //use default permission
                                     soundMap.put(name, new Sound(filesSplit));
                                     toReturn.setResponseText("Successfully added " + filesSplit.length +
@@ -386,47 +386,47 @@ public class SoundEngine {
                             } else {//!changesound soundname new,sounds
                                 if (soundMap.containsKey(name)) {//!changesound isn't !addsound
                                     soundMap.put(name, new Sound(soundMap.get(name).getPermission(), filesSplit));
-                                    toReturn.setResponseText("Successfully changed the com.gocnak.sound \"!" + name + "\" to have the "
+                                    toReturn.setResponseText("Successfully changed the sound \"!" + name + "\" to have the "
                                             + filesSplit.length + " new files!");
                                     toReturn.wasSuccessful();
                                 } else {
-                                    toReturn.setResponseText("Cannot change the com.gocnak.sound, \"" + name + "\" doesn't exist!");
+                                    toReturn.setResponseText("Cannot change the sound, \"" + name + "\" doesn't exist!");
                                 }
                             }
                         } else {//singular
                             String test = GUIMain.currentSettings.defaultSoundDir + File.separator + Utils.setExtension(split[2], ".wav");
                             if (Utils.areFilesGood(test)) {
-                                if (!change) {//!addsound com.gocnak.sound newsound
+                                if (!change) {//!addsound sound newsound
                                     if (soundMap.containsKey(name)) {//getting the old permission/files
                                         soundMap.put(name, new Sound(soundMap.get(name).getPermission(),
                                                 Utils.addStringsToArray(soundMap.get(name).getSounds().data, test)));
-                                        toReturn.setResponseText("Successfully added the com.gocnak.sound \"" + split[2] + "\" to the command \"!" + name + "\" !");
+                                        toReturn.setResponseText("Successfully added the sound \"" + split[2] + "\" to the command \"!" + name + "\" !");
                                         toReturn.wasSuccessful();
                                     } else {//use default permission
                                         soundMap.put(name, new Sound(test));
-                                        toReturn.setResponseText("Successfully added new com.gocnak.sound \"!" + name + "\" !");
+                                        toReturn.setResponseText("Successfully added new sound \"!" + name + "\" !");
                                         toReturn.wasSuccessful();
                                     }
-                                } else { //!changesound com.gocnak.sound newsound
+                                } else { //!changesound sound newsound
                                     if (soundMap.containsKey(name)) {//!changesound isn't !addsound
                                         soundMap.put(name, new Sound(soundMap.get(name).getPermission(), test));
-                                        toReturn.setResponseText("Successfully changed the com.gocnak.sound \"" + name + "\" to have the new com.gocnak.sound \"" + split[2] + "\" !");
+                                        toReturn.setResponseText("Successfully changed the sound \"" + name + "\" to have the new sound \"" + split[2] + "\" !");
                                         toReturn.wasSuccessful();
                                     } else {
-                                        toReturn.setResponseText("Cannot change com.gocnak.sound, \"" + name + "\" does not exist!");
+                                        toReturn.setResponseText("Cannot change sound, \"" + name + "\" does not exist!");
                                     }
                                 }
                             } else {
-                                toReturn.setResponseText("Cannot handle com.gocnak.sound, the file \"" + split[2] + "\" does not exist!");
+                                toReturn.setResponseText("Cannot handle sound, the file \"" + split[2] + "\" does not exist!");
                             }
                         }
                     }
                 }
             } catch (Exception e) {
-                toReturn.setResponseText("Failed to handle com.gocnak.sound due to Exception: " + e.getMessage());
+                toReturn.setResponseText("Failed to handle sound due to Exception: " + e.getMessage());
             }
         } else {
-            toReturn.setResponseText("Failed to handle com.gocnak.sound, the default com.gocnak.sound directory is null!");
+            toReturn.setResponseText("Failed to handle sound, the default sound directory is null!");
         }
         return toReturn;
     }
@@ -441,9 +441,9 @@ public class SoundEngine {
                 newBool = !s.isEnabled();
                 s.setEnabled(newBool);
                 toReturn.wasSuccessful();
-                toReturn.setResponseText("The com.gocnak.sound " + name + " is now turned " + (newBool ? "ON" : "OFF"));
+                toReturn.setResponseText("The sound " + name + " is now turned " + (newBool ? "ON" : "OFF"));
             } else {
-                toReturn.setResponseText("Cannot toggle com.gocnak.sound; the com.gocnak.sound \"" + name + "\" does not exist!");
+                toReturn.setResponseText("Cannot toggle sound; the sound \"" + name + "\" does not exist!");
             }
         } else {
             newBool = !shouldPlay();
@@ -460,12 +460,12 @@ public class SoundEngine {
             if (soundMap.containsKey(name)) {
                 soundMap.remove(name);
                 toReturn.wasSuccessful();
-                toReturn.setResponseText("Successfully removed com.gocnak.sound \"!" + name + "\" !");
+                toReturn.setResponseText("Successfully removed sound \"!" + name + "\" !");
             } else {
-                toReturn.setResponseText("Failed to remove com.gocnak.sound, the com.gocnak.sound \"!" + name + "\" does not exist!");
+                toReturn.setResponseText("Failed to remove sound, the sound \"!" + name + "\" does not exist!");
             }
         } else {
-            toReturn.setResponseText("Failed to remove com.gocnak.sound, no specified name!");
+            toReturn.setResponseText("Failed to remove sound, no specified name!");
         }
         return toReturn;
     }
@@ -476,7 +476,7 @@ public class SoundEngine {
             int soundTime;
             soundTime = Utils.getTime(first);
             if (soundTime < 0) {
-                toReturn.setResponseText("Failed to set com.gocnak.sound delay; could not parse the given time!");
+                toReturn.setResponseText("Failed to set sound delay; could not parse the given time!");
                 return toReturn;
             }
             soundTime = Utils.handleInt(soundTime);
@@ -485,7 +485,7 @@ public class SoundEngine {
             setDelay(soundTime);
             toReturn.wasSuccessful();
         } else {
-            toReturn.setResponseText("Failed to set com.gocnak.sound delay, usage: !setsound (time)");
+            toReturn.setResponseText("Failed to set sound delay, usage: !setsound (time)");
         }
         return toReturn;
     }
@@ -499,10 +499,10 @@ public class SoundEngine {
                 toReturn.wasSuccessful();
                 toReturn.setResponseText("Sound permission successfully changed to: " + Utils.getPermissionString(perm));
             } else {
-                toReturn.setResponseText("Failed to set com.gocnak.sound permission, the permission must be from 0 to 4!");
+                toReturn.setResponseText("Failed to set sound permission, the permission must be from 0 to 4!");
             }
         } catch (Exception ignored) {
-            toReturn.setResponseText("Failed to set com.gocnak.sound permission, usage: !setsoundperm (permission)");
+            toReturn.setResponseText("Failed to set sound permission, usage: !setsoundperm (permission)");
         }
         return toReturn;
     }
@@ -518,12 +518,12 @@ public class SoundEngine {
             } else {
                 toReturn.setResponseText("There are no sounds currently playing!");
             }
-        } else {//first com.gocnak.sound it can find
+        } else {//first sound it can find
             SoundEntry sound = getCurrentPlayingSound();
             if (sound != null) {
                 sound.close();
                 toReturn.wasSuccessful();
-                toReturn.setResponseText("Successfully stopped the first found playing com.gocnak.sound!");
+                toReturn.setResponseText("Successfully stopped the first found playing sound!");
             } else {
                 toReturn.setResponseText("There are no sounds currently playing!");
             }
@@ -539,11 +539,11 @@ public class SoundEngine {
         } else {
             if (soundMap.containsKey(name)) {
                 Sound toCheck = soundMap.get(name);
-                toReturn.setResponseText("The com.gocnak.sound \"!" + name + "\" is currently turned "
+                toReturn.setResponseText("The sound \"!" + name + "\" is currently turned "
                         + (toCheck.isEnabled() ? "ON" : "OFF"));
                 toReturn.wasSuccessful();
             } else {
-                toReturn.setResponseText("The com.gocnak.sound \"!" + name + "\" does not exist!");
+                toReturn.setResponseText("The sound \"!" + name + "\" does not exist!");
             }
         }
         return toReturn;

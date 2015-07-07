@@ -6,7 +6,7 @@ package com.gocnak.thread.heartbeat;
 public interface HeartbeatThread {
 
     /**
-     * The condition that the com.gocnak.thread should call its #beat() void.
+     * The condition that the thread should call its #beat() void.
      *
      * @return True to beat, false to not beat.
      */

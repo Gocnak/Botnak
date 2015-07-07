@@ -23,12 +23,12 @@ public class Closer implements LineListener {
 
     @Override
     public void update(LineEvent event) {
-        if (event.getType() == LineEvent.Type.STOP) { //this is the com.gocnak.sound stopping itself
+        if (event.getType() == LineEvent.Type.STOP) { //this is the sound stopping itself
             this.entry.close();
         } else if (event.getType() == LineEvent.Type.CLOSE) {
-            //this is the com.gocnak.sound being closed
+            //this is the sound being closed
             //by either the line of code above, or the SoundEngine.stopSound command
-            //we want to remove this listener and remove the com.gocnak.sound from the map
+            //we want to remove this listener and remove the sound from the map
             this.entry.getClip().removeLineListener(this);
             map.remove(entry.getKey());
         }

@@ -84,7 +84,7 @@ public class GhostingServer {
     }
 
     /**
-     * This com.gocnak.thread handles user input in the command prompt.
+     * This .thread handles user input in the command prompt.
      */
     public static class InputListener extends Thread {
         private static BufferedReader scanner;
@@ -227,7 +227,7 @@ public class GhostingServer {
     }
 
     /**
-     * This com.gocnak.thread handles updating user run lines, as well as sending out the lines to users.
+     * This thread handles updating user run lines, as well as sending out the lines to users.
      */
     public static class ServerSend extends Thread {
         DatagramSocket socket = null;
@@ -492,7 +492,7 @@ public class GhostingServer {
     /**
      * Creates an event based on a user either connecting or disconnecting.
      * <p>
-     * This is required due to the by-request system in place of the send com.gocnak.thread.
+     * This is required due to the by-request system in place of the send thread.
      * If somebody were to join or leave, the existing users need to be notified the
      * next time they communicate with the server (by sending a location update packet).
      * <p>

@@ -43,7 +43,7 @@ public class LazyImageIcon implements Icon {
             try {
                 icon = new ImageIcon(LazyImageIcon.class.getResource(name));
             } catch (Throwable t) {
-                System.out.println("ERROR: loading com.gocnak.image " + name + " failed!");
+                System.out.println("ERROR: loading image " + name + " failed!");
             }
         }
         return icon;

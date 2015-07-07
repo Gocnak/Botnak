@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Represents a com.gocnak.sound with its source and use counter.
+ * Represents a sound with its source and use counter.
  *
  * @author Dr. Kegel
  */
@@ -22,7 +22,7 @@ public class SoundEntry implements Closeable {
     /**
      * Instantiates a new {@link SoundEntry} based on a file.
      *
-     * @param file The com.gocnak.sound file.
+     * @param file The sound file.
      * @throws java.io.IOException
      */
     public SoundEntry(File file, SoundEntry previous, ConcurrentHashMap<File, SoundEntry> map) throws IOException {
@@ -39,7 +39,7 @@ public class SoundEntry implements Closeable {
         } catch (UnsupportedAudioFileException | LineUnavailableException e) {
             throw new IOException(e);
         }
-        //sector.incrementAndGet(); TODO look into implementing a counter for how many of each com.gocnak.sound is played
+        //sector.incrementAndGet(); TODO look into implementing a counter for how many of each sound is played
     }
 
     @Override
@@ -83,9 +83,9 @@ public class SoundEntry implements Closeable {
     }
 
     /**
-     * Plays this com.gocnak.sound.
+     * Plays this sound.
      *
-     * @param mode Strategy for handling the case that the com.gocnak.sound is already playing.
+     * @param mode Strategy for handling the case that the sound is already playing.
      */
     public void play(final SoundPlayer.PlayMode mode) {
         if (this.clip.isRunning()) {
@@ -122,7 +122,7 @@ public class SoundEntry implements Closeable {
     }
 
     /**
-     * Stops this com.gocnak.sound.
+     * Stops this sound.
      */
     public void stop() {
         this.clip.stop();

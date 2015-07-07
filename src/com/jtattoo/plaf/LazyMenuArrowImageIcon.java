@@ -46,7 +46,7 @@ public class LazyMenuArrowImageIcon implements Icon {
             try {
                 leftToRightIcon = new ImageIcon(LazyMenuArrowImageIcon.class.getResource(leftToRightName));
             } catch (Throwable t) {
-                System.out.println("ERROR: loading com.gocnak.image " + leftToRightName + " failed!");
+                System.out.println("ERROR: loading image " + leftToRightName + " failed!");
             }
         }
         return leftToRightIcon;
@@ -57,7 +57,7 @@ public class LazyMenuArrowImageIcon implements Icon {
             try {
                 rightToLeftIcon = new ImageIcon(LazyMenuArrowImageIcon.class.getResource(rightToLefttName));
             } catch (Throwable t) {
-                System.out.println("ERROR: loading com.gocnak.image " + rightToLefttName + " failed!");
+                System.out.println("ERROR: loading image " + rightToLefttName + " failed!");
             }
         }
         return rightToLeftIcon;
