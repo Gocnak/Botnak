@@ -174,7 +174,7 @@ App_Data/*.ldf
 ## Windows detritus
 #############
 
-# Windows image file caches
+# Windows com.gocnack.image file caches
 Thumbs.db
 ehthumbs.db
 
