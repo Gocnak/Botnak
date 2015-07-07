@@ -1,16 +1,11 @@
-2.34
+2.35
 
 Added:
 
-Saving sounds permission and delay (closes #90)
-Increased end-user text box font size to 12pt
-Support for new JTV admin-style messages
-"!botreply" for reponding in other channels (closes #76)
+Emoteset parsing to download emotes you have (closes #97)
+Auto-scroll down after 10 seconds (if there's activity) (closes #85 thanks @chrisazy !)
 
 Fixed:
 
-Emotes of the Botnak user now show on first message (closes #86)
-Font saving/loading issues
-Limited API requests per message to 2
-NameFace saving/loading cleaned up (you can delete namefaces.txt; it's useless)
-Minor optimizations/code cleanup
+Reconnect threads use port 6667 (dedicated IRC)
+Don't load tabs if you don't have accounts logged in

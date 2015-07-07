@@ -221,7 +221,6 @@ public class ChatPane implements DocumentListener {
             if(System.currentTimeMillis() - scrollbarTimestamp >= 10 * 1000L) {
                 // If the time difference is more than 10 seconds, scroll to bottom anyway after resetting time
                 scrollbarTimestamp = -1;
-                GUIMain.log("Scrolled from timeout..");
                 scrollToBottom();
             }
         } else {
