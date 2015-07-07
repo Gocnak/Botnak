@@ -103,7 +103,8 @@ public class SoundEntry implements Closeable {
             }
         } else {
             this.clip.setFramePosition(0);
-            FloatControl volume = (FloatControl) this.clip.getControl(FloatControl.Type.MASTER_GAIN);
+        }
+         FloatControl volume = (FloatControl) this.clip.getControl(FloatControl.Type.MASTER_GAIN);
             /** @author Chrisazy
              * I've decided that -75.0 is what qualifies as silent, so that's our baseline
              * We need to counter the logarithmic nature of gain, so we use Pow with base 10
@@ -118,7 +119,6 @@ public class SoundEntry implements Closeable {
             volume.setValue(vol);
             this.clip.start();
             //sepl.incrementAndGet(); TODO counter
-        }
     }
 
     /**
