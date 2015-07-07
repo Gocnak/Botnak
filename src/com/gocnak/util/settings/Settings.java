@@ -1120,6 +1120,8 @@ public class Settings {
                 if (line.contains("jtattoo")) {
                     if(line.startsWith("lib")) {
                         // After restructuring the packages, the path is all wrong! Time to change that.
+                        lookAndFeel = "com.jtattoo.plaf.hifi.HiFiLookAndFeel";//default to HiFi
+                        break;
                     }
                     lookAndFeel = line;
                     break;
