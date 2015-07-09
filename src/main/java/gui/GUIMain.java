@@ -30,6 +30,8 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -186,8 +188,20 @@ public class GUIMain extends JFrame {
      * @param message The message to log.
      */
     public static void log(Object message) {
-        if (message != null && GUIMain.chatPanes != null && !GUIMain.chatPanes.isEmpty())
-            MessageQueue.addMessage(new Message(message.toString(), Message.MessageType.LOG_MESSAGE));
+        String toPrint;
+        Message.MessageType type = Message.MessageType.LOG_MESSAGE; // Moved here to allow for changing message type to something like error for throwables
+        if(message instanceof Throwable) {
+            Throwable t = (Throwable)message;
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            t.printStackTrace(pw);
+            toPrint = sw.toString(); // stack trace as a string
+        } else {
+            // Not a throwable.. Darn strings
+            toPrint = message.toString();
+        }
+        if (toPrint != null && GUIMain.chatPanes != null && !GUIMain.chatPanes.isEmpty())
+            MessageQueue.addMessage(new Message(toPrint, type));
     }
 
     public static void updateTitle(String viewerCount) {
