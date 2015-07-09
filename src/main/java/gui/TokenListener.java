@@ -41,7 +41,7 @@ public class TokenListener extends Thread {
                     break;
                 }
             } catch (Exception e) {
-                GUIMain.log(e.getMessage());
+                GUIMain.log(e);
             }
         }
     }

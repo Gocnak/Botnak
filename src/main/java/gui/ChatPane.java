@@ -403,7 +403,7 @@ public class ChatPane implements DocumentListener {
             if (shouldPulse())
                 GUIMain.instance.pulseTab(this);
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -475,7 +475,7 @@ public class ChatPane implements DocumentListener {
             try {
                 textPane.getStyledDocument().insertString(textPane.getStyledDocument().getLength(), string, set);
             } catch (Exception e) {
-                GUIMain.log(e.getMessage());
+                GUIMain.log(e);
             }
         };
         wrapper.addPrint(r);
@@ -499,7 +499,7 @@ public class ChatPane implements DocumentListener {
                 insertIcon(m, status, (status == IconEnum.SUBSCRIBER ? message.getChannel() : null));
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
         boolean shouldIncrement = ((status == IconEnum.SUBSCRIBER) && (m.getLocal().getExtra() == null));//checking for repeat messages
         if (shouldIncrement) subCount++;
@@ -522,7 +522,8 @@ public class ChatPane implements DocumentListener {
             print(m, " ", null);
             print(m, icon.getType().type, attrs);
         } catch (Exception e) {
-            GUIMain.log("INSERT ICON " + e.getMessage());
+            GUIMain.log("INSERT ICON: ");
+            GUIMain.log(e);
         }
     }
 
@@ -554,7 +555,8 @@ public class ChatPane implements DocumentListener {
                 doc.remove(0, start);
                 resetCleanupCounter();
             } catch (Exception e) {
-                GUIMain.log("Failed clearing chat: " + e.getMessage());
+                GUIMain.log("Failed clearing chat: ");
+                GUIMain.log(e);
             }
         }
         messageOut = false;

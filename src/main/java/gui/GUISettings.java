@@ -123,7 +123,7 @@ public class GUISettings extends JFrame {
                 GUIMain.currentSettings.staffIcon = GUISettings.class.getResource("/image/staff.png");
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
 
         //sounds
@@ -200,7 +200,7 @@ public class GUISettings extends JFrame {
                     }
 
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
             }
         }
@@ -381,7 +381,7 @@ public class GUISettings extends JFrame {
             icon.getImage().flush();
             label.setIcon(icon);
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 

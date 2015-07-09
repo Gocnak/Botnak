@@ -226,8 +226,7 @@ public class SubscriberManager {
                 }
             }
         } catch (Exception e) {
-            if (!e.getMessage().contains("oauth_token"))
-                GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 }

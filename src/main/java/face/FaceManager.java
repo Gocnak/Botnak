@@ -113,7 +113,7 @@ public class FaceManager {
                         break;
                     }
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
             }
         }
@@ -137,7 +137,7 @@ public class FaceManager {
                 return getSubIcon(channel);
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
         return null;
     }
@@ -169,7 +169,7 @@ public class FaceManager {
                 }
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -421,7 +421,7 @@ public class FaceManager {
         try {
             StyleConstants.setIcon(set, sizeIcon(new File(face).toURI().toURL()));
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -471,7 +471,8 @@ public class FaceManager {
                 return newFace;
             }
         } catch (Exception e) {
-            GUIMain.log("Failed to download emote ID " + emote + " due to exception " + e.getMessage());
+            GUIMain.log("Failed to download emote ID " + emote + " due to exception: ");
+            GUIMain.log(e);
         }
         return null;
     }
@@ -489,7 +490,8 @@ public class FaceManager {
                 toReturn = new FrankerFaceZ(Utils.removeExt(fileName), toSave.getAbsolutePath(), true);
             }
         } catch (Exception e) {
-            GUIMain.log("Failed to download FFZ Faces due to Exception: " + e.getMessage());
+            GUIMain.log("Failed to download FFZ Faces due to Exception: ");
+            GUIMain.log(e);
         }
         return toReturn;
     }
@@ -564,8 +566,7 @@ public class FaceManager {
                 return ImageIO.write(image, "PNG", toSave);//save it
             }
         } catch (Exception e) {
-            if (!e.getMessage().contains("Unsupported"))
-                GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
         return false;
     }

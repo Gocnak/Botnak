@@ -134,7 +134,7 @@ public class APIRequests {
                     }
                 }
             } catch (Exception e) {
-                GUIMain.log(e.getMessage());
+                GUIMain.log(e);
             }
             return toRet;
         }
@@ -262,11 +262,11 @@ public class APIRequests {
                     int response = c.getResponseCode();
                     toReturn = (response == 204);
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
                 c.disconnect();
             } catch (Exception e) {
-                GUIMain.log(e.getMessage());
+                GUIMain.log(e);
             }
             return toReturn;
         }
