@@ -1492,6 +1492,8 @@ public class GUISettings extends JFrame {
             if (!Utils.checkText(commandField.getText()).equals("")) {
                 if (filePaths.length > 0) {
                     String command = commandField.getText();
+                    if(command.startsWith("!"))
+                        command = command.substring(1);
                     //update the tree
                     DefaultTreeModel model = (DefaultTreeModel) soundTree.getModel();
                     DefaultMutableTreeNode root = (DefaultMutableTreeNode) model.getRoot();
