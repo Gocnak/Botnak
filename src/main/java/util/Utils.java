@@ -13,6 +13,7 @@ import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.io.*;
 import java.net.URI;
+import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -885,15 +886,31 @@ public class Utils {
      * @param toRead  The stream to read.
      * @param builder The builder to add to.
      */
-    public static void parseBufferedReader(BufferedReader toRead, StringBuilder builder) {
+    public static void parseBufferedReader(BufferedReader toRead, StringBuilder builder, boolean includeNewLine) {
         try {
             String line;
             while ((line = toRead.readLine()) != null) {
                 builder.append(line);
+                if (includeNewLine) builder.append("\n");
             }
             toRead.close();
         } catch (Exception e) {
             GUIMain.log("Failed to read buffered reader due to exception: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Opens a web page in the default web browser on the system.
+     *
+     * @param URL The URL to open.
+     */
+    public static void openWebPage(String URL) {
+        try {
+            Desktop desktop = Desktop.getDesktop();
+            URI uri = new URL(URL).toURI();
+            desktop.browse(uri);
+        } catch (Exception ev) {
+            GUIMain.log((ev.getMessage()));
         }
     }
 }

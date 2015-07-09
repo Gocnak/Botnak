@@ -28,16 +28,16 @@ public class FrankerFaceZ extends ToggleableFace {
     }
 
     /**
-     *
+     * Parses FFZ API for faces
      */
     static class FFZParser {
 
         private static void parseSet(int set, ArrayList<FrankerFaceZ> collection) {
             try {
-                URL url = new URL("https://api.frankerfacez.com/v1/set/" + set);
+                URL url = new URL("http://api.frankerfacez.com/v1/set/" + set);
                 BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
                 StringBuilder sb = new StringBuilder();
-                Utils.parseBufferedReader(br, sb);
+                Utils.parseBufferedReader(br, sb, false);
                 JSONObject init = new JSONObject(sb.toString());
                 if (!init.has("error")) {
                     JSONObject setObj = init.getJSONObject("set");
@@ -60,10 +60,10 @@ public class FrankerFaceZ extends ToggleableFace {
                 return;
             }
             try {
-                URL url = new URL("https://api.frankerfacez.com/v1/_room/" + channel);
+                URL url = new URL("http://api.frankerfacez.com/v1/_room/" + channel);
                 BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
                 StringBuilder sb = new StringBuilder();
-                Utils.parseBufferedReader(br, sb);
+                Utils.parseBufferedReader(br, sb, false);
                 JSONObject init = new JSONObject(sb.toString());
                 if (!init.has("error")) {
                     JSONObject room = init.getJSONObject("room");

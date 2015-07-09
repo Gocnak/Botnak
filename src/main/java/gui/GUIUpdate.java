@@ -1,12 +1,12 @@
 package gui;
 
 import util.Constants;
+import util.Utils;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.net.URL;
 
 /**
@@ -49,13 +49,7 @@ public class GUIUpdate extends JFrame {
     }
 
     public void downloadButtonActionPerformed() {
-        try {
-            Desktop desktop = Desktop.getDesktop();
-            URI uri = new URL("https://github.com/Gocnak/Botnak/releases").toURI();
-            desktop.browse(uri);
-        } catch (Exception ev) {
-            GUIMain.log((ev.getMessage()));
-        }
+        Utils.openWebPage("https://github.com/Gocnak/Botnak/releases");
         dispose();
     }
 

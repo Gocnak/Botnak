@@ -96,7 +96,7 @@ public class TabTitleEditListener extends MouseAdapter implements ChangeListener
 
     private void renameTabTitle() {
         String title = editor.getText().trim();
-        if (editing_idx >= 0 && !title.isEmpty() && !"+".equals(title)) {
+        if (editing_idx >= 0 && !title.isEmpty() && !"+".equals(title) && !"system logs".equalsIgnoreCase(title)) {
             tabbedPane.setTitleAt(editing_idx, title);
         }
         cancelEditing();

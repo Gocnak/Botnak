@@ -383,7 +383,7 @@ public class APIRequests {
                         "&fields=items(snippet(title,channelTitle),contentDetails(duration))");
                 BufferedReader br = new BufferedReader(new InputStreamReader(request.openStream()));
                 StringBuilder sb = new StringBuilder();
-                Utils.parseBufferedReader(br, sb);
+                Utils.parseBufferedReader(br, sb, false);
                 JSONObject initial = new JSONObject(sb.toString());
                 JSONArray items = initial.getJSONArray("items");
                 if (items.length() < 1) {

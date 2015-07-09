@@ -3,10 +3,10 @@ package gui;
 import irc.account.Account;
 import irc.account.Oauth;
 import irc.account.Task;
+import util.Utils;
 
 import javax.swing.*;
 import java.awt.*;
-import java.net.URI;
 
 /**
  * This GUI handles authorizing Botnak to handle your main account.
@@ -35,12 +35,9 @@ public class AuthorizeAccountGUI extends JFrame {
             if (boxCommercial.isSelected()) URL += "+channel_commercial";
             if (boxEditStream.isSelected()) URL += "+channel_editor";
             if (boxFollowed.isSelected()) URL += "+user_follows_edit";
-            try {
-                Desktop.getDesktop().browse(new URI(URL));
-                TokenListener tl = new TokenListener(this);
-                tl.start();
-            } catch (Exception ignored) {
-            }
+            Utils.openWebPage(URL);
+            TokenListener tl = new TokenListener(this);
+            tl.start();
         }
     }
 

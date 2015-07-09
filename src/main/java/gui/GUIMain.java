@@ -12,10 +12,7 @@ import irc.message.MessageQueue;
 import sound.SoundEngine;
 import thread.TabPulse;
 import thread.ThreadEngine;
-import thread.heartbeat.BanQueue;
-import thread.heartbeat.DonationCheck;
-import thread.heartbeat.Heartbeat;
-import thread.heartbeat.ViewerCount;
+import thread.heartbeat.*;
 import util.Constants;
 import util.Utils;
 import util.comm.Command;
@@ -26,10 +23,8 @@ import javax.swing.*;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -43,6 +38,8 @@ public class GUIMain extends JFrame {
     public static CopyOnWriteArraySet<CombinedChatPane> combinedChatPanes;
     public static ConcurrentHashMap<String, Color> keywordMap;
 
+    public static ConcurrentHashMap<String, GUIViewerList> viewerLists;
+
     public static int userResponsesIndex = 0;
     public static ArrayList<String> userResponses;
 
@@ -52,6 +49,7 @@ public class GUIMain extends JFrame {
     public static IRCViewer viewer;
     public static GUISettings settings = null;
     public static GUIStreams streams = null;
+    public static GUIAbout aboutGUI = null;
     public static AuthorizeAccountGUI accountGUI = null;
 
     public static boolean shutDown = false;
@@ -78,6 +76,7 @@ public class GUIMain extends JFrame {
         keywordMap = new ConcurrentHashMap<>();
         tabPulses = new CopyOnWriteArraySet<>();
         combinedChatPanes = new CopyOnWriteArraySet<>();
+        viewerLists = new ConcurrentHashMap<>();
         userResponses = new ArrayList<>();
         ThreadEngine.init();
         FaceManager.init();
@@ -91,13 +90,12 @@ public class GUIMain extends JFrame {
         currentSettings.load();
         heartbeat = new Heartbeat();
         heartbeat.addHeartbeatThread(new ViewerCount());
-        //heartbeat.addHeartbeatThread(new UserManager()); TODO implement with user lists
+        heartbeat.addHeartbeatThread(new UserManager());
         heartbeat.addHeartbeatThread(new BanQueue());
         //TODO if (GUISettings.trackDonations)
         heartbeat.addHeartbeatThread(new DonationCheck());
         heartbeat.start();
     }
-
 
     public static boolean loadedSettingsUser() {
         return currentSettings != null && currentSettings.accountManager.getUserAccount() != null;
@@ -211,25 +209,6 @@ public class GUIMain extends JFrame {
         instance.setTitle(stanSB.toString());
     }
 
-
-    public void manageAccountActionPerformed() {
-        if (accountGUI == null) {
-            accountGUI = new AuthorizeAccountGUI();
-        }
-        if (!accountGUI.isVisible()) {
-            accountGUI.setVisible(true);
-        }
-    }
-
-    public void settingsButtonActionPerformed() {
-        if (settings == null) {
-            settings = new GUISettings();
-        }
-        if (!settings.isVisible()) {
-            settings.setVisible(true);
-        }
-    }
-
     public void exitButtonActionPerformed() {
         shutDown = true;
         if (viewer != null) {
@@ -265,33 +244,409 @@ public class GUIMain extends JFrame {
         tabPulses.add(tp);
     }
 
+    private void openBotnakFolderOptionActionPerformed() {
+        Utils.openWebPage(Settings.defaultDir.toURI().toString());
+    }
+
+    private void openLogViewerOptionActionPerformed() {
+        // TODO add your code here
+    }
+
+    private void openSoundsOptionActionPerformed() {
+        Utils.openWebPage(new File(currentSettings.defaultSoundDir).toURI().toString());
+    }
+
+    private void autoReconnectToggleItemStateChanged(ItemEvent e) {
+        // TODO check login status of both accounts to determine if they need relogging in, upon enable
+    }
+
+    private void alwaysOnTopToggleItemStateChanged(ItemEvent e) {
+        Window[] windows = getWindows();
+        for (Window w : windows) {
+            w.setAlwaysOnTop(e.getStateChange() == ItemEvent.SELECTED);
+        }
+    }
+
+    private void settingsOptionActionPerformed() {
+        if (settings == null) {
+            settings = new GUISettings();
+        }
+        if (!settings.isVisible()) {
+            settings.setVisible(true);
+        }
+    }
+
+    private void startRaffleOptionActionPerformed() {
+        // TODO add your code here
+    }
+
+    private void startVoteOptionActionPerformed() {
+        // TODO add your code here
+    }
+
+    private void soundsToggleItemStateChanged(ItemEvent e) {
+        // TODO add your code here
+    }
+
+    private void manageTextCommandsOptionActionPerformed() {
+        // TODO add your code here
+    }
+
+    private void updateStatusOptionActionPerformed() {
+        // TODO add your code here
+    }
+
+    private void subOnlyToggleItemStateChanged(ItemEvent e) {
+        //TODO viewer.getViewer().sendRawMessage();
+    }
+
+    private void projectGithubOptionActionPerformed() {
+        Utils.openWebPage("https://github.com/Gocnak/Botnak/");
+    }
+
+    private void projectWikiOptionActionPerformed() {
+        Utils.openWebPage("https://github.com/Gocnak/Botnak/wiki");
+    }
+
+    private void projectDetailsOptionActionPerformed() {
+        if (aboutGUI == null) {
+            aboutGUI = new GUIAbout();
+        }
+        if (!aboutGUI.isVisible())
+            aboutGUI.setVisible(true);
+    }
+
+
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner Evaluation license - Nick K
+        menuBar1 = new JMenuBar();
+        fileMenu = new JMenu();
+        openBotnakFolderOption = new JMenuItem();
+        openLogViewerOption = new JMenuItem();
+        openSoundsOption = new JMenuItem();
+        exitOption = new JMenuItem();
+        preferencesMenu = new JMenu();
+        botReplyMenu = new JMenu();
+        radioButtonMenuItem1 = new JRadioButtonMenuItem();
+        radioButtonMenuItem3 = new JRadioButtonMenuItem();
+        radioButtonMenuItem2 = new JRadioButtonMenuItem();
+        autoReconnectToggle = new JCheckBoxMenuItem();
+        alwaysOnTopToggle = new JCheckBoxMenuItem();
+        settingsOption = new JMenuItem();
+        toolsMenu = new JMenu();
+        startRaffleOption = new JMenuItem();
+        startVoteOption = new JMenuItem();
+        soundsToggle = new JCheckBoxMenuItem();
+        soundDelayMenu = new JMenu();
+        soundDelayOffOption = new JRadioButtonMenuItem();
+        soundDelay5secOption = new JRadioButtonMenuItem();
+        soundDelay10secOption = new JRadioButtonMenuItem();
+        soundDelay20secOption = new JRadioButtonMenuItem();
+        soundDelayCustomOption = new JRadioButtonMenuItem();
+        soundPermissionMenu = new JMenu();
+        soundPermEveryoneOption = new JRadioButtonMenuItem();
+        soundPermSDMBOption = new JRadioButtonMenuItem();
+        soundPermDMBOption = new JRadioButtonMenuItem();
+        soundPermModAndBroadOption = new JRadioButtonMenuItem();
+        soundPermBroadOption = new JRadioButtonMenuItem();
+        manageTextCommandsOption = new JMenuItem();
+        runAdMenu = new JMenu();
+        timeOption30sec = new JMenuItem();
+        timeOption60sec = new JMenuItem();
+        timeOption90sec = new JMenuItem();
+        timeOption120sec = new JMenuItem();
+        timeOption150sec = new JMenuItem();
+        timeOption180sec = new JMenuItem();
+        updateStatusOption = new JMenuItem();
+        subOnlyToggle = new JCheckBoxMenuItem();
+        slowModeMenu = new JMenu();
+        slowModeOffOption = new JRadioButtonMenuItem();
+        slowMode5secOption = new JRadioButtonMenuItem();
+        slowMode10secOption = new JRadioButtonMenuItem();
+        slowMode15secOption = new JRadioButtonMenuItem();
+        slowMode30secOption = new JRadioButtonMenuItem();
+        slowModeCustomOption = new JRadioButtonMenuItem();
+        helpMenu = new JMenu();
+        projectGithubOption = new JMenuItem();
+        projectWikiOption = new JMenuItem();
+        projectDetailsOption = new JMenuItem();
         channelPane = new DraggableTabbedPane();
         allChatsScroll = new JScrollPane();
         allChats = new JTextPane();
+        dankLabel = new JLabel();
         scrollPane1 = new JScrollPane();
         userChat = new JTextArea();
-        chatButton = new JButton();
-        exitButton = new JButton();
-        loginsButton = new JButton();
-        manageAccount = new JButton();
 
         //======== Botnak ========
         {
-            setMinimumSize(new Dimension(750, 420));
-            setName("Botnak");
-            setTitle("Botnak | User: <none> | Bot: <none>");
-            setResizable(true);
+            setMinimumSize(new Dimension(680, 504));
+            setName("Botnak Control Panel");
+            setTitle("Botnak | Please go to Preferences->Settings!");
             setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
             setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
             Container BotnakContentPane = getContentPane();
 
+            //======== menuBar1 ========
+            {
+
+                //======== fileMenu ========
+                {
+                    fileMenu.setText("File");
+
+                    //---- openBotnakFolderOption ----
+                    openBotnakFolderOption.setText("Open Botnak Folder");
+                    openBotnakFolderOption.addActionListener(e -> openBotnakFolderOptionActionPerformed());
+                    fileMenu.add(openBotnakFolderOption);
+
+                    //---- openLogViewerOption ----
+                    openLogViewerOption.setText("Open Log Viewer");
+                    openLogViewerOption.addActionListener(e -> openLogViewerOptionActionPerformed());
+                    fileMenu.add(openLogViewerOption);
+
+                    //---- openSoundsOption ----
+                    openSoundsOption.setText("Open Sound Directory");
+                    openSoundsOption.addActionListener(e -> openSoundsOptionActionPerformed());
+                    fileMenu.add(openSoundsOption);
+                    fileMenu.addSeparator();
+
+                    //---- exitOption ----
+                    exitOption.setText("Save and Exit");
+                    exitOption.addActionListener(e -> exitButtonActionPerformed());
+                    fileMenu.add(exitOption);
+                }
+                menuBar1.add(fileMenu);
+
+                //======== preferencesMenu ========
+                {
+                    preferencesMenu.setText("Preferences");
+
+                    //======== botReplyMenu ========
+                    {
+                        botReplyMenu.setText("Bot Reply");
+
+                        //---- radioButtonMenuItem1 ----
+                        radioButtonMenuItem1.setText("Reply to all");
+                        botReplyMenu.add(radioButtonMenuItem1);
+
+                        //---- radioButtonMenuItem3 ----
+                        radioButtonMenuItem3.setText("Reply to you");
+                        botReplyMenu.add(radioButtonMenuItem3);
+
+                        //---- radioButtonMenuItem2 ----
+                        radioButtonMenuItem2.setText("Reply to none");
+                        radioButtonMenuItem2.setSelected(true);
+                        botReplyMenu.add(radioButtonMenuItem2);
+                    }
+                    preferencesMenu.add(botReplyMenu);
+
+                    //---- autoReconnectToggle ----
+                    autoReconnectToggle.setText("Auto-Reconnect");
+                    autoReconnectToggle.setSelected(true);
+                    autoReconnectToggle.addItemListener(e -> autoReconnectToggleItemStateChanged(e));
+                    preferencesMenu.add(autoReconnectToggle);
+
+                    //---- alwaysOnTopToggle ----
+                    alwaysOnTopToggle.setText("Always On Top");
+                    alwaysOnTopToggle.setSelected(false);
+                    alwaysOnTopToggle.addItemListener(e -> alwaysOnTopToggleItemStateChanged(e));
+                    preferencesMenu.add(alwaysOnTopToggle);
+                    preferencesMenu.addSeparator();
+
+                    //---- settingsOption ----
+                    settingsOption.setText("Settings...");
+                    settingsOption.addActionListener(e -> settingsOptionActionPerformed());
+                    preferencesMenu.add(settingsOption);
+                }
+                menuBar1.add(preferencesMenu);
+
+                //======== toolsMenu ========
+                {
+                    toolsMenu.setText("Tools");
+
+                    //---- startRaffleOption ----
+                    startRaffleOption.setText("Create Raffle...");
+                    startRaffleOption.addActionListener(e -> startRaffleOptionActionPerformed());
+                    toolsMenu.add(startRaffleOption);
+
+                    //---- startVoteOption ----
+                    startVoteOption.setText("Create Vote...");
+                    startVoteOption.addActionListener(e -> startVoteOptionActionPerformed());
+                    toolsMenu.add(startVoteOption);
+
+                    //---- soundsToggle ----
+                    soundsToggle.setText("Enable Sounds");
+                    soundsToggle.setSelected(true);
+                    soundsToggle.addItemListener(e -> soundsToggleItemStateChanged(e));
+                    toolsMenu.add(soundsToggle);
+
+                    //======== soundDelayMenu ========
+                    {
+                        soundDelayMenu.setText("Sound Delay");
+
+                        //---- soundDelayOffOption ----
+                        soundDelayOffOption.setText("None (Off)");
+                        soundDelayOffOption.addActionListener(e -> {
+
+                        });
+                        soundDelayMenu.add(soundDelayOffOption);
+
+                        //---- soundDelay5secOption ----
+                        soundDelay5secOption.setText("5 seconds");
+                        soundDelayMenu.add(soundDelay5secOption);
+
+                        //---- soundDelay10secOption ----
+                        soundDelay10secOption.setText("10 seconds");
+                        soundDelay10secOption.setSelected(true);
+                        soundDelayMenu.add(soundDelay10secOption);
+
+                        //---- soundDelay20secOption ----
+                        soundDelay20secOption.setText("20 seconds");
+                        soundDelayMenu.add(soundDelay20secOption);
+
+                        //---- soundDelayCustomOption ----
+                        soundDelayCustomOption.setText("Custom (Use chat)");
+                        soundDelayCustomOption.setEnabled(false);
+                        soundDelayMenu.add(soundDelayCustomOption);
+                    }
+                    toolsMenu.add(soundDelayMenu);
+
+                    //======== soundPermissionMenu ========
+                    {
+                        soundPermissionMenu.setText("Sound Permission");
+
+                        //---- soundPermEveryoneOption ----
+                        soundPermEveryoneOption.setText("Everyone");
+                        soundPermissionMenu.add(soundPermEveryoneOption);
+
+                        //---- soundPermSDMBOption ----
+                        soundPermSDMBOption.setText("Subs, Donors, Mods, Broadcaster");
+                        soundPermSDMBOption.setSelected(true);
+                        soundPermissionMenu.add(soundPermSDMBOption);
+
+                        //---- soundPermDMBOption ----
+                        soundPermDMBOption.setText("Donors, Mods, Broadcaster");
+                        soundPermissionMenu.add(soundPermDMBOption);
+
+                        //---- soundPermModAndBroadOption ----
+                        soundPermModAndBroadOption.setText("Mods and Broadcaster Only");
+                        soundPermissionMenu.add(soundPermModAndBroadOption);
+
+                        //---- soundPermBroadOption ----
+                        soundPermBroadOption.setText("Broadcaster Only");
+                        soundPermissionMenu.add(soundPermBroadOption);
+                    }
+                    toolsMenu.add(soundPermissionMenu);
+
+                    //---- manageTextCommandsOption ----
+                    manageTextCommandsOption.setText("Manage Text Commands...");
+                    manageTextCommandsOption.addActionListener(e -> manageTextCommandsOptionActionPerformed());
+                    toolsMenu.add(manageTextCommandsOption);
+                    toolsMenu.addSeparator();
+
+                    //======== runAdMenu ========
+                    {
+                        runAdMenu.setText("Run Ad");
+
+                        //---- timeOption30sec ----
+                        timeOption30sec.setText("30 sec");
+                        runAdMenu.add(timeOption30sec);
+
+                        //---- timeOption60sec ----
+                        timeOption60sec.setText("1 min");
+                        runAdMenu.add(timeOption60sec);
+
+                        //---- timeOption90sec ----
+                        timeOption90sec.setText("1 min 30 sec");
+                        runAdMenu.add(timeOption90sec);
+
+                        //---- timeOption120sec ----
+                        timeOption120sec.setText("2 min");
+                        runAdMenu.add(timeOption120sec);
+
+                        //---- timeOption150sec ----
+                        timeOption150sec.setText("2 min 30 sec");
+                        runAdMenu.add(timeOption150sec);
+
+                        //---- timeOption180sec ----
+                        timeOption180sec.setText("3 min");
+                        runAdMenu.add(timeOption180sec);
+                    }
+                    toolsMenu.add(runAdMenu);
+
+                    //---- updateStatusOption ----
+                    updateStatusOption.setText("Update Status...");
+                    updateStatusOption.addActionListener(e -> updateStatusOptionActionPerformed());
+                    toolsMenu.add(updateStatusOption);
+
+                    //---- subOnlyToggle ----
+                    subOnlyToggle.setText("Sub-only Chat");
+                    subOnlyToggle.addItemListener(e -> subOnlyToggleItemStateChanged(e));
+                    toolsMenu.add(subOnlyToggle);
+
+                    //======== slowModeMenu ========
+                    {
+                        slowModeMenu.setText("Slow Mode");
+
+                        //---- slowModeOffOption ----
+                        slowModeOffOption.setText("Off");
+                        slowModeOffOption.setSelected(true);
+                        slowModeMenu.add(slowModeOffOption);
+
+                        //---- slowMode5secOption ----
+                        slowMode5secOption.setText("5 seconds");
+                        slowModeMenu.add(slowMode5secOption);
+
+                        //---- slowMode10secOption ----
+                        slowMode10secOption.setText("10 seconds");
+                        slowModeMenu.add(slowMode10secOption);
+
+                        //---- slowMode15secOption ----
+                        slowMode15secOption.setText("15 seconds");
+                        slowModeMenu.add(slowMode15secOption);
+
+                        //---- slowMode30secOption ----
+                        slowMode30secOption.setText("30 seconds");
+                        slowModeMenu.add(slowMode30secOption);
+
+                        //---- slowModeCustomOption ----
+                        slowModeCustomOption.setText("Custom (use chat)");
+                        slowModeCustomOption.setEnabled(false);
+                        slowModeMenu.add(slowModeCustomOption);
+                    }
+                    toolsMenu.add(slowModeMenu);
+                }
+                menuBar1.add(toolsMenu);
+
+                //======== helpMenu ========
+                {
+                    helpMenu.setText("Help");
+
+                    //---- projectGithubOption ----
+                    projectGithubOption.setText("Botnak Github");
+                    projectGithubOption.addActionListener(e -> projectGithubOptionActionPerformed());
+                    helpMenu.add(projectGithubOption);
+
+                    //---- projectWikiOption ----
+                    projectWikiOption.setText("Wiki");
+                    projectWikiOption.addActionListener(e -> projectWikiOptionActionPerformed());
+                    helpMenu.add(projectWikiOption);
+                    helpMenu.addSeparator();
+
+                    //---- projectDetailsOption ----
+                    projectDetailsOption.setText("About...");
+                    projectDetailsOption.addActionListener(e -> projectDetailsOptionActionPerformed());
+                    helpMenu.add(projectDetailsOption);
+                }
+                menuBar1.add(helpMenu);
+            }
+            setJMenuBar(menuBar1);
+
             //======== channelPane ========
             {
-                channelPane.setTabPlacement(SwingConstants.BOTTOM);
                 channelPane.setFocusable(false);
+                channelPane.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
+                channelPane.setAutoscrolls(true);
                 channelPane.addChangeListener(Constants.tabListener);
                 channelPane.addMouseListener(Constants.tabListener);
 
@@ -303,98 +658,47 @@ public class GUIMain extends JFrame {
                     allChats.setEditable(false);
                     allChats.setForeground(Color.white);
                     allChats.setBackground(Color.black);
+                    allChats.setFont(new Font("Calibri", Font.PLAIN, 16));
                     allChats.setMargin(new Insets(0, 0, 0, 0));
-                    allChats.setFont(new Font("Calibri", Font.PLAIN, 18));
                     allChats.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
                     allChats.addMouseListener(new ListenerURL());
                     allChats.addMouseListener(new ListenerName());
                     allChatsScroll.setViewportView(allChats);
                 }
                 channelPane.addTab("System Logs", allChatsScroll);
-            }
 
-            {
-                JTextPane blank = new JTextPane();
-                JScrollPane blankParent = new JScrollPane();
-                blank.setEditable(false);
-                blank.setForeground(Color.white);
-                blank.setBackground(Color.black);
-                blank.setMargin(new Insets(0, 0, 0, 0));
-                blank.setFont(new Font("Calibri", Font.PLAIN, 18));
-                blank.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-                blankParent.setViewportView(blank);
-                channelPane.addTab("+", blankParent);
+                //---- dankLabel ----
+                dankLabel.setText("Dank memes");
+                channelPane.addTab("+", dankLabel);
                 channelPane.setEnabledAt(channelPane.getTabCount() - 1, false);
                 channelPane.addMouseListener(new NewTabListener());
             }
 
             //======== scrollPane1 ========
             {
+                scrollPane1.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
                 //---- userChat ----
                 userChat.setFont(new Font("Consolas", Font.PLAIN, 12));
                 userChat.setLineWrap(true);
-                userChat.setWrapStyleWord(true);
                 userChat.addKeyListener(new ListenerUserChat(userChat));
                 scrollPane1.setViewportView(userChat);
             }
-
-            //---- chatButton ----
-            chatButton.setText("Chat");
-            chatButton.setFocusable(false);
-            chatButton.setToolTipText("Send a chat message.");
-            chatButton.addActionListener(e -> chatButtonActionPerformed());
-
-            //---- exitButton ----
-            exitButton.setText("Save & Exit");
-            exitButton.setFocusable(false);
-            exitButton.setToolTipText("Gracefully save all settings, exit all connected streams, and shutdown the program.");
-            exitButton.addActionListener(e -> exitButtonActionPerformed());
-
-            //---- loginsButton ----
-            loginsButton.setText("Settings");
-            loginsButton.setFocusable(false);
-            loginsButton.setToolTipText("Manage the settings of Botnak.");
-            loginsButton.addActionListener(e -> settingsButtonActionPerformed());
-
-            //---- manageAccount ----
-            manageAccount.setText("Manage Accounts");
-            manageAccount.setFocusable(false);
-            manageAccount.setFocusPainted(false);
-            manageAccount.setEnabled(false);
-            manageAccount.setToolTipText("Use the setting GUI to manage accounts.");
-            manageAccount.addActionListener(e -> manageAccountActionPerformed());
 
             GroupLayout BotnakContentPaneLayout = new GroupLayout(BotnakContentPane);
             BotnakContentPane.setLayout(BotnakContentPaneLayout);
             BotnakContentPaneLayout.setHorizontalGroup(
                     BotnakContentPaneLayout.createParallelGroup()
-                            .addGroup(BotnakContentPaneLayout.createSequentialGroup()
-                                    .addComponent(scrollPane1, GroupLayout.PREFERRED_SIZE, 446, GroupLayout.PREFERRED_SIZE)
-                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                    .addComponent(chatButton)
-                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addGroup(BotnakContentPaneLayout.createParallelGroup()
-                                            .addComponent(loginsButton, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 229, GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(manageAccount, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 229, GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(exitButton, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 229, GroupLayout.PREFERRED_SIZE))
-                                    .addContainerGap())
-                            .addComponent(channelPane)
+                            .addComponent(channelPane, GroupLayout.DEFAULT_SIZE, 0, Short.MAX_VALUE)
+                            .addComponent(scrollPane1)
             );
             BotnakContentPaneLayout.setVerticalGroup(
                     BotnakContentPaneLayout.createParallelGroup()
-                            .addGroup(GroupLayout.Alignment.TRAILING, BotnakContentPaneLayout.createSequentialGroup()
-                                    .addGroup(BotnakContentPaneLayout.createParallelGroup()
-                                            .addGroup(BotnakContentPaneLayout.createSequentialGroup()
-                                                    .addContainerGap()
-                                                    .addComponent(exitButton)
-                                                    .addGap(18, 18, 18)
-                                                    .addComponent(loginsButton)
-                                                    .addGap(18, 18, 18)
-                                                    .addComponent(manageAccount))
-                                            .addComponent(scrollPane1, GroupLayout.PREFERRED_SIZE, 118, GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(chatButton, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 57, GroupLayout.PREFERRED_SIZE))
+                            .addGroup(BotnakContentPaneLayout.createSequentialGroup()
+                                    .addComponent(channelPane, GroupLayout.PREFERRED_SIZE, 393, GroupLayout.PREFERRED_SIZE)
                                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                    .addComponent(channelPane, GroupLayout.DEFAULT_SIZE, 265, Short.MAX_VALUE))
+                                    .addComponent(scrollPane1, GroupLayout.PREFERRED_SIZE, 44, GroupLayout.PREFERRED_SIZE)
+                                    .addContainerGap())
             );
             addComponentListener(new ComponentAdapter() {
                 @Override
@@ -402,32 +706,108 @@ public class GUIMain extends JFrame {
                     if (channelPane != null) {
                         channelPane.scrollDownPanes();
                     }
-                    super.componentResized(e);
                 }
             });
             addWindowListener(new WindowAdapter() {
                 @Override
                 public void windowClosing(WindowEvent e) {
                     exitButtonActionPerformed();
-                    super.windowClosing(e);
                 }
             });
             pack();
             setLocationRelativeTo(getOwner());
         }
+
+        //---- botReplyGroup ----
+        ButtonGroup botReplyGroup = new ButtonGroup();
+        botReplyGroup.add(radioButtonMenuItem1);
+        botReplyGroup.add(radioButtonMenuItem3);
+        botReplyGroup.add(radioButtonMenuItem2);
+
+        //---- soundDelayGroup ----
+        ButtonGroup soundDelayGroup = new ButtonGroup();
+        soundDelayGroup.add(soundDelayOffOption);
+        soundDelayGroup.add(soundDelay5secOption);
+        soundDelayGroup.add(soundDelay10secOption);
+        soundDelayGroup.add(soundDelay20secOption);
+        soundDelayGroup.add(soundDelayCustomOption);
+
+        //---- soundPermissionGroup ----
+        ButtonGroup soundPermissionGroup = new ButtonGroup();
+        soundPermissionGroup.add(soundPermEveryoneOption);
+        soundPermissionGroup.add(soundPermSDMBOption);
+        soundPermissionGroup.add(soundPermDMBOption);
+        soundPermissionGroup.add(soundPermModAndBroadOption);
+        soundPermissionGroup.add(soundPermBroadOption);
+
+        //---- slowModeGroup ----
+        ButtonGroup slowModeGroup = new ButtonGroup();
+        slowModeGroup.add(slowModeOffOption);
+        slowModeGroup.add(slowMode5secOption);
+        slowModeGroup.add(slowMode10secOption);
+        slowModeGroup.add(slowMode15secOption);
+        slowModeGroup.add(slowMode30secOption);
+        slowModeGroup.add(slowModeCustomOption);
         // JFormDesigner - End of component initialization  //GEN-END:initComponents
     }
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
     // Generated using JFormDesigner Evaluation license - Nick K
+    private JMenuBar menuBar1;
+    private JMenu fileMenu;
+    private JMenuItem openBotnakFolderOption;
+    private JMenuItem openLogViewerOption;
+    private JMenuItem openSoundsOption;
+    private JMenuItem exitOption;
+    private JMenu preferencesMenu;
+    private JMenu botReplyMenu;
+    private JRadioButtonMenuItem radioButtonMenuItem1;
+    private JRadioButtonMenuItem radioButtonMenuItem3;
+    private JRadioButtonMenuItem radioButtonMenuItem2;
+    private JCheckBoxMenuItem autoReconnectToggle;
+    private JCheckBoxMenuItem alwaysOnTopToggle;
+    private JMenuItem settingsOption;
+    private JMenu toolsMenu;
+    private JMenuItem startRaffleOption;
+    private JMenuItem startVoteOption;
+    private JCheckBoxMenuItem soundsToggle;
+    private JMenu soundDelayMenu;
+    private JRadioButtonMenuItem soundDelayOffOption;
+    private JRadioButtonMenuItem soundDelay5secOption;
+    private JRadioButtonMenuItem soundDelay10secOption;
+    private JRadioButtonMenuItem soundDelay20secOption;
+    private JRadioButtonMenuItem soundDelayCustomOption;
+    private JMenu soundPermissionMenu;
+    private JRadioButtonMenuItem soundPermEveryoneOption;
+    private JRadioButtonMenuItem soundPermSDMBOption;
+    private JRadioButtonMenuItem soundPermDMBOption;
+    private JRadioButtonMenuItem soundPermModAndBroadOption;
+    private JRadioButtonMenuItem soundPermBroadOption;
+    private JMenuItem manageTextCommandsOption;
+    private JMenu runAdMenu;
+    private JMenuItem timeOption30sec;
+    private JMenuItem timeOption60sec;
+    private JMenuItem timeOption90sec;
+    private JMenuItem timeOption120sec;
+    private JMenuItem timeOption150sec;
+    private JMenuItem timeOption180sec;
+    private JMenuItem updateStatusOption;
+    private JCheckBoxMenuItem subOnlyToggle;
+    private JMenu slowModeMenu;
+    private JRadioButtonMenuItem slowModeOffOption;
+    private JRadioButtonMenuItem slowMode5secOption;
+    private JRadioButtonMenuItem slowMode10secOption;
+    private JRadioButtonMenuItem slowMode15secOption;
+    private JRadioButtonMenuItem slowMode30secOption;
+    private JRadioButtonMenuItem slowModeCustomOption;
+    private JMenu helpMenu;
+    private JMenuItem projectGithubOption;
+    private JMenuItem projectWikiOption;
+    private JMenuItem projectDetailsOption;
     public static DraggableTabbedPane channelPane;
-    public static JScrollPane allChatsScroll;
-    public static JTextPane allChats;
-    public static JScrollPane scrollPane1;
+    private JScrollPane allChatsScroll;
+    private JTextPane allChats;
+    private JLabel dankLabel;
+    private JScrollPane scrollPane1;
     public static JTextArea userChat;
-    public static JButton chatButton;
-    public static JButton exitButton;
-    public static JButton loginsButton;
-    public static JButton manageAccount;
-    // JFormDesigner - End of variables declaration  //GEN-END:variables
 }

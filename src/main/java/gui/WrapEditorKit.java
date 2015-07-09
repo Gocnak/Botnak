@@ -13,7 +13,7 @@ public class WrapEditorKit extends StyledEditorKit {
         return defaultFactory;
     }
 
-    class WrapColumnFactory implements ViewFactory {
+    private class WrapColumnFactory implements ViewFactory {
         public View create(Element elem) {
             String kind = elem.getName();
             if (kind != null) {
@@ -36,7 +36,7 @@ public class WrapEditorKit extends StyledEditorKit {
         }
     }
 
-    class WrapLabelView extends LabelView {
+    private class WrapLabelView extends LabelView {
         public WrapLabelView(Element elem) {
             super(elem);
         }
@@ -52,5 +52,4 @@ public class WrapEditorKit extends StyledEditorKit {
             }
         }
     }
-
 }

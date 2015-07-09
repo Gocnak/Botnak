@@ -1141,18 +1141,20 @@ public class Settings {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(windowFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
+                String[] parts = line.substring(1).split(",");
+                String first = parts[0];
+                String second = parts[1];
                 if (line.startsWith("p")) {
                     try {
-                        int x = Integer.parseInt(line.substring(1).split(",")[0]);
-                        int y = Integer.parseInt(line.substring(1).split(",")[1]);
+                        int x = Integer.parseInt(first);
+                        int y = Integer.parseInt(second);
                         GUIMain.instance.setLocation(x, y);
                     } catch (Exception ignored) {
                     }
-                }
-                if (line.startsWith("s")) {
+                } else if (line.startsWith("s")) {
                     try {
-                        double w = Integer.parseInt(line.substring(1).split(",")[0]);
-                        double h = Integer.parseInt(line.substring(1).split(",")[0]);
+                        double w = Double.parseDouble(first);
+                        double h = Double.parseDouble(second);
                         GUIMain.instance.setSize((int) w, (int) h);
                     } catch (Exception ignored) {
                     }

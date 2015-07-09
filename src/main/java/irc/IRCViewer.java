@@ -16,7 +16,7 @@ import java.util.Optional;
 
 public class IRCViewer extends MessageHandler {
 
-    private PircBot getViewer() {
+    public PircBot getViewer() {
         return GUIMain.currentSettings.accountManager.getViewer();
     }
 

@@ -111,5 +111,4 @@ public final class SoundPlayer implements Closeable {
             entry.stop();
         }
     }
-
 }
