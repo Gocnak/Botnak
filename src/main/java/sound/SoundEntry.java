@@ -1,5 +1,7 @@
 package sound;
 
+import gui.GUIMain;
+
 import javax.sound.sampled.*;
 import java.io.Closeable;
 import java.io.File;
@@ -102,6 +104,19 @@ public class SoundEntry implements Closeable {
         } else {
             this.clip.setFramePosition(0);
         }
+        FloatControl volume = (FloatControl) this.clip.getControl(FloatControl.Type.MASTER_GAIN);
+        /** @author Chrisazy
+         * I've decided that -75.0 is what qualifies as silent, so that's our baseline
+         * We need to counter the logarithmic nature of gain, so we use Pow with base 10
+         * We use it on 100 - volume setting because we're actually considering 0 gain to be 100%
+         *      and -75.0 gain to be 0%
+         * We subtract by 1 because we want Math.Pow(10,(100-100)) to be 0, instead of 1.
+         * Lastly, we normalize our gain by multiplying by our "silent" level divided by the actual 0% level
+         *      (Since without the normalization at 0% we get a gain of -9, that's out 0% level)
+         * Shit's so cash.
+         */
+        float vol = -(float) ((75F / 9F) * (Math.pow(10, ((100 - GUIMain.currentSettings.soundVolumeGain) / 100)) - 1));
+        volume.setValue(vol);
         this.clip.start();
         //sepl.incrementAndGet(); TODO counter
     }
