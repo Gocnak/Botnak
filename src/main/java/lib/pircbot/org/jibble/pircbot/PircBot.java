@@ -113,7 +113,7 @@ public class PircBot {
             socketIn = socket.getInputStream();
             socketOut = socket.getOutputStream();
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
             return false;
         }
 

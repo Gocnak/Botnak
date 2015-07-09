@@ -43,7 +43,7 @@ public class GUIUpdate extends JFrame {
             text = stanSB.toString();
             return true;
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
         return false;
     }

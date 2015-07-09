@@ -241,7 +241,7 @@ public class Utils {
             }
             out.close();
         } catch (IOException e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -863,7 +863,7 @@ public class Utils {
             Pattern.compile(toCheck);
             return true;
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
             return false;
         }
     }
@@ -893,7 +893,8 @@ public class Utils {
             }
             toRead.close();
         } catch (Exception e) {
-            GUIMain.log("Failed to read buffered reader due to exception: " + e.getMessage());
+            GUIMain.log("Failed to read buffered reader due to exception: ");
+            GUIMain.log(e);
         }
     }
 }

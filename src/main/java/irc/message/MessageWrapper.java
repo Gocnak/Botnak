@@ -34,7 +34,7 @@ public class MessageWrapper {
                 try {
                     prints.forEach(java.lang.Runnable::run);
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
             };
             if (EventQueue.isDispatchThread()) {
@@ -43,7 +43,7 @@ public class MessageWrapper {
                 try {
                     EventQueue.invokeLater(handler);
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
             }
         }

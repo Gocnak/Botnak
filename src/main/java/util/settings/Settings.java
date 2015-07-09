@@ -110,6 +110,7 @@ public class Settings {
     //Graphite = "lib.jtattoo.com.jtattoo.plaf.graphite.GraphiteLookAndFeel"
 
     public String date;
+    public float soundVolumeGain = 100;
 
     public Settings() {//default account
         modIcon = Settings.class.getResource("/image/mod.png");
@@ -281,7 +282,7 @@ public class Settings {
                     accountManager.addTask(new Task(null, Task.Type.CREATE_BOT_ACCOUNT, null));
                 }
             } catch (Exception e) {
-                GUIMain.log(e.getMessage());
+                GUIMain.log(e);
             }
         }
         if (type == 1) {//defaults
@@ -299,25 +300,25 @@ public class Settings {
                 try {
                     modIcon = new URL(p.getProperty("CustomMod", modIcon.toString()));
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
                 useBroad = Boolean.parseBoolean(p.getProperty("UseBroad", "false"));
                 try {
                     broadIcon = new URL(p.getProperty("CustomBroad", broadIcon.toString()));
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
                 useAdmin = Boolean.parseBoolean(p.getProperty("UseAdmin", "false"));
                 try {
                     adminIcon = new URL(p.getProperty("CustomAdmin", adminIcon.toString()));
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
                 useStaff = Boolean.parseBoolean(p.getProperty("UseStaff", "false"));
                 try {
                     staffIcon = new URL(p.getProperty("CustomStaff", staffIcon.toString()));
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
                 cleanupChat = Boolean.parseBoolean(p.getProperty("ClearChat", "true"));
                 logChat = Boolean.parseBoolean(p.getProperty("LogChat", "false"));
@@ -331,7 +332,7 @@ public class Settings {
                 botReplyType = Integer.parseInt(p.getProperty("BotReplyType", "0"));
                 GUIMain.log("Loaded defaults!");
             } catch (Exception e) {
-                GUIMain.log(e.getMessage());
+                GUIMain.log(e);
             }
         }
     }
@@ -356,7 +357,7 @@ public class Settings {
             try {
                 p.store(new FileWriter(accountsFile), "Account Info");
             } catch (IOException e) {
-                GUIMain.log(e.getMessage());
+                GUIMain.log(e);
             }
         }
         if (type == 1) {//deaults data
@@ -389,7 +390,7 @@ public class Settings {
             try {
                 p.store(new FileWriter(defaultsFile), "Default Settings");
             } catch (IOException e) {
-                GUIMain.log(e.getMessage());
+                GUIMain.log(e);
             }
         }
     }
@@ -415,7 +416,7 @@ public class Settings {
             }
             GUIMain.log("Loaded sounds!");
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -435,7 +436,7 @@ public class Settings {
                 br.println(sb.toString());
             });
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -459,7 +460,7 @@ public class Settings {
                 toReturn = true;
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
         return toReturn;
     }
@@ -480,7 +481,7 @@ public class Settings {
                 Collections.shuffle(SoundEngine.getEngine().getDonationStack());
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -497,7 +498,7 @@ public class Settings {
             }
             GUIMain.log("Loaded user colors!");
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -510,7 +511,7 @@ public class Settings {
                             GUIMain.userColMap.get(s).getGreen() + "," +
                             GUIMain.userColMap.get(s).getBlue()));
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -527,7 +528,7 @@ public class Settings {
                 br.println(s + "," + fa.getRegex() + "," + fa.getFilePath());
             });
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -546,7 +547,7 @@ public class Settings {
             FaceManager.doneWithFaces = true;
             GUIMain.log("Loaded custom faces!");
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -561,7 +562,7 @@ public class Settings {
                         br.println(s + "," + fa.getRegex() + "," + Boolean.toString(fa.isEnabled()));
                     });
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -580,11 +581,11 @@ public class Settings {
                             Boolean.parseBoolean(split[2]));
                     FaceManager.twitchFaceMap.put(emoteID, tf);
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -635,7 +636,7 @@ public class Settings {
             }
             GUIMain.log("Loaded text commands!");
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -662,7 +663,7 @@ public class Settings {
                 }
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -689,7 +690,7 @@ public class Settings {
                 }
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -748,6 +749,7 @@ public class Settings {
         hardcoded.add(new ConsoleCommand("lastsubsound", ConsoleCommand.Action.SEE_PREV_SOUND_SUB, Constants.PERMISSION_ALL, null));
         hardcoded.add(new ConsoleCommand("lastdonationsound", ConsoleCommand.Action.SEE_PREV_SOUND_DON, Constants.PERMISSION_ALL, null));
         hardcoded.add(new ConsoleCommand("botreply", ConsoleCommand.Action.SEE_OR_SET_REPLY_TYPE, Constants.PERMISSION_DEV, null));
+        hardcoded.add(new ConsoleCommand("volume", ConsoleCommand.Action.SEE_OR_SET_VOLUME, Constants.PERMISSION_MOD, null));
 
         if (Utils.areFilesGood(ccommandsFile.getAbsolutePath())) {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(ccommandsFile.toURI().toURL().openStream()))) {
@@ -783,7 +785,7 @@ public class Settings {
                     }
                 }
             } catch (Exception e) {
-                GUIMain.log(e.getMessage());
+                GUIMain.log(e);
             }
         } else { //first time boot/reset/deleted file etc.
             GUIMain.conCommands.addAll(hardcoded.stream().collect(Collectors.toList()));
@@ -820,7 +822,7 @@ public class Settings {
                     GUIMain.keywordMap.put(split[0], new Color(r, g, b));
                 }
             } catch (Exception e) {
-                GUIMain.log(e.getMessage());
+                GUIMain.log(e);
             }
         } else {
             if (accountManager.getUserAccount() != null) {
@@ -838,7 +840,7 @@ public class Settings {
                 br.println(word + "," + c.getRed() + "," + c.getGreen() + "," + c.getBlue());
             });
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -849,7 +851,7 @@ public class Settings {
         try (PrintWriter br = new PrintWriter(subIconsFile)) {
             FaceManager.subIconSet.stream().forEach(i -> br.println(i.getChannel() + "," + i.getFileLoc()));
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -862,7 +864,7 @@ public class Settings {
             }
             GUIMain.log("Loaded subscriber icons!");
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -884,7 +886,7 @@ public class Settings {
             }
             GUIMain.log("Loaded donors!");
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -893,7 +895,7 @@ public class Settings {
         try (PrintWriter br = new PrintWriter(donatorsFile)) {
             donationManager.getDonors().stream().forEach(d -> br.println(d.getName() + "," + d.getDonated()));
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -908,7 +910,7 @@ public class Settings {
                     br.println(d.getDonationID() + "[" + d.getFromWho() + "[" + d.getNote() + "["
                             + d.getAmount() + "[" + Instant.ofEpochMilli(d.getDateReceived().getTime()).toString()));
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -942,7 +944,7 @@ public class Settings {
                 GUIMain.log("Loaded donations!");
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -960,7 +962,7 @@ public class Settings {
                     s -> br.println(s.getName() + "[" + s.getStarted().toString() + "["
                             + String.valueOf(s.isActive()) + "[" + s.getStreak()));
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -982,7 +984,7 @@ public class Settings {
             if (!subscribers.isEmpty()) subscriberManager.fillSubscribers(subscribers);
             GUIMain.log("Loaded subscribers!");
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -1034,7 +1036,7 @@ public class Settings {
                 }
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -1084,7 +1086,7 @@ public class Settings {
             GUIMain.channelPane.setSelectedIndex(index);
             GUIMain.log("Loaded tabs!");
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -1102,7 +1104,7 @@ public class Settings {
             }
             GUIMain.log("Loaded name faces!");
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -1130,7 +1132,7 @@ public class Settings {
         try (PrintWriter pr = new PrintWriter(lafFile)) {
             pr.println(lookAndFeel);
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -1167,7 +1169,7 @@ public class Settings {
             pr.println("p" + GUIMain.instance.getLocationOnScreen().x + "," + GUIMain.instance.getLocationOnScreen().y);
             pr.println("s" + GUIMain.instance.getSize().getWidth() + "," + GUIMain.instance.getSize().getHeight());
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 }

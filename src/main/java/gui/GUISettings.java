@@ -123,7 +123,7 @@ public class GUISettings extends JFrame {
                 GUIMain.currentSettings.staffIcon = GUISettings.class.getResource("/image/staff.png");
             }
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
 
         //sounds
@@ -200,7 +200,7 @@ public class GUISettings extends JFrame {
                     }
 
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
             }
         }
@@ -381,7 +381,7 @@ public class GUISettings extends JFrame {
             icon.getImage().flush();
             label.setIcon(icon);
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log(e);
         }
     }
 
@@ -1492,6 +1492,8 @@ public class GUISettings extends JFrame {
             if (!Utils.checkText(commandField.getText()).equals("")) {
                 if (filePaths.length > 0) {
                     String command = commandField.getText();
+                    if(command.startsWith("!"))
+                        command = command.substring(1);
                     //update the tree
                     DefaultTreeModel model = (DefaultTreeModel) soundTree.getModel();
                     DefaultMutableTreeNode root = (DefaultMutableTreeNode) model.getRoot();

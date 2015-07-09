@@ -449,6 +449,19 @@ public class IRCBot extends MessageHandler {
                         case SEE_OR_SET_REPLY_TYPE:
                             commandResponse = parseReplyType(first, botnakUserName);
                             break;
+                        case SEE_OR_SET_VOLUME:
+                            if (first == null || first.equals("")) {
+                                getBot().sendMessage(channel, "Volume is " + String.format("%.1f", GUIMain.currentSettings.soundVolumeGain));
+                            } else {
+                                Float volume = Float.parseFloat(first);
+                                if (volume > 100F)
+                                    volume = 100F;
+                                else if (volume < 0F)
+                                    volume = 0F;
+                                GUIMain.currentSettings.soundVolumeGain = volume;
+                                getBot().sendMessage(channel, "Volume set to " + String.format("%.1f", GUIMain.currentSettings.soundVolumeGain));
+                            }
+                            break;
                         default:
                             break;
 

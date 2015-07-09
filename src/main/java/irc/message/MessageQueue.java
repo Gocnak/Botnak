@@ -78,7 +78,7 @@ public class MessageQueue extends Thread {
                     }
                     addToQueue(wrap);
                 } catch (Exception e) {
-                    GUIMain.log(e.getMessage());
+                    GUIMain.log(e);
                 }
             });
         }
