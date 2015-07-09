@@ -414,9 +414,9 @@ abstract public class AbstractLookAndFeel extends MetalLookAndFeel {
                 "Tree.textForeground", getInputForegroundColor(),
                 "Tree.textBackground", getInputBackgroundColor(),
 
-                "Tree.openIcon", getIconFactory().getTreeFolderIcon(),
-                "Tree.closedIcon", getIconFactory().getTreeFolderIcon(),
-                "Tree.leafIcon", getIconFactory().getTreeLeafIcon(),
+                "Tree.openIcon", new ImageIcon()/*getIconFactory().getTreeFolderIcon()*/,
+                "Tree.closedIcon", new ImageIcon()/*getIconFactory().getTreeFolderIcon()*/,
+                "Tree.leafIcon", new ImageIcon()/*getIconFactory().getTreeLeafIcon()*/,
                 "Tree.expandedIcon", getIconFactory().getTreeExpandedIcon(),
                 "Tree.collapsedIcon", getIconFactory().getTreeCollapsedIcon(),
                 "Tree.selectionBorderColor", getFocusCellColor(),

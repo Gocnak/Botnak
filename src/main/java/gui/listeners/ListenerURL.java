@@ -1,6 +1,6 @@
 package gui.listeners;
 
-import gui.GUIMain;
+import util.Utils;
 
 import javax.swing.*;
 import javax.swing.text.AttributeSet;
@@ -11,15 +11,11 @@ import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.net.URI;
 
 /**
  * Created by Nick on 12/31/13.
  */
 public class ListenerURL extends MouseAdapter {
-
-    public ListenerURL() {
-    }
 
     @Override
     public void mouseReleased(MouseEvent e) {
@@ -34,13 +30,7 @@ public class ListenerURL extends MouseAdapter {
                 AttributeSet a = el.getAttributes();
                 String href = (String) a.getAttribute(HTML.Attribute.HREF);
                 if (href != null) {
-                    try {
-                        Desktop desktop = Desktop.getDesktop();
-                        URI uri = new URI(href);
-                        desktop.browse(uri);
-                    } catch (Exception ev) {
-                        GUIMain.log((ev.getMessage()));
-                    }
+                    Utils.openWebPage(href);
                 }
             }
         }

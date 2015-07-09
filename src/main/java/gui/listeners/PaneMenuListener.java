@@ -3,13 +3,13 @@ package gui.listeners;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.GUIMain;
+import gui.GUIViewerList;
 import util.Utils;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.net.URI;
 
 /**
  * Created by Nick on 1/18/14.
@@ -37,8 +37,9 @@ public class PaneMenuListener implements ActionListener {
                 }
             } else if (text.startsWith("View viewer")) {
                 if (pane != null) {
-                    //TODO create an alphabetically sorted viewer list in a JPanel or something, issue #60
-                    //which has clickable names that will pop out viewer stats
+                    GUIViewerList newVL = new GUIViewerList(pane.getChannel());
+                    newVL.setVisible(true);
+                    GUIMain.viewerLists.put(pane.getChannel(), newVL);
                 }
             } else if (text.startsWith("Remove ")) {
                 if (pane != null) {
@@ -59,16 +60,10 @@ public class PaneMenuListener implements ActionListener {
                     ccp.disbandTab();
                 }
             } else if (text.startsWith("Go to")) {
-                try {
-                    Desktop desktop = Desktop.getDesktop();
-                    //ex: Go to gocnak's channel
-                    //    0123456     ^ substring
-                    String name = text.substring(6, text.indexOf("'"));
-                    URI uri = new URI("http://twitch.tv/" + name);
-                    desktop.browse(uri);
-                } catch (Exception ev) {
-                    GUIMain.log((ev.getMessage()));
-                }
+                //ex: Go to gocnak's channel
+                //    0123456     ^ substring
+                String name = text.substring(6, text.indexOf("'"));
+                Utils.openWebPage("http://twitch.tv/" + name);
             } else if (text.startsWith("Clear ")) {
                 if (pane == null) pane = Utils.getCombinedChatPane(GUIMain.channelPane.getSelectedIndex());
                 if (pane != null) { //The combined could return null, still have to check
@@ -88,7 +83,7 @@ public class PaneMenuListener implements ActionListener {
                 String channel = source.getText();
                 if (channel != null) {
                     CombinedChatPane ccp = Utils.getCombinedChatPane(GUIMain.channelPane.getSelectedIndex());
-                    if (ccp.getActiveChannel().equalsIgnoreCase(channel)) {
+                    if (ccp == null || ccp.getActiveChannel().equalsIgnoreCase(channel)) {
                         return;
                     }
                     ccp.setActiveChannel(channel);

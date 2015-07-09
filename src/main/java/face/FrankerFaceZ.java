@@ -5,11 +5,9 @@ import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import util.Utils;
 
-import javax.net.ssl.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 
 /**
@@ -30,44 +28,16 @@ public class FrankerFaceZ extends ToggleableFace {
     }
 
     /**
-     *
+     * Parses FFZ API for faces
      */
     static class FFZParser {
 
         private static void parseSet(int set, ArrayList<FrankerFaceZ> collection) {
             try {
-                // Since FFZ is self-signed, we need to either have that cert ... Or just don't care.
-                // Since FFZ is kind of whatever, let's just choose to look the other way on all certificates
-                // @author Chrisazy
-                TrustManager[] trustAllCerts = new TrustManager[]{
-                        new X509TrustManager() {
-                            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                                return null;
-                            }
-
-                            public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                            }
-
-                            public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                            }
-                        }
-                };
-                // Install the all-trusting trust manager
-                SSLContext sc = SSLContext.getInstance("SSL");
-                sc.init(null, trustAllCerts, new java.security.SecureRandom());
-                HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-
-                // Create all-trusting host name verifier
-                HostnameVerifier allHostsValid = ((String hostname, SSLSession session) -> true);
-
-                // Install the all-trusting host verifier
-                HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-
-                // Now we can safely ignore all safety for FFZ api!
-                URL url = new URL("https://api.frankerfacez.com/v1/set/" + set);
+                URL url = new URL("http://api.frankerfacez.com/v1/set/" + set);
                 BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
                 StringBuilder sb = new StringBuilder();
-                Utils.parseBufferedReader(br, sb);
+                Utils.parseBufferedReader(br, sb, false);
                 JSONObject init = new JSONObject(sb.toString());
                 if (!init.has("error")) {
                     JSONObject setObj = init.getJSONObject("set");
@@ -80,8 +50,7 @@ public class FrankerFaceZ extends ToggleableFace {
                     }
                 }
             } catch (Exception e) {
-                GUIMain.log("Failed to parse FFZ Channel due to Exception: ");
-                GUIMain.log(e);
+                GUIMain.log("Failed to parse FFZ Channel due to Exception: " + e.getMessage());
             }
         }
 
@@ -91,10 +60,10 @@ public class FrankerFaceZ extends ToggleableFace {
                 return;
             }
             try {
-                URL url = new URL("https://api.frankerfacez.com/v1/_room/" + channel);
+                URL url = new URL("http://api.frankerfacez.com/v1/_room/" + channel);
                 BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
                 StringBuilder sb = new StringBuilder();
-                Utils.parseBufferedReader(br, sb);
+                Utils.parseBufferedReader(br, sb, false);
                 JSONObject init = new JSONObject(sb.toString());
                 if (!init.has("error")) {
                     JSONObject room = init.getJSONObject("room");

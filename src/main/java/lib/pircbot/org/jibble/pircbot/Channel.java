@@ -97,4 +97,9 @@ public class Channel {
         mods.clear();
         subscribers.clear();
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return (obj instanceof Channel && ((Channel) obj).getName().equals(this.getName()));
+    }
 }

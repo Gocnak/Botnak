@@ -23,7 +23,6 @@ public class TokenListener extends Thread {
         this.field = field;
     }
 
-
     @Override
     public void run() {
         while (!GUIMain.shutDown && timeoutTimer.isRunning()) {
@@ -74,6 +73,4 @@ public class TokenListener extends Thread {
         header += "Content-Type: text/html; charset=UTF-8\n\n";
         return header;
     }
-
-
 }
