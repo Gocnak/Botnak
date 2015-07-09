@@ -64,7 +64,8 @@ public class ConsoleCommand {
         SHOW_UPTIME,
         SEE_PREV_SOUND_SUB,
         SEE_PREV_SOUND_DON,
-        SEE_OR_SET_REPLY_TYPE
+        SEE_OR_SET_REPLY_TYPE,
+        SEE_OR_SET_VOLUME
     }
 
     /**
