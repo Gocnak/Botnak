@@ -23,6 +23,5 @@ public class NewTabListener extends MouseAdapter {
             }
             GUIMain.streams.setVisible(true);
         }
-        super.mouseReleased(e);
     }
 }

@@ -50,6 +50,7 @@ public class GUIMain extends JFrame {
     public static GUISettings settings = null;
     public static GUIStreams streams = null;
     public static GUIAbout aboutGUI = null;
+    public static GUIStatus statusGUI = null;
     public static AuthorizeAccountGUI accountGUI = null;
 
     public static boolean shutDown = false;
@@ -293,7 +294,12 @@ public class GUIMain extends JFrame {
     }
 
     private void updateStatusOptionActionPerformed() {
-        // TODO add your code here
+        if (statusGUI == null) {
+            statusGUI = new GUIStatus();
+        }
+        if (!statusGUI.isVisible()) {
+            statusGUI.setVisible(true);
+        }
     }
 
     private void subOnlyToggleItemStateChanged(ItemEvent e) {

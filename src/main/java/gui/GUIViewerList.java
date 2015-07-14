@@ -26,7 +26,7 @@ public class GUIViewerList extends JFrame {
 
     public GUIViewerList(String channel) {
         initComponents(channel);
-        UserManager.toUpdate.setEndIn(0);//force an update
+        UserManager.toUpdate.setEndIn(0L);//force an update
     }
 
     public enum ViewerType {

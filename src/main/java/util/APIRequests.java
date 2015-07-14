@@ -209,7 +209,7 @@ public class APIRequests {
          * @param game    The game to set.
          * @return The response Botnak has for the method.
          */
-        private static Response setStatusOfStream(String key, String channel, String title, String game) {
+        public static Response setStatusOfStream(String key, String channel, String title, String game) {
             Response toReturn = new Response();
             try {
                 if (channel.contains("#")) channel = channel.replace("#", "");
