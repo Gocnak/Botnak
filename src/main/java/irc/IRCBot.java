@@ -87,6 +87,12 @@ public class IRCBot extends MessageHandler {
     }
 
     @Override
+    public void onJTVMessage(String channel, String line) {
+        //TODO tell the main client that the bot is banned
+        super.onJTVMessage(channel, line);
+    }
+
+    @Override
     public void onMessage(String channel, String sender, String message) {
         if (message != null && channel != null && sender != null && GUIMain.currentSettings.accountManager.getViewer() != null) {
             String botnakUserName = GUIMain.currentSettings.accountManager.getUserAccount().getName();
@@ -271,11 +277,18 @@ public class IRCBot extends MessageHandler {
                             break;
                         case SET_STREAM_TITLE:
                             commandResponse = APIRequests.Twitch.setStreamStatus(key, channel, message, true);
+                            if (commandResponse.isSuccessful()) {
+                                if (GUIMain.statusGUI != null && GUIMain.statusGUI.isVisible()) {
+                                    GUIMain.statusGUI.updateStatusComponents();
+                                }
+                            }
                             break;
                         case SEE_STREAM_TITLE:
                             String title = APIRequests.Twitch.getTitleOfStream(channel);
                             if (!"".equals(title)) {
                                 getBot().sendMessage(channel, "The title of the stream is: " + title);
+                            } else {
+                                getBot().sendMessage(channel, "The stream currently has no title!");
                             }
                             break;
                         case SEE_STREAM_GAME:
@@ -288,29 +301,15 @@ public class IRCBot extends MessageHandler {
                             break;
                         case SET_STREAM_GAME:
                             commandResponse = APIRequests.Twitch.setStreamStatus(key, channel, message, false);
+                            if (commandResponse.isSuccessful()) {
+                                if (GUIMain.statusGUI != null && GUIMain.statusGUI.isVisible()) {
+                                    GUIMain.statusGUI.updateStatusComponents();
+                                }
+                            }
                             break;
                         case PLAY_ADVERT:
                             if (key != null) {
-                                if (key.canPlayAd()) {
-                                    int length = Utils.getTime(first);
-                                    if (length == -1) length = 30;
-                                    if (APIRequests.Twitch.playAdvert(key.getKey(), channel, length)) {
-                                        getBot().sendMessage(channel, "Playing an ad for " + length + " seconds!");
-                                        lastAd = System.currentTimeMillis();
-                                    } else {
-                                        getBot().sendMessage(channel, "Error playing an ad!");
-                                        long diff = System.currentTimeMillis() - lastAd;
-                                        if (lastAd > 0 && (diff < 480000)) {
-                                            SimpleDateFormat sdf = new SimpleDateFormat("m:ss");
-                                            Date d = new Date(diff);
-                                            Date toPlay = new Date(480000 - diff);
-                                            getBot().sendMessage(channel, "Last ad was was only " + sdf.format(d)
-                                                    + " ago! You must wait " + sdf.format(toPlay) + " to play another ad!");
-                                        }
-                                    }
-                                } else {
-                                    getBot().sendMessage(channel, "This OAuth key cannot play an advertisement!");
-                                }
+                                playAdvert(key, first, channel);
                             }
                             break;
                         case START_RAFFLE:
@@ -326,6 +325,7 @@ public class IRCBot extends MessageHandler {
                                     //because right now it's just "Everyone" unless specified with the int param
                                     try {
                                         perm = Integer.parseInt(split[3]);
+                                        perm = Utils.capNumber(0, 3, perm);
                                     } catch (Exception ignored) {//default to the specified value
                                     }
                                 }
@@ -450,16 +450,17 @@ public class IRCBot extends MessageHandler {
                             commandResponse = parseReplyType(first, botnakUserName);
                             break;
                         case SEE_OR_SET_VOLUME:
-                            if (first == null || first.equals("")) {
-                                getBot().sendMessage(channel, "Volume is " + String.format("%.1f", GUIMain.currentSettings.soundVolumeGain));
+                            if ("".equals(first)) {
+                                getBot().sendMessage(channel, "The current Sound volume is " + String.format("%.1f", GUIMain.currentSettings.soundVolumeGain));
                             } else {
-                                Float volume = Float.parseFloat(first);
-                                if (volume > 100F)
-                                    volume = 100F;
-                                else if (volume < 0F)
-                                    volume = 0F;
-                                GUIMain.currentSettings.soundVolumeGain = volume;
-                                getBot().sendMessage(channel, "Volume set to " + String.format("%.1f", GUIMain.currentSettings.soundVolumeGain));
+                                try {
+                                    Float volume = Float.parseFloat(first);
+                                    volume = Utils.capNumber(0F, 100F, volume);
+                                    GUIMain.currentSettings.soundVolumeGain = volume;
+                                    getBot().sendMessage(channel, "The Sound volume was successfully set to " + String.format("%.1f", GUIMain.currentSettings.soundVolumeGain));
+                                } catch (Exception e) {
+                                    getBot().sendMessage(channel, "Failed to change Sound volume! Usage: \"!volume (number)\"");
+                                }
                             }
                             break;
                         default:
@@ -505,20 +506,47 @@ public class IRCBot extends MessageHandler {
             String[] split = message.split(" ");
             int time = Utils.getTime(split[1]);
             if (time > 0) {
+                //TODO update the GUIVote if there is one
                 poll = new Vote(channel, time, message.substring(second).split("\\]"));
                 poll.start();
             }
         }
     }
 
-    private Response parseReplyType(String first, String botnakUser) {
+    public Response playAdvert(Oauth key, String first, String channel) {
+        Response r = new Response();
+        if (key.canPlayAd()) {
+            int length = Utils.getTime(first);
+            if (length == -1) length = 30;
+            if (APIRequests.Twitch.playAdvert(key.getKey(), channel, length)) {
+                r.wasSuccessful();
+                r.setResponseText("Playing an ad for " + length + " seconds!");
+                lastAd = System.currentTimeMillis();
+            } else {
+                r.setResponseText("Error playing an ad!");
+                long diff = System.currentTimeMillis() - lastAd;
+                if (lastAd > 0 && (diff < 480000)) {
+                    SimpleDateFormat sdf = new SimpleDateFormat("m:ss");
+                    Date d = new Date(diff);
+                    Date toPlay = new Date(480000 - diff);
+                    r.setResponseText("Error playing last ad! Last ad was was only " + sdf.format(d)
+                            + " ago! You must wait " + sdf.format(toPlay) + " to play another ad!");
+                }
+            }
+        } else {
+            r.setResponseText("The current User OAuth key cannot play an advertisement!");
+        }
+        return r;
+    }
+
+    public Response parseReplyType(String first, String botnakUser) {
         Response toReturn = new Response();
         try {
             if (!"".equals(first)) {
                 int perm = Integer.parseInt(first);
-                if (perm > 2) perm = 2;
-                else if (perm < 0) perm = 0;
+                perm = Utils.capNumber(0, 2, perm);
                 GUIMain.currentSettings.botReplyType = perm;
+                GUIMain.instance.updateBotReplyPerm(perm);
                 toReturn.setResponseText("Successfully changed the bot reply type (for other channels) to: " + getReplyType(perm, botnakUser));
             } else {
                 toReturn.setResponseText("Current bot reply type for other channels is: " +

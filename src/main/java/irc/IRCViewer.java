@@ -138,6 +138,25 @@ public class IRCViewer extends MessageHandler {
     }
 
     @Override
+    public void onRoomstate(String channel, String tags) {
+        if (channel.contains(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
+            tags = tags.substring(1);
+            String[] parts = tags.split(";");
+            for (String part : parts) {
+                String[] keyValPairs = part.split("=");
+                String key = keyValPairs[0].toLowerCase();
+                if (keyValPairs.length <= 1) continue;
+                String value = keyValPairs[1];
+                if ("subs-only".equalsIgnoreCase(key)) {
+                    GUIMain.instance.updateSubsOnly(value);
+                } else if ("slow".equalsIgnoreCase(key)) {
+                    GUIMain.instance.updateSlowMode(value);
+                }
+            }
+        }
+    }
+
+    @Override
     public void onConnect() {
         GUIMain.currentSettings.channelManager.addUser(new User(getViewer().getNick()));
         GUIMain.channelSet.forEach(this::doConnect);

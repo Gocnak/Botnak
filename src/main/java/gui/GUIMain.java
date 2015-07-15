@@ -14,6 +14,7 @@ import thread.TabPulse;
 import thread.ThreadEngine;
 import thread.heartbeat.*;
 import util.Constants;
+import util.Response;
 import util.Utils;
 import util.comm.Command;
 import util.comm.ConsoleCommand;
@@ -53,7 +54,6 @@ public class GUIMain extends JFrame {
     public static GUIStreams streams = null;
     public static GUIAbout aboutGUI = null;
     public static GUIStatus statusGUI = null;
-    public static AuthorizeAccountGUI accountGUI = null;
 
     public static boolean shutDown = false;
 
@@ -81,12 +81,12 @@ public class GUIMain extends JFrame {
         combinedChatPanes = new CopyOnWriteArraySet<>();
         viewerLists = new ConcurrentHashMap<>();
         userResponses = new ArrayList<>();
+        chatPanes = new ConcurrentHashMap<>();
         ThreadEngine.init();
         FaceManager.init();
         SoundEngine.init();
         StyleConstants.setForeground(norm, Color.white);
         initComponents();
-        chatPanes = new ConcurrentHashMap<>();
         systemLogsPane = new ChatPane("System Logs", allChatsScroll, allChats, 0);
         chatPanes.put("System Logs", systemLogsPane);
         currentSettings = new Settings();
@@ -299,8 +299,14 @@ public class GUIMain extends JFrame {
         // TODO add your code here
     }
 
-    private void soundsToggleItemStateChanged(ItemEvent e) {
-        // TODO add your code here
+    private void soundsToggleItemStateChanged() {
+        Response r = SoundEngine.getEngine().toggleSound(null, false);
+        if (r.isSuccessful()) {
+            if (bot != null) {
+                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                        r.getResponseText());
+            }
+        }
     }
 
     private void manageTextCommandsOptionActionPerformed() {
@@ -316,8 +322,11 @@ public class GUIMain extends JFrame {
         }
     }
 
-    private void subOnlyToggleItemStateChanged(ItemEvent e) {
-        //TODO viewer.getViewer().sendRawMessage();
+    private void subOnlyToggleItemStateChanged() {
+        if (viewer != null) {
+            viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                    subOnlyToggle.isSelected() ? "/subscribers" : "/subscribersoff");
+        }
     }
 
     private void projectGithubOptionActionPerformed() {
@@ -336,6 +345,98 @@ public class GUIMain extends JFrame {
             aboutGUI.setVisible(true);
     }
 
+    public void updateSoundDelay(int secDelay) {
+        switch (secDelay) {
+            case 0:
+                soundDelayOffOption.setSelected(true);
+                break;
+            case 5:
+                soundDelay5secOption.setSelected(true);
+                break;
+            case 10:
+                soundDelay10secOption.setSelected(true);
+                break;
+            case 20:
+                soundDelay20secOption.setSelected(true);
+                break;
+            default:
+                soundDelayCustomOption.setSelected(true);
+                soundDelayCustomOption.setText("Custom: " + secDelay + " seconds");
+                break;
+        }
+        if (!soundDelayCustomOption.isSelected()) soundDelayCustomOption.setText("Custom (use chat)");
+    }
+
+    public void updateSoundPermission(int permission) {
+        switch (permission) {
+            case 0:
+                soundPermEveryoneOption.setSelected(true);
+                break;
+            case 1:
+                soundPermSDMBOption.setSelected(true);
+                break;
+            case 2:
+                soundPermDMBOption.setSelected(true);
+                break;
+            case 3:
+                soundPermModAndBroadOption.setSelected(true);
+                break;
+            case 4:
+                soundPermBroadOption.setSelected(true);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void updateSoundToggle(boolean newBool) {
+        soundsToggle.setSelected(newBool);
+    }
+
+    public void updateSubsOnly(String num) {
+        subOnlyToggle.setSelected("1".equals(num));
+    }
+
+    public void updateSlowMode(String slowModeAmount) {
+        switch (slowModeAmount) {
+            case "0":
+                slowModeOffOption.setSelected(true);
+                break;
+            case "5":
+                slowMode5secOption.setSelected(true);
+                break;
+            case "10":
+                slowMode10secOption.setSelected(true);
+                break;
+            case "15":
+                slowMode15secOption.setSelected(true);
+                break;
+            case "30":
+                slowMode30secOption.setSelected(true);
+                break;
+            default:
+                slowModeCustomOption.setSelected(true);
+                slowModeCustomOption.setText("Custom: " + slowModeAmount + " seconds");
+                break;
+        }
+        if (!slowModeCustomOption.isSelected()) slowModeCustomOption.setText("Custom (use chat)");
+    }
+
+    public void updateBotReplyPerm(int perm) {
+        switch (perm) {
+            case 2:
+                botReplyAll.setSelected(true);
+                break;
+            case 1:
+                botReplyJustYou.setSelected(true);
+                break;
+            case 0:
+                botReplyNobody.setSelected(true);
+                break;
+            default:
+                break;
+        }
+    }
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
@@ -348,9 +449,9 @@ public class GUIMain extends JFrame {
         exitOption = new JMenuItem();
         preferencesMenu = new JMenu();
         botReplyMenu = new JMenu();
-        radioButtonMenuItem1 = new JRadioButtonMenuItem();
-        radioButtonMenuItem3 = new JRadioButtonMenuItem();
-        radioButtonMenuItem2 = new JRadioButtonMenuItem();
+        botReplyAll = new JRadioButtonMenuItem();
+        botReplyJustYou = new JRadioButtonMenuItem();
+        botReplyNobody = new JRadioButtonMenuItem();
         autoReconnectToggle = new JCheckBoxMenuItem();
         alwaysOnTopToggle = new JCheckBoxMenuItem();
         settingsOption = new JMenuItem();
@@ -364,6 +465,7 @@ public class GUIMain extends JFrame {
         soundDelay10secOption = new JRadioButtonMenuItem();
         soundDelay20secOption = new JRadioButtonMenuItem();
         soundDelayCustomOption = new JRadioButtonMenuItem();
+        soundDelayCustomOption.setToolTipText("Set a custom sound delay with \"!setsound (time)\" in chat");
         soundPermissionMenu = new JMenu();
         soundPermEveryoneOption = new JRadioButtonMenuItem();
         soundPermSDMBOption = new JRadioButtonMenuItem();
@@ -387,6 +489,7 @@ public class GUIMain extends JFrame {
         slowMode15secOption = new JRadioButtonMenuItem();
         slowMode30secOption = new JRadioButtonMenuItem();
         slowModeCustomOption = new JRadioButtonMenuItem();
+        slowModeCustomOption.setToolTipText("Set a custom slow mode time with \"/slow (time in seconds)\" in chat");
         helpMenu = new JMenu();
         projectGithubOption = new JMenuItem();
         projectWikiOption = new JMenuItem();
@@ -445,18 +548,36 @@ public class GUIMain extends JFrame {
                     {
                         botReplyMenu.setText("Bot Reply");
 
-                        //---- radioButtonMenuItem1 ----
-                        radioButtonMenuItem1.setText("Reply to all");
-                        botReplyMenu.add(radioButtonMenuItem1);
+                        //---- botReplyAll ----
+                        botReplyAll.setText("Reply to all");
+                        botReplyAll.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = bot.parseReplyType("2", currentSettings.accountManager.getUserAccount().getName());
+                                logCurrent(r.getResponseText());
+                            }
+                        });
+                        botReplyMenu.add(botReplyAll);
 
-                        //---- radioButtonMenuItem3 ----
-                        radioButtonMenuItem3.setText("Reply to you");
-                        botReplyMenu.add(radioButtonMenuItem3);
+                        //---- botReplyJustYou ----
+                        botReplyJustYou.setText("Reply to you");
+                        botReplyJustYou.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = bot.parseReplyType("1", currentSettings.accountManager.getUserAccount().getName());
+                                logCurrent(r.getResponseText());
+                            }
+                        });
+                        botReplyMenu.add(botReplyJustYou);
 
-                        //---- radioButtonMenuItem2 ----
-                        radioButtonMenuItem2.setText("Reply to none");
-                        radioButtonMenuItem2.setSelected(true);
-                        botReplyMenu.add(radioButtonMenuItem2);
+                        //---- botReplyNobody ----
+                        botReplyNobody.setText("Reply to none");
+                        botReplyNobody.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = bot.parseReplyType("0", currentSettings.accountManager.getUserAccount().getName());
+                                logCurrent(r.getResponseText());
+                            }
+                        });
+                        botReplyNobody.setSelected(true);
+                        botReplyMenu.add(botReplyNobody);
                     }
                     preferencesMenu.add(botReplyMenu);
 
@@ -497,7 +618,7 @@ public class GUIMain extends JFrame {
                     //---- soundsToggle ----
                     soundsToggle.setText("Enable Sounds");
                     soundsToggle.setSelected(true);
-                    soundsToggle.addItemListener(e -> soundsToggleItemStateChanged(e));
+                    soundsToggle.addActionListener(e -> soundsToggleItemStateChanged());
                     toolsMenu.add(soundsToggle);
 
                     //======== soundDelayMenu ========
@@ -507,21 +628,46 @@ public class GUIMain extends JFrame {
                         //---- soundDelayOffOption ----
                         soundDelayOffOption.setText("None (Off)");
                         soundDelayOffOption.addActionListener(e -> {
-
+                            if (bot != null) {
+                                Response r = SoundEngine.getEngine().setSoundDelay("0");
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                            }
                         });
                         soundDelayMenu.add(soundDelayOffOption);
 
                         //---- soundDelay5secOption ----
                         soundDelay5secOption.setText("5 seconds");
+                        soundDelay5secOption.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = SoundEngine.getEngine().setSoundDelay("5");
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                            }
+                        });
                         soundDelayMenu.add(soundDelay5secOption);
 
                         //---- soundDelay10secOption ----
                         soundDelay10secOption.setText("10 seconds");
+                        soundDelay10secOption.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = SoundEngine.getEngine().setSoundDelay("10");
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                            }
+                        });
                         soundDelay10secOption.setSelected(true);
                         soundDelayMenu.add(soundDelay10secOption);
 
                         //---- soundDelay20secOption ----
                         soundDelay20secOption.setText("20 seconds");
+                        soundDelay20secOption.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = SoundEngine.getEngine().setSoundDelay("20");
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                            }
+                        });
                         soundDelayMenu.add(soundDelay20secOption);
 
                         //---- soundDelayCustomOption ----
@@ -537,23 +683,58 @@ public class GUIMain extends JFrame {
 
                         //---- soundPermEveryoneOption ----
                         soundPermEveryoneOption.setText("Everyone");
+                        soundPermEveryoneOption.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = SoundEngine.getEngine().setSoundPermission("0");
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                            }
+                        });
                         soundPermissionMenu.add(soundPermEveryoneOption);
 
                         //---- soundPermSDMBOption ----
                         soundPermSDMBOption.setText("Subs, Donors, Mods, Broadcaster");
+                        soundPermSDMBOption.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = SoundEngine.getEngine().setSoundPermission("1");
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                            }
+                        });
                         soundPermSDMBOption.setSelected(true);
                         soundPermissionMenu.add(soundPermSDMBOption);
 
                         //---- soundPermDMBOption ----
                         soundPermDMBOption.setText("Donors, Mods, Broadcaster");
+                        soundPermDMBOption.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = SoundEngine.getEngine().setSoundPermission("2");
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                            }
+                        });
                         soundPermissionMenu.add(soundPermDMBOption);
 
                         //---- soundPermModAndBroadOption ----
                         soundPermModAndBroadOption.setText("Mods and Broadcaster Only");
+                        soundPermModAndBroadOption.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = SoundEngine.getEngine().setSoundPermission("3");
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                            }
+                        });
                         soundPermissionMenu.add(soundPermModAndBroadOption);
 
                         //---- soundPermBroadOption ----
                         soundPermBroadOption.setText("Broadcaster Only");
+                        soundPermBroadOption.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = SoundEngine.getEngine().setSoundPermission("4");
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                            }
+                        });
                         soundPermissionMenu.add(soundPermBroadOption);
                     }
                     toolsMenu.add(soundPermissionMenu);
@@ -570,26 +751,116 @@ public class GUIMain extends JFrame {
 
                         //---- timeOption30sec ----
                         timeOption30sec.setText("30 sec");
+                        timeOption30sec.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
+                                        "30", currentSettings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                                ThreadEngine.submit(() -> {
+                                    try {
+                                        Thread.sleep(30000);
+                                        logCurrent("The advertisement has ended.");
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                });
+                            }
+                        });
                         runAdMenu.add(timeOption30sec);
 
                         //---- timeOption60sec ----
                         timeOption60sec.setText("1 min");
+                        timeOption60sec.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
+                                        "1m", currentSettings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                                ThreadEngine.submit(() -> {
+                                    try {
+                                        Thread.sleep(60000);
+                                        logCurrent("The advertisement has ended.");
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                });
+                            }
+                        });
                         runAdMenu.add(timeOption60sec);
 
                         //---- timeOption90sec ----
                         timeOption90sec.setText("1 min 30 sec");
+                        timeOption90sec.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
+                                        "1m30s", currentSettings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                                ThreadEngine.submit(() -> {
+                                    try {
+                                        Thread.sleep(90000);
+                                        logCurrent("The advertisement has ended.");
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                });
+                            }
+                        });
                         runAdMenu.add(timeOption90sec);
 
                         //---- timeOption120sec ----
                         timeOption120sec.setText("2 min");
+                        timeOption120sec.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
+                                        "2m", currentSettings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                                ThreadEngine.submit(() -> {
+                                    try {
+                                        Thread.sleep(120000);
+                                        logCurrent("The advertisement has ended.");
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                });
+                            }
+                        });
                         runAdMenu.add(timeOption120sec);
 
                         //---- timeOption150sec ----
                         timeOption150sec.setText("2 min 30 sec");
+                        timeOption150sec.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
+                                        "2m30s", currentSettings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                                ThreadEngine.submit(() -> {
+                                    try {
+                                        Thread.sleep(150000);
+                                        logCurrent("The advertisement has ended.");
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                });
+                            }
+                        });
                         runAdMenu.add(timeOption150sec);
 
                         //---- timeOption180sec ----
                         timeOption180sec.setText("3 min");
+                        timeOption180sec.addActionListener(e -> {
+                            if (bot != null) {
+                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
+                                        "3m", currentSettings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        r.getResponseText());
+                                ThreadEngine.submit(() -> {
+                                    try {
+                                        Thread.sleep(180000);
+                                        logCurrent("The advertisement has ended.");
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                });
+                            }
+                        });
                         runAdMenu.add(timeOption180sec);
                     }
                     toolsMenu.add(runAdMenu);
@@ -601,7 +872,7 @@ public class GUIMain extends JFrame {
 
                     //---- subOnlyToggle ----
                     subOnlyToggle.setText("Sub-only Chat");
-                    subOnlyToggle.addItemListener(e -> subOnlyToggleItemStateChanged(e));
+                    subOnlyToggle.addActionListener(e -> subOnlyToggleItemStateChanged());
                     toolsMenu.add(subOnlyToggle);
 
                     //======== slowModeMenu ========
@@ -610,23 +881,53 @@ public class GUIMain extends JFrame {
 
                         //---- slowModeOffOption ----
                         slowModeOffOption.setText("Off");
+                        slowModeOffOption.addActionListener(e -> {
+                            if (viewer != null) {
+                                viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        "/slowoff");
+                            }
+                        });
                         slowModeOffOption.setSelected(true);
                         slowModeMenu.add(slowModeOffOption);
 
                         //---- slowMode5secOption ----
                         slowMode5secOption.setText("5 seconds");
+                        slowMode5secOption.addActionListener(e -> {
+                            if (viewer != null) {
+                                viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        "/slow 5");
+                            }
+                        });
                         slowModeMenu.add(slowMode5secOption);
 
                         //---- slowMode10secOption ----
                         slowMode10secOption.setText("10 seconds");
+                        slowMode10secOption.addActionListener(e -> {
+                            if (viewer != null) {
+                                viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        "/slow 10");
+                            }
+                        });
                         slowModeMenu.add(slowMode10secOption);
 
                         //---- slowMode15secOption ----
                         slowMode15secOption.setText("15 seconds");
+                        slowMode15secOption.addActionListener(e -> {
+                            if (viewer != null) {
+                                viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        "/slow 15");
+                            }
+                        });
                         slowModeMenu.add(slowMode15secOption);
 
                         //---- slowMode30secOption ----
                         slowMode30secOption.setText("30 seconds");
+                        slowMode30secOption.addActionListener(e -> {
+                            if (viewer != null) {
+                                viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                        "/slow 30");
+                            }
+                        });
                         slowModeMenu.add(slowMode30secOption);
 
                         //---- slowModeCustomOption ----
@@ -740,9 +1041,9 @@ public class GUIMain extends JFrame {
 
         //---- botReplyGroup ----
         ButtonGroup botReplyGroup = new ButtonGroup();
-        botReplyGroup.add(radioButtonMenuItem1);
-        botReplyGroup.add(radioButtonMenuItem3);
-        botReplyGroup.add(radioButtonMenuItem2);
+        botReplyGroup.add(botReplyAll);
+        botReplyGroup.add(botReplyJustYou);
+        botReplyGroup.add(botReplyNobody);
 
         //---- soundDelayGroup ----
         ButtonGroup soundDelayGroup = new ButtonGroup();
@@ -781,9 +1082,9 @@ public class GUIMain extends JFrame {
     private JMenuItem exitOption;
     private JMenu preferencesMenu;
     private JMenu botReplyMenu;
-    private JRadioButtonMenuItem radioButtonMenuItem1;
-    private JRadioButtonMenuItem radioButtonMenuItem3;
-    private JRadioButtonMenuItem radioButtonMenuItem2;
+    private JRadioButtonMenuItem botReplyAll;
+    private JRadioButtonMenuItem botReplyJustYou;
+    private JRadioButtonMenuItem botReplyNobody;
     private JCheckBoxMenuItem autoReconnectToggle;
     private JCheckBoxMenuItem alwaysOnTopToggle;
     private JMenuItem settingsOption;

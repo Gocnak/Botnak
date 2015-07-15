@@ -26,8 +26,10 @@ public class GUIAbout extends JFrame {
             StringBuilder stanSB = new StringBuilder();
             Utils.parseBufferedReader(reader, stanSB, true);
             versionInformationArea.setText(stanSB.toString());
+            versionInformationArea.setCaretPosition(0);
         } catch (Exception e) {
-            GUIMain.log(e.getMessage());
+            GUIMain.log("Failed to download version info: ");
+            GUIMain.log(e);
             versionInformationArea.setText("Failed to download version information!");
         }
     }
@@ -35,13 +37,13 @@ public class GUIAbout extends JFrame {
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner Evaluation license - Nick K
-        label2 = new JLabel();
-        label3 = new JLabel();
-        separator1 = new JSeparator();
-        label1 = new JLabel();
-        scrollPane1 = new JScrollPane();
+        JLabel label2 = new JLabel();
+        JLabel label3 = new JLabel();
+        JSeparator separator1 = new JSeparator();
+        JLabel label1 = new JLabel();
+        JScrollPane scrollPane1 = new JScrollPane();
         versionInformationArea = new JTextArea();
-        label4 = new JLabel();
+        JLabel label4 = new JLabel();
 
         //======== this ========
         setTitle("About Botnak v" + Constants.VERSION);
@@ -114,17 +116,7 @@ public class GUIAbout extends JFrame {
         );
         pack();
         setLocationRelativeTo(getOwner());
-        // JFormDesigner - End of component initialization  //GEN-END:initComponents
     }
 
-    // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
-    // Generated using JFormDesigner Evaluation license - Nick K
-    private JLabel label2;
-    private JLabel label3;
-    private JSeparator separator1;
-    private JLabel label1;
-    private JScrollPane scrollPane1;
     private JTextArea versionInformationArea;
-    private JLabel label4;
-    // JFormDesigner - End of variables declaration  //GEN-END:variables
 }

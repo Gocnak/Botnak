@@ -132,4 +132,13 @@ public abstract class MessageHandler {
      */
     public void onJTVMessage(String channel, String line) {
     }
+
+    /**
+     * Called when the state of a room is changing.
+     *
+     * @param channel The channel the ROOMSTATE is for.
+     * @param tags    The tags (what is changing).
+     */
+    public void onRoomstate(String channel, String tags) {
+    }
 }

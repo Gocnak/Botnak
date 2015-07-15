@@ -1,6 +1,7 @@
 package gui;
 
 import irc.account.Oauth;
+import thread.ThreadEngine;
 import util.APIRequests;
 import util.Response;
 
@@ -12,45 +13,84 @@ import java.awt.*;
  */
 public class GUIStatus extends JFrame {
 
+    public String getChannel() {
+        return GUIMain.currentSettings.accountManager.getUserAccount() == null ? null :
+                GUIMain.currentSettings.accountManager.getUserAccount().getName();
+    }
+
+    public Oauth getKey() {
+        return GUIMain.currentSettings.accountManager.getUserAccount() == null ? null :
+                GUIMain.currentSettings.accountManager.getUserAccount().getKey();
+    }
+
     public GUIStatus() {
         initComponents();
     }
 
     private void playingGameToggleStateChanged() {
-        gameText.setEnabled(playingGameToggle.isEnabled());
+        gameText.setEnabled(!playingGameToggle.isSelected());
     }
 
     private void saveButtonActionPerformed() {
-        Oauth key = GUIMain.currentSettings.accountManager.getUserAccount().getKey();
-        Response r = APIRequests.Twitch.setStatusOfStream(key.getKey(), "gocnak", gameText.isEnabled() ? gameText.getText() : "", titleText.getText());
+        if (getChannel() == null || getKey() == null) {
+            setTitle("Please Login First!");
+            return;
+        }
+        playingGameToggle.setSelected("".equals(gameText.getText()));
+        Response r = APIRequests.Twitch.setStatusOfStream(getKey().getKey(), getChannel(), titleText.getText(),
+                gameText.isEnabled() ? gameText.getText() : "");
+        if (r.isSuccessful()) {
+            setTitle("Status successfully updated!");
+            if (!gameText.isEnabled()) gameText.setText("");
+        } else {
+            setTitle("Status failed to update!");
+        }
+        ThreadEngine.submit(() -> {
+            try {
+                Thread.sleep(5000);
+                setTitle("Change Stream Status");
+            } catch (InterruptedException ignored) {
+            }
+        });
+    }
+
+    public void updateStatusComponents() {
+        if (getChannel() == null) {
+            setTitle("Please Login First!");
+            return;
+        }
+        String[] status = APIRequests.Twitch.getStatusOfStream(getChannel());
+        titleText.setText("".equals(status[0]) ? "(Untitled Broadcast)" : status[0]);
+        gameText.setEnabled(!"".equals(status[1]));
+        playingGameToggle.setSelected(!gameText.isEnabled());
+        gameText.setText(status[1]);
     }
 
     private void closeButtonActionPerformed() {
         dispose();
     }
 
-    @Override
-    public void setVisible(boolean b) {
-        super.setVisible(b);
-    }
-
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner Evaluation license - Nick K
-        label1 = new JLabel();
-        scrollPane1 = new JScrollPane();
+        JLabel label1 = new JLabel();
+        JScrollPane scrollPane1 = new JScrollPane();
         titleText = new JTextArea();
         titleText.setLineWrap(true);
         titleText.setWrapStyleWord(true);
         titleText.setFont(new Font("Tahoma", Font.PLAIN, 11));
         gameText = new JTextField();
-        label2 = new JLabel();
+        JLabel label2 = new JLabel();
         playingGameToggle = new JCheckBox();
+        playingGameToggle.setFocusable(false);
         saveButton = new JButton();
+        saveButton.setFocusable(false);
         closeButton = new JButton();
+        closeButton.setFocusable(false);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         //======== this ========
         setTitle("Change Stream Status");
+        setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
         setResizable(false);
         Container contentPane = getContentPane();
 
@@ -70,7 +110,7 @@ public class GUIStatus extends JFrame {
         playingGameToggle.addChangeListener(e -> playingGameToggleStateChanged());
 
         //---- saveButton ----
-        saveButton.setText("Save");
+        saveButton.setText("Update");
         saveButton.addActionListener(e -> saveButtonActionPerformed());
 
         //---- closeButton ----
@@ -119,16 +159,12 @@ public class GUIStatus extends JFrame {
         );
         pack();
         setLocationRelativeTo(getOwner());
+        updateStatusComponents();
         // JFormDesigner - End of component initialization  //GEN-END:initComponents
     }
 
-    // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
-    // Generated using JFormDesigner Evaluation license - Nick K
-    private JLabel label1;
-    private JScrollPane scrollPane1;
     private JTextArea titleText;
     private JTextField gameText;
-    private JLabel label2;
     private JCheckBox playingGameToggle;
     private JButton saveButton;
     private JButton closeButton;

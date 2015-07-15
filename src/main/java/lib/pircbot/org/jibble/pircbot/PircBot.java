@@ -539,6 +539,7 @@ public class PircBot {
             }
         } else if ("ROOMSTATE".equals(command)) {
             target = tokenizer.nextToken();
+            getMessageHandler().onRoomstate(target, tags);
             parseTags(tags, null, target);
             return true;
         }

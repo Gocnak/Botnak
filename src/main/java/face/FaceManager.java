@@ -302,7 +302,7 @@ public class FaceManager {
                 br.close();
                 if (line != null) {
                     User main = GUIMain.currentSettings.channelManager
-                            .getUser(GUIMain.currentSettings.accountManager.getUserAccount().getName(), false);
+                            .getUser(GUIMain.currentSettings.accountManager.getUserAccount().getName(), true);
                     JSONObject init = new JSONObject(line);
                     String[] keys = emotes.split(",");
                     JSONObject emote_sets = init.getJSONObject("emoticon_sets");

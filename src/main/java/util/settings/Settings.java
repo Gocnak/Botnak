@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 /**
  * This class is the container for every setting Botnak has.
  * There's accounts, booleans of all sorts, and ints, you name it.
- * <p/>
+ * <p>
  * What is unique about this is you can define an "account" which
  * may be in the future to prevent unnecessary logging out. For now
  * we can continue to use a "default" account.
@@ -96,7 +96,6 @@ public class Settings {
     public static File lafFile = new File(defaultDir + File.separator + "laf.txt");
     public File windowFile = new File(defaultDir + File.separator + "window.txt");
     public File keywordsFile = new File(defaultDir + File.separator + "keywords.txt");
-    public File subIconsFile = new File(defaultDir + File.separator + "subIcons.txt");
     public File donatorsFile = new File(defaultDir + File.separator + "donators.txt");
     public File donationsFile = new File(defaultDir + File.separator + "donations.txt");
     public File subsFile = new File(defaultDir + File.separator + "subs.txt");
@@ -199,9 +198,12 @@ public class Settings {
                 GUIMain.log("Loading text commands...");
                 loadCommands();
             }
-            if (Utils.areFilesGood(subIconsFile.getAbsolutePath())) {
-                GUIMain.log("Loading subscriber icons...");
-                loadSubIcons();
+            if (subIconsDir.exists()) {
+                File[] subIcons = subIconsDir.listFiles();
+                if (subIcons != null && subIcons.length > 0) {
+                    GUIMain.log("Loading subscriber icons...");
+                    loadSubIcons(subIcons);
+                }
             }
             File[] nameFaces = nameFaceDir.listFiles();
             if (nameFaces != null && nameFaces.length > 0) {
@@ -244,7 +246,6 @@ public class Settings {
         if (!GUIMain.userColMap.isEmpty()) saveUserColors();
         if (GUIMain.loadedCommands()) saveCommands();
         if (!GUIMain.keywordMap.isEmpty()) saveKeywords();
-        if (!FaceManager.subIconSet.isEmpty()) saveSubIcons();
         if (!donationManager.getDonors().isEmpty()) saveDonors();
         if (!donationManager.getDonations().isEmpty()) saveDonations();
         if (!subscriberManager.getSubscribers().isEmpty()) saveSubscribers();
@@ -592,7 +593,7 @@ public class Settings {
 
     /**
      * FrankerFaceZ
-     * <p/>
+     * <p>
      * We can be a little more broad about this saving, since it's a per-channel basis
      */
     public void loadFFZFaces() {
@@ -619,7 +620,7 @@ public class Settings {
 
     /**
      * Commands
-     * <p/>
+     * <p>
      * trigger[message (content)[arguments?
      */
     public void loadCommands() {
@@ -847,24 +848,9 @@ public class Settings {
     /**
      * Sub icons
      */
-    public void saveSubIcons() {
-        try (PrintWriter br = new PrintWriter(subIconsFile)) {
-            FaceManager.subIconSet.stream().forEach(i -> br.println(i.getChannel() + "," + i.getFileLoc()));
-        } catch (Exception e) {
-            GUIMain.log(e);
-        }
-    }
-
-    public void loadSubIcons() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(subIconsFile.toURI().toURL().openStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split(",");
-                FaceManager.subIconSet.add(new SubscriberIcon(split[0], split[1]));
-            }
-            GUIMain.log("Loaded subscriber icons!");
-        } catch (Exception e) {
-            GUIMain.log(e);
+    public void loadSubIcons(File[] subIconFiles) {
+        for (File f : subIconFiles) {
+            FaceManager.subIconSet.add(new SubscriberIcon(Utils.removeExt(f.getName()), f.getAbsolutePath()));
         }
     }
 
@@ -991,21 +977,21 @@ public class Settings {
 
     /**
      * Tab State
-     * <p/>
+     * <p>
      * This is for opening back up to the correct tab, with the correct pane showing.
      * This also handles saving the combined tabs.
      * Format:
-     * <p/>
+     * <p>
      * Single:
      * bool      bool     string
      * single[  selected[ name
-     * <p/>
+     * <p>
      * Combined:
      * bool    boolean    String         String     String[] (split(","))
      * single[ selected[ activeChannel[  title[ every,channel,in,it,separated,by,commas
-     * <p/>
+     * <p>
      * No spaces though.
-     * <p/>
+     * <p>
      * Single tabs can be invisible if they are in a combined tab.
      */
     public void saveTabState() {

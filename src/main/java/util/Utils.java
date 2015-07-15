@@ -911,7 +911,25 @@ public class Utils {
             URI uri = new URL(URL).toURI();
             desktop.browse(uri);
         } catch (Exception ev) {
-            GUIMain.log((ev.getMessage()));
+            GUIMain.log("Failed openWebPage due to exception: ");
+            GUIMain.log(ev);
         }
+    }
+
+    /**
+     * Caps a number between two given numbers.
+     *
+     * @param numLesser The lower-bound (inclusive) number to compare against.
+     * @param numHigher The higher-bound (inclusive) number to compare against.
+     * @param toCompare The number to check and perhaps cap.
+     * @param <E>       Generics, used for making one method for all number types.
+     * @return If the number is within the two bounds, the number is returned.
+     * Otherwise, return the supplied number bound that the number is closer to.
+     */
+    public static <E extends Number> E capNumber(E numLesser, E numHigher, E toCompare) {
+        E toReturn = toCompare;
+        if (toCompare.floatValue() > numHigher.floatValue()) toReturn = numHigher;//floats are the most precise here
+        else if (toCompare.floatValue() < numLesser.floatValue()) toReturn = numLesser;
+        return toReturn;
     }
 }

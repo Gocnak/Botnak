@@ -110,7 +110,7 @@ public class APIRequests {
          * @return A string array with the status as first index and game as second.
          */
         public static String[] getStatusOfStream(String channel) {
-            String[] toRet = new String[2];
+            String[] toRet = {"", ""};
             try {
                 if (channel.contains("#")) channel = channel.replace("#", "");
                 URL twitch = new URL("https://api.twitch.tv/kraken/channels/" + channel
@@ -120,20 +120,12 @@ public class APIRequests {
                 br.close();
                 if (line != null) {
                     JSONObject base = new JSONObject(line);
-                    if (!base.isNull("status")) {
-                        toRet[0] = base.getString("status");
-                        if (toRet[0].equals("")) {
-                            toRet[0] = "Untitled Broadcast";
-                        }
-                    }
-                    toRet[1] = base.isNull("game") ? "" : base.getString("game");
-                    if (base.isNull("game")) {
-                        toRet[1] = "";
-                    } else {
-                        toRet[1] = base.getString("game");
-                    }
+                    //these are never null, just blank strings at worst
+                    toRet[0] = base.getString("status");
+                    toRet[1] = base.getString("game");
                 }
             } catch (Exception e) {
+                GUIMain.log("Failed to get status of stream due to Exception: ");
                 GUIMain.log(e);
             }
             return toRet;
@@ -226,8 +218,9 @@ public class APIRequests {
                     toReturn.wasSuccessful();
                 }
             } catch (Exception e) {
-                String error = e.getMessage().length() > 20 ? (e.getMessage().substring(0, e.getMessage().length() / 2) + "...") : e.getMessage();
-                toReturn.setResponseText("Failed to update status due to Exception: " + error);
+                GUIMain.log("Failed to update status due to Exception: ");
+                GUIMain.log(e);
+                toReturn.setResponseText("Failed to update status due to Exception!");
             }
             return toReturn;
         }
@@ -243,7 +236,8 @@ public class APIRequests {
         public static boolean playAdvert(String key, String channel, int length) {
             boolean toReturn = false;
             try {
-                if ((length % 30) != 0 || length < 30 || length > 180) length = 30;//has to be divisible by 30 seconds
+                length = Utils.capNumber(30, 180, length);//can't be longer than 3 mins/shorter than 30 sec
+                if ((length % 30) != 0) length = 30;//has to be divisible by 30 seconds
                 if (channel.contains("#")) channel = channel.replace("#", "");
                 String request = "https://api.twitch.tv/kraken/channels/" + channel + "/commercial";
                 URL twitch = new URL(request);
@@ -262,10 +256,12 @@ public class APIRequests {
                     int response = c.getResponseCode();
                     toReturn = (response == 204);
                 } catch (Exception e) {
+                    GUIMain.log("Failed to get response code due to Exception: ");
                     GUIMain.log(e);
                 }
                 c.disconnect();
             } catch (Exception e) {
+                GUIMain.log("Failed to play advertisement due to Exception: ");
                 GUIMain.log(e);
             }
             return toReturn;

@@ -448,6 +448,7 @@ public class SoundEngine {
         } else {
             newBool = !shouldPlay();
             setShouldPlay(newBool);
+            GUIMain.instance.updateSoundToggle(newBool);
             toReturn.wasSuccessful();
             toReturn.setResponseText("Sound is now turned " + (newBool ? "ON" : "OFF"));
         }
@@ -481,6 +482,7 @@ public class SoundEngine {
             }
             soundTime = Utils.handleInt(soundTime);
             int delay = soundTime / 1000;
+            GUIMain.instance.updateSoundDelay(delay);
             toReturn.setResponseText("Sound delay " + (delay < 2 ? (delay == 0 ? "off." : "is now 1 second.") : ("is now " + delay + " seconds.")));
             setDelay(soundTime);
             toReturn.wasSuccessful();
@@ -496,6 +498,7 @@ public class SoundEngine {
             int perm = Integer.parseInt(first);
             if (perm > -1 && perm < 5) {
                 setPermission(perm);
+                GUIMain.instance.updateSoundPermission(perm);
                 toReturn.wasSuccessful();
                 toReturn.setResponseText("Sound permission successfully changed to: " + Utils.getPermissionString(perm));
             } else {
