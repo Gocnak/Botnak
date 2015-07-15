@@ -50,7 +50,8 @@ public class FrankerFaceZ extends ToggleableFace {
                     }
                 }
             } catch (Exception e) {
-                GUIMain.log("Failed to parse FFZ Channel due to Exception: " + e.getMessage());
+                GUIMain.log("Failed to parse FFZ Channel due to Exception: ");
+                GUIMain.log(e);
             }
         }
 
