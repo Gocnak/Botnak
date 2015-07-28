@@ -51,7 +51,6 @@ public class ListenerUserChat extends KeyAdapter {
                 EventQueue.invokeLater(() -> {
                     userChat.setText(userChat.getText().replaceAll("\t", " "));
                     sugg.insertSelection(select);
-//                    tabPressed = false;
                 });
             } else {
             	userChat.setText(userChat.getText().replaceAll("\t", ""));
