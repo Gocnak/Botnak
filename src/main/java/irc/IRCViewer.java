@@ -25,9 +25,10 @@ public class IRCViewer extends MessageHandler {
         GUIMain.currentSettings.accountManager.addTask(new Task(getViewer(), Task.Type.JOIN_CHANNEL, channel));
         if (GUIMain.currentSettings.logChat) Utils.logChat(null, channel, 0);
         if (!GUIMain.channelSet.contains(channel)) GUIMain.channelSet.add(channel);
-        //TODO if currentSettings.FFZFacesEnable
-        if (FaceManager.doneWithFrankerFaces)
-            FaceManager.handleFFZChannel(channel.substring(1));
+        if (GUIMain.currentSettings.ffzFacesEnable) {
+            if (FaceManager.doneWithFrankerFaces)
+                FaceManager.handleFFZChannel(channel.substring(1));
+        }
     }
 
     /**
@@ -126,7 +127,9 @@ public class IRCViewer extends MessageHandler {
         if (name != null) {
             BanQueue.addToMap(channel, name);
         } else {
-            //TODO perhaps add the option to actually clear the chat based on user setting?
+            if (GUIMain.currentSettings.actuallyClearChat) {
+                GUIMain.getChatPane(channel).cleanupChat();
+            }
             MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.BAN_NOTIFY)
                     .setContent("The chat was cleared by a moderator. (Prevented by Botnak)"));
         }

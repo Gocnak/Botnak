@@ -309,7 +309,7 @@ public class IRCBot extends MessageHandler {
                             break;
                         case PLAY_ADVERT:
                             if (key != null) {
-                                playAdvert(key, first, channel);
+                                commandResponse = playAdvert(key, first, channel);
                             }
                             break;
                         case START_RAFFLE:
@@ -437,14 +437,16 @@ public class IRCBot extends MessageHandler {
                             commandResponse = APIRequests.Twitch.getUptimeString(channel.substring(1));
                             break;
                         case SEE_PREV_SOUND_DON:
-                            //TODO if currentSettings.seePreviousDonEnable
-                            if (GUIMain.currentSettings.loadedDonationSounds)
-                                commandResponse = SoundEngine.getEngine().getLastDonationSound();
+                            if (GUIMain.currentSettings.showPreviousDonSound) {
+                                if (GUIMain.currentSettings.loadedDonationSounds)
+                                    commandResponse = SoundEngine.getEngine().getLastDonationSound();
+                            }
                             break;
                         case SEE_PREV_SOUND_SUB:
-                            //TODO if currentSettings.seePreviousSubEnable
-                            if (GUIMain.currentSettings.loadedSubSounds)
-                                commandResponse = SoundEngine.getEngine().getLastSubSound();
+                            if (GUIMain.currentSettings.showPreviousSubSound) {
+                                if (GUIMain.currentSettings.loadedSubSounds)
+                                    commandResponse = SoundEngine.getEngine().getLastSubSound();
+                            }
                             break;
                         case SEE_OR_SET_REPLY_TYPE:
                             commandResponse = parseReplyType(first, botnakUserName);
@@ -529,7 +531,7 @@ public class IRCBot extends MessageHandler {
                     SimpleDateFormat sdf = new SimpleDateFormat("m:ss");
                     Date d = new Date(diff);
                     Date toPlay = new Date(480000 - diff);
-                    r.setResponseText("Error playing last ad! Last ad was was only " + sdf.format(d)
+                    r.setResponseText("Error playing advertisement! Last ad was was only " + sdf.format(d)
                             + " ago! You must wait " + sdf.format(toPlay) + " to play another ad!");
                 }
             }

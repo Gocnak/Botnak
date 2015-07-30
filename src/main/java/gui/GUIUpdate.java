@@ -93,6 +93,7 @@ public class GUIUpdate extends JFrame {
         skipButton.setFocusable(false);
         skipButton.addActionListener(e -> skipButtonActionPerformed());
 
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         GroupLayout contentPaneLayout = new GroupLayout(contentPane);
         contentPane.setLayout(contentPaneLayout);
         contentPaneLayout.setHorizontalGroup(
@@ -127,6 +128,4 @@ public class GUIUpdate extends JFrame {
     public static JButton downloadButton;
     public static JButton skipButton;
     // JFormDesigner - End of variables declaration  //GEN-END:variables
-
-
 }

@@ -53,51 +53,51 @@ public class UserManager implements HeartbeatThread {
                     Utils.parseBufferedReader(br, stanSB, false);
                     JSONObject site = new JSONObject(stanSB.toString());
                     JSONObject chatters = site.getJSONObject("chatters");
+
                     JSONArray mods = chatters.getJSONArray("moderators");
-                    for (int i = 0; i < mods.length(); i++) {
-                        collectedUsers.add(mods.getString(i));
-                    }
-                    list.updateCategory(GUIViewerList.ViewerType.MOD, collectedUsers);
-                    collectedUsers.clear();
+                    readAndUpdate(mods, list, GUIViewerList.ViewerType.MOD);
+
                     JSONArray staff = chatters.getJSONArray("staff");
-                    for (int i = 0; i < staff.length(); i++) {
-                        User u = new User(staff.getString(i));
-                        u.setStaff(true);
-                        addUser(u);
-                        collectedUsers.add(staff.getString(i));
-                    }
-                    list.updateCategory(GUIViewerList.ViewerType.STAFF, collectedUsers);
-                    collectedUsers.clear();
+                    readAndUpdate(staff, list, GUIViewerList.ViewerType.STAFF);
+
                     JSONArray admins = chatters.getJSONArray("admins");
-                    for (int i = 0; i < admins.length(); i++) {
-                        User u = new User(admins.getString(i));
-                        u.setAdmin(true);
-                        addUser(u);
-                        collectedUsers.add(admins.getString(i));
-                    }
-                    list.updateCategory(GUIViewerList.ViewerType.ADMIN, collectedUsers);
-                    collectedUsers.clear();
+                    readAndUpdate(admins, list, GUIViewerList.ViewerType.ADMIN);
+
                     JSONArray global_mods = chatters.getJSONArray("global_mods");
-                    for (int i = 0; i < global_mods.length(); i++) {
-                        User u = new User(global_mods.getString(i));
-                        u.setGlobalMod(true);
-                        addUser(u);
-                        collectedUsers.add(global_mods.getString(i));
-                    }
-                    list.updateCategory(GUIViewerList.ViewerType.GLOBAL_MOD, collectedUsers);
-                    collectedUsers.clear();
+                    readAndUpdate(global_mods, list, GUIViewerList.ViewerType.GLOBAL_MOD);
+
                     JSONArray viewers = chatters.getJSONArray("viewers");
-                    for (int i = 0; i < viewers.length(); i++) {
-                        collectedUsers.add(viewers.getString(i));
-                    }
-                    list.updateCategory(GUIViewerList.ViewerType.VIEWER, collectedUsers);
-                    collectedUsers.clear();
+                    readAndUpdate(viewers, list, GUIViewerList.ViewerType.VIEWER);
+
                     Thread.sleep(750);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
+    }
+
+    private void readAndUpdate(JSONArray toRead, GUIViewerList list, GUIViewerList.ViewerType type) {
+        for (int i = 0; i < toRead.length(); i++) {
+            User u = new User(toRead.getString(i));
+            switch (type) {
+                case GLOBAL_MOD:
+                    u.setGlobalMod(true);
+                    break;
+                case ADMIN:
+                    u.setAdmin(true);
+                    break;
+                case STAFF:
+                    u.setStaff(true);
+                    break;
+                default:
+                    break;
+            }
+            addUser(u);
+            collectedUsers.add(toRead.getString(i));
+        }
+        list.updateCategory(type, collectedUsers);
+        collectedUsers.clear();
     }
 
     private void addUser(User u) {

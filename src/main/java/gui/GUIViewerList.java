@@ -44,6 +44,7 @@ public class GUIViewerList extends JFrame {
     public synchronized void updateCategory(ViewerType type, HashSet<String> names) {
         final DefaultMutableTreeNode node;
         Enumeration<TreePath> userPath = getExpandedDescendants();
+        int scrollAmount = scrollPane.getVerticalScrollBar().getValue();
         switch (type) {
             case STAFF:
                 staff.removeAllChildren();
@@ -73,11 +74,11 @@ public class GUIViewerList extends JFrame {
             if (!names.isEmpty()) {
                 names.stream().sorted().forEach(s -> node.add(new DefaultMutableTreeNode(s)));
             }
-            updateRoot(userPath);
+            updateRoot(userPath, scrollAmount);
         }
     }
 
-    private synchronized void updateRoot(Enumeration<TreePath> userPath) {
+    private synchronized void updateRoot(Enumeration<TreePath> userPath, int scrollAmount) {
         DefaultMutableTreeNode root = default_root;
         root.removeAllChildren();
         if (staff.getChildCount() > 0) root.add(staff);
@@ -91,6 +92,7 @@ public class GUIViewerList extends JFrame {
                 viewerTree.expandPath(userPath.nextElement());
             }
         }
+        scrollPane.getVerticalScrollBar().setValue(scrollAmount);
     }
 
     private void setViewerTreeModel(DefaultTreeModel model) {
@@ -161,7 +163,7 @@ public class GUIViewerList extends JFrame {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner Evaluation license - Nick K
         searchBar = new JTextField();
-        JScrollPane scrollPane2 = new JScrollPane();
+        scrollPane = new JScrollPane();
         viewerTree = new JTree();
 
         //======== this ========
@@ -220,7 +222,7 @@ public class GUIViewerList extends JFrame {
                     }
                 }
             });
-            scrollPane2.setViewportView(viewerTree);
+            scrollPane.setViewportView(viewerTree);
         }
         setMinimumSize(new Dimension(250, 490));
         GroupLayout contentPaneLayout = new GroupLayout(contentPane);
@@ -228,14 +230,14 @@ public class GUIViewerList extends JFrame {
         contentPaneLayout.setHorizontalGroup(
                 contentPaneLayout.createParallelGroup()
                         .addComponent(searchBar, GroupLayout.DEFAULT_SIZE, 179, Short.MAX_VALUE)
-                        .addComponent(scrollPane2, GroupLayout.DEFAULT_SIZE, 179, Short.MAX_VALUE)
+                        .addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 179, Short.MAX_VALUE)
         );
         contentPaneLayout.setVerticalGroup(
                 contentPaneLayout.createParallelGroup()
                         .addGroup(GroupLayout.Alignment.TRAILING, contentPaneLayout.createSequentialGroup()
                                 .addComponent(searchBar, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(scrollPane2, GroupLayout.DEFAULT_SIZE, 423, Short.MAX_VALUE))
+                                .addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 423, Short.MAX_VALUE))
         );
         addWindowListener(new WindowAdapter() {
             @Override
@@ -252,4 +254,5 @@ public class GUIViewerList extends JFrame {
     // Generated using JFormDesigner Evaluation license - Nick K
     private JTextField searchBar;
     private JTree viewerTree;
+    private JScrollPane scrollPane;
 }

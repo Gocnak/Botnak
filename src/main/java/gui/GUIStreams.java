@@ -115,7 +115,7 @@ public class GUIStreams extends JFrame {
             label1.setOpaque(false);
             scrollPane2.setViewportView(label1);
         }
-
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         GroupLayout contentPaneLayout = new GroupLayout(contentPane);
         contentPane.setLayout(contentPaneLayout);
         contentPaneLayout.setHorizontalGroup(
@@ -159,5 +159,4 @@ public class GUIStreams extends JFrame {
     public static JScrollPane scrollPane2;
     public static JTextArea label1;
     // JFormDesigner - End of variables declaration  //GEN-END:variables
-
 }

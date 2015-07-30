@@ -73,7 +73,7 @@ public class GUIAbout extends JFrame {
 
         //---- label4 ----
         label4.setIcon(new ImageIcon(getClass().getResource("/image/icon70.png")));
-
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         GroupLayout contentPaneLayout = new GroupLayout(contentPane);
         contentPane.setLayout(contentPaneLayout);
         contentPaneLayout.setHorizontalGroup(

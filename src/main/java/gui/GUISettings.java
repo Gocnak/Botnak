@@ -32,8 +32,8 @@ public class GUISettings extends JFrame {
 
     private static String lastSoundDir = "";
 
-    GUISounds_2 s2;
-    AuthorizeAccountGUI mainAccGUI;
+    private GUISounds_2 s2;
+    private AuthorizeAccountGUI mainAccGUI;
 
     public GUISettings() {
         initComponents();

@@ -103,14 +103,17 @@ public class ChatPane implements DocumentListener {
      * This is the main boolean to check to see if this tab should pulse.
      * <p>
      * This boolean checks to see if the tab wasn't toggled, if it's visible (not in a combined tab),
-     * and if it's not selected. TODO check for global setting of pulsing tabs
+     * and if it's not selected.
+     *
+     * The global setting will override this.
      *
      * @return True if this tab should pulse, else false.
      */
     public boolean shouldPulse() {
         boolean shouldPulseLocal = (this instanceof CombinedChatPane) ?
                 ((CombinedChatPane) this).getActiveChatPane().shouldPulseLoc() : shouldPulseLoc;
-        return shouldPulseLocal && isTabVisible() && GUIMain.channelPane.getSelectedIndex() != index && index != 0;
+        return GUIMain.currentSettings.showTabPulses && shouldPulseLocal && isTabVisible() &&
+                GUIMain.channelPane.getSelectedIndex() != index && index != 0;
     }
 
     private boolean shouldPulseLoc = true;
@@ -358,9 +361,10 @@ public class ChatPane implements DocumentListener {
             if (u.isGlobalMod()) {
                 insertIcon(m, IconEnum.GLOBALMOD, null);
             }
-            //TODO if GUIMain.currentSettings.donorsEnabled
-            if (u.isDonor()) {
-                insertIcon(m, u.getDonationStatus(), null);
+            if (GUIMain.currentSettings.showDonorIcons) {
+                if (u.isDonor()) {
+                    insertIcon(m, u.getDonationStatus(), null);
+                }
             }
             if (u.isStaff()) {
                 insertIcon(m, IconEnum.STAFF, null);
@@ -465,8 +469,9 @@ public class ChatPane implements DocumentListener {
         if (u != null && u.getEmotes() != null) {
             FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE, null, u.getEmotes());
         }
-        //TODO if (currentSettings.FFZFaceEnabled)
-        FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.FRANKER_FACE, channel, null);
+        if (GUIMain.currentSettings.ffzFacesEnable) {
+            FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.FRANKER_FACE, channel, null);
+        }
     }
 
     protected void print(MessageWrapper wrapper, String string, SimpleAttributeSet set) {
@@ -491,11 +496,11 @@ public class ChatPane implements DocumentListener {
         try {
             Message message = m.getLocal();
             print(m, "\n", GUIMain.norm);
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 3; i++) {
                 insertIcon(m, status, (status == IconEnum.SUBSCRIBER ? message.getChannel() : null));
             }
             print(m, " " + message.getContent() + (status == IconEnum.SUBSCRIBER ? (" (" + (subCount + 1) + ") ") : " "), GUIMain.norm);
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 3; i++) {
                 insertIcon(m, status, (status == IconEnum.SUBSCRIBER ? message.getChannel() : null));
             }
         } catch (Exception e) {
@@ -592,7 +597,10 @@ public class ChatPane implements DocumentListener {
         if (GUIMain.currentSettings.logChat) {
             Utils.logChat(getText().split("\\n"), chan, 2);
         }
-        //TODO ensure the viewer list & other popped out GUIs are deleted
+        GUIViewerList list = GUIMain.viewerLists.get(chan);
+        if (list != null) {
+            list.dispose();
+        }
         if (getPoppedOutPane() != null) {
             getPoppedOutPane().dispose();
         }

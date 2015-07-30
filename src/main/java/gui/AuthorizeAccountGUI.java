@@ -16,7 +16,10 @@ import java.awt.*;
  * @author Nick K
  */
 public class AuthorizeAccountGUI extends JFrame {
+    private TokenListener listener;
+
     public AuthorizeAccountGUI() {
+        listener = null;
         initComponents();
         if (GUIMain.currentSettings.accountManager.getUserAccount() != null) {
             accountNameField.setText(GUIMain.currentSettings.accountManager.getUserAccount().getName());
@@ -36,8 +39,10 @@ public class AuthorizeAccountGUI extends JFrame {
             if (boxEditStream.isSelected()) URL += "+channel_editor";
             if (boxFollowed.isSelected()) URL += "+user_follows_edit";
             Utils.openWebPage(URL);
-            TokenListener tl = new TokenListener(this);
-            tl.start();
+            if (listener == null || !listener.isAlive()) {
+                listener = new TokenListener(this);
+                listener.start();
+            }
         }
     }
 
@@ -107,7 +112,7 @@ public class AuthorizeAccountGUI extends JFrame {
         closeButton.setText("Close");
         closeButton.setFocusable(false);
         closeButton.addActionListener(e -> closeButtonActionPerformed());
-
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         GroupLayout contentPaneLayout = new GroupLayout(contentPane);
         contentPane.setLayout(contentPaneLayout);
         contentPaneLayout.setHorizontalGroup(

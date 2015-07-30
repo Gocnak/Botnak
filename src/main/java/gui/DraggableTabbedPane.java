@@ -186,11 +186,13 @@ public class DraggableTabbedPane extends JTabbedPane {
                             menuItem.addActionListener(listener);
                             popupMenu.add(menuItem);
 
-                            //TODO if (GUIMain.currentSettings.pulseTabs) {
-                            menuItem = new JMenuItem("Toggle Tab Pulsing " + (first ? (detected.shouldPulseLoc() ? "OFF" : "ON") : (detectedCombo.shouldPulseLoc() ? "OFF" : "ON")));
-                            menuItem.addActionListener(listener);
-                            popupMenu.add(menuItem);
-                            //}
+                            if (GUIMain.currentSettings.showTabPulses) {
+                                menuItem = new JMenuItem("Toggle Tab Pulsing " +
+                                        (first ? (detected.shouldPulseLoc() ? "OFF" : "ON") :
+                                                (detectedCombo.shouldPulseLoc() ? "OFF" : "ON")));
+                                menuItem.addActionListener(listener);
+                                popupMenu.add(menuItem);
+                            }
                             if (first) {
                                 menuItem = new JMenuItem("Go to " + detected.getChannel() + "'s channel");
                                 menuItem.addActionListener(listener);

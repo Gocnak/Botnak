@@ -197,7 +197,7 @@ public class Utils {
     }
 
     /**
-     * Checks to see if the file(s)  is (are) actually existing and non-blank.
+     * Checks to see if the file(s) is (are) actually existing and non-blank.
      *
      * @param files The path(s) to the file(s) to check.
      * @return true if (all) the file(s) exist(s)
@@ -247,7 +247,11 @@ public class Utils {
     }
 
     /**
-     * Removes a file extension from a path.
+     * Removes the last file extension from a path.
+     *
+     * Note that if the string contains multiple extensions, this will only remove the last one.
+     *
+     * Ex: "portal.png.exe.java" becomes "portal.png.exe" after this method returns.
      *
      * @param s The path to a file, or the file name with its extension.
      * @return The file/path name without the extension.

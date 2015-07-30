@@ -188,13 +188,12 @@ public class FaceManager {
             GUIMain.log("Loaded Twitch faces!");
             GUIMain.currentSettings.saveTwitchFaces();
             doneWithTwitchFaces = true;
-
-            //TODO if currentSettings.FFZFacesEnable
-            handleFFZChannel("global");//this corrects the global emotes and downloads them if we don't have them
-            GUIMain.channelSet.stream().forEach(s -> handleFFZChannel(s.replaceAll("#", "")));
-            doneWithFrankerFaces = true;
-            GUIMain.log("Loaded FrankerFaceZ faces!");
-            // END TODO
+            if (GUIMain.currentSettings.ffzFacesEnable) {
+                handleFFZChannel("global");//this corrects the global emotes and downloads them if we don't have them
+                GUIMain.channelSet.stream().forEach(s -> handleFFZChannel(s.replaceAll("#", "")));
+                doneWithFrankerFaces = true;
+                GUIMain.log("Loaded FrankerFaceZ faces!");
+            }
         });
     }
 
@@ -228,23 +227,24 @@ public class FaceManager {
                 return toReturn;
             }
         }
-        String errorMessage = "Could not find face " + faceName + " in the loaded Twitch faces ";
-        //TODO if currentSettings.ffzEnable
-        Set<String> channels = ffzFaceMap.keySet();
-        for (String chan : channels) {
-            ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(chan);
-            for (FrankerFaceZ f : faces) {
-                if (f.getRegex().equalsIgnoreCase(faceName)) {
-                    boolean newStatus = !f.isEnabled();
-                    f.setEnabled(newStatus);
-                    toReturn.setResponseText("Toggled the FrankerFaceZ face " + f.getRegex() + (newStatus ? " ON" : " OFF"));
-                    toReturn.wasSuccessful();
-                    return toReturn;
+        String errorMessage = "Could not find face " + faceName + " in the loaded Twitch faces";
+        if (GUIMain.currentSettings.ffzFacesEnable) {
+            Set<String> channels = ffzFaceMap.keySet();
+            for (String chan : channels) {
+                ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(chan);
+                for (FrankerFaceZ f : faces) {
+                    if (f.getRegex().equalsIgnoreCase(faceName)) {
+                        boolean newStatus = !f.isEnabled();
+                        f.setEnabled(newStatus);
+                        toReturn.setResponseText("Toggled the FrankerFaceZ face " + f.getRegex() + (newStatus ? " ON" : " OFF"));
+                        toReturn.wasSuccessful();
+                        return toReturn;
+                    }
                 }
             }
+            errorMessage += " or loaded FrankerFaceZ faces";
         }
-        errorMessage += "or loaded FrankerFaceZ faces!";
-        //end TODO
+        errorMessage += "!";
         toReturn.setResponseText(errorMessage);
         return toReturn;
     }
@@ -385,9 +385,9 @@ public class FaceManager {
                 break;
             case FRANKER_FACE:
                 if (doneWithFrankerFaces) {
-                    //TODO check the option to loop through all the loaded ones, as per issue #81
-                    //right now we just do loaded specific channel (if existing) & global
-                    String[] channels = {"global", channel};
+                    String[] channels = GUIMain.currentSettings.ffzFacesUseAll ?
+                            ffzFaceMap.keySet().toArray(new String[ffzFaceMap.keySet().size()]) :
+                            new String[]{"global", channel};
                     for (String currentChannel : channels) {
                         ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(currentChannel);
                         if (faces != null) {

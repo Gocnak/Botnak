@@ -95,8 +95,9 @@ public class GUIMain extends JFrame {
         heartbeat.addHeartbeatThread(new ViewerCount());
         heartbeat.addHeartbeatThread(new UserManager());
         heartbeat.addHeartbeatThread(new BanQueue());
-        //TODO if (GUISettings.trackDonations)
-        heartbeat.addHeartbeatThread(new DonationCheck());
+        if (currentSettings.trackDonations) {
+            heartbeat.addHeartbeatThread(new DonationCheck());
+        }
         heartbeat.start();
     }
 

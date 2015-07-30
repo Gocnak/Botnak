@@ -111,6 +111,19 @@ public class Settings {
     public String date;
     public float soundVolumeGain = 100;
 
+
+    //NEW SETTINGS, TODO categorize later
+    public boolean ffzFacesEnable = true;//TODO incorporate
+    public boolean ffzFacesUseAll = false;//TODO implement
+    public boolean actuallyClearChat = true;//TODO incorporate
+    public boolean showDonorIcons = true; //TODO incorporate
+    public boolean showTabPulses = true;//TODO implement
+    public boolean showPreviousSubSound = true;
+    public boolean showPreviousDonSound = true;
+    public boolean botAnnounceSubscribers = true;
+    public boolean trackDonations = true;
+
+
     public Settings() {//default account
         modIcon = Settings.class.getResource("/image/mod.png");
         broadIcon = Settings.class.getResource("/image/broad.png");
@@ -120,7 +133,6 @@ public class Settings {
         long time = System.currentTimeMillis();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yy");
         date = sdf.format(new Date(time));
-        logDir.mkdirs();
         font = new Font("Calibri", Font.PLAIN, 18);
         defaultDir.mkdirs();
         faceDir.mkdirs();
@@ -129,8 +141,6 @@ public class Settings {
         subIconsDir.mkdirs();
         subSoundDir.mkdirs();
         donationSoundDir.mkdirs();
-        //TODO if frankerFaceZEnable
-        frankerFaceZDir.mkdirs();
     }
 
     /**
@@ -210,10 +220,13 @@ public class Settings {
                 GUIMain.log("Loading name faces...");
                 loadNameFaces();
             }
-            //TODO if frankerFaceZEnable
-            if (frankerFaceZDir.exists() && frankerFaceZDir.length() > 0) {
-                GUIMain.log("Loading FrankerFaceZ faces...");
-                loadFFZFaces();
+            if (ffzFacesEnable) {
+                frankerFaceZDir.mkdirs();
+                File[] files = frankerFaceZDir.listFiles();
+                if (files != null && files.length > 0) {
+                    GUIMain.log("Loading FrankerFaceZ faces...");
+                    loadFFZFaces();
+                }
             }
             GUIMain.log("Loading keywords...");
             loadKeywords();//first time boot adds the username
@@ -323,6 +336,7 @@ public class Settings {
                 }
                 cleanupChat = Boolean.parseBoolean(p.getProperty("ClearChat", "true"));
                 logChat = Boolean.parseBoolean(p.getProperty("LogChat", "false"));
+                if (logChat) logDir.mkdirs();
                 chatMax = Integer.parseInt(p.getProperty("MaxChat", "100"));
                 faceMaxHeight = Integer.parseInt(p.getProperty("FaceMaxHeight", "20"));
                 font = Utils.stringToFont(p.getProperty("Font").split(","));
