@@ -1,6 +1,6 @@
 package util.settings;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import irc.Subscriber;
 import irc.message.Message;
 import irc.message.MessageQueue;
@@ -8,10 +8,9 @@ import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import lib.pircbot.org.jibble.pircbot.User;
 import sound.SoundEngine;
+import util.Utils;
 import util.misc.Donation;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -197,10 +196,8 @@ public class SubscriberManager {
         String offset = "&offset=" + String.valueOf(100 * passesCompleted);
         urlString += offset;
         try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(new URL(urlString).openStream()));
-            String line = br.readLine();
-            br.close();
-            if (line != null) {
+            String line = Utils.createAndParseBufferedReader(new URL(urlString).openStream());
+            if (!line.isEmpty()) {
                 JSONObject entire = new JSONObject(line);
                 if (entire.has("error")) {
                     GUIMain.log("Error scanning for initial subs, does your OAuth key allow for this?");

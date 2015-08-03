@@ -1,6 +1,6 @@
 package face;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import util.Utils;

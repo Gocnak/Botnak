@@ -1,6 +1,6 @@
 package face;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import lib.pircbot.org.jibble.pircbot.User;
@@ -17,9 +17,8 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -119,11 +118,9 @@ public class FaceManager {
         }
         try {
             URL toRead = new URL("https://api.twitch.tv/kraken/chat/" + channel.replace("#", "") + "/badges");
-            BufferedReader irs = new BufferedReader(new InputStreamReader(toRead.openStream()));
-            String line = irs.readLine();
-            irs.close();
+            String line = Utils.createAndParseBufferedReader(toRead.openStream());
             String path = null;
-            if (line != null) {
+            if (!line.isEmpty()) {
                 JSONObject init = new JSONObject(line);
                 if (init.has("subscriber")) {
                     JSONObject sub = init.getJSONObject("subscriber");
@@ -149,10 +146,8 @@ public class FaceManager {
         try {
             // Load twitch faces
             URL url = new URL("https://api.twitch.tv/kraken/chat/emoticon_images");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
-            String line = reader.readLine();
-            reader.close();
-            if (line != null) {
+            String line = Utils.createAndParseBufferedReader(url.openStream());
+            if (!line.isEmpty()) {
                 try {
                     JSONObject init = new JSONObject(line);
                     JSONArray emotes = init.getJSONArray("emoticons");
@@ -297,10 +292,8 @@ public class FaceManager {
             try {
                 checkedEmoteSets = true;
                 URL url = new URL("https://api.twitch.tv/kraken/chat/emoticon_images?emotesets=" + emotes);
-                BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
-                String line = br.readLine();
-                br.close();
-                if (line != null) {
+                String line = Utils.createAndParseBufferedReader(url.openStream());
+                if (!line.isEmpty()) {
                     User main = GUIMain.currentSettings.channelManager
                             .getUser(GUIMain.currentSettings.accountManager.getUserAccount().getName(), true);
                     JSONObject init = new JSONObject(line);
@@ -559,6 +552,7 @@ public class FaceManager {
             }
             if (sanityCheck(URL)) {
                 image = ImageIO.read(URL);//just incase the file is null/it can't read it
+                image = trimWhitespaceFromImage(image);
                 if (image.getHeight() > DOWNLOAD_MAX_FACE_HEIGHT) {//if it's too big, scale it
                     image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY,
                             Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_FACE_HEIGHT);
@@ -769,5 +763,119 @@ public class FaceManager {
             }
         }
         return toReturn;
+    }
+
+    /**
+     * This method's dedicated to all those lazy image makers out there.
+     * <p>
+     * So we have the following image:
+     * <p>
+     * |--------------------------------|
+     * |      (emptyness)               |
+     * |      -----------               |
+     * |      |(contents)| (whitespace) |
+     * |      |          |              |
+     * |      ------------              |
+     * |            (gross laziness)    |
+     * |--------------------------------|
+     * <p>
+     * In order to trim it, we're going to be color searching based on a row/column search.
+     * We start in the top left corner (point [0,0]) and see if it's transparent. If so,
+     * we then search across that point's height, and see if it intersects any color other than transparent.
+     * If no intersection happens (the row is completely transparent) the search continues down the column,
+     * searching the pixels down from the current point's x value to see if it intersects any color.
+     * <p>
+     * If no intersection happen, the starter point then continues down diagonally to [1,1].
+     * The search continues until an intersection is found with a color that is not empty.
+     * <p>
+     * Once an intersection with a color is found, the row/column is reverted to the previous pixel
+     * until both the row and column searches have intersected color.
+     * <p>
+     * The search is repeated for the other corner of the image (#getWidth() and #getHeight()) and
+     * inverted until the image is successfully cropped to the portion with just the color contents.
+     *
+     * @param source The source image.
+     */
+    private static BufferedImage trimWhitespaceFromImage(BufferedImage source) {
+        try {
+            Dimension topLeft = colorSearch(source, true);
+            Dimension bottomRight = colorSearch(source, false);
+            if (!topLeft.equals(bottomRight)) {
+                return createNewImage(source, topLeft, bottomRight);
+            }
+        } catch (Exception e) {
+            GUIMain.log("Failed to trim image due to exception: ");
+            GUIMain.log(e);
+        }
+        return source;
+    }
+
+    //scans the row/column for Transparent color
+    static boolean check(BufferedImage bi, int value, boolean isWidth, boolean invert) {
+        int bound = isWidth ? bi.getWidth() : bi.getHeight();
+        if (!invert) {
+            for (int i = 0; i < bound; i++) {
+                Color c = isWidth ? getARGBColor(bi, i, value) : getARGBColor(bi, value, i);
+                if (c.getAlpha() != 0) return false;
+            }
+        } else {
+            for (int i = bound - 1; i > -1; i--) {
+                Color c = isWidth ? getARGBColor(bi, i, value) : getARGBColor(bi, value, i);
+                if (c.getAlpha() != 0) return false;
+            }
+        }
+        return true;
+    }
+
+    private static Dimension colorSearch(BufferedImage bi, boolean topLeft) {
+        Color initial = getARGBColor(bi, (topLeft ? 0 : bi.getWidth() - 1), (topLeft ? 0 : bi.getHeight() - 1));
+        if (initial.getAlpha() == 0) {
+            //start the search
+            int previousHeight = topLeft ? 0 : bi.getHeight();
+            int width = topLeft ? 0 : bi.getWidth() - 1;
+            int height = topLeft ? 0 : bi.getHeight() - 1;
+            int previousWidth = topLeft ? 0 : bi.getWidth();
+            boolean changeWidth = true, changeHeight = true;
+            while (changeHeight || changeWidth) {
+                //check across the current row (horizontally) of pixels
+                if (changeHeight && check(bi, height, true, !topLeft)) {
+                    //it's empty, change the value
+                    previousHeight = height;
+                    if (topLeft) height++;
+                    else height--;
+                } else {
+                    //we hit color in this search, revert to previous
+                    changeHeight = false;
+                    height = previousHeight;
+                }
+                //check going up/down (vertically) at the current width value
+                if (changeWidth && check(bi, width, false, !topLeft)) {
+                    //it's empty, change the value
+                    previousWidth = width;
+                    if (topLeft) width++;
+                    else width--;
+                } else {
+                    //we hit color in this search, revert to previous
+                    changeWidth = false;
+                    width = previousWidth;
+                }
+            }
+            return new Dimension(previousWidth, previousHeight);
+        }
+        //if the initial is a color, there's no point to even do the search
+        return new Dimension(0, 0);
+    }
+
+    private static Color getARGBColor(BufferedImage bi, int x, int y) {
+        int pixel = bi.getRGB(x, y);
+        int alpha = (pixel >> 24) & 0xff;
+        int red = (pixel >> 16) & 0xff;
+        int green = (pixel >> 8) & 0xff;
+        int blue = pixel & 0xff;
+        return new Color(red, green, blue, alpha);
+    }
+
+    private static BufferedImage createNewImage(BufferedImage bi, Dimension topLeft, Dimension bottomRight) throws IOException {
+        return bi.getSubimage(topLeft.width, topLeft.height, bottomRight.width - topLeft.width, bottomRight.height - topLeft.height);
     }
 }

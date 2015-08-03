@@ -1,6 +1,6 @@
 package util.misc;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import lib.pircbot.org.jibble.pircbot.PircBot;
 import util.Timer;
 import util.Utils;

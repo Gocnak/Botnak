@@ -1,6 +1,6 @@
 package thread.heartbeat;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import util.Timer;
 
 /**

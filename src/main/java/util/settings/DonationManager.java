@@ -1,16 +1,15 @@
 package util.settings;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import irc.Donor;
 import irc.message.Message;
 import irc.message.MessageQueue;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import util.Response;
+import util.Utils;
 import util.misc.Donation;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.sql.Date;
 import java.text.NumberFormat;
@@ -175,10 +174,8 @@ public class DonationManager {
         String url = "https://streamtip.com/api/tips?client_id=" + getClientID() + "&access_token=" + getAccessCode() +
                 "&limit=" + limit;
         try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(new URL(url).openStream()));
-            String line = br.readLine();
-            br.close();
-            if (line != null) {
+            String line = Utils.createAndParseBufferedReader(new URL(url).openStream());
+            if (!line.isEmpty()) {
                 JSONObject outerShell = new JSONObject(line);
                 int status = outerShell.getInt("status");
                 int count = outerShell.getInt("_count");

@@ -6,17 +6,22 @@ package irc.account;
 public class Oauth {
 
     private String key;
-    private boolean canSetTitle = false;
-    private boolean canPlayAd = false;
+    private boolean canSetTitle, canReadFollowed, canReadSubscribers, canPlayAd = false;
 
-    public Oauth(String key, boolean canSetTitle, boolean canPlayAd) {
+    public Oauth(String key, boolean canSetTitle, boolean canPlayAd, boolean canReadSubscribers, boolean followed) {
         this.key = key;
         this.canPlayAd = canPlayAd;
         this.canSetTitle = canSetTitle;
+        this.canReadSubscribers = canReadSubscribers;
+        this.canReadFollowed = followed;
     }
 
     public String getKey() {
         return key;
+    }
+
+    public boolean canReadSubscribers() {
+        return canReadSubscribers;
     }
 
     public boolean canPlayAd() {
@@ -25,5 +30,9 @@ public class Oauth {
 
     public boolean canSetTitle() {
         return canSetTitle;
+    }
+
+    public boolean canReadFollowed() {
+        return canReadFollowed;
     }
 }

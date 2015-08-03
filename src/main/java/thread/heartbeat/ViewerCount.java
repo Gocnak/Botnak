@@ -1,7 +1,7 @@
 package thread.heartbeat;
 
 import gui.ChatPane;
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import util.APIRequests;
 import util.Timer;
 

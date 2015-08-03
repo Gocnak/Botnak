@@ -1,4 +1,4 @@
-package gui;
+package gui.forms;
 
 import gui.listeners.ListenerName;
 import thread.heartbeat.UserManager;

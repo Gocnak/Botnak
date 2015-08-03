@@ -3,6 +3,8 @@ package gui;
 import face.FaceManager;
 import face.IconEnum;
 import face.Icons;
+import gui.forms.GUIMain;
+import gui.forms.GUIViewerList;
 import gui.listeners.ListenerFace;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;

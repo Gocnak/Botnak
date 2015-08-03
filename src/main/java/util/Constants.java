@@ -1,6 +1,6 @@
 package util;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import gui.listeners.TabTitleEditListener;
 
 import javax.imageio.ImageIO;

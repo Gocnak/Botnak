@@ -2,7 +2,7 @@ package util;
 
 import gui.ChatPane;
 import gui.CombinedChatPane;
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import lib.pircbot.org.jibble.pircbot.User;
 import util.comm.Command;
 import util.comm.ConsoleCommand;
@@ -902,6 +902,25 @@ public class Utils {
             GUIMain.log("Failed to read buffered reader due to exception: ");
             GUIMain.log(e);
         }
+    }
+
+    /**
+     * One to many methods required creating a BufferedReader just to read one line from it.
+     * This method does that and saves the effort of writing the code elsewhere.
+     *
+     * @param input The InputStream to read from.
+     * @return The string read from the input.
+     */
+    public static String createAndParseBufferedReader(InputStream input) {
+        String toReturn = "";
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(input))) {
+            toReturn = br.readLine();
+            br.close();
+        } catch (Exception e) {
+            GUIMain.log("Could not parse buffered reader due to exception: ");
+            GUIMain.log(e);
+        }
+        return toReturn;
     }
 
     /**

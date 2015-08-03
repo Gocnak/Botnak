@@ -1,7 +1,7 @@
 package irc;
 
 import face.FaceManager;
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import irc.account.Task;
 import irc.message.Message;
 import irc.message.MessageHandler;

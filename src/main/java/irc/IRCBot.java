@@ -2,7 +2,7 @@ package irc;
 
 import face.Face;
 import face.FaceManager;
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import irc.account.Oauth;
 import irc.account.Task;
 import irc.message.MessageHandler;
@@ -143,28 +143,33 @@ public class IRCBot extends MessageHandler {
             String[] split = message.split(" ");
 
             //URL Checking
-            ThreadEngine.submit(() -> {
-                int count = 0;
-                for (String part : split) {
-                    if (count > 1) break;//only allowing 2 requests here; don't want spam
-                    if (part.startsWith("http") || part.startsWith("www")) {
-                        if (part.contains("youtu.be") || part.contains("youtube.com/watch")
-                                || part.contains("youtube.com/v") || part.contains("youtube.com/embed/")) {
-                            getBot().sendMessage(channel, APIRequests.YouTube.getVideoData(part).getResponseText());
-                            count++;
-                        } else if (part.contains("bit.ly") || part.contains("tinyurl") || part.contains("goo.gl")) {
-                            getBot().sendMessage(channel, APIRequests.UnshortenIt.getUnshortened(part).getResponseText());
-                            count++;
-                        } else if (part.contains("twitch.tv/")) {
-                            if (part.contains("/v/") || part.contains("/c/") || part.contains("/b/")) {
-                                getBot().sendMessage(channel, APIRequests.Twitch.getTitleOfVOD(part).getResponseText());
+            boolean ytVidDetail = GUIMain.currentSettings.botShowYTVideoDetails;
+            boolean twitchVOD = GUIMain.currentSettings.botShowTwitchVODDetails;
+            boolean unshortenURLs = GUIMain.currentSettings.botUnshortenURLs;
+            if (ytVidDetail || twitchVOD || unshortenURLs) {
+                ThreadEngine.submit(() -> {
+                    int count = 0;
+                    for (String part : split) {
+                        if (count > 1) break;//only allowing 2 requests here; don't want spam
+                        if (part.startsWith("http") || part.startsWith("www")) {
+                            if (ytVidDetail && (part.contains("youtu.be") || part.contains("youtube.com/watch")
+                                    || part.contains("youtube.com/v") || part.contains("youtube.com/embed/"))) {
+                                getBot().sendMessage(channel, APIRequests.YouTube.getVideoData(part).getResponseText());
                                 count++;
+                            } else if (unshortenURLs && (part.contains("bit.ly") ||
+                                    part.contains("tinyurl") || part.contains("goo.gl"))) {
+                                getBot().sendMessage(channel, APIRequests.UnshortenIt.getUnshortened(part).getResponseText());
+                                count++;
+                            } else if (twitchVOD && part.contains("twitch.tv/")) {
+                                if (part.contains("/v/") || part.contains("/c/") || part.contains("/b/")) {
+                                    getBot().sendMessage(channel, APIRequests.Twitch.getTitleOfVOD(part).getResponseText());
+                                    count++;
+                                }
                             }
                         }
                     }
-                }
-            });
-
+                });
+            }
             String first = "";
             if (split.length > 1) first = split[1];
             //commands
@@ -437,13 +442,13 @@ public class IRCBot extends MessageHandler {
                             commandResponse = APIRequests.Twitch.getUptimeString(channel.substring(1));
                             break;
                         case SEE_PREV_SOUND_DON:
-                            if (GUIMain.currentSettings.showPreviousDonSound) {
+                            if (GUIMain.currentSettings.botShowPreviousDonSound) {
                                 if (GUIMain.currentSettings.loadedDonationSounds)
                                     commandResponse = SoundEngine.getEngine().getLastDonationSound();
                             }
                             break;
                         case SEE_PREV_SOUND_SUB:
-                            if (GUIMain.currentSettings.showPreviousSubSound) {
+                            if (GUIMain.currentSettings.botShowPreviousSubSound) {
                                 if (GUIMain.currentSettings.loadedSubSounds)
                                     commandResponse = SoundEngine.getEngine().getLastSubSound();
                             }

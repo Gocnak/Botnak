@@ -1,5 +1,5 @@
-import gui.GUIMain;
-import gui.GUIUpdate;
+import gui.forms.GUIMain;
+import gui.forms.GUIUpdate;
 import util.settings.Settings;
 
 import javax.swing.*;
@@ -7,7 +7,6 @@ import java.awt.*;
 
 public class Boot {
     public static void main(final String[] args) {
-
         /* Thread-safe initialization */
         EventQueue.invokeLater(new Runnable() {
             @Override

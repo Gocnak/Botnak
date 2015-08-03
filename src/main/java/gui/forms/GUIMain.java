@@ -1,6 +1,9 @@
-package gui;
+package gui.forms;
 
 import face.FaceManager;
+import gui.ChatPane;
+import gui.CombinedChatPane;
+import gui.DraggableTabbedPane;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
 import gui.listeners.ListenerUserChat;
@@ -62,6 +65,8 @@ public class GUIMain extends JFrame {
     public static GUIMain instance;
 
     public static Settings currentSettings;
+
+    public static TrayIcon systemTrayIcon;//TODO
 
     public static CopyOnWriteArraySet<TabPulse> tabPulses;
 
@@ -591,7 +596,7 @@ public class GUIMain extends JFrame {
                     //---- alwaysOnTopToggle ----
                     alwaysOnTopToggle.setText("Always On Top");
                     alwaysOnTopToggle.setSelected(false);
-                    alwaysOnTopToggle.addItemListener(e -> alwaysOnTopToggleItemStateChanged(e));
+                    alwaysOnTopToggle.addItemListener(this::alwaysOnTopToggleItemStateChanged);
                     preferencesMenu.add(alwaysOnTopToggle);
                     preferencesMenu.addSeparator();
 
@@ -1106,14 +1111,14 @@ public class GUIMain extends JFrame {
     private JRadioButtonMenuItem soundPermModAndBroadOption;
     private JRadioButtonMenuItem soundPermBroadOption;
     private JMenuItem manageTextCommandsOption;
-    private JMenu runAdMenu;
+    public JMenu runAdMenu;
     private JMenuItem timeOption30sec;
     private JMenuItem timeOption60sec;
     private JMenuItem timeOption90sec;
     private JMenuItem timeOption120sec;
     private JMenuItem timeOption150sec;
     private JMenuItem timeOption180sec;
-    private JMenuItem updateStatusOption;
+    public JMenuItem updateStatusOption;
     private JCheckBoxMenuItem subOnlyToggle;
     private JMenu slowModeMenu;
     private JRadioButtonMenuItem slowModeOffOption;

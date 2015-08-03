@@ -1,8 +1,8 @@
 package gui.listeners;
 
 import gui.DraggableTabbedPane;
-import gui.GUIMain;
-import gui.GUIStreams;
+import gui.forms.GUIMain;
+import gui.forms.GUIStreams;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;

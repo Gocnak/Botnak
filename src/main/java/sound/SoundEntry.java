@@ -1,6 +1,6 @@
 package sound;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 
 import javax.sound.sampled.*;
 import java.io.Closeable;

@@ -1,4 +1,4 @@
-package gui;
+package gui.forms;
 
 import irc.account.Oauth;
 import thread.ThreadEngine;

@@ -3,7 +3,7 @@ package util.settings;
 import face.*;
 import gui.ChatPane;
 import gui.CombinedChatPane;
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import irc.Donor;
 import irc.Subscriber;
 import irc.account.Account;
@@ -118,10 +118,24 @@ public class Settings {
     public boolean actuallyClearChat = true;//TODO incorporate
     public boolean showDonorIcons = true; //TODO incorporate
     public boolean showTabPulses = true;//TODO implement
-    public boolean showPreviousSubSound = true;
-    public boolean showPreviousDonSound = true;
-    public boolean botAnnounceSubscribers = true;
     public boolean trackDonations = true;
+
+    //Bot Reply
+    public boolean botAnnounceSubscribers = true;
+    public boolean botShowYTVideoDetails = true;
+    public boolean botShowTwitchVODDetails = true;
+    public boolean botShowPreviousSubSound = true;
+    public boolean botShowPreviousDonSound = true;
+    public boolean botUnshortenURLs = true;
+
+    //System Tray
+    public boolean useSystemTray = true;
+    public boolean stMuted = false;
+    public boolean stShowSubscribers = false;
+    public boolean stShowNewFollowers = false;
+    public boolean stShowDonations = false;
+    public boolean stShowActivity = true;
+    public boolean stShowMentions = true;
 
 
     public Settings() {//default account
@@ -195,10 +209,11 @@ public class Settings {
                 donationManager.checkDonations(false);
                 donationManager.ranFirstCheck = true;
             }
-            //TODO implement #canCheckSubs()
-            if (!subscriberManager.ranInitialCheck && accountManager.getUserAccount() != null) {
-                subscriberManager.scanInitialSubscribers(accountManager.getUserAccount().getName(),
-                        accountManager.getUserAccount().getKey().getKey().split(":")[1], 0, new HashSet<>());
+            if (accountManager.getUserAccount().getKey().canReadSubscribers()) {
+                if (!subscriberManager.ranInitialCheck && accountManager.getUserAccount() != null) {
+                    subscriberManager.scanInitialSubscribers(accountManager.getUserAccount().getName(),
+                            accountManager.getUserAccount().getKey().getKey().split(":")[1], 0, new HashSet<>());
+                }
             }
             if (Utils.areFilesGood(subsFile.getAbsolutePath())) {
                 GUIMain.log("Loading subscribers...");
@@ -269,7 +284,6 @@ public class Settings {
      * *********VOIDS*************
      */
 
-    //TODO make this load from just one file, but separating the setters based on the int type
     public void loadPropData(int type) {
         Properties p = new Properties();
         if (type == 0) {//accounts
@@ -281,13 +295,23 @@ public class Settings {
                 String commercial = p.getProperty("CanCommercial", "false");
                 if (!userNorm.equals("") && !userNormPass.equals("") && userNormPass.contains("oauth")) {
                     boolean stat = Boolean.parseBoolean(status);
+                    if (!stat) {
+                        GUIMain.instance.updateStatusOption.setEnabled(false);
+                        GUIMain.instance.updateStatusOption.setToolTipText("Enable \"Edit Title and Game\" in the Authorize GUI to use this feature.");
+                    }
                     boolean ad = Boolean.parseBoolean(commercial);
-                    accountManager.setUserAccount(new Account(userNorm, new Oauth(userNormPass, stat, ad)));
+                    if (!ad) {
+                        GUIMain.instance.runAdMenu.setEnabled(false);
+                        GUIMain.instance.runAdMenu.setToolTipText("Enable \"Play Commercials\" in the Authorize GUI to use this feature.");
+                    }
+                    boolean subs = Boolean.parseBoolean(p.getProperty("CanParseSubscribers", "false"));
+                    boolean followed = Boolean.parseBoolean(p.getProperty("CanParseFollowedStreams", "false"));
+                    accountManager.setUserAccount(new Account(userNorm, new Oauth(userNormPass, stat, ad, subs, followed)));
                 }
                 String userBot = p.getProperty("UserBot", "").toLowerCase();
                 String userBotPass = p.getProperty("UserBotPass", "");
                 if (!userBot.equals("") && !userBotPass.equals("") && userBotPass.contains("oauth")) {
-                    accountManager.setBotAccount(new Account(userBot, new Oauth(userBotPass, false, false)));
+                    accountManager.setBotAccount(new Account(userBot, new Oauth(userBotPass, false, false, false, false)));
                 }
                 if (accountManager.getUserAccount() != null) {
                     accountManager.addTask(new Task(null, Task.Type.CREATE_VIEWER_ACCOUNT, null));
@@ -342,9 +366,21 @@ public class Settings {
                 font = Utils.stringToFont(p.getProperty("Font").split(","));
                 StyleConstants.setFontFamily(GUIMain.norm, font.getFamily());
                 StyleConstants.setFontSize(GUIMain.norm, font.getSize());
-                SoundEngine.getEngine().setPermission(Integer.parseInt(p.getProperty("SoundEnginePerm", "1")));
-                SoundEngine.getEngine().setDelay(Integer.parseInt(p.getProperty("SoundEngineDelay", "10000")));
+                int parsed = Integer.parseInt(p.getProperty("SoundEnginePerm", "1"));
+                SoundEngine.getEngine().setPermission(parsed);
+                GUIMain.instance.updateSoundPermission(parsed);
+                parsed = Integer.parseInt(p.getProperty("SoundEngineDelay", "10000"));
+                SoundEngine.getEngine().setDelay(parsed);
+                GUIMain.instance.updateSoundDelay(parsed / 1000);
                 botReplyType = Integer.parseInt(p.getProperty("BotReplyType", "0"));
+                GUIMain.instance.updateBotReplyPerm(botReplyType);
+                useSystemTray = Boolean.parseBoolean(p.getProperty("ST_UseSystemTray", "false"));
+                stShowActivity = Boolean.parseBoolean(p.getProperty("ST_DisplayActivity", "false"));
+                stShowDonations = Boolean.parseBoolean(p.getProperty("ST_DisplayDonations", "false"));
+                stShowMentions = Boolean.parseBoolean(p.getProperty("ST_DisplayMentions", "false"));
+                stShowNewFollowers = Boolean.parseBoolean(p.getProperty("ST_DisplayFollowers", "false"));
+                stShowSubscribers = Boolean.parseBoolean(p.getProperty("ST_DisplaySubscribers", "false"));
+
                 GUIMain.log("Loaded defaults!");
             } catch (Exception e) {
                 GUIMain.log(e);
@@ -354,59 +390,76 @@ public class Settings {
 
     public void savePropData(int type) {
         Properties p = new Properties();
-        if (type == 0) {//account data
-            Account user = accountManager.getUserAccount();
-            Account bot = accountManager.getBotAccount();
-            if (user != null) {
-                Oauth key = user.getKey();
-                p.put("UserNorm", user.getName());
-                p.put("UserNormPass", key.getKey());
-                p.put("CanStatus", String.valueOf(key.canSetTitle()));
-                p.put("CanCommercial", String.valueOf(key.canPlayAd()));
-            }
-            if (bot != null) {
-                Oauth key = bot.getKey();
-                p.put("UserBot", bot.getName());
-                p.put("UserBotPass", key.getKey());
-            }
-            try {
-                p.store(new FileWriter(accountsFile), "Account Info");
-            } catch (IOException e) {
-                GUIMain.log(e);
-            }
+        File writerFile = null;
+        String detail = "";
+        switch (type) {
+            case 0:
+                Account user = accountManager.getUserAccount();
+                Account bot = accountManager.getBotAccount();
+                if (user != null) {
+                    Oauth key = user.getKey();
+                    p.put("UserNorm", user.getName());
+                    p.put("UserNormPass", key.getKey());
+                    p.put("CanStatus", String.valueOf(key.canSetTitle()));
+                    p.put("CanCommercial", String.valueOf(key.canPlayAd()));
+                    p.put("CanParseSubscribers", String.valueOf(key.canReadSubscribers()));
+                    p.put("CanParseFollowedStreams", String.valueOf(key.canReadFollowed()));
+                }
+                if (bot != null) {
+                    Oauth key = bot.getKey();
+                    p.put("UserBot", bot.getName());
+                    p.put("UserBotPass", key.getKey());
+                }
+                writerFile = accountsFile;
+                detail = "Account Info";
+                break;
+            case 1:
+                p.put("RanInitSub", String.valueOf(subscriberManager.ranInitialCheck));
+                p.put("LastFMAccount", lastFMAccount);
+                p.put("DCID", donationManager.getClientID());
+                p.put("DCOAUTH", donationManager.getAccessCode());
+                if (defaultFaceDir != null && !defaultFaceDir.equals("")) {
+                    p.put("FaceDir", defaultFaceDir);
+                }
+                if (defaultSoundDir != null && !defaultSoundDir.equals("")) {
+                    p.put("SoundDir", defaultSoundDir);
+                }
+                p.put("UseMod", String.valueOf(useMod));
+                p.put("CustomMod", modIcon.toString());
+                p.put("UseBroad", String.valueOf(useBroad));
+                p.put("CustomBroad", broadIcon.toString());
+                p.put("UseAdmin", String.valueOf(useAdmin));
+                p.put("CustomAdmin", adminIcon.toString());
+                p.put("UseStaff", String.valueOf(useStaff));
+                p.put("CustomStaff", staffIcon.toString());
+                p.put("MaxChat", String.valueOf(chatMax));
+                p.put("FaceMaxHeight", String.valueOf(faceMaxHeight));
+                p.put("ClearChat", String.valueOf(cleanupChat));
+                p.put("LogChat", String.valueOf(logChat));
+                p.put("Font", Utils.fontToString(font));
+                p.put("SoundEnginePerm", String.valueOf(SoundEngine.getEngine().getPermission()));
+                p.put("SoundEngineDelay", String.valueOf(SoundEngine.getEngine().getDelay()));
+                p.put("BotReplyType", String.valueOf(botReplyType));
+                p.put("ST_UseSystemTray", String.valueOf(useSystemTray));
+                p.put("ST_DisplayActivity", String.valueOf(stShowActivity));
+                p.put("ST_DisplayDonations", String.valueOf(stShowDonations));
+                p.put("ST_DisplayMentions", String.valueOf(stShowMentions));
+                p.put("ST_DisplayFollowers", String.valueOf(stShowNewFollowers));
+                p.put("ST_DisplaySubscribers", String.valueOf(stShowSubscribers));
+                writerFile = defaultsFile;
+                detail = "Defaults/Other Settings";
+                break;
+            default:
+                break;
         }
-        if (type == 1) {//deaults data
-            p.put("RanInitSub", String.valueOf(subscriberManager.ranInitialCheck));
-            p.put("LastFMAccount", lastFMAccount);
-            p.put("DCID", donationManager.getClientID());
-            p.put("DCOAUTH", donationManager.getAccessCode());
-            if (defaultFaceDir != null && !defaultFaceDir.equals("")) {
-                p.put("FaceDir", defaultFaceDir);
-            }
-            if (defaultSoundDir != null && !defaultSoundDir.equals("")) {
-                p.put("SoundDir", defaultSoundDir);
-            }
-            p.put("UseMod", String.valueOf(useMod));
-            p.put("CustomMod", modIcon.toString());
-            p.put("UseBroad", String.valueOf(useBroad));
-            p.put("CustomBroad", broadIcon.toString());
-            p.put("UseAdmin", String.valueOf(useAdmin));
-            p.put("CustomAdmin", adminIcon.toString());
-            p.put("UseStaff", String.valueOf(useStaff));
-            p.put("CustomStaff", staffIcon.toString());
-            p.put("MaxChat", String.valueOf(chatMax));
-            p.put("FaceMaxHeight", String.valueOf(faceMaxHeight));
-            p.put("ClearChat", String.valueOf(cleanupChat));
-            p.put("LogChat", String.valueOf(logChat));
-            p.put("Font", Utils.fontToString(font));
-            p.put("SoundEnginePerm", String.valueOf(SoundEngine.getEngine().getPermission()));
-            p.put("SoundEngineDelay", String.valueOf(SoundEngine.getEngine().getDelay()));
-            p.put("BotReplyType", String.valueOf(botReplyType));
+        if (writerFile != null) {
             try {
-                p.store(new FileWriter(defaultsFile), "Default Settings");
-            } catch (IOException e) {
+                p.store(new FileWriter(writerFile), detail);
+            } catch (Exception e) {
                 GUIMain.log(e);
             }
+        } else {
+            GUIMain.log("Failed to store settings due to some unforseen exception!");
         }
     }
 

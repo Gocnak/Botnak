@@ -2,7 +2,7 @@ package irc.message;
 
 import gui.ChatPane;
 import gui.CombinedChatPane;
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import lib.pircbot.org.jibble.pircbot.Queue;
 import sound.SoundEngine;
 

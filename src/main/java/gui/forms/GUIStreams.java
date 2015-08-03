@@ -1,4 +1,9 @@
-package gui;
+package gui.forms;
+
+import gui.ChatPane;
+import gui.CombinedChatPane;
+import irc.account.Oauth;
+import util.APIRequests;
 
 import javax.swing.*;
 import java.awt.*;
@@ -7,15 +12,31 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 
 
+/**
+ * @author Nick K
+ */
 public class GUIStreams extends JFrame {
 
     public GUIStreams() {
+        Oauth key = GUIMain.currentSettings.accountManager.getUserAccount().getKey();
         initComponents();
+        if (key.canReadFollowed()) {
+            String[] channels = APIRequests.Twitch.getLiveFollowedChannels(key.getKey().split(":")[1]);
+            if (channels.length > 0) {
+                setFollowedListModel(channels);
+            } else {
+                setFollowedListModel("No followed streams", " are live :(");
+            }
+        }
     }
 
     public void doneButtonActionPerformed() {
-        GUIMain.channelPane.setSelectedIndex(GUIMain.channelPane.getTabCount() - 2);
         dispose();
+    }
+
+    private void newChannelKeyReleased(KeyEvent e) {
+        //TODO enter -> add the text, every other key filters the list
+        //use APIRequests.Twitch.getUsernameSuggestions(newChannel.getText()) to fill the list, change the JLabel to "Suggested Streams"
     }
 
     public void addStreamButtonActionPerformed() {
@@ -64,37 +85,62 @@ public class GUIStreams extends JFrame {
         newChannel.setText("");
     }
 
+
+    private void setFollowedListModel(String... values) {
+        followedList.setModel(new AbstractListModel<String>() {
+            @Override
+            public int getSize() {
+                return values.length;
+            }
+
+            @Override
+            public String getElementAt(int i) {
+                return values[i];
+            }
+        });
+    }
+
+
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner Evaluation license - Nick K
-        doneButton = new JButton();
+        scrollPane1 = new JScrollPane();
+        followedList = new JList<>();
+        label2 = new JLabel();
+        label3 = new JLabel();
         newChannel = new JTextField();
+        separator1 = new JSeparator();
+        separator2 = new JSeparator();
         addStreamButton = new JButton();
-        scrollPane2 = new JScrollPane();
-        label1 = new JTextArea();
+        doneButton = new JButton();
 
         //======== this ========
-        setTitle("Add Streams");
+        setTitle("Add a Stream");
         setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
         setResizable(false);
         Container contentPane = getContentPane();
 
-        //---- doneButton ----
-        doneButton.setText("Done");
-        doneButton.setFocusable(false);
-        doneButton.addActionListener(e -> doneButtonActionPerformed());
+        //======== scrollPane1 ========
+        {
+
+            //---- followedList ----
+            setFollowedListModel("Enable \"Read followed Streams\" on", " your Oauth key!");
+            followedList.setFocusable(false);
+            scrollPane1.setViewportView(followedList);
+        }
+
+        //---- label2 ----
+        label2.setText("Followed Streams:");
+
+        //---- label3 ----
+        label3.setText("Twitch Username:");
 
         //---- newChannel ----
         newChannel.setFont(new Font("Tahoma", Font.PLAIN, 12));
         newChannel.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    addStreamButtonActionPerformed();
-                }
-                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-                    dispose();
-                }
+                newChannelKeyReleased(e);
             }
         });
 
@@ -103,18 +149,10 @@ public class GUIStreams extends JFrame {
         addStreamButton.setFocusable(false);
         addStreamButton.addActionListener(e -> addStreamButtonActionPerformed());
 
-        //======== scrollPane2 ========
-        {
-
-            //---- label1 ----
-            label1.setText("Enter the username of the Twitch user that you want to join.  \nYou may separate multiple names by commas to create a combined chat panel.\n\nEx: \n\"gocnak\" creates a tab for Gocnak's chat.\n\n\"gocnak,botnak,tduva\" creates a combined tab with the chats of \nGocnak, Botnak, and TDuva.");
-            label1.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-            label1.setFocusable(false);
-            label1.setEditable(false);
-            label1.setFont(new Font("Arial", Font.PLAIN, 12));
-            label1.setOpaque(false);
-            scrollPane2.setViewportView(label1);
-        }
+        //---- doneButton ----
+        doneButton.setText("Close");
+        doneButton.setFocusable(false);
+        doneButton.addActionListener(e -> doneButtonActionPerformed());
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         GroupLayout contentPaneLayout = new GroupLayout(contentPane);
         contentPane.setLayout(contentPaneLayout);
@@ -124,27 +162,40 @@ public class GUIStreams extends JFrame {
                                 .addContainerGap()
                                 .addGroup(contentPaneLayout.createParallelGroup()
                                         .addGroup(contentPaneLayout.createSequentialGroup()
-                                                .addComponent(newChannel)
-                                                .addGap(18, 18, 18)
-                                                .addComponent(addStreamButton)
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                                                .addComponent(doneButton))
-                                        .addGroup(GroupLayout.Alignment.TRAILING, contentPaneLayout.createSequentialGroup()
-                                                .addGap(0, 0, Short.MAX_VALUE)
-                                                .addComponent(scrollPane2, GroupLayout.PREFERRED_SIZE, 459, GroupLayout.PREFERRED_SIZE)))
+                                                .addComponent(addStreamButton, GroupLayout.PREFERRED_SIZE, 56, GroupLayout.PREFERRED_SIZE)
+                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 28, Short.MAX_VALUE)
+                                                .addComponent(doneButton, GroupLayout.PREFERRED_SIZE, 70, GroupLayout.PREFERRED_SIZE))
+                                        .addGroup(contentPaneLayout.createSequentialGroup()
+                                                .addGroup(contentPaneLayout.createParallelGroup()
+                                                        .addComponent(label2)
+                                                        .addComponent(scrollPane1, GroupLayout.PREFERRED_SIZE, 150, GroupLayout.PREFERRED_SIZE)
+                                                        .addComponent(label3)
+                                                        .addComponent(newChannel, GroupLayout.PREFERRED_SIZE, 150, GroupLayout.PREFERRED_SIZE))
+                                                .addGap(0, 0, Short.MAX_VALUE)))
                                 .addContainerGap())
+                        .addComponent(separator1, GroupLayout.DEFAULT_SIZE, 174, Short.MAX_VALUE)
+                        .addComponent(separator2, GroupLayout.DEFAULT_SIZE, 174, Short.MAX_VALUE)
         );
         contentPaneLayout.setVerticalGroup(
                 contentPaneLayout.createParallelGroup()
                         .addGroup(contentPaneLayout.createSequentialGroup()
+                                .addContainerGap()
+                                .addComponent(label2)
+                                .addGap(6, 6, 6)
+                                .addComponent(scrollPane1, GroupLayout.PREFERRED_SIZE, 125, GroupLayout.PREFERRED_SIZE)
                                 .addGap(8, 8, 8)
-                                .addComponent(scrollPane2, GroupLayout.PREFERRED_SIZE, 130, GroupLayout.PREFERRED_SIZE)
+                                .addComponent(separator1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(label3)
                                 .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(newChannel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(separator2, GroupLayout.PREFERRED_SIZE, 2, GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                                         .addComponent(addStreamButton, GroupLayout.PREFERRED_SIZE, 28, GroupLayout.PREFERRED_SIZE)
-                                        .addComponent(doneButton, GroupLayout.DEFAULT_SIZE, 29, Short.MAX_VALUE)
-                                        .addComponent(newChannel, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE))
-                                .addGap(28, 28, 28))
+                                        .addComponent(doneButton, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE))
+                                .addContainerGap(3, Short.MAX_VALUE))
         );
         pack();
         setLocationRelativeTo(getOwner());
@@ -153,10 +204,14 @@ public class GUIStreams extends JFrame {
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
     // Generated using JFormDesigner Evaluation license - Nick K
-    public static JButton doneButton;
-    public static JTextField newChannel;
-    public static JButton addStreamButton;
-    public static JScrollPane scrollPane2;
-    public static JTextArea label1;
+    private JScrollPane scrollPane1;
+    private JList<String> followedList;
+    private JLabel label2;
+    private JLabel label3;
+    private JTextField newChannel;
+    private JSeparator separator1;
+    private JSeparator separator2;
+    private JButton addStreamButton;
+    private JButton doneButton;
     // JFormDesigner - End of variables declaration  //GEN-END:variables
 }

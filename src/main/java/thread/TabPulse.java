@@ -1,7 +1,7 @@
 package thread;
 
 import gui.ChatPane;
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import lib.jtattoo.com.jtattoo.plaf.ColorHelper;
 
 import javax.accessibility.AccessibleComponent;

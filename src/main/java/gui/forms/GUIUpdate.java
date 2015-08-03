@@ -1,5 +1,6 @@
-package gui;
+package gui.forms;
 
+import gui.WrapEditorKit;
 import util.Constants;
 import util.Utils;
 

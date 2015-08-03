@@ -1,6 +1,6 @@
 package gui.listeners;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import lib.pircbot.org.jibble.pircbot.User;
 
 import javax.swing.*;

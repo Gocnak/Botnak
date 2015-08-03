@@ -1,6 +1,6 @@
 package irc.account;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import irc.IRCBot;
 import irc.IRCViewer;
 import lib.pircbot.org.jibble.pircbot.PircBot;

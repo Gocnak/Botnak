@@ -1,6 +1,6 @@
 package irc.message;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 
 import java.awt.*;
 import java.util.ArrayList;

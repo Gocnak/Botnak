@@ -14,7 +14,7 @@ found at http://www.jibble.org/licenses/
 
 package lib.pircbot.org.jibble.pircbot;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 
 import java.io.BufferedReader;
 import java.io.InterruptedIOException;

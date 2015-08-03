@@ -2,8 +2,8 @@ package gui.listeners;
 
 import gui.ChatPane;
 import gui.CombinedChatPane;
-import gui.GUIMain;
-import gui.GUIViewerList;
+import gui.forms.GUIMain;
+import gui.forms.GUIViewerList;
 import util.Utils;
 
 import javax.swing.*;

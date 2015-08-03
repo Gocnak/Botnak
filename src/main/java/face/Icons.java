@@ -1,7 +1,7 @@
 package face;
 
 import gui.ChatPane;
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import lib.scalr.Scalr;
 
 import javax.imageio.ImageIO;

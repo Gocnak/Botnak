@@ -1,6 +1,9 @@
 package gui;
 
+import gui.forms.GUIAuthorizeAccount;
+import gui.forms.GUIMain;
 import util.Timer;
+import util.Utils;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -15,12 +18,12 @@ import java.net.Socket;
  */
 public class TokenListener extends Thread {
 
-    private AuthorizeAccountGUI field;
+    private GUIAuthorizeAccount form;
     private Timer timeoutTimer;
 
-    public TokenListener(AuthorizeAccountGUI field) {
+    public TokenListener(GUIAuthorizeAccount field) {
         timeoutTimer = new Timer(1000 * 60);
-        this.field = field;
+        this.form = field;
     }
 
     @Override
@@ -33,8 +36,10 @@ public class TokenListener extends Thread {
                 String inputLine = input.readLine();
                 String token = inputLine.replace("GET /token/", "").split(" ")[0];
                 if (token.length() > 5) {
-                    field.oAuthField.setText(token);
+                    form.oauthField.setText(token);
+                    form.statusPane.setText("Successfully obtained OAuth key! Click \"Close\" below to finish!");
                     s.getOutputStream().write(makeResponse().getBytes("UTF-8"));
+                    input.close();
                     s.close();
                     so.close();
                     break;
@@ -53,13 +58,8 @@ public class TokenListener extends Thread {
             InputStream input = getClass().getResourceAsStream("token_received.html");
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));
             StringBuilder buffer = new StringBuilder();
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                buffer.append(line);
-                buffer.append("\n");
-            }
+            Utils.parseBufferedReader(bufferedReader, buffer, true);
             content = buffer.toString();
-            bufferedReader.close();
             input.close();
         } catch (Exception ex) {
             content = "<html><body>An error occurred (couldn't read file)</body></html>";

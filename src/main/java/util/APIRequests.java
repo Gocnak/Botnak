@@ -1,6 +1,6 @@
 package util;
 
-import gui.GUIMain;
+import gui.forms.GUIMain;
 import irc.account.Oauth;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
@@ -12,6 +12,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,10 +33,8 @@ public class APIRequests {
             Response toReturn = new Response();
             try {
                 URL nightdev = new URL("https://nightdev.com/hosted/uptime.php?channel=" + channelName);
-                BufferedReader br = new BufferedReader(new InputStreamReader(nightdev.openStream()));
-                String line = br.readLine();
-                br.close();
-                if (line != null) {
+                String line = Utils.createAndParseBufferedReader(nightdev.openStream());
+                if (!line.isEmpty()) {
                     if (line.contains("is not")) {
                         toReturn.setResponseText("The stream is not live!");
                     } else if (line.contains("No chan")) {
@@ -62,10 +61,8 @@ public class APIRequests {
             try {
                 URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName
                         + "?client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
-                BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
-                String line = br.readLine();
-                br.close();
-                if (line != null) {
+                String line = Utils.createAndParseBufferedReader(twitch.openStream());
+                if (!line.isEmpty()) {
                     JSONObject jsonObject = new JSONObject(line);
                     isLive = !jsonObject.isNull("stream") && !jsonObject.getJSONObject("stream").isNull("preview");
                 }
@@ -85,10 +82,8 @@ public class APIRequests {
             try {//this could be parsed with JSON, but patterns work, and if it ain't broke...
                 URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName
                         + "?client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
-                BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
-                String line = br.readLine();
-                br.close();
-                if (line != null) {
+                String line = Utils.createAndParseBufferedReader(twitch.openStream());
+                if (!line.isEmpty()) {
                     Matcher m = Constants.viewerTwitchPattern.matcher(line);
                     if (m.find()) {
                         try {
@@ -115,10 +110,8 @@ public class APIRequests {
                 if (channel.contains("#")) channel = channel.replace("#", "");
                 URL twitch = new URL("https://api.twitch.tv/kraken/channels/" + channel
                         + "?client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
-                BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
-                String line = br.readLine();
-                br.close();
-                if (line != null) {
+                String line = Utils.createAndParseBufferedReader(twitch.openStream());
+                if (!line.isEmpty()) {
                     JSONObject base = new JSONObject(line);
                     //these are never null, just blank strings at worst
                     toRet[0] = base.getString("status");
@@ -211,10 +204,8 @@ public class APIRequests {
                         "&oauth_token=" + key.split(":")[1] + "&_method=put" +
                         "&client_id=qw8d3ve921t0n6e3if07l664f1jn1y7";
                 URL twitch = new URL(request);
-                BufferedReader br = new BufferedReader(new InputStreamReader(twitch.openStream()));
-                String line = br.readLine();
-                br.close();
-                if (line.contains(title) && line.contains(game)) {
+                String line = Utils.createAndParseBufferedReader(twitch.openStream());
+                if (!line.isEmpty() && line.contains(title) && line.contains(game)) {
                     toReturn.wasSuccessful();
                 }
             } catch (Exception e) {
@@ -284,20 +275,80 @@ public class APIRequests {
                 }
                 URL request = new URL("https://api.twitch.tv/kraken/videos/" + ID
                         + "?client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
-                BufferedReader br = new BufferedReader(new InputStreamReader(request.openStream()));
-                String line = br.readLine();
-                br.close();
-                JSONObject init = new JSONObject(line);
-                String title = init.getString("title");
-                JSONObject channel = init.getJSONObject("channel");
-                String author = channel.getString("display_name");
-                toReturn.wasSuccessful();
-                toReturn.setResponseText("Linked Twitch VOD: \"" + title + "\" by " + author);
+                String line = Utils.createAndParseBufferedReader(request.openStream());
+                if (!line.isEmpty()) {
+                    JSONObject init = new JSONObject(line);
+                    String title = init.getString("title");
+                    JSONObject channel = init.getJSONObject("channel");
+                    String author = channel.getString("display_name");
+                    toReturn.wasSuccessful();
+                    toReturn.setResponseText("Linked Twitch VOD: \"" + title + "\" by " + author);
+                }
             } catch (Exception e) {
                 toReturn.setResponseText("Failed to parse Twitch VOD due to an Exception!");
             }
             return toReturn;
         }
+
+        /**
+         * Uses the main account's OAuth to check for your followed channels, if enabled.
+         *
+         * @param key The oauth key to use.
+         * @return An array of live streams (empty if no one is live).
+         */
+        public static String[] getLiveFollowedChannels(String key) {
+            ArrayList<String> toReturn = new ArrayList<>();
+            try {
+                URL request = new URL("https://api.twitch.tv/kraken/streams/followed?oauth_token="
+                        + key + "&limit=100&client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
+                String line = Utils.createAndParseBufferedReader(request.openStream());
+                if (!line.isEmpty()) {
+                    JSONObject init = new JSONObject(line);
+                    JSONArray streams = init.getJSONArray("streams");
+                    for (int i = 0; i < streams.length(); i++) {
+                        JSONObject stream = streams.getJSONObject(i);
+                        JSONObject channel = stream.getJSONObject("channel");
+                        toReturn.add(channel.getString("name"));
+                    }
+                }
+
+            } catch (Exception e) {
+                GUIMain.log("Failed to get live followed channels due to exception:");
+                GUIMain.log(e);
+            }
+            return toReturn.toArray(new String[toReturn.size()]);
+        }
+
+        /**
+         * Gets username suggestions when adding a stream.
+         *
+         * @param partial The partially typed text to prompt a suggestion.
+         * @return An array of suggested stream names.
+         */
+        public static String[] getUsernameSuggestions(String partial) {
+            ArrayList<String> toReturn = new ArrayList<>();
+            try {
+                URL request = new URL("https://api.twitch.tv/kraken/search/channels?limit=10&q=" + partial +
+                        "&client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
+                String line = Utils.createAndParseBufferedReader(request.openStream());
+                if (!line.isEmpty()) {
+                    JSONObject init = new JSONObject(line);
+                    JSONArray channels = init.getJSONArray("channels");
+                    for (int i = 0; i < channels.length(); i++) {
+                        JSONObject channel = channels.getJSONObject(i);
+                        toReturn.add(channel.getString("name"));
+                    }
+                }
+            } catch (Exception e) {
+                GUIMain.log(e);
+            }
+            return toReturn.toArray(new String[toReturn.size()]);
+        }
+
+        //TODO
+        //public static String[] getLast20Followers() {
+        //
+        //}
     }
 
     //Current playing song
@@ -318,9 +369,7 @@ public class APIRequests {
             try {
                 URL request = new URL("http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
                         GUIMain.currentSettings.lastFMAccount + "&api_key=e0d3467ebb54bb110787dd3d77705e1a&format=json");
-                BufferedReader br = new BufferedReader(new InputStreamReader(request.openStream()));
-                String line = br.readLine();
-                br.close();
+                String line = Utils.createAndParseBufferedReader(request.openStream());
                 JSONObject outermost = new JSONObject(line);
                 JSONObject recentTracks = outermost.getJSONObject("recenttracks");
                 JSONArray songsArray = recentTracks.getJSONArray("track");
@@ -340,6 +389,7 @@ public class APIRequests {
                 }
             } catch (Exception e) {
                 toReturn.setResponseText("Failed to fetch current playing song due to an Exception!");
+                GUIMain.log(e);
             }
             return toReturn;
         }
@@ -361,7 +411,7 @@ public class APIRequests {
                 Pattern p = null;
                 if (fullURL.contains("youtu.be/")) {
                     p = Pattern.compile("youtu\\.be/([^&\\?/]+)");
-                } else if (fullURL.contains("watch?v=")) {
+                } else if (fullURL.contains("v=")) {
                     p = Pattern.compile("v=([^&\\?/]+)");
                 } else if (fullURL.contains("/embed/")) {
                     p = Pattern.compile("youtube\\.com/embed/([^&\\?/]+)");
@@ -424,10 +474,8 @@ public class APIRequests {
             toReturn.setResponseText("Failed to un-shorten URL! Click with caution!");
             try {
                 URL request = new URL("https://therealurl.appspot.com/?url=" + shortenedURL);
-                BufferedReader br = new BufferedReader(new InputStreamReader(request.openStream()));
-                String line = br.readLine();
-                br.close();
-                if (line != null) {
+                String line = Utils.createAndParseBufferedReader(request.openStream());
+                if (!line.isEmpty()) {
                     if (!line.equals(shortenedURL)) {
                         line = getHost(line);
                         toReturn.setResponseText("Linked Shortened URL directs to: " + line + " !");

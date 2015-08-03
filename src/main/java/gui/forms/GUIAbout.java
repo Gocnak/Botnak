@@ -1,5 +1,6 @@
-package gui;
+package gui.forms;
 
+import thread.ThreadEngine;
 import util.Constants;
 import util.Utils;
 
@@ -16,7 +17,7 @@ public class GUIAbout extends JFrame {
 
     public GUIAbout() {
         initComponents();
-        getUpdateInfo();
+        ThreadEngine.submit(this::getUpdateInfo);
     }
 
     private void getUpdateInfo() {
@@ -30,7 +31,8 @@ public class GUIAbout extends JFrame {
         } catch (Exception e) {
             GUIMain.log("Failed to download version info: ");
             GUIMain.log(e);
-            versionInformationArea.setText("Failed to download version information!");
+            if (versionInformationArea != null)
+                versionInformationArea.setText("Failed to download version information!");
         }
     }
 

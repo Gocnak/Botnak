@@ -1,7 +1,7 @@
 package thread.heartbeat;
 
-import gui.GUIMain;
-import gui.GUIViewerList;
+import gui.forms.GUIMain;
+import gui.forms.GUIViewerList;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import lib.pircbot.org.jibble.pircbot.ChannelManager;
