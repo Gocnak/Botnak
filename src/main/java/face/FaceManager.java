@@ -446,7 +446,7 @@ public class FaceManager {
      */
     public static String downloadIcon(String url, String channel) {
         File toSave = new File(GUIMain.currentSettings.subIconsDir + File.separator + Utils.setExtension(channel.substring(1), ".png"));
-        if (download(url, toSave))
+        if (download(url, toSave, null))
             return toSave.getAbsolutePath();
         else
             return null;
@@ -458,7 +458,7 @@ public class FaceManager {
             if (f == null) return null;
             String fileName = Utils.setExtension(String.valueOf(emote), ".png");
             File toSave = new File(GUIMain.currentSettings.twitchFaceDir.getAbsolutePath() + File.separator + fileName);
-            if (download(f.getFilePath(), toSave)) {
+            if (download(f.getFilePath(), toSave, FACE_TYPE.TWITCH_FACE)) {
                 TwitchFace newFace = new TwitchFace(f.getRegex(), toSave.getAbsolutePath(), true);
                 twitchFaceMap.put(emote, newFace);
                 return newFace;
@@ -479,7 +479,7 @@ public class FaceManager {
             File directory = new File(GUIMain.currentSettings.frankerFaceZDir + File.separator + channel);
             directory.mkdirs();
             File toSave = new File(directory + File.separator + fileName);
-            if (download(face.getFilePath(), toSave)) {
+            if (download(face.getFilePath(), toSave, FACE_TYPE.FRANKER_FACE)) {
                 toReturn = new FrankerFaceZ(Utils.removeExt(fileName), toSave.getAbsolutePath(), true);
             }
         } catch (Exception e) {
@@ -521,7 +521,7 @@ public class FaceManager {
         }
         try {
             File toSave = new File(directory + File.separator + name);
-            if (download(url, toSave)) {
+            if (download(url, toSave, type)) {
                 if (type == FACE_TYPE.NORMAL_FACE) {
                     Face face = new Face(regex, toSave.getAbsolutePath());
                     name = Utils.removeExt(name);
@@ -543,7 +543,7 @@ public class FaceManager {
         return toReturn;
     }
 
-    private static boolean download(String url, File toSave) {
+    private static boolean download(String url, File toSave, FACE_TYPE type) {
         try {
             BufferedImage image;
             URL URL = new URL(url);//bad URL or something
@@ -552,7 +552,7 @@ public class FaceManager {
             }
             if (sanityCheck(URL)) {
                 image = ImageIO.read(URL);//just incase the file is null/it can't read it
-                image = trimWhitespaceFromImage(image);
+                if (type == FACE_TYPE.NAME_FACE) image = trimWhitespaceFromImage(image);
                 if (image.getHeight() > DOWNLOAD_MAX_FACE_HEIGHT) {//if it's too big, scale it
                     image = Scalr.resize(image, Scalr.Method.ULTRA_QUALITY,
                             Scalr.Mode.FIT_TO_HEIGHT, DOWNLOAD_MAX_FACE_HEIGHT);

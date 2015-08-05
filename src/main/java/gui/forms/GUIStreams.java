@@ -3,30 +3,47 @@ package gui.forms;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import irc.account.Oauth;
+import thread.ThreadEngine;
 import util.APIRequests;
+import util.Utils;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-
 
 /**
  * @author Nick K
  */
 public class GUIStreams extends JFrame {
 
+    private Oauth getKey() {
+        return GUIMain.currentSettings.accountManager.getUserAccount().getKey();
+    }
+
     public GUIStreams() {
-        Oauth key = GUIMain.currentSettings.accountManager.getUserAccount().getKey();
         initComponents();
-        if (key.canReadFollowed()) {
-            String[] channels = APIRequests.Twitch.getLiveFollowedChannels(key.getKey().split(":")[1]);
-            if (channels.length > 0) {
-                setFollowedListModel(channels);
-            } else {
-                setFollowedListModel("No followed streams", " are live :(");
-            }
+        parseFollowed();
+    }
+
+    private void parseFollowed() {
+        if (getKey().canReadFollowed()) {
+            ThreadEngine.submit(() -> {
+                String[] channels = APIRequests.Twitch.getLiveFollowedChannels(getKey().getKey().split(":")[1]);
+                if (channels.length > 0) {
+                    setFollowedListModel(channels);
+                } else {
+                    setFollowedListModel("No followed streams", " are live :(");
+                }
+            });
+        } else {
+            setFollowedListModel("Enable \"Read followed Streams\" on", " your Oauth key!");
+        }
+        if (!listLabel.getText().equals("Followed Streams:")) {
+            listLabel.setText("Followed Streams:");
         }
     }
 
@@ -35,13 +52,34 @@ public class GUIStreams extends JFrame {
     }
 
     private void newChannelKeyReleased(KeyEvent e) {
-        //TODO enter -> add the text, every other key filters the list
-        //use APIRequests.Twitch.getUsernameSuggestions(newChannel.getText()) to fill the list, change the JLabel to "Suggested Streams"
+        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+            addStreamButtonActionPerformed();
+        } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            dispose();
+        } else {
+            final String text = Utils.checkText(newChannel.getText().trim());
+            if ("".equals(text)) {
+                parseFollowed();
+            } else {
+                ThreadEngine.submit(() -> {
+                    if (!listLabel.getText().equals("Suggested Streams:")) {
+                        listLabel.setText("Suggested Streams:");
+                    }
+                    String[] response = APIRequests.Twitch.getUsernameSuggestions(text);
+                    if (response.length > 0) {
+                        setFollowedListModel(response);
+                    } else {
+                        setFollowedListModel("No suggested", " streamers found!");
+                    }
+                });
+            }
+
+        }
     }
 
     public void addStreamButtonActionPerformed() {
-        String text = newChannel.getText();
-        if (!text.equals("") && !text.trim().equals("")) {
+        String text = Utils.checkText(newChannel.getText());
+        if (!text.isEmpty()) {
             if (text.contains(",")) {
                 String[] channels = text.split(",");
                 ArrayList<ChatPane> panes = new ArrayList<>();
@@ -70,8 +108,8 @@ public class GUIStreams extends JFrame {
                 GUIMain.channelPane.insertTab(ccp.getTabTitle(), null, ccp.getScrollPane(), null, GUIMain.channelPane.getTabCount() - 1);
                 GUIMain.combinedChatPanes.add(ccp);
             } else {
-                String channel = text.trim().toLowerCase();
-                if (!channel.equals("") && !channel.contains(" ") && !GUIMain.chatPanes.containsKey(channel)) {
+                String channel = text.toLowerCase();
+                if (!channel.isEmpty() && !channel.contains(" ") && !GUIMain.chatPanes.containsKey(channel)) {
                     ChatPane cp = ChatPane.createPane(channel);
                     if (GUIMain.viewer != null) GUIMain.viewer.doConnect(channel);
                     if (GUIMain.bot != null) GUIMain.bot.doConnect(channel);
@@ -83,6 +121,7 @@ public class GUIStreams extends JFrame {
         }
         GUIMain.channelPane.updateIndexes();
         newChannel.setText("");
+        parseFollowed();
     }
 
 
@@ -102,17 +141,15 @@ public class GUIStreams extends JFrame {
 
 
     private void initComponents() {
-        // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
-        // Generated using JFormDesigner Evaluation license - Nick K
-        scrollPane1 = new JScrollPane();
+        JScrollPane scrollPane1 = new JScrollPane();
         followedList = new JList<>();
-        label2 = new JLabel();
-        label3 = new JLabel();
+        listLabel = new JLabel();
+        JLabel label3 = new JLabel();
         newChannel = new JTextField();
-        separator1 = new JSeparator();
-        separator2 = new JSeparator();
-        addStreamButton = new JButton();
-        doneButton = new JButton();
+        JSeparator separator1 = new JSeparator();
+        JSeparator separator2 = new JSeparator();
+        JButton addStreamButton = new JButton();
+        JButton doneButton = new JButton();
 
         //======== this ========
         setTitle("Add a Stream");
@@ -122,15 +159,24 @@ public class GUIStreams extends JFrame {
 
         //======== scrollPane1 ========
         {
-
             //---- followedList ----
             setFollowedListModel("Enable \"Read followed Streams\" on", " your Oauth key!");
+            followedList.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    String selected = followedList.getSelectedValue();
+                    if (selected != null) {
+                        newChannel.setText(selected);
+                        newChannel.requestFocusInWindow();
+                    }
+                }
+            });
             followedList.setFocusable(false);
             scrollPane1.setViewportView(followedList);
         }
 
-        //---- label2 ----
-        label2.setText("Followed Streams:");
+        //---- listLabel ----
+        listLabel.setText("Followed Streams:");
 
         //---- label3 ----
         label3.setText("Twitch Username:");
@@ -167,7 +213,7 @@ public class GUIStreams extends JFrame {
                                                 .addComponent(doneButton, GroupLayout.PREFERRED_SIZE, 70, GroupLayout.PREFERRED_SIZE))
                                         .addGroup(contentPaneLayout.createSequentialGroup()
                                                 .addGroup(contentPaneLayout.createParallelGroup()
-                                                        .addComponent(label2)
+                                                        .addComponent(listLabel)
                                                         .addComponent(scrollPane1, GroupLayout.PREFERRED_SIZE, 150, GroupLayout.PREFERRED_SIZE)
                                                         .addComponent(label3)
                                                         .addComponent(newChannel, GroupLayout.PREFERRED_SIZE, 150, GroupLayout.PREFERRED_SIZE))
@@ -180,7 +226,7 @@ public class GUIStreams extends JFrame {
                 contentPaneLayout.createParallelGroup()
                         .addGroup(contentPaneLayout.createSequentialGroup()
                                 .addContainerGap()
-                                .addComponent(label2)
+                                .addComponent(listLabel)
                                 .addGap(6, 6, 6)
                                 .addComponent(scrollPane1, GroupLayout.PREFERRED_SIZE, 125, GroupLayout.PREFERRED_SIZE)
                                 .addGap(8, 8, 8)
@@ -199,19 +245,9 @@ public class GUIStreams extends JFrame {
         );
         pack();
         setLocationRelativeTo(getOwner());
-        // JFormDesigner - End of component initialization  //GEN-END:initComponents
     }
 
-    // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
-    // Generated using JFormDesigner Evaluation license - Nick K
-    private JScrollPane scrollPane1;
     private JList<String> followedList;
-    private JLabel label2;
-    private JLabel label3;
+    private JLabel listLabel;
     private JTextField newChannel;
-    private JSeparator separator1;
-    private JSeparator separator2;
-    private JButton addStreamButton;
-    private JButton doneButton;
-    // JFormDesigner - End of variables declaration  //GEN-END:variables
 }

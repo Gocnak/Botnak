@@ -269,7 +269,8 @@ public class Utils {
      * @return The given input if it checks out, otherwise nothing.
      */
     public static String checkText(String input) {
-        return (input != null && input.length() > 0 && input.trim().length() > 0) ? input : "";
+        input = input.trim();
+        return !input.isEmpty() ? input : "";
     }
 
     /**
@@ -441,7 +442,12 @@ public class Utils {
                 if (!arguments.isEmpty()) {
                     bingo = s.indexOf(" | ") + 3;//message comes after the pipe separator
                 } else {
-                    bingo = s.indexOf(" ", s.indexOf(" ") + 1) + 1;//after second space is the message without arguments
+                    int bingoIndex = s.indexOf(" ", s.indexOf(" ") + 1);
+                    if (bingoIndex == -1) {
+                        toReturn.setResponseText("Failed to add command; there is no command content!");
+                        return toReturn;
+                    }
+                    bingo = bingoIndex + 1;//after second space is the message without arguments
                 }
                 String[] message = s.substring(bingo).split("\\]");
                 Command c = new Command(name, message);

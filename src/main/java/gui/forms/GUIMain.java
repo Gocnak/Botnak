@@ -126,7 +126,7 @@ public class GUIMain extends JFrame {
             logCurrent("Failed to send message, currently trying to reconnect!");
             return;
         }
-        String userInput = userChat.getText().replaceAll("\n", "");
+        String userInput = Utils.checkText(userChat.getText().replaceAll("\n", ""));
         if (channel != null && !channel.equalsIgnoreCase("system logs")) {
             CombinedChatPane ccp = Utils.getCombinedChatPane(channelPane.getSelectedIndex());
             boolean comboExists = ccp != null;
@@ -137,7 +137,7 @@ public class GUIMain extends JFrame {
                 } else {
                     channels = ccp.getChannels();
                 }
-                if (!Utils.checkText(userInput).equals("")) {
+                if (!"".equals(userInput)) {
                     for (String c : channels) {
                         GUIMain.currentSettings.accountManager.getViewer().sendMessage("#" + c, userInput);
                     }
@@ -145,7 +145,7 @@ public class GUIMain extends JFrame {
                 }
                 userChat.setText("");
             } else {
-                if (!Utils.checkText(userInput).equals("")) {
+                if (!"".equals(userInput)) {
                     GUIMain.currentSettings.accountManager.getViewer().sendMessage("#" + channel, userInput);
                     if (!userResponses.contains(userInput)) userResponses.add(userInput);
                 }
@@ -509,7 +509,7 @@ public class GUIMain extends JFrame {
 
         //======== Botnak ========
         {
-            setMinimumSize(new Dimension(680, 504));
+            setMinimumSize(new Dimension(640, 504));
             setName("Botnak Control Panel");
             setTitle("Botnak | Please go to Preferences->Settings!");
             setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -1008,6 +1008,7 @@ public class GUIMain extends JFrame {
                 //---- userChat ----
                 userChat.setFont(new Font("Consolas", Font.PLAIN, 12));
                 userChat.setLineWrap(true);
+                userChat.setWrapStyleWord(true);
                 userChat.addKeyListener(new ListenerUserChat(userChat));
                 scrollPane1.setViewportView(userChat);
             }
