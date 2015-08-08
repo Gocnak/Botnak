@@ -1,6 +1,5 @@
 package sound;
 
-import util.Constants;
 import util.StringArray;
 import util.Utils;
 
@@ -54,7 +53,7 @@ public class Sound {
      * @param files The file path(s) of the sound(s).
      */
     public Sound(String... files) {
-        this(Constants.PERMISSION_ALL, files);
+        this(0, files);
     }
 
     public void setEnabled(boolean newBool) {

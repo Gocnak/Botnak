@@ -96,7 +96,7 @@ public class IRCViewer extends MessageHandler {
     @Override
     public void onNewSubscriber(String channel, String line, String newSub) {
         Message m = new Message().setChannel(channel).setType(Message.MessageType.SUB_NOTIFY).setContent(line);
-        if (channel.substring(1).equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
+        if (Utils.isMainChannel(channel)) {
             if (line.endsWith("subscribed!")) {//new sub
                 if (GUIMain.currentSettings.subscriberManager.addNewSubscriber(newSub, channel)) return;
             } else {
@@ -127,11 +127,10 @@ public class IRCViewer extends MessageHandler {
         if (name != null) {
             BanQueue.addToMap(channel, name);
         } else {
-            if (GUIMain.currentSettings.actuallyClearChat) {
-                GUIMain.getChatPane(channel).cleanupChat();
-            }
+            if (GUIMain.currentSettings.actuallyClearChat) GUIMain.getChatPane(channel).cleanupChat();
             MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.BAN_NOTIFY)
-                    .setContent("The chat was cleared by a moderator. (Prevented by Botnak)"));
+                    .setContent("The chat was cleared by a moderator" +
+                            (GUIMain.currentSettings.actuallyClearChat ? " (Prevented by Botnak)." : ".")));
         }
     }
 
@@ -142,7 +141,7 @@ public class IRCViewer extends MessageHandler {
 
     @Override
     public void onRoomstate(String channel, String tags) {
-        if (channel.contains(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
+        if (Utils.isMainChannel(channel)) {
             tags = tags.substring(1);
             String[] parts = tags.split(";");
             for (String part : parts) {

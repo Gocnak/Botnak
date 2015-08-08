@@ -9,6 +9,7 @@ import gui.listeners.ListenerFace;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
 import irc.Donor;
+import irc.Subscriber;
 import irc.message.Message;
 import irc.message.MessageQueue;
 import irc.message.MessageWrapper;
@@ -40,7 +41,6 @@ public class ChatPane implements DocumentListener {
 
     // The timestamp of when we decided to wait to scroll back down
     private long scrollbarTimestamp = -1;
-
 
     public void setPoppedOutPane(JFrame pane) {
         poppedOutPane = pane;
@@ -361,7 +361,7 @@ public class ChatPane implements DocumentListener {
                 }
             }
             if (u.isGlobalMod()) {
-                insertIcon(m, IconEnum.GLOBALMOD, null);
+                insertIcon(m, IconEnum.GLOBAL_MOD, null);
             }
             if (GUIMain.currentSettings.showDonorIcons) {
                 if (u.isDonor()) {
@@ -377,6 +377,13 @@ public class ChatPane implements DocumentListener {
             boolean isSubscriber = u.isSubscriber(channel);
             if (isSubscriber) {
                 insertIcon(m, IconEnum.SUBSCRIBER, channel);
+            } else {
+                if (Utils.isMainChannel(channel)) {
+                    Optional<Subscriber> sub = GUIMain.currentSettings.subscriberManager.getSubscriber(sender);
+                    if (sub.isPresent() && !sub.get().isActive()) {
+                        insertIcon(m, IconEnum.EX_SUBSCRIBER, channel);
+                    }
+                }
             }
             if (u.isTurbo()) {
                 insertIcon(m, IconEnum.TURBO, null);
@@ -403,7 +410,7 @@ public class ChatPane implements DocumentListener {
             //URL, Faces, rest of message
             printMessage(m, mess, set, u);
 
-            if (channel.substring(1).equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName()))
+            if (Utils.isMainChannel(channel))
                 //check status of the sub, has it been a month?
                 GUIMain.currentSettings.subscriberManager.updateSubscriber(u, channel, isSubscriber);
             if (shouldPulse())
@@ -464,7 +471,6 @@ public class ChatPane implements DocumentListener {
             }
         }
     }
-
 
     private void findEmoticons(String text, Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangesStyle, User u, String channel) {
         FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.NORMAL_FACE, null, null);
@@ -529,7 +535,7 @@ public class ChatPane implements DocumentListener {
             print(m, " ", null);
             print(m, icon.getType().type, attrs);
         } catch (Exception e) {
-            GUIMain.log("INSERT ICON: ");
+            GUIMain.log("Exception in insertIcon: ");
             GUIMain.log(e);
         }
     }

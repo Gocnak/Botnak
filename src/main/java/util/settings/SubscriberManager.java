@@ -9,14 +9,11 @@ import lib.JSON.JSONObject;
 import lib.pircbot.org.jibble.pircbot.User;
 import sound.SoundEngine;
 import util.Utils;
-import util.misc.Donation;
 
 import java.net.URL;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -103,7 +100,7 @@ public class SubscriberManager {
                                 + (monthsSince) + ((monthsSince) > 1 ? " months!" : " month!");
                         MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.SUB_NOTIFY).setContent(content));
                         s.get().incrementStreak(monthsSince - streak);//this will most likely be 1
-                        addSubDonation(s.get().getName(), content, ((double) (monthsSince - streak)) * 2.50);
+                        playSubscriberSound();
                     }
                 }
             } else {
@@ -124,7 +121,7 @@ public class SubscriberManager {
                     s.get().resetStreak();
                     s.get().setStarted(LocalDateTime.now());
                     s.get().setActive(true);
-                    addSubDonation(s.get().getName(), content, 2.50);
+                    playSubscriberSound();
                     setLastSubscriber(s.get());
                 }
             }
@@ -139,7 +136,7 @@ public class SubscriberManager {
                 String content = u.getNick().toLowerCase() + " has subscribed offline!";
                 MessageQueue.addMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
                 addSub(new Subscriber(u.getNick().toLowerCase(), LocalDateTime.now(), true, 0));
-                addSubDonation(u.getNick().toLowerCase(), content, 2.50);
+                playSubscriberSound();
             }
         }
     }
@@ -158,7 +155,7 @@ public class SubscriberManager {
         Optional<Subscriber> subscriber = getSubscriber(name);
         if (!subscriber.isPresent()) {//brand spanking new sub, live as botnak caught it
             addSub(new Subscriber(name, LocalDateTime.now(), true, 0));
-            addSubDonation(name, name + " has just subscribed!", 2.50);
+            playSubscriberSound();
             //we're going to return false (end of method) so that Botnak generates the message
             //like it did before this manager was created and implemented (and because less of the same code is better eh?)
         } else if (subscriber.get().isActive()) {
@@ -172,7 +169,7 @@ public class SubscriberManager {
             // if they decide to cancel just to get the notification again, they deserve their streak to be reset
             String content = name + " has just RE-subscribed!";
             MessageQueue.addMessage(new Message().setContent(content).setChannel(channel).setType(Message.MessageType.SUB_NOTIFY));
-            addSubDonation(name, content, 2.50);
+            playSubscriberSound();
             subscriber.get().resetStreak();
             subscriber.get().setStarted(LocalDateTime.now());
             subscriber.get().setActive(true);
@@ -182,9 +179,7 @@ public class SubscriberManager {
         return false;
     }
 
-    private void addSubDonation(String who, String content, double amt) {
-        GUIMain.currentSettings.donationManager.addDonation(
-                new Donation("SUBSCRIBER", who, content, amt, Date.from(Instant.now())), true);
+    private void playSubscriberSound() {
         if (GUIMain.currentSettings.loadedSubSounds)
             SoundEngine.getEngine().playSpecialSound(true);
     }

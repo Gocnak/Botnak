@@ -1,5 +1,6 @@
 import gui.forms.GUIMain;
 import gui.forms.GUIUpdate;
+import thread.ExceptionHandler;
 import util.settings.Settings;
 
 import javax.swing.*;
@@ -8,6 +9,7 @@ import java.awt.*;
 public class Boot {
     public static void main(final String[] args) {
         /* Thread-safe initialization */
+        Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler());
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {

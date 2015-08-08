@@ -14,31 +14,6 @@ public class Constants {
 
     public static final double VERSION = 2.35;
 
-    /**
-     * All users may do it
-     */
-    public static final int PERMISSION_ALL = 0;
-
-    /**
-     * Only subscribers, donators, mods, and person running botnak can do it.
-     */
-    public static final int PERMISSION_SUB = 1;
-
-    /**
-     * Only donors, mods, and the person running botnak can do it.
-     */
-    public static final int PERMISSION_DONOR = 2;
-
-    /**
-     * Only mods and the person running botnak can do it
-     */
-    public static final int PERMISSION_MOD = 3;
-
-    /**
-     * Only the person running botnak can do it.
-     */
-    public static final int PERMISSION_DEV = 4;
-
     public static final TabTitleEditListener tabListener = new TabTitleEditListener(GUIMain.channelPane);
 
     public static final String[] fontSizeArray = new String[]{"11", "12", "13", "14", "16", "18", "20"};

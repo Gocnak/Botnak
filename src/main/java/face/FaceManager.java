@@ -17,6 +17,7 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.RescaleOp;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -45,12 +46,14 @@ public class FaceManager {
     public static ConcurrentHashMap<String, Face> nameFaceMap;
     //  twitch
     public static CopyOnWriteArraySet<SubscriberIcon> subIconSet;
+    public static File exSubscriberIcon;
     public static ConcurrentHashMap<Integer, TwitchFace> twitchFaceMap;
     public static ConcurrentHashMap<Integer, TwitchFace> onlineTwitchFaces;
     //  ffz
     public static ConcurrentHashMap<String, ArrayList<FrankerFaceZ>> ffzFaceMap;
 
     public static void init() {
+        exSubscriberIcon = null;
         faceMap = new ConcurrentHashMap<>();
         nameFaceMap = new ConcurrentHashMap<>();
         twitchFaceMap = new ConcurrentHashMap<>();
@@ -91,6 +94,31 @@ public class FaceManager {
             toReturn.setResponseText("Could not delete face due to Exception: " + e.getMessage());
         }
         return toReturn;
+    }
+
+    public static URL getExSubscriberIcon(String channel) {
+        try {
+            if (exSubscriberIcon == null) {
+                URL subIconNormal = FaceManager.getSubIcon(channel);
+                if (subIconNormal != null) {
+                    BufferedImage img = ImageIO.read(subIconNormal);
+                    //rescaleop does not work with sub icons as is, we need to recreate them as ARGB images
+                    BufferedImage bimage = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D g = bimage.createGraphics();
+                    g.drawImage(img, 0, 0, null);
+                    g.dispose();
+                    RescaleOp op = new RescaleOp(.35f, 0f, null);
+                    img = op.filter(bimage, bimage);//then re-assign them
+                    exSubscriberIcon = new File(GUIMain.currentSettings.subIconsDir + File.separator + channel + "_ex.png");
+                    ImageIO.write(img, "PNG", exSubscriberIcon);
+                    exSubscriberIcon.deleteOnExit();
+                }
+            }
+            return exSubscriberIcon.toURI().toURL();
+        } catch (Exception e) {
+            GUIMain.log(e);
+        }
+        return null;
     }
 
     /**

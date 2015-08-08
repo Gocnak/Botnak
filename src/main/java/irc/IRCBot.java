@@ -11,10 +11,7 @@ import lib.pircbot.org.jibble.pircbot.User;
 import sound.Sound;
 import sound.SoundEngine;
 import thread.ThreadEngine;
-import util.APIRequests;
-import util.Response;
-import util.StringArray;
-import util.Utils;
+import util.*;
 import util.comm.Command;
 import util.comm.ConsoleCommand;
 import util.misc.Raffle;
@@ -120,9 +117,8 @@ public class IRCBot extends MessageHandler {
                         }
                         String key = r.getKeyword();
                         if (message.contains(key)) {
-                            int permBase = r.getPermission();
-                            int permission = Utils.getUserPermission(u, channel);
-                            if (permission >= permBase) {
+                            int permBase = r.getPermission();//TODO this will change to EXCLUDEDPerms and whatnot
+                            if (Permissions.hasAtLeast(Permissions.getUserPermissions(u, channel), permBase)) {
                                 r.addUser(u.getLowerNick());
                             }
                         }

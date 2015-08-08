@@ -2,6 +2,7 @@ package sound;
 
 import gui.forms.GUIMain;
 import lib.pircbot.org.jibble.pircbot.User;
+import util.Permissions;
 import util.Response;
 import util.Timer;
 import util.Utils;
@@ -207,7 +208,7 @@ public class SoundEngine {
      */
     public boolean soundTrigger(String s, String send, String channel) {
         if (SoundEngine.getEngine().shouldPlay()) {//sound not turned off
-            if (channel.equalsIgnoreCase("#" + GUIMain.currentSettings.accountManager.getUserAccount().getName())) {//is in main channel
+            if (Utils.isMainChannel(channel)) {//is in main channel
                 if (soundCheck(s, send, channel)) {//let's check the existence/permission
                     return true;//HIT THAT
                 }
@@ -226,20 +227,13 @@ public class SoundEngine {
     private boolean soundCheck(String sound, String sender, String channel) {
         //set the permission
         User u = GUIMain.currentSettings.channelManager.getUser(sender, true);
-        int permission = Utils.getUserPermission(u, channel);
-        String[] keys = soundMap.keySet().toArray(new String[soundMap.keySet().size()]);
-        for (String s : keys) {
-            if (s != null && s.equalsIgnoreCase(sound)) {
-                Sound snd = soundMap.get(s);
-                if (snd != null && snd.isEnabled()) {
-                    int perm = snd.getPermission();
-                    //check permission
-                    if (permission >= perm && permission >= SoundEngine.getEngine().getPermission()) {
-                        //descending permission, this should work; devs can play mod and all sounds, etc.
-                        //this also checks to see if they can even play the sound given the certain circumstance.
-                        return true;
-                    }
-                }
+        ArrayList<Permissions.Permission> permissions = Permissions.getUserPermissions(u, channel);
+        Sound snd = soundMap.get(sound.toLowerCase());
+        if (snd != null && snd.isEnabled()) {
+            int perm = snd.getPermission();
+            if (Permissions.hasAtLeast(permissions, perm) &&
+                    Permissions.hasAtLeast(permissions, SoundEngine.getEngine().getPermission())) {
+                return true;
             }
         }
         return false;
@@ -258,7 +252,7 @@ public class SoundEngine {
                 !GUIMain.currentSettings.defaultSoundDir.equals("")) {
             try {
                 String[] split = s.split(" ");
-                String name = split[1];//both commands have this in common.
+                String name = split[1].toLowerCase();//both commands have this in common.
                 int perm;
                 if (split.length > 3) {//!add/changesound sound 0 sound(,maybe,more)
                     try {

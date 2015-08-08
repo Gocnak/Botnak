@@ -577,8 +577,7 @@ public class Utils {
                             }
                         }
                     } else {//int class permission
-                        int permission = getUserPermission(u, channel);
-                        if (permission >= conPerm) {
+                        if (Permissions.hasAtLeast(Permissions.getUserPermissions(u, channel), conPerm)) {
                             return c;
                         }
                     }
@@ -589,29 +588,14 @@ public class Utils {
     }
 
     /**
-     * Gets the permission of the user based on their status.
+     * Checks to see if a given channel is the main Botnak user's channel.
      *
-     * @param u       The user to check.
-     * @param channel The channel this is for.
-     * @return The permission they have.
+     * @param channel The channel to check.
+     * @return true if indeed the channel, otherwise false.
      */
-    public static int getUserPermission(User u, String channel) {
-        int permission = Constants.PERMISSION_ALL;
-        if (u.isSubscriber(channel)) {
-            permission = Constants.PERMISSION_SUB;
-        }
-        if (u.isDonor()) {
-            if (u.getDonated() >= 2.50) {
-                permission = Constants.PERMISSION_DONOR;
-            }
-        }
-        if (u.isOp(channel) || u.isAdmin() || u.isStaff() || u.isGlobalMod()) {
-            permission = Constants.PERMISSION_MOD;
-        }
-        if (GUIMain.viewer != null && GUIMain.currentSettings.accountManager.getUserAccount().getName().equalsIgnoreCase(u.getNick())) {
-            permission = Constants.PERMISSION_DEV;
-        }
-        return permission;
+    public static boolean isMainChannel(String channel) {
+        return GUIMain.currentSettings.accountManager.getUserAccount() != null &&
+                (channel.replaceAll("#", "").equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName()));
     }
 
     /**
@@ -919,9 +903,9 @@ public class Utils {
      */
     public static String createAndParseBufferedReader(InputStream input) {
         String toReturn = "";
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(input))) {
+        try (InputStreamReader inputStreamReader = new InputStreamReader(input);
+             BufferedReader br = new BufferedReader(inputStreamReader)) {
             toReturn = br.readLine();
-            br.close();
         } catch (Exception e) {
             GUIMain.log("Could not parse buffered reader due to exception: ");
             GUIMain.log(e);

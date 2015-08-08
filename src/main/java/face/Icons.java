@@ -53,6 +53,12 @@ public class Icons {
                     icon = sizeIcon(subIcon);
                 }
                 break;
+            case EX_SUBSCRIBER:
+                URL exSubscriberIcon = FaceManager.getExSubscriberIcon(channel);
+                if (exSubscriberIcon != null) {
+                    icon = sizeIcon(exSubscriberIcon);
+                }
+                break;
             case DONOR_BASIC:
                 icon = sizeIcon(ChatPane.class.getResource("/image/green.png"));
                 break;
@@ -68,7 +74,7 @@ public class Icons {
             case DONOR_INSANE:
                 icon = sizeIcon(ChatPane.class.getResource("/image/diamond.png"));
                 break;
-            case GLOBALMOD:
+            case GLOBAL_MOD:
                 icon = sizeIcon(ChatPane.class.getResource("/image/globalmod.png"));
                 break;
             case NONE:
@@ -87,7 +93,7 @@ public class Icons {
      * @return ImageIcon the resized image
      */
 
-    private static ImageIcon sizeIcon(URL image) {
+    public static ImageIcon sizeIcon(URL image) {
         ImageIcon icon;
         try {
             BufferedImage img = ImageIO.read(image);
