@@ -24,7 +24,7 @@ public class ListenerUserChat extends KeyAdapter {
     public void keyReleased(KeyEvent e) {
         int initial = GUIMain.userResponsesIndex;
         if (suggestion != null) {
-            if (!userChat.getText().contains("@")) {
+            if (!(userChat.getText().contains("@") || tabPressed)) {
                 suggestion.hide();
                 shouldShow = false;
             }
@@ -33,7 +33,7 @@ public class ListenerUserChat extends KeyAdapter {
             if (suggestion != null) {
                 final String select = suggestion.getSelection();
                 final SuggestionPanel sugg = suggestion;
-                EventQueue.invokeLater(() -> {
+                EventQueue.invokeLater(() -> { 
                     userChat.setText(userChat.getText().replaceAll("\n", " "));
                     sugg.insertSelection(select);
                 });
@@ -52,6 +52,10 @@ public class ListenerUserChat extends KeyAdapter {
                     userChat.setText(userChat.getText().replaceAll("\t", " "));
                     sugg.insertSelection(select);
                 });
+            } else {
+            	userChat.setText(userChat.getText().replaceAll("\t", ""));
+            	shouldShow = tabPressed = true;
+            	showSuggestionLater();
             }
         } else if (e.getKeyCode() == KeyEvent.VK_UP) {
             if (!GUIMain.userResponses.isEmpty()) {
@@ -77,7 +81,11 @@ public class ListenerUserChat extends KeyAdapter {
             if (suggestion != null) {
                 suggestion.moveDown();
             }
+        } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+        	hideSuggestion();
+        	tabPressed = shouldShow = false;        
         } else if (Character.isWhitespace(e.getKeyChar())) {
+        	tabPressed = false;
             hideSuggestion();//null check in the method
         } else if (shouldShow && Character.isLetterOrDigit(e.getKeyChar())) {
             showSuggestionLater();
@@ -91,6 +99,7 @@ public class ListenerUserChat extends KeyAdapter {
 
 
     private static boolean shouldShow = false;
+    private static boolean tabPressed = false;
 
     private class SuggestionPanel {
         private JList<String> list;
@@ -178,7 +187,7 @@ public class ListenerUserChat extends KeyAdapter {
         String text = userChat.getText();
         int start = Math.max(0, position - 1);
         while (start > 0) {
-            if (text.charAt(start) != '@') {
+            if (!(text.charAt(start) == '@' || text.charAt(start) == ' ')) {
                 start--;
             } else {
                 break;
@@ -188,12 +197,13 @@ public class ListenerUserChat extends KeyAdapter {
             return;
         }
         String subText = text.substring(start, position).toLowerCase();
-        if ("".equals(subText) || !subText.contains("@")) {
+        if ("".equals(subText) ) {//|| !subText.contains("@")) {
             shouldShow = false;
             return;
         }
         String subWord = subText.replace("@", "");
-        if (subWord.length() < 3) {
+        subWord = subWord.trim();
+        if (subWord.length() < 2) {
             return;
         }
         User[] users = GUIMain.currentSettings.channelManager.getUsers(subWord);
