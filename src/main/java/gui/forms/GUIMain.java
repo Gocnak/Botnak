@@ -509,7 +509,7 @@ public class GUIMain extends JFrame {
 
         //======== Botnak ========
         {
-            setMinimumSize(new Dimension(640, 504));
+            setMinimumSize(new Dimension(640, 404));
             setName("Botnak Control Panel");
             setTitle("Botnak | Please go to Preferences->Settings!");
             setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -613,11 +613,13 @@ public class GUIMain extends JFrame {
 
                     //---- startRaffleOption ----
                     startRaffleOption.setText("Create Raffle...");
+                    startRaffleOption.setEnabled(false);//TODO
                     startRaffleOption.addActionListener(e -> startRaffleOptionActionPerformed());
                     toolsMenu.add(startRaffleOption);
 
                     //---- startVoteOption ----
                     startVoteOption.setText("Create Vote...");
+                    startVoteOption.setEnabled(false);//TODO
                     startVoteOption.addActionListener(e -> startVoteOptionActionPerformed());
                     toolsMenu.add(startVoteOption);
 
@@ -747,6 +749,7 @@ public class GUIMain extends JFrame {
 
                     //---- manageTextCommandsOption ----
                     manageTextCommandsOption.setText("Manage Text Commands...");
+                    manageTextCommandsOption.setEnabled(false);//TODO
                     manageTextCommandsOption.addActionListener(e -> manageTextCommandsOptionActionPerformed());
                     toolsMenu.add(manageTextCommandsOption);
                     toolsMenu.addSeparator();
@@ -1023,10 +1026,9 @@ public class GUIMain extends JFrame {
             BotnakContentPaneLayout.setVerticalGroup(
                     BotnakContentPaneLayout.createParallelGroup()
                             .addGroup(BotnakContentPaneLayout.createSequentialGroup()
-                                    .addComponent(channelPane, GroupLayout.PREFERRED_SIZE, 393, GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(channelPane, GroupLayout.DEFAULT_SIZE, 393, Short.MAX_VALUE)
                                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                    .addComponent(scrollPane1, GroupLayout.PREFERRED_SIZE, 44, GroupLayout.PREFERRED_SIZE)
-                                    .addContainerGap())
+                                    .addComponent(scrollPane1, GroupLayout.PREFERRED_SIZE, 41, GroupLayout.PREFERRED_SIZE))
             );
             addComponentListener(new ComponentAdapter() {
                 @Override

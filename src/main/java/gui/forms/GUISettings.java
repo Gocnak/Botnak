@@ -38,6 +38,7 @@ public class GUISettings extends JFrame {
 
     public GUISettings() {
         initComponents();
+        setLocationRelativeTo(GUIMain.instance);
         buildTree();
         s2 = null;
         mainAccGUI = null;

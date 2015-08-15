@@ -24,6 +24,10 @@ public class Oauth {
         return canReadSubscribers;
     }
 
+    public void setCanReadSubscribers(boolean canReadSubscribers) {
+        this.canReadSubscribers = canReadSubscribers;
+    }
+
     public boolean canPlayAd() {
         return canPlayAd;
     }

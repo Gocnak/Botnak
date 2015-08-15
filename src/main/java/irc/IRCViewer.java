@@ -111,7 +111,7 @@ public class IRCViewer extends MessageHandler {
                         s.get().setActive(true);//fixes issue #87 (I hope)
                     }
                 }
-                m.setExtra(false);//anything other than "null" works
+                m = m.setExtra(false);//anything other than "null" works
             }
         } //else it's someone else's channel, just print the message
         MessageQueue.addMessage(m);
@@ -123,7 +123,7 @@ public class IRCViewer extends MessageHandler {
         }
     }
 
-    public synchronized void onClearChat(String channel, String name) {
+    public void onClearChat(String channel, String name) {
         if (name != null) {
             BanQueue.addToMap(channel, name);
         } else {

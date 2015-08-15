@@ -248,9 +248,9 @@ public class Utils {
 
     /**
      * Removes the last file extension from a path.
-     *
+     * <p>
      * Note that if the string contains multiple extensions, this will only remove the last one.
-     *
+     * <p>
      * Ex: "portal.png.exe.java" becomes "portal.png.exe" after this method returns.
      *
      * @param s The path to a file, or the file name with its extension.

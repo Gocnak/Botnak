@@ -5,19 +5,19 @@ import irc.message.Message;
 import irc.message.MessageQueue;
 import util.Timer;
 
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Created by Nick on 8/29/2014.
  */
 public class BanQueue implements HeartbeatThread {
 
-    private static CopyOnWriteArraySet<User> banMap;
+    private static HashSet<User> banMap;
     private boolean beating;
 
     public BanQueue() {
-        banMap = new CopyOnWriteArraySet<>();
+        banMap = new HashSet<>();
         beating = false;
     }
 

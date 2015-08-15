@@ -25,9 +25,9 @@ public class WrapEditorKit extends StyledEditorKit {
                     case AbstractDocument.SectionElementName:
                         return new BoxView(elem, View.Y_AXIS);
                     case StyleConstants.ComponentElementName:
-                        return new ComponentView(elem);
+                        return new WrapComponentView(elem);
                     case StyleConstants.IconElementName:
-                        return new IconView(elem);
+                        return new WrapIconView(elem);
                 }
             }
 
@@ -41,6 +41,42 @@ public class WrapEditorKit extends StyledEditorKit {
             super(elem);
         }
 
+        public float getMinimumSpan(int axis) {
+            switch (axis) {
+                case View.X_AXIS:
+                    return 0;
+                case View.Y_AXIS:
+                    return super.getMinimumSpan(axis);
+                default:
+                    throw new IllegalArgumentException("Invalid axis: " + axis);
+            }
+        }
+    }
+
+    private class WrapComponentView extends ComponentView {
+        public WrapComponentView(Element elem) {
+            super(elem);
+        }
+
+        @Override
+        public float getMinimumSpan(int axis) {
+            switch (axis) {
+                case View.X_AXIS:
+                    return 0;
+                case View.Y_AXIS:
+                    return super.getMinimumSpan(axis);
+                default:
+                    throw new IllegalArgumentException("Invalid axis: " + axis);
+            }
+        }
+    }
+
+    private class WrapIconView extends IconView {
+        public WrapIconView(Element elem) {
+            super(elem);
+        }
+
+        @Override
         public float getMinimumSpan(int axis) {
             switch (axis) {
                 case View.X_AXIS:

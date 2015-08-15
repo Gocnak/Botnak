@@ -62,10 +62,12 @@ public class GUIAuthorizeAccount extends JFrame {
     private void doneButtonActionPerformed(ActionEvent e) {
         if (GUIMain.currentSettings.accountManager.getUserAccount() == null) {
             if (accountNameField.getText().length() > 0 && oauthField.getPassword().length > 5) {
+                String oauth = new String(oauthField.getPassword());
+                if (!oauth.startsWith("oauth:")) oauth = "oauth:" + oauth;
                 GUIMain.currentSettings.accountManager.setUserAccount(
                         new Account(accountNameField.getText().toLowerCase(),
-                                new Oauth("oauth:" + new String(oauthField.getPassword()), boxEditStatus.isSelected(),
-                                        boxCommercial.isSelected(), boxReadSubs.isSelected(), boxFollowed.isSelected())));
+                                new Oauth(oauth, boxEditStatus.isSelected(), boxCommercial.isSelected(),
+                                        boxReadSubs.isSelected(), boxFollowed.isSelected())));
                 GUIMain.currentSettings.accountManager.addTask(new Task(null, Task.Type.CREATE_VIEWER_ACCOUNT, null));
             }
         }

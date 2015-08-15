@@ -23,31 +23,47 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class DonationManager {
 
-    private Donation lastDonation = null;
+    public boolean ranFirstCheck, scannedInitialDonations;
+    private Donation lastDonation;
     private CopyOnWriteArraySet<Donor> donors;
     private CopyOnWriteArraySet<Donation> donations;
-    private String client_ID = "", access_code = "";
-    private static NumberFormat CURRENCY_FORMAT = null;
+    private String client_ID, access_code;
+    private static NumberFormat CURRENCY_FORMAT, DECIMAL_FORMAT;
 
+    //for displaying the numbers
     public static NumberFormat getCurrencyFormat() {
         if (CURRENCY_FORMAT == null) {
-            NumberFormat nf = NumberFormat.getCurrencyInstance();
-            nf.setMinimumFractionDigits(0);
-            nf.setMaximumFractionDigits(2);
-            CURRENCY_FORMAT = nf;
+            CURRENCY_FORMAT = NumberFormat.getCurrencyInstance();
+            CURRENCY_FORMAT.setMinimumFractionDigits(0);
+            CURRENCY_FORMAT.setMaximumFractionDigits(2);
         }
         return CURRENCY_FORMAT;
     }
-    public boolean ranFirstCheck = false;
 
+    //for saving the numbers
+    public static NumberFormat getDecimalFormat() {
+        if (DECIMAL_FORMAT == null) {
+            DECIMAL_FORMAT = NumberFormat.getNumberInstance();
+            DECIMAL_FORMAT.setMinimumFractionDigits(2);
+            DECIMAL_FORMAT.setMaximumFractionDigits(2);
+        }
+        return DECIMAL_FORMAT;
+    }
 
     public DonationManager() {
+        client_ID = "";
+        access_code = "";
+        lastDonation = null;
+        ranFirstCheck = false;
+        scannedInitialDonations = true;
+        CURRENCY_FORMAT = null;
+        DECIMAL_FORMAT = null;
         donors = new CopyOnWriteArraySet<>();
         donations = new CopyOnWriteArraySet<>();
     }
 
     public boolean canCheck() {
-        return client_ID != null && access_code != null;
+        return !client_ID.isEmpty() && !access_code.isEmpty();
     }
 
     /**
@@ -62,13 +78,13 @@ public class DonationManager {
         donations.addAll(d);
     }
 
-    public void addDonation(JSONObject tip) {
+    public void addDonation(JSONObject tip, boolean isLocal) {
         addDonation(new Donation(tip.getString("_id"), tip.getString("username"), tip.getString("note"),
-                tip.getDouble("amount"), Date.from(Instant.parse(tip.getString("date")))), false);
+                tip.getDouble("amount"), Date.from(Instant.parse(tip.getString("date")))), isLocal);
     }
 
-    public void addDonation(Donation d, boolean isSub) {
-        if (!donationsContains(d.getDonationID()) || isSub) {
+    public void addDonation(Donation d, boolean isLocal) {
+        if (!donationsContains(d.getDonationID()) || isLocal) {
             if (donations.add(d)) {
                 Donor don = getDonor(d.getFromWho());
                 if (don == null) {
@@ -77,10 +93,9 @@ public class DonationManager {
                 } else {
                     don.addDonated(d.getAmount());
                 }
-                GUIMain.currentSettings.saveDonations();
-                GUIMain.currentSettings.saveDonors();
-                if (isSub) GUIMain.currentSettings.saveSubscribers();
-                else {
+                if (!isLocal) {
+                    GUIMain.currentSettings.saveDonations();
+                    GUIMain.currentSettings.saveDonors();
                     setLastDonation(d);
                     MessageQueue.addMessage(new Message()
                             .setChannel(GUIMain.currentSettings.accountManager.getUserAccount().getName())
@@ -195,11 +210,49 @@ public class DonationManager {
                                 continue;
                             }
                         }
-                        addDonation(tip);
+                        addDonation(tip, false);
                     }
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            GUIMain.log(e);
+        }
+    }
+
+    public void scanInitialDonations(int passesCompleted) {
+        String url = "https://streamtip.com/api/tips?client_id=" + getClientID() + "&access_token=" + getAccessCode() +
+                "&limit=100&direction=asc";
+        try {
+            String offset = "&offset=" + String.valueOf(100 * passesCompleted);
+            String line = Utils.createAndParseBufferedReader(new URL(url + offset).openStream());
+            if (!line.isEmpty()) {
+                JSONObject outerShell = new JSONObject(line);
+                int status = outerShell.getInt("status");
+                int count = outerShell.getInt("_count");
+                if (count > 0) {
+                    if (status == 200) { //ensure there's no problem with the site
+                        JSONArray tipsArray = outerShell.getJSONArray("tips");
+                        for (int i = 0; i < tipsArray.length(); i++) {
+                            JSONObject tip = tipsArray.getJSONObject(i);
+                            if (lastDonation != null) {
+                                if (lastDonation.getDonationID().equals(tip.getString("_id"))) {
+                                    continue;
+                                }
+                            }
+                            addDonation(tip, true);
+                            //we're simulating a local donation here to not spam the chat with all the donations
+                        }
+                        scanInitialDonations(passesCompleted + 1);
+                    } else {
+                        GUIMain.log("Failed to scan initial donations due to an error on Streamtip!");
+                    }
+                } else {
+                    //finished!
+                    GUIMain.log("Successfully scanned initial donations!");
+                }
+            }
+        } catch (Exception e) {
+            GUIMain.log(e);
         }
     }
 }

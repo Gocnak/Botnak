@@ -2,6 +2,10 @@ package irc.message;
 
 /**
  * Created by Nick on 3/30/2014.
+ *
+ * This is an abstract class because the Bot and Viewer classes implement different
+ * methods for different reasons. IRCBot doesn't need to implement all of these methods
+ * and IRCViewer may not as well.
  */
 public abstract class MessageHandler {
     /**

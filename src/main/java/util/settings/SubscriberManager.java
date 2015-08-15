@@ -2,6 +2,7 @@ package util.settings;
 
 import gui.forms.GUIMain;
 import irc.Subscriber;
+import irc.account.Oauth;
 import irc.message.Message;
 import irc.message.MessageQueue;
 import lib.JSON.JSONArray;
@@ -85,27 +86,23 @@ public class SubscriberManager {
         Optional<Subscriber> s = getSubscriber(u.getNick());
         if (s.isPresent()) {
             if (s.get().isActive()) {
-                if (!currentlyActive) {
-                    int remainder = (int) (s.get().getStarted().until(LocalDateTime.now(), ChronoUnit.DAYS) - 33);
-                    if (remainder > 30) { //we're offering a 30-day-grace period for re-subbing
-                        s.get().setActive(false);
-                        s.get().resetStreak();
-                    }
-                } else {
-                    int streak = s.get().getStreak();
-                    //int monthsSince = (int) s.get().getStarted().until(LocalDateTime.now(), ChronoUnit.MONTHS);
-                    int monthsSince = (int) (s.get().getStarted().until(LocalDateTime.now(), ChronoUnit.DAYS) / 33);
-                    if (monthsSince > streak) {
+                int streak = s.get().getStreak();
+                int monthsSince = (int) (s.get().getStarted().until(LocalDateTime.now(), ChronoUnit.DAYS) / 32);
+                if (monthsSince > streak) {
+                    if (currentlyActive) {
                         String content = s.get().getName() + " has continued their subscription for over "
                                 + (monthsSince) + ((monthsSince) > 1 ? " months!" : " month!");
                         MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.SUB_NOTIFY).setContent(content));
                         s.get().incrementStreak(monthsSince - streak);//this will most likely be 1
                         playSubscriberSound();
+                    } else {//we're offering a month to re-sub
+                        s.get().setActive(false);
+                        s.get().resetStreak();
                     }
                 }
             } else {
                 if (currentlyActive) {
-                    // this has the potential to be an offline sub:
+                    // this has the potential to be an offline re-sub:
                     // botnak will know that the sub is currently alive if it catches it live, (see the other use of SUB_NOTIFY)
                     // however if the person subscribes offline, botnak has no way of telling, and
                     // the next time they talk is the only time Botnak (and perhaps you as well) knows for sure that they did
@@ -159,7 +156,7 @@ public class SubscriberManager {
             //we're going to return false (end of method) so that Botnak generates the message
             //like it did before this manager was created and implemented (and because less of the same code is better eh?)
         } else if (subscriber.get().isActive()) {
-            //this may have been twitchnotify telling us twice, discard without messing up donations and sounds
+            //this may have been twitchnotify telling us twice, discard without messing up sounds
             return true;
         } else {
             //re-sub!
@@ -185,7 +182,8 @@ public class SubscriberManager {
     }
 
 
-    public void scanInitialSubscribers(String channel, String oauth, int passesCompleted, HashSet<Subscriber> set) {
+    public void scanInitialSubscribers(String channel, Oauth key, int passesCompleted, HashSet<Subscriber> set) {
+        String oauth = key.getKey().split(":")[1];
         String urlString = "https://api.twitch.tv/kraken/channels/" + channel + "/subscriptions?oauth_token=" +
                 oauth + "&limit=100";
         String offset = "&offset=" + String.valueOf(100 * passesCompleted);
@@ -215,12 +213,16 @@ public class SubscriberManager {
                             Subscriber s = new Subscriber(name, started, true, streak);
                             set.add(s);
                         }
-                        scanInitialSubscribers(channel, oauth, passesCompleted + 1, set);
+                        scanInitialSubscribers(channel, key, passesCompleted + 1, set);
                     }
                 }
             }
         } catch (Exception e) {
-            GUIMain.log(e);
+            if (e.getMessage().contains("422")) {
+                //the user does not have a sub button
+                key.setCanReadSubscribers(false);
+                GUIMain.log("Failed to parse subscribers; your channel is not partnered!");
+            } else GUIMain.log(e);
         }
     }
 }

@@ -41,7 +41,7 @@ public class Permissions {
      *
      * @param u       The user to check.
      * @param channel The channel this is for.
-     * @return The permission they have.
+     * @return The permissions they have.
      */
     public static ArrayList<Permission> getUserPermissions(User u, String channel) {
         ArrayList<Permission> permissionList = new ArrayList<>();

@@ -96,7 +96,7 @@ public class Settings {
     public static File lafFile = new File(defaultDir + File.separator + "laf.txt");
     public File windowFile = new File(defaultDir + File.separator + "window.txt");
     public File keywordsFile = new File(defaultDir + File.separator + "keywords.txt");
-    public File donatorsFile = new File(defaultDir + File.separator + "donators.txt");
+    public File donorsFile = new File(defaultDir + File.separator + "donors.txt");
     public File donationsFile = new File(defaultDir + File.separator + "donations.txt");
     public File subsFile = new File(defaultDir + File.separator + "subs.txt");
 
@@ -196,7 +196,7 @@ public class Settings {
                 GUIMain.log("Loading user colors...");
                 loadUserColors();
             }
-            if (Utils.areFilesGood(donatorsFile.getAbsolutePath())) {
+            if (Utils.areFilesGood(donorsFile.getAbsolutePath())) {
                 GUIMain.log("Loading donors...");
                 loadDonors();
             }
@@ -205,14 +205,18 @@ public class Settings {
                 loadDonations();//these are stored locally
             }
             //checks online for offline donations and adds them
-            if (donationManager.canCheck()) {
+            if (donationManager.canCheck() && donationManager.scannedInitialDonations) {
                 donationManager.checkDonations(false);
                 donationManager.ranFirstCheck = true;
+            }
+            if (!donationManager.scannedInitialDonations) {
+                donationManager.scanInitialDonations(0);
+                donationManager.scannedInitialDonations = true;
             }
             if (accountManager.getUserAccount().getKey().canReadSubscribers()) {
                 if (!subscriberManager.ranInitialCheck && accountManager.getUserAccount() != null) {
                     subscriberManager.scanInitialSubscribers(accountManager.getUserAccount().getName(),
-                            accountManager.getUserAccount().getKey().getKey().split(":")[1], 0, new HashSet<>());
+                            accountManager.getUserAccount().getKey(), 0, new HashSet<>());
                 }
             }
             if (Utils.areFilesGood(subsFile.getAbsolutePath())) {
@@ -326,6 +330,7 @@ public class Settings {
         if (type == 1) {//defaults
             try {
                 p.load(new FileInputStream(defaultsFile));
+                donationManager.scannedInitialDonations = Boolean.parseBoolean(p.getProperty("RanInitDonations", "true"));
                 subscriberManager.ranInitialCheck = Boolean.parseBoolean(p.getProperty("RanInitSub", "false"));
                 lastFMAccount = p.getProperty("LastFMAccount", "");
                 String donation_client_id = p.getProperty("DCID", "");
@@ -415,6 +420,7 @@ public class Settings {
                 break;
             case 1:
                 p.put("RanInitSub", String.valueOf(subscriberManager.ranInitialCheck));
+                p.put("RanInitDonations", String.valueOf(donationManager.scannedInitialDonations));
                 p.put("LastFMAccount", lastFMAccount);
                 p.put("DCID", donationManager.getClientID());
                 p.put("DCOAUTH", donationManager.getAccessCode());
@@ -925,7 +931,7 @@ public class Settings {
      * Donators
      */
     public void loadDonors() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(donatorsFile.toURI().toURL().openStream()))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(donorsFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split = line.split(",");
@@ -945,8 +951,9 @@ public class Settings {
 
 
     public void saveDonors() {
-        try (PrintWriter br = new PrintWriter(donatorsFile)) {
-            donationManager.getDonors().stream().forEach(d -> br.println(d.getName() + "," + d.getDonated()));
+        try (PrintWriter br = new PrintWriter(donorsFile)) {
+            donationManager.getDonors().stream().forEach(d -> br.println(d.getName() + "," +
+                    DonationManager.getDecimalFormat().format(d.getDonated())));
         } catch (Exception e) {
             GUIMain.log(e);
         }
@@ -961,7 +968,8 @@ public class Settings {
         try (PrintWriter br = new PrintWriter(donationsFile)) {
             donationManager.getDonations().stream().sorted().forEach(d ->
                     br.println(d.getDonationID() + "[" + d.getFromWho() + "[" + d.getNote() + "["
-                            + d.getAmount() + "[" + Instant.ofEpochMilli(d.getDateReceived().getTime()).toString()));
+                            + DonationManager.getDecimalFormat().format(d.getAmount()) + "["
+                            + Instant.ofEpochMilli(d.getDateReceived().getTime()).toString()));
         } catch (Exception e) {
             GUIMain.log(e);
         }
@@ -1004,11 +1012,10 @@ public class Settings {
 
     /**
      * Subscribers of your own channel
+     *
      * Saves each subscriber with the first date Botnak meets them
-     * and each month check to see if they're still subbed, if not, make them donor
-     * with (months subbed * $2.50) as their amount.
+     * and each month check to see if they're still subbed, if not, make them an ex-subscriber
      */
-
     public void saveSubscribers() {
         try (PrintWriter br = new PrintWriter(subsFile)) {
             subscriberManager.getSubscribers().stream().sorted().forEach(

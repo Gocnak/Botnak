@@ -63,12 +63,12 @@ public class Subscriber implements Comparable<Subscriber> {
     @Override
     public int compareTo(Subscriber o) {
         if (this.getStarted().isAfter(o.getStarted())) {
-            //this donation is newer, put the other behind
+            //this subscriber is newer, put the other behind
             return -1;
         }
         if (o.getStarted().equals(this.getStarted())) {
             return 0;
-        } else {//the other donation is more recent
+        } else {//the other subscriber is more recent
             return 1;
         }
     }
