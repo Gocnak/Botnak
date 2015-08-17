@@ -1,9 +1,7 @@
 package gui.forms;
 
 import face.FaceManager;
-import gui.ChatPane;
-import gui.CombinedChatPane;
-import gui.DraggableTabbedPane;
+import gui.*;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
 import gui.listeners.ListenerUserChat;
@@ -15,7 +13,7 @@ import irc.message.MessageQueue;
 import sound.SoundEngine;
 import thread.TabPulse;
 import thread.ThreadEngine;
-import thread.heartbeat.*;
+import thread.heartbeat.Heartbeat;
 import util.Constants;
 import util.Response;
 import util.Utils;
@@ -66,7 +64,7 @@ public class GUIMain extends JFrame {
 
     public static Settings currentSettings;
 
-    public static TrayIcon systemTrayIcon;//TODO
+    private static BotnakTrayIcon systemTrayIcon;
 
     public static CopyOnWriteArraySet<TabPulse> tabPulses;
 
@@ -75,7 +73,7 @@ public class GUIMain extends JFrame {
     private static ChatPane systemLogsPane;
 
     public GUIMain() {
-        new MessageQueue().start();
+        new MessageQueue();
         instance = this;
         channelSet = new CopyOnWriteArraySet<>();
         userColMap = new ConcurrentHashMap<>();
@@ -95,15 +93,11 @@ public class GUIMain extends JFrame {
         systemLogsPane = new ChatPane("System Logs", allChatsScroll, allChats, 0);
         chatPanes.put("System Logs", systemLogsPane);
         currentSettings = new Settings();
-        currentSettings.load();
-        heartbeat = new Heartbeat();
-        heartbeat.addHeartbeatThread(new ViewerCount());
-        heartbeat.addHeartbeatThread(new UserManager());
-        heartbeat.addHeartbeatThread(new BanQueue());
-        if (currentSettings.trackDonations) {
-            heartbeat.addHeartbeatThread(new DonationCheck());
-        }
-        heartbeat.start();
+        ThreadEngine.submit(() -> {
+            currentSettings.load();
+            if (currentSettings.stUseSystemTray) getSystemTrayIcon();
+            heartbeat = new Heartbeat();
+        });
     }
 
     public static boolean loadedSettingsUser() {
@@ -201,12 +195,16 @@ public class GUIMain extends JFrame {
             PrintWriter pw = new PrintWriter(sw);
             t.printStackTrace(pw);
             toPrint = sw.toString(); // stack trace as a string
+            pw.close();
         } else {
             // Not a throwable.. Darn strings
             toPrint = message.toString();
         }
-        if (toPrint != null && GUIMain.chatPanes != null && !GUIMain.chatPanes.isEmpty())
+        if (GUIMain.chatPanes == null || GUIMain.chatPanes.isEmpty()) {//allowing for errors to at least go somewhere
+            System.out.println(toPrint == null ? "Null toPrint!" : toPrint);
+        } else {
             MessageQueue.addMessage(new Message(toPrint, type));
+        }
     }
 
     public static void updateTitle(String viewerCount) {
@@ -242,9 +240,11 @@ public class GUIMain extends JFrame {
             tabPulses.forEach(TabPulse::interrupt);
             tabPulses.clear();
         }
+        if (systemTrayIcon != null) systemTrayIcon.close();
         SoundEngine.getEngine().close();
         currentSettings.save();
         heartbeat.interrupt();
+        ThreadEngine.close();
         if (currentSettings.logChat) {
             String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
             for (String s : keys) {
@@ -265,6 +265,12 @@ public class GUIMain extends JFrame {
         tabPulses.add(tp);
     }
 
+    public static BotnakTrayIcon getSystemTrayIcon() {
+        if (systemTrayIcon == null) systemTrayIcon = new BotnakTrayIcon();
+        return systemTrayIcon;
+    }
+
+
     private void openBotnakFolderOptionActionPerformed() {
         Utils.openWebPage(Settings.defaultDir.toURI().toString());
     }
@@ -278,7 +284,15 @@ public class GUIMain extends JFrame {
     }
 
     private void autoReconnectToggleItemStateChanged(ItemEvent e) {
-        // TODO check login status of both accounts to determine if they need relogging in, upon enable
+        currentSettings.autoReconnectAccounts = e.getStateChange() == ItemEvent.SELECTED;
+        if (e.getStateChange() == ItemEvent.SELECTED) {
+            if (viewer != null && viewer.getViewer() != null && !viewer.getViewer().isConnected()) {
+                currentSettings.accountManager.createReconnectThread(viewer.getViewer());
+            }
+            if (bot != null && bot.getBot() != null && !bot.getBot().isConnected()) {
+                currentSettings.accountManager.createReconnectThread(bot.getBot());
+            }
+        }
     }
 
     private void alwaysOnTopToggleItemStateChanged(ItemEvent e) {
@@ -590,7 +604,7 @@ public class GUIMain extends JFrame {
                     //---- autoReconnectToggle ----
                     autoReconnectToggle.setText("Auto-Reconnect");
                     autoReconnectToggle.setSelected(true);
-                    autoReconnectToggle.addItemListener(e -> autoReconnectToggleItemStateChanged(e));
+                    autoReconnectToggle.addItemListener(this::autoReconnectToggleItemStateChanged);
                     preferencesMenu.add(autoReconnectToggle);
 
                     //---- alwaysOnTopToggle ----
@@ -961,6 +975,9 @@ public class GUIMain extends JFrame {
                     projectWikiOption.setText("Wiki");
                     projectWikiOption.addActionListener(e -> projectWikiOptionActionPerformed());
                     helpMenu.add(projectWikiOption);
+                    JMenuItem bugReport = new JMenuItem("Report a Bug/Issue");
+                    bugReport.addActionListener(e -> Utils.openWebPage("https://github.com/Gocnak/Botnak/issues/new"));
+                    helpMenu.add(bugReport);
                     helpMenu.addSeparator();
 
                     //---- projectDetailsOption ----
@@ -993,6 +1010,7 @@ public class GUIMain extends JFrame {
                     allChats.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
                     allChats.addMouseListener(new ListenerURL());
                     allChats.addMouseListener(new ListenerName());
+                    allChats.setEditorKit(new WrapEditorKit());
                     allChatsScroll.setViewportView(allChats);
                 }
                 channelPane.addTab("System Logs", allChatsScroll);

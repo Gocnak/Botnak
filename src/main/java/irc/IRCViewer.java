@@ -112,6 +112,7 @@ public class IRCViewer extends MessageHandler {
                     }
                 }
                 m = m.setExtra(false);//anything other than "null" works
+                GUIMain.currentSettings.subscriberManager.notifyTrayIcon(m.getContent(), true);
             }
         } //else it's someone else's channel, just print the message
         MessageQueue.addMessage(m);

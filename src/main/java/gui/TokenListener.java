@@ -2,7 +2,6 @@ package gui;
 
 import gui.forms.GUIAuthorizeAccount;
 import gui.forms.GUIMain;
-import util.Timer;
 import util.Utils;
 
 import java.io.BufferedReader;
@@ -19,34 +18,40 @@ import java.net.Socket;
 public class TokenListener extends Thread {
 
     private GUIAuthorizeAccount form;
-    private Timer timeoutTimer;
 
     public TokenListener(GUIAuthorizeAccount field) {
-        timeoutTimer = new Timer(1000 * 60);
         this.form = field;
     }
 
     @Override
     public void run() {
-        while (!GUIMain.shutDown && timeoutTimer.isRunning()) {
+        Socket s = null;
+        InputStreamReader irs = null;
+        BufferedReader input = null;
+        try (ServerSocket so = new ServerSocket(4447, 0, InetAddress.getLoopbackAddress())) {
+            so.setSoTimeout(60000);
+            s = so.accept();
+            irs = new InputStreamReader(s.getInputStream());
+            input = new BufferedReader(irs);
+            String inputLine = input.readLine();
+            String token = inputLine.replace("GET /token/", "").split(" ")[0];
+            if (token.length() > 5) {
+                form.oauthField.setText(token);
+                form.statusPane.setText("Successfully obtained OAuth key! Click \"Close\" below to finish!");
+                s.getOutputStream().write(makeResponse().getBytes("UTF-8"));
+            } else {
+                form.statusPane.setText("Failed to obtain OAuth key due to an unforeseen issue...");
+            }
+        } catch (Exception e) {
+            form.statusPane.setText("Failed to obtain OAuth key due to Exception! Check System Logs for more info.");
+            GUIMain.log(e);
+        } finally {
             try {
-                ServerSocket so = new ServerSocket(4447, 0, InetAddress.getLoopbackAddress());
-                Socket s = so.accept();
-                BufferedReader input = new BufferedReader(new InputStreamReader(s.getInputStream()));
-                String inputLine = input.readLine();
-                String token = inputLine.replace("GET /token/", "").split(" ")[0];
-                if (token.length() > 5) {
-                    form.oauthField.setText(token);
-                    form.statusPane.setText("Successfully obtained OAuth key! Click \"Close\" below to finish!");
-                    s.getOutputStream().write(makeResponse().getBytes("UTF-8"));
-                    input.close();
-                    s.close();
-                    so.close();
-                    break;
-                }
+                if (irs != null) irs.close();
+                if (input != null) input.close();
+                if (s != null) s.close();
             } catch (Exception e) {
                 GUIMain.log(e);
-                break;
             }
         }
     }

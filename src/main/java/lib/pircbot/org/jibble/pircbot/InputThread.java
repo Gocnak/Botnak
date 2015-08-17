@@ -18,10 +18,7 @@ import gui.forms.GUIMain;
 
 import java.io.BufferedReader;
 import java.io.InterruptedIOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.Socket;
-import java.util.StringTokenizer;
 
 /**
  * A Thread which reads lines from the IRC server.  It then
@@ -95,19 +92,7 @@ public class InputThread extends Thread {
                             _bot.handleLine(line);
                         } catch (Throwable t) {
                             // Stick the whole stack trace into a String so we can output it nicely.
-                            StringWriter sw = new StringWriter();
-                            PrintWriter pw = new PrintWriter(sw);
-                            t.printStackTrace(pw);
-                            pw.flush();
-                            StringTokenizer tokenizer = new StringTokenizer(sw.toString(), "\r\n");
-                            _bot.log("### Your implementation of PircBot is faulty and you have");
-                            _bot.log("### allowed an uncaught Exception or Error to propagate in your");
-                            _bot.log("### code. It may be possible for PircBot to continue operating");
-                            _bot.log("### normally. Here is the stack trace that was produced: -");
-                            _bot.log("### ");
-                            while (tokenizer.hasMoreTokens()) {
-                                _bot.log("### " + tokenizer.nextToken());
-                            }
+                            GUIMain.log(t);
                         }
                     }
                     running = false;
@@ -128,13 +113,11 @@ public class InputThread extends Thread {
         } catch (Exception e) {
             // Just assume the socket was already closed.
         }
-
         if (!_disposed) {
             _bot.log("*** Disconnected.");
             _isConnected = false;
             _bot.getMessageHandler().onDisconnect();
         }
-
     }
 
 

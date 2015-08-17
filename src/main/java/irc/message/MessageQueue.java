@@ -23,6 +23,7 @@ public class MessageQueue extends Thread {
     public MessageQueue() {
         queue = new Queue<>(100);
         pool = Executors.newCachedThreadPool();
+        start();
     }
 
     @Override

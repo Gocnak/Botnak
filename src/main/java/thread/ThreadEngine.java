@@ -19,4 +19,8 @@ public class ThreadEngine {
     public static void submit(Runnable r) {
         pool.submit(r);
     }
+
+    public static void close() {
+        pool.shutdownNow();
+    }
 }

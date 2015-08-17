@@ -486,6 +486,16 @@ public class Utils {
     }
 
     /**
+     * Tests to see if the tab of the given index is selected.
+     *
+     * @param tabIndex The index of the chat pane.
+     * @return True if the t, else false.
+     */
+    public static boolean isTabSelected(int tabIndex) {
+        return !GUIMain.chatPanes.isEmpty() && GUIMain.channelPane.getSelectedIndex() == tabIndex;
+    }
+
+    /**
      * Checks to see if a chat pane tab of a given name is visible.
      *
      * @param name The name of the chat pane.

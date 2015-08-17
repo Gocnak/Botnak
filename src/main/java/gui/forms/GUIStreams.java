@@ -4,6 +4,7 @@ import gui.ChatPane;
 import gui.CombinedChatPane;
 import irc.account.Oauth;
 import thread.ThreadEngine;
+import thread.heartbeat.FollowCheck;
 import util.APIRequests;
 import util.Utils;
 
@@ -14,6 +15,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * @author Nick K
@@ -29,16 +31,14 @@ public class GUIStreams extends JFrame {
         parseFollowed();
     }
 
-    private void parseFollowed() {
+    public void parseFollowed() {
         if (getKey().canReadFollowed()) {
-            ThreadEngine.submit(() -> {
-                String[] channels = APIRequests.Twitch.getLiveFollowedChannels(getKey().getKey().split(":")[1]);
-                if (channels.length > 0) {
-                    setFollowedListModel(channels);
-                } else {
-                    setFollowedListModel("No followed streams", " are live :(");
-                }
-            });
+            CopyOnWriteArraySet<String> channels = FollowCheck.followedChannels;
+            if (channels != null && channels.size() > 0) {
+                setFollowedListModel(channels.toArray(new String[channels.size()]));
+            } else {
+                setFollowedListModel("No followed streams", " are live :(");
+            }
         } else {
             setFollowedListModel("Enable \"Read followed Streams\" on", " your Oauth key!");
         }
@@ -58,9 +58,9 @@ public class GUIStreams extends JFrame {
             dispose();
         } else {
             final String text = Utils.checkText(newChannel.getText().trim());
-            if ("".equals(text)) {
+            if ("".equals(text) || text.length() < 3) {
                 parseFollowed();
-            } else {
+            } else if (text.length() > 2) {
                 ThreadEngine.submit(() -> {
                     if (!listLabel.getText().equals("Suggested Streams:")) {
                         listLabel.setText("Suggested Streams:");
@@ -73,7 +73,6 @@ public class GUIStreams extends JFrame {
                     }
                 });
             }
-
         }
     }
 
@@ -137,8 +136,15 @@ public class GUIStreams extends JFrame {
                 return values[i];
             }
         });
+        followedList.repaint();
     }
 
+    @Override
+    public void setVisible(boolean b) {
+        if (!newChannel.getText().isEmpty()) newChannel.setText("");
+        if (b) parseFollowed();
+        super.setVisible(b);
+    }
 
     private void initComponents() {
         JScrollPane scrollPane1 = new JScrollPane();

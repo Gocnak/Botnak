@@ -1,5 +1,6 @@
 package util.settings;
 
+import gui.BotnakTrayIcon;
 import gui.forms.GUIMain;
 import irc.Donor;
 import irc.message.Message;
@@ -97,6 +98,9 @@ public class DonationManager {
                     GUIMain.currentSettings.saveDonations();
                     GUIMain.currentSettings.saveDonors();
                     setLastDonation(d);
+                    if (BotnakTrayIcon.shouldDisplayDonations()) {
+                        GUIMain.getSystemTrayIcon().displayDonation(d);
+                    }
                     MessageQueue.addMessage(new Message()
                             .setChannel(GUIMain.currentSettings.accountManager.getUserAccount().getName())
                             .setType(Message.MessageType.DONATION_NOTIFY)

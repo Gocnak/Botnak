@@ -15,16 +15,23 @@ import java.awt.event.ActionEvent;
  */
 public class GUIAuthorizeAccount extends JFrame {
 
-    private TokenListener listener;
+    private Account getAccount(boolean bot) {
+        return bot ? GUIMain.currentSettings.accountManager.getBotAccount() :
+                GUIMain.currentSettings.accountManager.getUserAccount();
+    }
 
-    public GUIAuthorizeAccount() {
+    private TokenListener listener;
+    public boolean isForBotAccount = false;
+
+    public GUIAuthorizeAccount(boolean forBot) {
+        isForBotAccount = forBot;
         listener = null;
         initComponents();
-        if (GUIMain.currentSettings.accountManager.getUserAccount() != null) {
-            Oauth key = GUIMain.currentSettings.accountManager.getUserAccount().getKey();
-            statusPane.setText("Here is the current OAuth key's permission. Logout of the account if you wish to change it!");
-            accountNameField.setText(GUIMain.currentSettings.accountManager.getUserAccount().getName());
-            oauthField.setText(GUIMain.currentSettings.accountManager.getUserAccount().getKey().getKey());
+        if (!isForBotAccount && getAccount(false) != null) {
+            Oauth key = getAccount(false).getKey();
+            statusPane.setText("Here is the current User OAuth key's permission. Logout of the User account if you wish to change it!");
+            accountNameField.setText(getAccount(false).getName());
+            oauthField.setText(key.getKey());
             boxEditStatus.setSelected(key.canSetTitle());
             boxEditStatus.setEnabled(false);
             boxCommercial.setSelected(key.canPlayAd());
@@ -34,11 +41,16 @@ public class GUIAuthorizeAccount extends JFrame {
             boxReadSubs.setSelected(key.canReadSubscribers());
             boxReadSubs.setEnabled(false);
             authorizeButton.setEnabled(false);
+        } else if (isForBotAccount && getAccount(true) != null) {
+            Oauth key = getAccount(true).getKey();
+            statusPane.setText("Here is the current Bot OAuth key. Logout of the Bot account if you wish to change it!");
+            accountNameField.setText(getAccount(true).getName());
+            oauthField.setText(key.getKey());
         }
     }
 
     private void authorizeButtonActionPerformed(ActionEvent e) {
-        String accountName = this.accountNameField.getText().trim();
+        String accountName = accountNameField.getText().trim();
         if (accountName.length() > 0 && !accountName.contains(" ")) {
             String URL = "https://api.twitch.tv/kraken/oauth2/authorize" +
                     "?response_type=token" +
@@ -60,18 +72,41 @@ public class GUIAuthorizeAccount extends JFrame {
     }
 
     private void doneButtonActionPerformed(ActionEvent e) {
-        if (GUIMain.currentSettings.accountManager.getUserAccount() == null) {
-            if (accountNameField.getText().length() > 0 && oauthField.getPassword().length > 5) {
-                String oauth = new String(oauthField.getPassword());
-                if (!oauth.startsWith("oauth:")) oauth = "oauth:" + oauth;
-                GUIMain.currentSettings.accountManager.setUserAccount(
-                        new Account(accountNameField.getText().toLowerCase(),
-                                new Oauth(oauth, boxEditStatus.isSelected(), boxCommercial.isSelected(),
-                                        boxReadSubs.isSelected(), boxFollowed.isSelected())));
-                GUIMain.currentSettings.accountManager.addTask(new Task(null, Task.Type.CREATE_VIEWER_ACCOUNT, null));
+        String oauth = new String(oauthField.getPassword());
+        if (!oauth.startsWith("oauth:")) oauth = "oauth:" + oauth;
+        String name = accountNameField.getText().trim().toLowerCase();
+        if (!name.isEmpty() && oauth.length() == 36) {
+            if (isForBotAccount) {
+                if (getAccount(true) == null) {
+                    GUIMain.currentSettings.accountManager.setBotAccount(
+                            new Account(name, new Oauth(oauth, false, false, false, false)));
+                    GUIMain.currentSettings.accountManager.addTask(new Task(null, Task.Type.CREATE_BOT_ACCOUNT, null));
+                    if (GUIMain.settings != null) {
+                        GUISettings.normUser.setText(name);
+                        GUISettings.normPass.setText(oauth);
+                    }
+                }
+            } else {
+                if (getAccount(false) == null) {
+                    GUIMain.currentSettings.accountManager.setUserAccount(
+                            new Account(name, new Oauth(oauth, boxEditStatus.isSelected(), boxCommercial.isSelected(),
+                                    boxReadSubs.isSelected(), boxFollowed.isSelected())));
+                    GUIMain.currentSettings.accountManager.addTask(new Task(null, Task.Type.CREATE_VIEWER_ACCOUNT, null));
+                    if (GUIMain.settings != null) {
+                        GUISettings.botUser.setText(name);
+                        GUISettings.botPass.setText(oauth);
+                    }
+                }
             }
         }
         dispose();
+    }
+
+    @Override
+    public void dispose() {
+        if (listener.isAlive()) listener.interrupt();
+        listener = null;
+        super.dispose();
     }
 
     private void initComponents() {
@@ -90,7 +125,7 @@ public class GUIAuthorizeAccount extends JFrame {
         closeButton = new JButton();
         setResizable(false);
         //======== this ========
-        setTitle("Authorize Botnak");
+        setTitle("Authorize Accounts");
         setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
         Container contentPane = getContentPane();
 
@@ -99,17 +134,21 @@ public class GUIAuthorizeAccount extends JFrame {
 
             //---- statusPane ----
             statusPane.setEditable(false);
-            statusPane.setText("Enter your username, tick the boxes you want Botnak to be able to do, and click Authorize.");
+            statusPane.setText(isForBotAccount ?
+                    "Enter your bot account's username. On Twitch, log into your bot account. Then press \"Authorize\""
+                    : "Enter your username, tick the boxes you want Botnak to be able to do, and press \"Authorize\"");
             scrollPane1.setViewportView(statusPane);
         }
 
         //---- boxCommercial ----
         boxCommercial.setText("Play Commercials (Partnered Channels Only)");
         boxCommercial.setFocusable(false);
+        boxCommercial.setEnabled(!isForBotAccount);
 
         //---- boxReadSubs ----
         boxReadSubs.setText("Read Subscribers (Partnered Channels Only)");
         boxReadSubs.setFocusable(false);
+        boxReadSubs.setEnabled(!isForBotAccount);
 
         //---- label1 ----
         label1.setText("Username:");
@@ -122,10 +161,12 @@ public class GUIAuthorizeAccount extends JFrame {
         //---- boxEditStatus ----
         boxEditStatus.setText("Edit Title and Game");
         boxEditStatus.setFocusable(false);
+        boxEditStatus.setEnabled(!isForBotAccount);
 
         //---- boxFollowed ----
         boxFollowed.setText("Read Followed Streams");
         boxFollowed.setFocusable(false);
+        boxFollowed.setEnabled(!isForBotAccount);
 
         //---- label2 ----
         label2.setText("OAuth key:");

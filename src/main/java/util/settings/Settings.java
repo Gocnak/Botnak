@@ -13,7 +13,6 @@ import irc.account.Task;
 import lib.pircbot.org.jibble.pircbot.ChannelManager;
 import sound.Sound;
 import sound.SoundEngine;
-import thread.ThreadEngine;
 import util.Permissions;
 import util.Utils;
 import util.comm.Command;
@@ -44,6 +43,7 @@ public class Settings {
     //accounts
     public AccountManager accountManager = null;
     public ChannelManager channelManager = null;
+    public boolean autoReconnectAccounts = true;
     public String lastFMAccount = "";
     public int botReplyType = 0;
     //0 = none, 1 = botnak user only, 2 = everyone
@@ -112,13 +112,14 @@ public class Settings {
     public float soundVolumeGain = 100;
 
 
-    //NEW SETTINGS, TODO categorize later
-    public boolean ffzFacesEnable = true;//TODO incorporate
-    public boolean ffzFacesUseAll = false;//TODO implement
-    public boolean actuallyClearChat = true;//TODO incorporate
-    public boolean showDonorIcons = true; //TODO incorporate
-    public boolean showTabPulses = true;//TODO implement
+    //NEW SETTINGS, TODO implement into new GUI and categorize later
+    public boolean ffzFacesEnable = true;
+    public boolean ffzFacesUseAll = false;
+    public boolean actuallyClearChat = true;
+    public boolean showDonorIcons = true;
+    public boolean showTabPulses = true;
     public boolean trackDonations = true;
+    public boolean trackFollowers = false;
 
     //Bot Reply
     public boolean botAnnounceSubscribers = true;
@@ -129,7 +130,7 @@ public class Settings {
     public boolean botUnshortenURLs = true;
 
     //System Tray
-    public boolean useSystemTray = true;
+    public boolean stUseSystemTray = true;
     public boolean stMuted = false;
     public boolean stShowSubscribers = false;
     public boolean stShowNewFollowers = false;
@@ -161,106 +162,104 @@ public class Settings {
      * This void loads everything Botnak will use, and sets the appropriate settings.
      */
     public void load() {
-        ThreadEngine.submit(() -> {
-            loadWindow();
-            accountManager = new AccountManager();
-            channelManager = new ChannelManager();
-            accountManager.start();
-            donationManager = new DonationManager();
-            subscriberManager = new SubscriberManager();
-            if (Utils.areFilesGood(accountsFile.getAbsolutePath())) {
-                GUIMain.log("Loading accounts...");
-                loadPropData(0);
+        loadWindow();
+        accountManager = new AccountManager();
+        channelManager = new ChannelManager();
+        accountManager.start();
+        donationManager = new DonationManager();
+        subscriberManager = new SubscriberManager();
+        if (Utils.areFilesGood(accountsFile.getAbsolutePath())) {
+            GUIMain.log("Loading accounts...");
+            loadPropData(0);
+        }
+        if (Utils.areFilesGood(defaultsFile.getAbsolutePath())) {
+            GUIMain.log("Loading defaults...");
+            loadPropData(1);
+        }
+        if (Utils.areFilesGood(tabsFile.getAbsolutePath()) && accountManager.getUserAccount() != null) {
+            GUIMain.log("Loading tabs...");
+            loadTabState();
+        }
+        if (Utils.areFilesGood(soundsFile.getAbsolutePath())) {
+            GUIMain.log("Loading sounds...");
+            loadSounds();
+        }
+        if (subSoundDir.exists() && subSoundDir.list().length > 0) {
+            GUIMain.log("Loading sub sounds...");
+            doLoadSubSounds();
+        }
+        if (donationSoundDir.exists() && donationSoundDir.list().length > 0) {
+            GUIMain.log("Loading donation sounds...");
+            doLoadDonationSounds();
+        }
+        if (Utils.areFilesGood(userColFile.getAbsolutePath())) {
+            GUIMain.log("Loading user colors...");
+            loadUserColors();
+        }
+        if (Utils.areFilesGood(donorsFile.getAbsolutePath())) {
+            GUIMain.log("Loading donors...");
+            loadDonors();
+        }
+        if (Utils.areFilesGood(donationsFile.getAbsolutePath())) {
+            GUIMain.log("Loading donations...");
+            loadDonations();//these are stored locally
+        }
+        //checks online for offline donations and adds them
+        if (donationManager.canCheck() && donationManager.scannedInitialDonations) {
+            donationManager.checkDonations(false);
+            donationManager.ranFirstCheck = true;
+        }
+        if (!donationManager.scannedInitialDonations) {
+            donationManager.scanInitialDonations(0);
+            donationManager.scannedInitialDonations = true;
+        }
+        if (accountManager.getUserAccount().getKey().canReadSubscribers()) {
+            if (!subscriberManager.ranInitialCheck && accountManager.getUserAccount() != null) {
+                subscriberManager.scanInitialSubscribers(accountManager.getUserAccount().getName(),
+                        accountManager.getUserAccount().getKey(), 0, new HashSet<>());
             }
-            if (Utils.areFilesGood(defaultsFile.getAbsolutePath())) {
-                GUIMain.log("Loading defaults...");
-                loadPropData(1);
+        }
+        if (Utils.areFilesGood(subsFile.getAbsolutePath())) {
+            GUIMain.log("Loading subscribers...");
+            loadSubscribers();
+        }
+        if (Utils.areFilesGood(commandsFile.getAbsolutePath())) {
+            GUIMain.log("Loading text commands...");
+            loadCommands();
+        }
+        if (subIconsDir.exists()) {
+            File[] subIcons = subIconsDir.listFiles();
+            if (subIcons != null && subIcons.length > 0) {
+                GUIMain.log("Loading subscriber icons...");
+                loadSubIcons(subIcons);
             }
-            if (Utils.areFilesGood(tabsFile.getAbsolutePath()) && accountManager.getUserAccount() != null) {
-                GUIMain.log("Loading tabs...");
-                loadTabState();
+        }
+        File[] nameFaces = nameFaceDir.listFiles();
+        if (nameFaces != null && nameFaces.length > 0) {
+            GUIMain.log("Loading name faces...");
+            loadNameFaces();
+        }
+        if (ffzFacesEnable) {
+            frankerFaceZDir.mkdirs();
+            File[] files = frankerFaceZDir.listFiles();
+            if (files != null && files.length > 0) {
+                GUIMain.log("Loading FrankerFaceZ faces...");
+                loadFFZFaces(files);
             }
-            if (Utils.areFilesGood(soundsFile.getAbsolutePath())) {
-                GUIMain.log("Loading sounds...");
-                loadSounds();
-            }
-            if (subSoundDir.exists() && subSoundDir.list().length > 0) {
-                GUIMain.log("Loading sub sounds...");
-                doLoadSubSounds();
-            }
-            if (donationSoundDir.exists() && donationSoundDir.list().length > 0) {
-                GUIMain.log("Loading donation sounds...");
-                doLoadDonationSounds();
-            }
-            if (Utils.areFilesGood(userColFile.getAbsolutePath())) {
-                GUIMain.log("Loading user colors...");
-                loadUserColors();
-            }
-            if (Utils.areFilesGood(donorsFile.getAbsolutePath())) {
-                GUIMain.log("Loading donors...");
-                loadDonors();
-            }
-            if (Utils.areFilesGood(donationsFile.getAbsolutePath())) {
-                GUIMain.log("Loading donations...");
-                loadDonations();//these are stored locally
-            }
-            //checks online for offline donations and adds them
-            if (donationManager.canCheck() && donationManager.scannedInitialDonations) {
-                donationManager.checkDonations(false);
-                donationManager.ranFirstCheck = true;
-            }
-            if (!donationManager.scannedInitialDonations) {
-                donationManager.scanInitialDonations(0);
-                donationManager.scannedInitialDonations = true;
-            }
-            if (accountManager.getUserAccount().getKey().canReadSubscribers()) {
-                if (!subscriberManager.ranInitialCheck && accountManager.getUserAccount() != null) {
-                    subscriberManager.scanInitialSubscribers(accountManager.getUserAccount().getName(),
-                            accountManager.getUserAccount().getKey(), 0, new HashSet<>());
-                }
-            }
-            if (Utils.areFilesGood(subsFile.getAbsolutePath())) {
-                GUIMain.log("Loading subscribers...");
-                loadSubscribers();
-            }
-            if (Utils.areFilesGood(commandsFile.getAbsolutePath())) {
-                GUIMain.log("Loading text commands...");
-                loadCommands();
-            }
-            if (subIconsDir.exists()) {
-                File[] subIcons = subIconsDir.listFiles();
-                if (subIcons != null && subIcons.length > 0) {
-                    GUIMain.log("Loading subscriber icons...");
-                    loadSubIcons(subIcons);
-                }
-            }
-            File[] nameFaces = nameFaceDir.listFiles();
-            if (nameFaces != null && nameFaces.length > 0) {
-                GUIMain.log("Loading name faces...");
-                loadNameFaces();
-            }
-            if (ffzFacesEnable) {
-                frankerFaceZDir.mkdirs();
-                File[] files = frankerFaceZDir.listFiles();
-                if (files != null && files.length > 0) {
-                    GUIMain.log("Loading FrankerFaceZ faces...");
-                    loadFFZFaces();
-                }
-            }
-            GUIMain.log("Loading keywords...");
-            loadKeywords();//first time boot adds the username
-            GUIMain.log("Loading console commands...");
-            loadConsoleCommands();//has to be out of the check for files for first time boot
-            if (Utils.areFilesGood(faceFile.getAbsolutePath())) {
-                GUIMain.log("Loading custom faces...");
-                loadFaces();
-            }
-            GUIMain.log("Loading default Twitch faces...");
-            if (Utils.areFilesGood(twitchFaceFile.getAbsolutePath())) {
-                loadDefaultTwitchFaces();
-            }
-            FaceManager.loadDefaultFaces();
-        });
+        }
+        GUIMain.log("Loading keywords...");
+        loadKeywords();//first time boot adds the username
+        GUIMain.log("Loading console commands...");
+        loadConsoleCommands();//has to be out of the check for files for first time boot
+        if (Utils.areFilesGood(faceFile.getAbsolutePath())) {
+            GUIMain.log("Loading custom faces...");
+            loadFaces();
+        }
+        GUIMain.log("Loading default Twitch faces...");
+        if (Utils.areFilesGood(twitchFaceFile.getAbsolutePath())) {
+            loadDefaultTwitchFaces();
+        }
+        FaceManager.loadDefaultFaces();
     }
 
     /**
@@ -332,6 +331,8 @@ public class Settings {
                 p.load(new FileInputStream(defaultsFile));
                 donationManager.scannedInitialDonations = Boolean.parseBoolean(p.getProperty("RanInitDonations", "true"));
                 subscriberManager.ranInitialCheck = Boolean.parseBoolean(p.getProperty("RanInitSub", "false"));
+                trackFollowers = Boolean.parseBoolean(p.getProperty("TrackFollowers", "false"));
+                trackDonations = Boolean.parseBoolean(p.getProperty("TrackDonations", "false"));
                 lastFMAccount = p.getProperty("LastFMAccount", "");
                 String donation_client_id = p.getProperty("DCID", "");
                 String donation_client_oauth = p.getProperty("DCOAUTH", "");
@@ -379,7 +380,7 @@ public class Settings {
                 GUIMain.instance.updateSoundDelay(parsed / 1000);
                 botReplyType = Integer.parseInt(p.getProperty("BotReplyType", "0"));
                 GUIMain.instance.updateBotReplyPerm(botReplyType);
-                useSystemTray = Boolean.parseBoolean(p.getProperty("ST_UseSystemTray", "false"));
+                stUseSystemTray = Boolean.parseBoolean(p.getProperty("ST_UseSystemTray", "false"));
                 stShowActivity = Boolean.parseBoolean(p.getProperty("ST_DisplayActivity", "false"));
                 stShowDonations = Boolean.parseBoolean(p.getProperty("ST_DisplayDonations", "false"));
                 stShowMentions = Boolean.parseBoolean(p.getProperty("ST_DisplayMentions", "false"));
@@ -421,6 +422,8 @@ public class Settings {
             case 1:
                 p.put("RanInitSub", String.valueOf(subscriberManager.ranInitialCheck));
                 p.put("RanInitDonations", String.valueOf(donationManager.scannedInitialDonations));
+                p.put("TrackDonations", String.valueOf(trackDonations));
+                p.put("TrackFollowers", String.valueOf(trackFollowers));
                 p.put("LastFMAccount", lastFMAccount);
                 p.put("DCID", donationManager.getClientID());
                 p.put("DCOAUTH", donationManager.getAccessCode());
@@ -446,7 +449,7 @@ public class Settings {
                 p.put("SoundEnginePerm", String.valueOf(SoundEngine.getEngine().getPermission()));
                 p.put("SoundEngineDelay", String.valueOf(SoundEngine.getEngine().getDelay()));
                 p.put("BotReplyType", String.valueOf(botReplyType));
-                p.put("ST_UseSystemTray", String.valueOf(useSystemTray));
+                p.put("ST_UseSystemTray", String.valueOf(stUseSystemTray));
                 p.put("ST_DisplayActivity", String.valueOf(stShowActivity));
                 p.put("ST_DisplayDonations", String.valueOf(stShowDonations));
                 p.put("ST_DisplayMentions", String.valueOf(stShowMentions));
@@ -669,9 +672,7 @@ public class Settings {
      * <p>
      * We can be a little more broad about this saving, since it's a per-channel basis
      */
-    public void loadFFZFaces() {
-        File[] channels = frankerFaceZDir.listFiles();
-        if (channels == null) return;
+    public void loadFFZFaces(File[] channels) {
         for (File channel : channels) {
             if (channel.isDirectory() && channel.length() > 0) {
                 File[] faces = channel.listFiles();
@@ -1012,7 +1013,7 @@ public class Settings {
 
     /**
      * Subscribers of your own channel
-     *
+     * <p>
      * Saves each subscriber with the first date Botnak meets them
      * and each month check to see if they're still subbed, if not, make them an ex-subscriber
      */

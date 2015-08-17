@@ -410,6 +410,12 @@ public class ChatPane implements DocumentListener {
             //URL, Faces, rest of message
             printMessage(m, mess, set, u);
 
+            if (BotnakTrayIcon.shouldDisplayMentions() && !Utils.isTabSelected(index)) {
+                if (mess.contains(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
+                    GUIMain.getSystemTrayIcon().displayMention(m.getLocal());
+                }
+            }
+
             if (Utils.isMainChannel(channel))
                 //check status of the sub, has it been a month?
                 GUIMain.currentSettings.subscriberManager.updateSubscriber(u, channel, isSubscriber);
@@ -594,7 +600,9 @@ public class ChatPane implements DocumentListener {
         pane.addMouseListener(new ListenerURL());
         pane.addMouseListener(new ListenerName());
         pane.addMouseListener(new ListenerFace());
-        scrollPane.setViewportView(pane);
+        ScrollablePanel sp = new ScrollablePanel();
+        sp.add(pane, BorderLayout.SOUTH);
+        scrollPane.setViewportView(sp);
         return new ChatPane(channel, scrollPane, pane, GUIMain.channelPane.getTabCount() - 1);
     }
 

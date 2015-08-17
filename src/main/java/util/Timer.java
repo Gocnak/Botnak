@@ -41,10 +41,7 @@ public class Timer {
      * @return The remaining time in milliseconds.
      */
     public long getRemaining() {
-        if (isRunning()) {
-            return end - System.currentTimeMillis();
-        }
-        return 0;
+        return isRunning() ? (end - System.currentTimeMillis()) : 0L;
     }
 
     /**
@@ -61,7 +58,7 @@ public class Timer {
      * Restarts this timer using its period.
      */
     public void reset() {
-        end = System.currentTimeMillis() + period;
+        setEndIn(period);
     }
 
     /**

@@ -296,7 +296,7 @@ public class APIRequests {
          * @param key The oauth key to use.
          * @return An array of live streams (empty if no one is live).
          */
-        public static String[] getLiveFollowedChannels(String key) {
+        public static ArrayList<String> getLiveFollowedChannels(String key) {
             ArrayList<String> toReturn = new ArrayList<>();
             try {
                 URL request = new URL("https://api.twitch.tv/kraken/streams/followed?oauth_token="
@@ -311,12 +311,11 @@ public class APIRequests {
                         toReturn.add(channel.getString("name"));
                     }
                 }
-
             } catch (Exception e) {
                 GUIMain.log("Failed to get live followed channels due to exception:");
                 GUIMain.log(e);
             }
-            return toReturn.toArray(new String[toReturn.size()]);
+            return toReturn;
         }
 
         /**
@@ -345,10 +344,27 @@ public class APIRequests {
             return toReturn.toArray(new String[toReturn.size()]);
         }
 
-        //TODO
-        //public static String[] getLast20Followers() {
-        //
-        //}
+        public static String[] getLast20Followers(String channel) {
+            ArrayList<String> toReturn = new ArrayList<>();
+            try {
+                URL request = new URL("https://api.twitch.tv/kraken/channels/" + channel + "/follows?limit=20&" +
+                        "client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
+                String line = Utils.createAndParseBufferedReader(request.openStream());
+                if (!line.isEmpty()) {
+                    JSONObject init = new JSONObject(line);
+                    JSONArray follows = init.getJSONArray("follows");
+                    for (int i = 0; i < follows.length(); i++) {
+                        JSONObject person = follows.getJSONObject(i);
+                        JSONObject user = person.getJSONObject("user");
+                        toReturn.add(user.getString("name"));
+                    }
+                }
+
+            } catch (Exception e) {
+                GUIMain.log(e);
+            }
+            return toReturn.toArray(new String[toReturn.size()]);
+        }
     }
 
     //Current playing song

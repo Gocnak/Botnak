@@ -1,5 +1,6 @@
 package util.settings;
 
+import gui.BotnakTrayIcon;
 import gui.forms.GUIMain;
 import irc.Subscriber;
 import irc.account.Oauth;
@@ -120,6 +121,7 @@ public class SubscriberManager {
                     s.get().setActive(true);
                     playSubscriberSound();
                     setLastSubscriber(s.get());
+                    notifyTrayIcon(content, false);
                 }
             }
         } else {
@@ -134,6 +136,7 @@ public class SubscriberManager {
                 MessageQueue.addMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
                 addSub(new Subscriber(u.getNick().toLowerCase(), LocalDateTime.now(), true, 0));
                 playSubscriberSound();
+                notifyTrayIcon(content, false);
             }
         }
     }
@@ -152,6 +155,7 @@ public class SubscriberManager {
         Optional<Subscriber> subscriber = getSubscriber(name);
         if (!subscriber.isPresent()) {//brand spanking new sub, live as botnak caught it
             addSub(new Subscriber(name, LocalDateTime.now(), true, 0));
+            notifyTrayIcon(name + " has just subscribed!", false);
             playSubscriberSound();
             //we're going to return false (end of method) so that Botnak generates the message
             //like it did before this manager was created and implemented (and because less of the same code is better eh?)
@@ -166,6 +170,7 @@ public class SubscriberManager {
             // if they decide to cancel just to get the notification again, they deserve their streak to be reset
             String content = name + " has just RE-subscribed!";
             MessageQueue.addMessage(new Message().setContent(content).setChannel(channel).setType(Message.MessageType.SUB_NOTIFY));
+            notifyTrayIcon(content, false);
             playSubscriberSound();
             subscriber.get().resetStreak();
             subscriber.get().setStarted(LocalDateTime.now());
@@ -179,6 +184,12 @@ public class SubscriberManager {
     private void playSubscriberSound() {
         if (GUIMain.currentSettings.loadedSubSounds)
             SoundEngine.getEngine().playSpecialSound(true);
+    }
+
+    public void notifyTrayIcon(String content, boolean continuation) {
+        if (BotnakTrayIcon.shouldDisplayNewSubscribers()) {
+            GUIMain.getSystemTrayIcon().displaySubscriber(content, continuation);
+        }
     }
 
 

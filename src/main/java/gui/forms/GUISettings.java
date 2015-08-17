@@ -1,9 +1,6 @@
 package gui.forms;
 
 import gui.JFontChooser;
-import irc.account.Account;
-import irc.account.Oauth;
-import irc.account.Task;
 import lib.scalr.Scalr;
 import sound.Sound;
 import sound.SoundEngine;
@@ -34,14 +31,14 @@ public class GUISettings extends JFrame {
     private static String lastSoundDir = "";
 
     private GUISounds_2 s2;
-    private GUIAuthorizeAccount mainAccGUI;
+    private GUIAuthorizeAccount authorizeGUI;
 
     public GUISettings() {
         initComponents();
         setLocationRelativeTo(GUIMain.instance);
         buildTree();
         s2 = null;
-        mainAccGUI = null;
+        authorizeGUI = null;
     }
 
     // builds the sound tree
@@ -210,18 +207,13 @@ public class GUISettings extends JFrame {
 
     public void saveButtonActionPerformed() {
         save();
-        GUIMain.settings = null;
-        if (mainAccGUI != null) mainAccGUI.dispose();
-        mainAccGUI = null;
-        if (s2 != null) s2.dispose();
-        s2 = null;
-        dispose();
+        cancelButtonActionPerformed();
     }
 
     public void cancelButtonActionPerformed() {
         GUIMain.settings = null;
-        if (mainAccGUI != null) mainAccGUI.dispose();
-        mainAccGUI = null;
+        if (authorizeGUI != null) authorizeGUI.dispose();
+        authorizeGUI = null;
         if (s2 != null) s2.dispose();
         s2 = null;
         dispose();
@@ -276,29 +268,13 @@ public class GUISettings extends JFrame {
     }
 
     public void userLoginButtonActionPerformed() {
-        if (mainAccGUI == null) mainAccGUI = new GUIAuthorizeAccount();
-        mainAccGUI.setVisible(true);
+        if (authorizeGUI == null || authorizeGUI.isForBotAccount) authorizeGUI = new GUIAuthorizeAccount(false);
+        authorizeGUI.setVisible(true);
     }
 
     public void botLoginButtonActionPerformed() {
-        if (GUIMain.bot == null) {
-            String botus = botUser.getText().toLowerCase();
-            String botpass = new String(botPass.getPassword());
-            if (!botus.equals("") && !botus.contains(" ")) {
-                if (!botpass.equals("") && !botpass.contains(" ")) {
-                    if (!botpass.contains("oauth")) {
-                        JOptionPane.showMessageDialog(this,
-                                "The password must be the entire oauth string!" +
-                                        "\n See http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc for more info.",
-                                "Password Needs Oauth", JOptionPane.ERROR_MESSAGE);
-                        botPass.setText("");
-                    } else {
-                        GUIMain.currentSettings.accountManager.setBotAccount(new Account(botus, new Oauth(botpass, false, false, false, false)));
-                        GUIMain.currentSettings.accountManager.addTask(new Task(null, Task.Type.CREATE_BOT_ACCOUNT, null));
-                    }
-                }
-            }
-        }
+        if (authorizeGUI == null || !authorizeGUI.isForBotAccount) authorizeGUI = new GUIAuthorizeAccount(true);
+        authorizeGUI.setVisible(true);
     }
 
     public void soundTreeMouseReleased() {
@@ -558,7 +534,7 @@ public class GUISettings extends JFrame {
                 label11.setText("(To be updated!)");
 
                 //---- botLoginButton ----
-                botLoginButton.setText("Login");
+                botLoginButton.setText("Setup Bot Account");
                 botLoginButton.setFocusable(false);
                 botLoginButton.addActionListener(e -> botLoginButtonActionPerformed());
 
@@ -569,6 +545,8 @@ public class GUISettings extends JFrame {
                 botLogoutButton.addActionListener(e -> botLogoutButtonActionPerformed());
                 normUser.setEnabled(false);
                 normPass.setEnabled(false);
+                botUser.setEnabled(false);
+                botPass.setEnabled(false);
                 if (GUIMain.loadedSettingsUser()) {
                     normUser.setText(GUIMain.currentSettings.accountManager.getUserAccount().getName());
                     normPass.setText(GUIMain.currentSettings.accountManager.getUserAccount().getKey().getKey());

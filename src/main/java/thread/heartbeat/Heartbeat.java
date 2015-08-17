@@ -32,6 +32,18 @@ public class Heartbeat extends Thread {
         heartbeatThreads = new ArrayList<>();
         executor = Executors.newCachedThreadPool();
         delay = del;
+        addHeartbeatThread(new ViewerCount());
+        addHeartbeatThread(new UserManager());
+        addHeartbeatThread(new BanQueue());
+        if (GUIMain.currentSettings.trackDonations) {
+            addHeartbeatThread(new DonationCheck());
+        }
+        if (GUIMain.currentSettings.trackFollowers) {
+            FollowCheck fc = new FollowCheck();
+            fc.initialBeat();
+            addHeartbeatThread(fc);
+        }
+        start();
     }
 
     @Override

@@ -155,6 +155,7 @@ public class AccountManager extends Thread {
     }
 
     public void createReconnectThread(PircBot b) {
+        if (!GUIMain.currentSettings.autoReconnectAccounts) return;
         if (reconnectThreads.get(b.getNick()) != null) return;
         ReconnectThread rt = new ReconnectThread(b);
         rt.start();

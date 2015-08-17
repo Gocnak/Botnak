@@ -50,7 +50,8 @@ public class Command {
             for (int argIndex = 0; argIndex < definedArguments.length; argIndex++) {
                 //because arguments.get(i) will be replaced by definedArguments[i]
                 if (messagePart.contains(arguments.get(argIndex))) {
-                    toReturn.data[messageIndex] = messagePart.replace(arguments.get(argIndex), definedArguments[argIndex]);
+                    toReturn.data[messageIndex] = toReturn.data[messageIndex].replaceAll(arguments.get(argIndex),
+                            definedArguments[argIndex]);
                 }
             }
         }
