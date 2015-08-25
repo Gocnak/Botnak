@@ -9,9 +9,10 @@ import lib.pircbot.org.jibble.pircbot.User;
 import util.Timer;
 import util.Utils;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import javax.swing.tree.TreePath;
+import java.awt.*;
 import java.net.URL;
+import java.util.Enumeration;
 import java.util.HashSet;
 
 /**
@@ -26,7 +27,7 @@ public class UserManager implements HeartbeatThread {
     private static boolean beating;
 
     public UserManager() {
-        toUpdate = new Timer(5000);
+        toUpdate = new Timer(4000);
         collectedUsers = new HashSet<>();
         beating = false;
     }
@@ -47,31 +48,35 @@ public class UserManager implements HeartbeatThread {
             if (list != null) {
                 try {
                     url = new URL("http://tmi.twitch.tv/group/user/" + chan.substring(1) + "/chatters");
+                    String line = Utils.createAndParseBufferedReader(url.openStream());
+                    if (!line.isEmpty()) {
+                        final Enumeration<TreePath> beforePaths = list.beforePaths();
+                        final int beforeScroll = list.beforeScroll();
 
-                    BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
-                    StringBuilder stanSB = new StringBuilder();
-                    Utils.parseBufferedReader(br, stanSB, false);
-                    JSONObject site = new JSONObject(stanSB.toString());
-                    JSONObject chatters = site.getJSONObject("chatters");
+                        JSONObject site = new JSONObject(line);
+                        JSONObject chatters = site.getJSONObject("chatters");
 
-                    JSONArray mods = chatters.getJSONArray("moderators");
-                    readAndUpdate(mods, list, GUIViewerList.ViewerType.MOD);
+                        JSONArray mods = chatters.getJSONArray("moderators");
+                        readAndUpdate(mods, list, GUIViewerList.ViewerType.MOD);
 
-                    JSONArray staff = chatters.getJSONArray("staff");
-                    readAndUpdate(staff, list, GUIViewerList.ViewerType.STAFF);
+                        JSONArray staff = chatters.getJSONArray("staff");
+                        readAndUpdate(staff, list, GUIViewerList.ViewerType.STAFF);
 
-                    JSONArray admins = chatters.getJSONArray("admins");
-                    readAndUpdate(admins, list, GUIViewerList.ViewerType.ADMIN);
+                        JSONArray admins = chatters.getJSONArray("admins");
+                        readAndUpdate(admins, list, GUIViewerList.ViewerType.ADMIN);
 
-                    JSONArray global_mods = chatters.getJSONArray("global_mods");
-                    readAndUpdate(global_mods, list, GUIViewerList.ViewerType.GLOBAL_MOD);
+                        JSONArray global_mods = chatters.getJSONArray("global_mods");
+                        readAndUpdate(global_mods, list, GUIViewerList.ViewerType.GLOBAL_MOD);
 
-                    JSONArray viewers = chatters.getJSONArray("viewers");
-                    readAndUpdate(viewers, list, GUIViewerList.ViewerType.VIEWER);
+                        JSONArray viewers = chatters.getJSONArray("viewers");
+                        readAndUpdate(viewers, list, GUIViewerList.ViewerType.VIEWER);
 
-                    Thread.sleep(750);
+                        EventQueue.invokeLater(() -> list.updateRoot(beforePaths, beforeScroll));
+
+                        Thread.sleep(2000);
+                    }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    GUIMain.log(e);
                 }
             }
         }

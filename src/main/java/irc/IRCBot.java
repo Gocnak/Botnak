@@ -5,7 +5,9 @@ import face.FaceManager;
 import gui.forms.GUIMain;
 import irc.account.Oauth;
 import irc.account.Task;
+import irc.message.Message;
 import irc.message.MessageHandler;
+import irc.message.MessageQueue;
 import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
 import sound.Sound;
@@ -84,9 +86,11 @@ public class IRCBot extends MessageHandler {
     }
 
     @Override
-    public void onJTVMessage(String channel, String line) {
-        //TODO tell the main client that the bot is banned
-        super.onJTVMessage(channel, line);
+    public void onJTVMessage(String channel, String line, String tags) {
+        if (tags.contains("msg_banned") || tags.contains("msg_timedout")) {
+            MessageQueue.addMessage(new Message().setChannel(channel)
+                    .setType(Message.MessageType.JTV_NOTIFY).setContent(getBot().getNick() + " is " + line.substring(8)));
+        }
     }
 
     @Override

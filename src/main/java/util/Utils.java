@@ -891,13 +891,12 @@ public class Utils {
      * @param builder The builder to add to.
      */
     public static void parseBufferedReader(BufferedReader toRead, StringBuilder builder, boolean includeNewLine) {
-        try {
+        try (BufferedReader toReadr = toRead) {
             String line;
-            while ((line = toRead.readLine()) != null) {
+            while ((line = toReadr.readLine()) != null) {
                 builder.append(line);
                 if (includeNewLine) builder.append("\n");
             }
-            toRead.close();
         } catch (Exception e) {
             GUIMain.log("Failed to read buffered reader due to exception: ");
             GUIMain.log(e);
@@ -915,7 +914,9 @@ public class Utils {
         String toReturn = "";
         try (InputStreamReader inputStreamReader = new InputStreamReader(input);
              BufferedReader br = new BufferedReader(inputStreamReader)) {
-            toReturn = br.readLine();
+            StringBuilder sb = new StringBuilder();
+            parseBufferedReader(br, sb, false);
+            toReturn = sb.toString();
         } catch (Exception e) {
             GUIMain.log("Could not parse buffered reader due to exception: ");
             GUIMain.log(e);

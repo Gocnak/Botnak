@@ -32,7 +32,7 @@ public class WrapEditorKit extends StyledEditorKit {
             }
 
             // default to text display
-            return new LabelView(elem);
+            return new WrapLabelView(elem);
         }
     }
 

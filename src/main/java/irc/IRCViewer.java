@@ -136,7 +136,7 @@ public class IRCViewer extends MessageHandler {
     }
 
     @Override
-    public void onJTVMessage(String channel, String line) {
+    public void onJTVMessage(String channel, String line, String tags) {
         MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.JTV_NOTIFY).setContent(line));
     }
 

@@ -205,6 +205,12 @@ public class GUISettings extends JFrame {
         }
     }
 
+    @Override
+    public void setVisible(boolean b) {
+        setAlwaysOnTop(GUIMain.alwaysOnTop);
+        super.setVisible(b);
+    }
+
     public void saveButtonActionPerformed() {
         save();
         cancelButtonActionPerformed();

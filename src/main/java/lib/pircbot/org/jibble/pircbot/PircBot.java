@@ -460,12 +460,6 @@ public class PircBot {
                 getMessageHandler().onAction(sourceNick, target, request.substring(7));
             }
         } else if (command.equals("PRIVMSG") && _channelPrefixes.indexOf(target.charAt(0)) >= 0) {
-            if (sourceNick.equalsIgnoreCase("jtv")) {
-                getMessageHandler().onJTVMessage(target.substring(1), content);
-                //TODO just incase, remove this if block if twitch no longer sends these
-                return;
-            }
-
             //catch the subscriber message
             if (sourceNick.equalsIgnoreCase("twitchnotify")) {//THIS MAY CHANGE IN THE FUTURE
                 if (line.contains("subscribed!") || line.contains("subscribed for")) {
@@ -474,7 +468,7 @@ public class PircBot {
                     getChannelManager().handleSubscriber(target, user);
                     getMessageHandler().onNewSubscriber(target, content, user);
                 } else if (line.contains("resubscribed")) {
-                    getMessageHandler().onJTVMessage(target.substring(1), content);
+                    getMessageHandler().onJTVMessage(target.substring(1), content, tags);
                 }
                 return;
             }
@@ -534,7 +528,7 @@ public class PircBot {
                 return true;
             } else if (!tags.contains("host_on") && !tags.contains("host_off")) {//handled above
                 target = tokenizer.nextToken();
-                getMessageHandler().onJTVMessage(target.substring(1), content);
+                getMessageHandler().onJTVMessage(target.substring(1), content, tags);
                 return true;
             }
         } else if ("ROOMSTATE".equals(command)) {
@@ -585,24 +579,20 @@ public class PircBot {
                     case "user-type":
                         handleSpecial(channel, value, user);
                         break;
-                    case "native-lang":
-                        //TODO once implemented in IRC (seems to not be yet)
-                        break;
                     case "r9k":
                         if ("1".equals(value)) {
-                            getMessageHandler().onJTVMessage(channel, "This room is in r9k mode.");
+                            getMessageHandler().onJTVMessage(channel, "This room is in r9k mode.", key);
                         }
                         break;
                     case "slow":
                         if (!"0".equals(value)) {
                             getMessageHandler().onJTVMessage(channel,
-                                    "This room is in slow mode. You may send messages every " + value + " seconds.");
+                                    "This room is in slow mode. You may send messages every " + value + " seconds.", key);
                         }
                         break;
                     case "subs-only":
                         if ("1".equals(value)) {
-                            getMessageHandler().onJTVMessage(channel,
-                                    "This room is in subscribers-only mode.");
+                            getMessageHandler().onJTVMessage(channel, "This room is in subscribers-only mode.", key);
                         }
                         break;
                     case "emote-sets":

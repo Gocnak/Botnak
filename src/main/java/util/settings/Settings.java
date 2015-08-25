@@ -386,6 +386,9 @@ public class Settings {
                 stShowMentions = Boolean.parseBoolean(p.getProperty("ST_DisplayMentions", "false"));
                 stShowNewFollowers = Boolean.parseBoolean(p.getProperty("ST_DisplayFollowers", "false"));
                 stShowSubscribers = Boolean.parseBoolean(p.getProperty("ST_DisplaySubscribers", "false"));
+                GUIMain.alwaysOnTop = Boolean.parseBoolean(p.getProperty("AlwaysOnTop", "false"));
+                GUIMain.instance.setAlwaysOnTop(GUIMain.alwaysOnTop);
+                GUIMain.instance.alwaysOnTopToggle.setState(GUIMain.alwaysOnTop);
 
                 GUIMain.log("Loaded defaults!");
             } catch (Exception e) {
@@ -455,6 +458,8 @@ public class Settings {
                 p.put("ST_DisplayMentions", String.valueOf(stShowMentions));
                 p.put("ST_DisplayFollowers", String.valueOf(stShowNewFollowers));
                 p.put("ST_DisplaySubscribers", String.valueOf(stShowSubscribers));
+                p.put("AlwaysOnTop", String.valueOf(GUIMain.alwaysOnTop));
+
                 writerFile = defaultsFile;
                 detail = "Defaults/Other Settings";
                 break;

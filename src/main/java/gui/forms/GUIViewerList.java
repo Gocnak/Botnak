@@ -41,29 +41,30 @@ public class GUIViewerList extends JFrame {
         return viewerTree.getExpandedDescendants(viewerTree.getPathForRow(0));
     }
 
+    public Enumeration<TreePath> beforePaths() {
+        return getExpandedDescendants();
+    }
+
+    public int beforeScroll() {
+        return scrollPane.getVerticalScrollBar().getValue();
+    }
+
     public synchronized void updateCategory(ViewerType type, HashSet<String> names) {
         final DefaultMutableTreeNode node;
-        Enumeration<TreePath> userPath = getExpandedDescendants();
-        int scrollAmount = scrollPane.getVerticalScrollBar().getValue();
         switch (type) {
             case STAFF:
-                staff.removeAllChildren();
                 node = staff;
                 break;
             case ADMIN:
-                admins.removeAllChildren();
                 node = admins;
                 break;
             case MOD:
-                mods.removeAllChildren();
                 node = mods;
                 break;
             case VIEWER:
-                viewers.removeAllChildren();
                 node = viewers;
                 break;
             case GLOBAL_MOD:
-                global_mods.removeAllChildren();
                 node = global_mods;
                 break;
             default:
@@ -71,22 +72,21 @@ public class GUIViewerList extends JFrame {
                 break;
         }
         if (node != null) {
+            node.removeAllChildren();
             if (!names.isEmpty()) {
                 names.stream().sorted().forEach(s -> node.add(new DefaultMutableTreeNode(s)));
             }
-            updateRoot(userPath, scrollAmount);
         }
     }
 
-    private synchronized void updateRoot(Enumeration<TreePath> userPath, int scrollAmount) {
-        DefaultMutableTreeNode root = default_root;
-        root.removeAllChildren();
-        if (staff.getChildCount() > 0) root.add(staff);
-        if (admins.getChildCount() > 0) root.add(admins);
-        if (global_mods.getChildCount() > 0) root.add(global_mods);
-        if (mods.getChildCount() > 0) root.add(mods);
-        root.add(viewers);
-        if (!isFiltering) defaultModel.reload(root);
+    public synchronized void updateRoot(Enumeration<TreePath> userPath, int scrollAmount) {
+        default_root.removeAllChildren();
+        if (staff.getChildCount() > 0) default_root.add(staff);
+        if (admins.getChildCount() > 0) default_root.add(admins);
+        if (global_mods.getChildCount() > 0) default_root.add(global_mods);
+        if (mods.getChildCount() > 0) default_root.add(mods);
+        default_root.add(viewers);
+        if (!isFiltering) defaultModel.reload(default_root);
         if (userPath != null) {
             while (userPath.hasMoreElements()) {
                 viewerTree.expandPath(userPath.nextElement());
@@ -95,8 +95,9 @@ public class GUIViewerList extends JFrame {
         scrollPane.getVerticalScrollBar().setValue(scrollAmount);
     }
 
-    private void setViewerTreeModel(DefaultTreeModel model) {
+    private synchronized void setViewerTreeModel(DefaultTreeModel model) {
         viewerTree.setModel(model);
+        viewerTree.validate();
     }
 
     public synchronized void buildFilteredModel(String text) {
@@ -157,6 +158,12 @@ public class GUIViewerList extends JFrame {
                 filtered.add(new DefaultMutableTreeNode(name));
             }
         }
+    }
+
+    @Override
+    public void setVisible(boolean b) {
+        setAlwaysOnTop(GUIMain.alwaysOnTop);
+        super.setVisible(b);
     }
 
     private void initComponents(String channel) {

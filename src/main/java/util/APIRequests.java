@@ -5,8 +5,6 @@ import irc.account.Oauth;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -443,24 +441,24 @@ public class APIRequests {
                 URL request = new URL("https://www.googleapis.com/youtube/v3/videos?id=" + ID +
                         "&part=snippet,contentDetails&key=AIzaSyDVKqwiK_VGelKlNCHtEFWFbDfVuzl9Q8c" +
                         "&fields=items(snippet(title,channelTitle),contentDetails(duration))");
-                BufferedReader br = new BufferedReader(new InputStreamReader(request.openStream()));
-                StringBuilder sb = new StringBuilder();
-                Utils.parseBufferedReader(br, sb, false);
-                JSONObject initial = new JSONObject(sb.toString());
-                JSONArray items = initial.getJSONArray("items");
-                if (items.length() < 1) {
-                    toReturn.setResponseText("Failed to parse YouTube video! Perhaps a bad ID?");
-                    return toReturn;
+                String line = Utils.createAndParseBufferedReader(request.openStream());
+                if (!line.isEmpty()) {
+                    JSONObject initial = new JSONObject(line);
+                    JSONArray items = initial.getJSONArray("items");
+                    if (items.length() < 1) {
+                        toReturn.setResponseText("Failed to parse YouTube video! Perhaps a bad ID?");
+                        return toReturn;
+                    }
+                    JSONObject juicyDetails = items.getJSONObject(0);
+                    JSONObject titleAndChannel = juicyDetails.getJSONObject("snippet");
+                    JSONObject duration = juicyDetails.getJSONObject("contentDetails");
+                    String title = titleAndChannel.getString("title");
+                    String channelName = titleAndChannel.getString("channelTitle");
+                    Duration d = Duration.parse(duration.getString("duration"));
+                    String time = getTimeString(d);
+                    toReturn.setResponseText("Linked YouTube Video: \"" + title + "\" by " + channelName + " [" + time + "]");
+                    toReturn.wasSuccessful();
                 }
-                JSONObject juicyDetails = items.getJSONObject(0);
-                JSONObject titleAndChannel = juicyDetails.getJSONObject("snippet");
-                JSONObject duration = juicyDetails.getJSONObject("contentDetails");
-                String title = titleAndChannel.getString("title");
-                String channelName = titleAndChannel.getString("channelTitle");
-                Duration d = Duration.parse(duration.getString("duration"));
-                String time = getTimeString(d);
-                toReturn.setResponseText("Linked YouTube Video: \"" + title + "\" by " + channelName + " [" + time + "]");
-                toReturn.wasSuccessful();
             } catch (Exception e) {
                 toReturn.setResponseText("Failed to parse YouTube video due to an Exception!");
             }

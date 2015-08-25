@@ -143,6 +143,7 @@ public class GUIStreams extends JFrame {
     public void setVisible(boolean b) {
         if (!newChannel.getText().isEmpty()) newChannel.setText("");
         if (b) parseFollowed();
+        setAlwaysOnTop(GUIMain.alwaysOnTop);
         super.setVisible(b);
     }
 

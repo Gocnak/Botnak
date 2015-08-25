@@ -63,23 +63,17 @@ public class User implements Comparable<User> {
      */
     public String getPrefix() {
         StringBuilder foxStevenson = new StringBuilder();
-        //if (isOp() && (!isStaff() || !isAdmin())) {
-        //    foxStevenson.append("@");TODO pass the channel as a parameter
-        //}
         if (isTurbo()) {
-            foxStevenson.append("+");
+            foxStevenson.append(" [Turbo]");
         }
-        //if (isSubscriber()) {
-        //    foxStevenson.append("$");
-        //}
         if (isGlobalMod()) {
-            foxStevenson.append("!");
+            foxStevenson.append(" [Global Mod]");
         }
         if (isAdmin()) {
-            foxStevenson.append("!!");
+            foxStevenson.append(" [Admin]");
         }
         if (isStaff()) {
-            foxStevenson.append("!!!");
+            foxStevenson.append(" [Staff]");
         }
         return foxStevenson.toString();
     }
@@ -219,7 +213,7 @@ public class User implements Comparable<User> {
      * @return The user's prefix and nick.
      */
     public String toString() {
-        return getPrefix() + getNick();
+        return getPrefix() + " " + getNick();
     }
 
 
@@ -272,5 +266,4 @@ public class User implements Comparable<User> {
         }
         return -1;
     }
-
 }

@@ -70,6 +70,12 @@ public class GUIStatus extends JFrame {
         dispose();
     }
 
+    @Override
+    public void setVisible(boolean b) {
+        setAlwaysOnTop(GUIMain.alwaysOnTop);
+        super.setVisible(b);
+    }
+
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner Evaluation license - Nick K

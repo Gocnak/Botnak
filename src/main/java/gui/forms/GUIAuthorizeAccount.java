@@ -104,9 +104,15 @@ public class GUIAuthorizeAccount extends JFrame {
 
     @Override
     public void dispose() {
-        if (listener.isAlive()) listener.interrupt();
+        if (listener != null && listener.isAlive()) listener.interrupt();
         listener = null;
         super.dispose();
+    }
+
+    @Override
+    public void setVisible(boolean b) {
+        setAlwaysOnTop(GUIMain.alwaysOnTop);
+        super.setVisible(b);
     }
 
     private void initComponents() {

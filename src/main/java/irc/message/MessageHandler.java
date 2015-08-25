@@ -134,7 +134,7 @@ public abstract class MessageHandler {
      * @param channel The channel (used for getting the pane)
      * @param line    What JTV is trying to tell you.
      */
-    public void onJTVMessage(String channel, String line) {
+    public void onJTVMessage(String channel, String line, String tags) {
     }
 
     /**

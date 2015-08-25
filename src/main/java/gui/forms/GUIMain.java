@@ -72,6 +72,8 @@ public class GUIMain extends JFrame {
 
     private static ChatPane systemLogsPane;
 
+    public static boolean alwaysOnTop = false;
+
     public GUIMain() {
         new MessageQueue();
         instance = this;
@@ -296,9 +298,10 @@ public class GUIMain extends JFrame {
     }
 
     private void alwaysOnTopToggleItemStateChanged(ItemEvent e) {
+        alwaysOnTop = (e.getStateChange() == ItemEvent.SELECTED);
         Window[] windows = getWindows();
         for (Window w : windows) {
-            w.setAlwaysOnTop(e.getStateChange() == ItemEvent.SELECTED);
+            w.setAlwaysOnTop(alwaysOnTop);
         }
     }
 
@@ -975,7 +978,7 @@ public class GUIMain extends JFrame {
                     projectWikiOption.setText("Wiki");
                     projectWikiOption.addActionListener(e -> projectWikiOptionActionPerformed());
                     helpMenu.add(projectWikiOption);
-                    JMenuItem bugReport = new JMenuItem("Report a Bug/Issue");
+                    JMenuItem bugReport = new JMenuItem("Report an Issue");
                     bugReport.addActionListener(e -> Utils.openWebPage("https://github.com/Gocnak/Botnak/issues/new"));
                     helpMenu.add(bugReport);
                     helpMenu.addSeparator();
@@ -1113,7 +1116,7 @@ public class GUIMain extends JFrame {
     private JRadioButtonMenuItem botReplyJustYou;
     private JRadioButtonMenuItem botReplyNobody;
     private JCheckBoxMenuItem autoReconnectToggle;
-    private JCheckBoxMenuItem alwaysOnTopToggle;
+    public JCheckBoxMenuItem alwaysOnTopToggle;
     private JMenuItem settingsOption;
     private JMenu toolsMenu;
     private JMenuItem startRaffleOption;

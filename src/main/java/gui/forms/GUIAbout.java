@@ -36,6 +36,12 @@ public class GUIAbout extends JFrame {
         }
     }
 
+    @Override
+    public void setVisible(boolean b) {
+        setAlwaysOnTop(GUIMain.alwaysOnTop);
+        super.setVisible(b);
+    }
+
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner Evaluation license - Nick K
@@ -46,7 +52,7 @@ public class GUIAbout extends JFrame {
         JScrollPane scrollPane1 = new JScrollPane();
         versionInformationArea = new JTextArea();
         JLabel label4 = new JLabel();
-
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         //======== this ========
         setTitle("About Botnak v" + Constants.VERSION);
         setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
