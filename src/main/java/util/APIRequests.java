@@ -310,8 +310,10 @@ public class APIRequests {
                     }
                 }
             } catch (Exception e) {
-                GUIMain.log("Failed to get live followed channels due to exception:");
-                GUIMain.log(e);
+                if (!e.getMessage().contains("401")) {
+                    GUIMain.log("Failed to get live followed channels due to exception:");
+                    GUIMain.log(e);
+                }
             }
             return toReturn;
         }
@@ -421,7 +423,6 @@ public class APIRequests {
         public static Response getVideoData(String fullURL) {
             Response toReturn = new Response();
             try {
-                String ID = "";
                 Pattern p = null;
                 if (fullURL.contains("youtu.be/")) {
                     p = Pattern.compile("youtu\\.be/([^&\\?/]+)");
@@ -436,28 +437,28 @@ public class APIRequests {
                 }
                 Matcher m = p.matcher(fullURL);
                 if (m.find()) {
-                    ID = m.group(1);
-                }
-                URL request = new URL("https://www.googleapis.com/youtube/v3/videos?id=" + ID +
-                        "&part=snippet,contentDetails&key=AIzaSyDVKqwiK_VGelKlNCHtEFWFbDfVuzl9Q8c" +
-                        "&fields=items(snippet(title,channelTitle),contentDetails(duration))");
-                String line = Utils.createAndParseBufferedReader(request.openStream());
-                if (!line.isEmpty()) {
-                    JSONObject initial = new JSONObject(line);
-                    JSONArray items = initial.getJSONArray("items");
-                    if (items.length() < 1) {
-                        toReturn.setResponseText("Failed to parse YouTube video! Perhaps a bad ID?");
-                        return toReturn;
+                    String ID = m.group(1);
+                    URL request = new URL("https://www.googleapis.com/youtube/v3/videos?id=" + ID +
+                            "&part=snippet,contentDetails&key=AIzaSyDVKqwiK_VGelKlNCHtEFWFbDfVuzl9Q8c" +
+                            "&fields=items(snippet(title,channelTitle),contentDetails(duration))");
+                    String line = Utils.createAndParseBufferedReader(request.openStream());
+                    if (!line.isEmpty()) {
+                        JSONObject initial = new JSONObject(line);
+                        JSONArray items = initial.getJSONArray("items");
+                        if (items.length() < 1) {
+                            toReturn.setResponseText("Failed to parse YouTube video! Perhaps a bad ID?");
+                            return toReturn;
+                        }
+                        JSONObject juicyDetails = items.getJSONObject(0);
+                        JSONObject titleAndChannel = juicyDetails.getJSONObject("snippet");
+                        JSONObject duration = juicyDetails.getJSONObject("contentDetails");
+                        String title = titleAndChannel.getString("title");
+                        String channelName = titleAndChannel.getString("channelTitle");
+                        Duration d = Duration.parse(duration.getString("duration"));
+                        String time = getTimeString(d);
+                        toReturn.setResponseText("Linked YouTube Video: \"" + title + "\" by " + channelName + " [" + time + "]");
+                        toReturn.wasSuccessful();
                     }
-                    JSONObject juicyDetails = items.getJSONObject(0);
-                    JSONObject titleAndChannel = juicyDetails.getJSONObject("snippet");
-                    JSONObject duration = juicyDetails.getJSONObject("contentDetails");
-                    String title = titleAndChannel.getString("title");
-                    String channelName = titleAndChannel.getString("channelTitle");
-                    Duration d = Duration.parse(duration.getString("duration"));
-                    String time = getTimeString(d);
-                    toReturn.setResponseText("Linked YouTube Video: \"" + title + "\" by " + channelName + " [" + time + "]");
-                    toReturn.wasSuccessful();
                 }
             } catch (Exception e) {
                 toReturn.setResponseText("Failed to parse YouTube video due to an Exception!");

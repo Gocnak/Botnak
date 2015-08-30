@@ -90,8 +90,8 @@ public class CombinedChatPane extends ChatPane {
     }
 
 
-    public CombinedChatPane(JScrollPane scrollPane, JTextPane pane, ChatPane... chatPanes) {
-        super(null, scrollPane, pane, -1);
+    public CombinedChatPane(JScrollPane scrollPane, JTextPane pane, ScrollablePanel panel, ChatPane... chatPanes) {
+        super(null, scrollPane, pane, panel, -1);
         panes = chatPanes;
         ArrayList<String> channels = new ArrayList<>();
         for (ChatPane cp : chatPanes) {
@@ -202,11 +202,16 @@ public class CombinedChatPane extends ChatPane {
         for (ChatPane cp : panes) {
             cp.setTabVisible(false);
         }
+        ScrollablePanel sp = new ScrollablePanel();
+        sp.add(pane, BorderLayout.SOUTH);
+        scrollPane.setViewportView(sp);
         //Tab adding is handled at the DraggableTabbedPane
-        return new CombinedChatPane(scrollPane, pane, panes);
+        return new CombinedChatPane(scrollPane, pane, sp, panes);
     }
 
-
+    /**
+     * Disbands the combined tab and places
+     */
     public void disbandTab() {
         setDefaultScrollPane();
         //we're going to add it all to the right of it and then remove the combined tab
@@ -225,6 +230,4 @@ public class CombinedChatPane extends ChatPane {
         GUIMain.channelPane.fireStateChanged();
         GUIMain.combinedChatPanes.remove(this);
     }
-
-
 }

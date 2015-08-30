@@ -12,7 +12,7 @@ public class DonationCheck implements HeartbeatThread {
     private boolean beating;
 
     public DonationCheck() {
-        toCheck = new Timer(7500);
+        toCheck = new Timer(10000L);
         beating = false;
     }
 

@@ -35,19 +35,17 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 public class GUIMain extends JFrame {
 
-    public static ConcurrentHashMap<String, Color> userColMap;
+    public static ConcurrentHashMap<String, Color> userColMap, keywordMap;
     public static CopyOnWriteArraySet<Command> commandSet;
+    public static CopyOnWriteArraySet<ConsoleCommand> conCommands;
     public static CopyOnWriteArraySet<String> channelSet;
     public static ConcurrentHashMap<String, ChatPane> chatPanes;
     public static CopyOnWriteArraySet<CombinedChatPane> combinedChatPanes;
-    public static ConcurrentHashMap<String, Color> keywordMap;
-
+    public static CopyOnWriteArraySet<TabPulse> tabPulses;
     public static ConcurrentHashMap<String, GUIViewerList> viewerLists;
 
     public static int userResponsesIndex = 0;
     public static ArrayList<String> userResponses;
-
-    public static CopyOnWriteArraySet<ConsoleCommand> conCommands;
 
     public static IRCBot bot;
     public static IRCViewer viewer;
@@ -65,8 +63,6 @@ public class GUIMain extends JFrame {
     public static Settings currentSettings;
 
     private static BotnakTrayIcon systemTrayIcon;
-
-    public static CopyOnWriteArraySet<TabPulse> tabPulses;
 
     public static Heartbeat heartbeat;
 
@@ -92,7 +88,7 @@ public class GUIMain extends JFrame {
         SoundEngine.init();
         StyleConstants.setForeground(norm, Color.white);
         initComponents();
-        systemLogsPane = new ChatPane("System Logs", allChatsScroll, allChats, 0);
+        systemLogsPane = new ChatPane("System Logs", allChatsScroll, allChats, null, 0);
         chatPanes.put("System Logs", systemLogsPane);
         currentSettings = new Settings();
         ThreadEngine.submit(() -> {

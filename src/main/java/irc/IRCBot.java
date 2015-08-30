@@ -87,9 +87,11 @@ public class IRCBot extends MessageHandler {
 
     @Override
     public void onJTVMessage(String channel, String line, String tags) {
-        if (tags.contains("msg_banned") || tags.contains("msg_timedout")) {
-            MessageQueue.addMessage(new Message().setChannel(channel)
-                    .setType(Message.MessageType.JTV_NOTIFY).setContent(getBot().getNick() + " is " + line.substring(8)));
+        if (tags != null) {
+            if (tags.contains("msg_banned") || tags.contains("msg_timedout")) {
+                MessageQueue.addMessage(new Message().setChannel(channel)
+                        .setType(Message.MessageType.JTV_NOTIFY).setContent(getBot().getNick() + " is " + line.substring(8)));
+            }
         }
     }
 

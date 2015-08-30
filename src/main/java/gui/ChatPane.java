@@ -260,6 +260,8 @@ public class ChatPane implements DocumentListener {
         return index;
     }
 
+    private ScrollablePanel scrollablePanel;
+
     private JTextPane textPane;
 
     public JTextPane getTextPane() {
@@ -307,12 +309,13 @@ public class ChatPane implements DocumentListener {
      * @param pane       The text pane that shows the messages for the given channel.
      * @param index      The index of the pane in the main GUI.
      */
-    public ChatPane(String channel, JScrollPane scrollPane, JTextPane pane, int index) {
+    public ChatPane(String channel, JScrollPane scrollPane, JTextPane pane, ScrollablePanel panel, int index) {
         chan = channel;
         textPane = pane;
         ((DefaultCaret) textPane.getCaret()).setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
         this.index = index;
         this.scrollPane = scrollPane;
+        this.scrollablePanel = panel;
         textPane.getDocument().addDocumentListener(this);
     }
 
@@ -553,15 +556,14 @@ public class ChatPane implements DocumentListener {
     // Source: http://stackoverflow.com/a/4628879
     // by http://stackoverflow.com/users/131872/camickr & Community
     public void cleanupChat() {
-        if (textPane == null || textPane.getParent() == null) return;
-        if (!(textPane.getParent() instanceof JViewport)) {
-            return;
-        }
-        JViewport viewport = ((JViewport) textPane.getParent());
+        if (scrollablePanel == null || scrollablePanel.getParent() == null) return;
+        if (!(scrollablePanel.getParent() instanceof JViewport)) return;
+        JViewport viewport = ((JViewport) scrollablePanel.getParent());
         Point startPoint = viewport.getViewPosition();
         // we are not deleting right before the visible area, but one screen behind
         // for convenience, otherwise flickering.
         if (startPoint == null) return;
+
         final int start = textPane.viewToModel(startPoint);
         if (start > 0) // not equal zero, because then we don't have to delete anything
         {
@@ -603,7 +605,7 @@ public class ChatPane implements DocumentListener {
         ScrollablePanel sp = new ScrollablePanel();
         sp.add(pane, BorderLayout.SOUTH);
         scrollPane.setViewportView(sp);
-        return new ChatPane(channel, scrollPane, pane, GUIMain.channelPane.getTabCount() - 1);
+        return new ChatPane(channel, scrollPane, pane, sp, GUIMain.channelPane.getTabCount() - 1);
     }
 
     /**
