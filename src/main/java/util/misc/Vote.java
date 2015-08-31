@@ -3,6 +3,7 @@ package util.misc;
 import gui.forms.GUIMain;
 import util.Timer;
 import util.Utils;
+import util.settings.Settings;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -136,17 +137,17 @@ public class Vote extends Thread {
     }
 
     public void printStart() {
-        GUIMain.currentSettings.accountManager.getBot().sendMessage(channel, "Vote started! " +
+        Settings.accountManager.getBot().sendMessage(channel, "Vote started! " +
                 "Everybody has " + time + " seconds to vote! To vote, type \"!vote #\" where # represents your choice!");
         for (int i = 0; i < options.size(); i++) {
-            GUIMain.currentSettings.accountManager.getBot().sendMessage(channel, (i + 1) + ": " + options.get(i).name);
+            Settings.accountManager.getBot().sendMessage(channel, (i + 1) + ": " + options.get(i).name);
         }
     }
 
     public void printResults() {
         String[] results = getResults();
         for (String s : results) {
-            GUIMain.currentSettings.accountManager.getBot().sendMessage(channel, s);
+            Settings.accountManager.getBot().sendMessage(channel, s);
         }
     }
 

@@ -5,6 +5,7 @@ import gui.CombinedChatPane;
 import gui.forms.GUIMain;
 import gui.forms.GUIViewerList;
 import util.Utils;
+import util.settings.Settings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -71,7 +72,7 @@ public class PaneMenuListener implements ActionListener {
                     pane.resetCleanupCounter();
                     final ChatPane pane1 = pane;
                     EventQueue.invokeLater(() -> {//this should be fine, no need for message queue since clearing would be situational anyways
-                        if (GUIMain.currentSettings.logChat) {
+                        if (Settings.logChat.getValue()) {
                             String[] toPrint = pane1.getText().split("\\n");
                             Utils.logChat(toPrint, pane1.getChannel(), 1);
                         }

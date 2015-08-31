@@ -8,6 +8,7 @@ import lib.scalr.Scalr;
 import thread.ThreadEngine;
 import util.Response;
 import util.Utils;
+import util.settings.Settings;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -109,7 +110,7 @@ public class FaceManager {
                     g.dispose();
                     RescaleOp op = new RescaleOp(.35f, 0f, null);
                     img = op.filter(bimage, bimage);//then re-assign them
-                    exSubscriberIcon = new File(GUIMain.currentSettings.subIconsDir + File.separator + channel + "_ex.png");
+                    exSubscriberIcon = new File(Settings.subIconsDir + File.separator + channel + "_ex.png");
                     ImageIO.write(img, "PNG", exSubscriberIcon);
                     exSubscriberIcon.deleteOnExit();
                 }
@@ -209,9 +210,9 @@ public class FaceManager {
         ThreadEngine.submit(() -> {
             buildMap();
             GUIMain.log("Loaded Twitch faces!");
-            GUIMain.currentSettings.saveTwitchFaces();
+            Settings.saveTwitchFaces();
             doneWithTwitchFaces = true;
-            if (GUIMain.currentSettings.ffzFacesEnable) {
+            if (Settings.ffzFacesEnable.getValue()) {
                 handleFFZChannel("global");//this corrects the global emotes and downloads them if we don't have them
                 GUIMain.channelSet.stream().forEach(s -> handleFFZChannel(s.replaceAll("#", "")));
                 doneWithFrankerFaces = true;
@@ -251,7 +252,7 @@ public class FaceManager {
             }
         }
         String errorMessage = "Could not find face " + faceName + " in the loaded Twitch faces";
-        if (GUIMain.currentSettings.ffzFacesEnable) {
+        if (Settings.ffzFacesEnable.getValue()) {
             Set<String> channels = ffzFaceMap.keySet();
             for (String chan : channels) {
                 ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(chan);
@@ -322,8 +323,8 @@ public class FaceManager {
                 URL url = new URL("https://api.twitch.tv/kraken/chat/emoticon_images?emotesets=" + emotes);
                 String line = Utils.createAndParseBufferedReader(url.openStream());
                 if (!line.isEmpty()) {
-                    User main = GUIMain.currentSettings.channelManager
-                            .getUser(GUIMain.currentSettings.accountManager.getUserAccount().getName(), true);
+                    User main = Settings.channelManager
+                            .getUser(Settings.accountManager.getUserAccount().getName(), true);
                     JSONObject init = new JSONObject(line);
                     String[] keys = emotes.split(",");
                     JSONObject emote_sets = init.getJSONObject("emoticon_sets");
@@ -406,7 +407,7 @@ public class FaceManager {
                 break;
             case FRANKER_FACE:
                 if (doneWithFrankerFaces) {
-                    String[] channels = GUIMain.currentSettings.ffzFacesUseAll ?
+                    String[] channels = Settings.ffzFacesUseAll.getValue() ?
                             ffzFaceMap.keySet().toArray(new String[ffzFaceMap.keySet().size()]) :
                             new String[]{"global", channel};
                     for (String currentChannel : channels) {
@@ -452,7 +453,7 @@ public class FaceManager {
         try {
             BufferedImage img = ImageIO.read(image);
             // Scale the icon if it's too big.
-            int maxHeight = GUIMain.currentSettings.faceMaxHeight;
+            int maxHeight = Settings.faceMaxHeight.getValue();
             if (img.getHeight() > maxHeight)
                 img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_HEIGHT, maxHeight);
 
@@ -473,7 +474,7 @@ public class FaceManager {
      * @return The path of the file of the icon.
      */
     public static String downloadIcon(String url, String channel) {
-        File toSave = new File(GUIMain.currentSettings.subIconsDir + File.separator + Utils.setExtension(channel.substring(1), ".png"));
+        File toSave = new File(Settings.subIconsDir + File.separator + Utils.setExtension(channel.substring(1), ".png"));
         if (download(url, toSave, null))
             return toSave.getAbsolutePath();
         else
@@ -485,7 +486,7 @@ public class FaceManager {
             TwitchFace f = onlineTwitchFaces.get(emote);
             if (f == null) return null;
             String fileName = Utils.setExtension(String.valueOf(emote), ".png");
-            File toSave = new File(GUIMain.currentSettings.twitchFaceDir.getAbsolutePath() + File.separator + fileName);
+            File toSave = new File(Settings.twitchFaceDir.getAbsolutePath() + File.separator + fileName);
             if (download(f.getFilePath(), toSave, FACE_TYPE.TWITCH_FACE)) {
                 TwitchFace newFace = new TwitchFace(f.getRegex(), toSave.getAbsolutePath(), true);
                 twitchFaceMap.put(emote, newFace);
@@ -504,7 +505,7 @@ public class FaceManager {
             String regex = face.getRegex();
             String fileName = Utils.setExtension(regex, ".png");
             //download into the channel's folder
-            File directory = new File(GUIMain.currentSettings.frankerFaceZDir + File.separator + channel);
+            File directory = new File(Settings.frankerFaceZDir + File.separator + channel);
             directory.mkdirs();
             File toSave = new File(directory + File.separator + fileName);
             if (download(face.getFilePath(), toSave, FACE_TYPE.FRANKER_FACE)) {
@@ -628,9 +629,8 @@ public class FaceManager {
      */
     public static Response handleFace(String s) {
         Response toReturn = new Response();
-        boolean localCheck = (GUIMain.currentSettings.defaultFaceDir == null
-                || GUIMain.currentSettings.defaultFaceDir.equals("")
-                || GUIMain.currentSettings.defaultFaceDir.equals("null"));
+        boolean localCheck = ("".equals(Settings.defaultFaceDir.getValue())
+                || Settings.defaultFaceDir.getValue().equals("null"));
 
         String[] split = s.split(" ");
         String command = split[0];
@@ -660,7 +660,7 @@ public class FaceManager {
 
                 file = split[3];
                 if (file.startsWith("http")) {//online
-                    return downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                    return downloadFace(file, Settings.faceDir.getAbsolutePath(),
                             Utils.setExtension(name, ".png"), regex, FACE_TYPE.NORMAL_FACE);//save locally
 
                 } else {//local
@@ -670,8 +670,8 @@ public class FaceManager {
                         else toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
                         return toReturn;
                     }
-                    return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
-                            GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                    return downloadFace(new File(Settings.defaultFaceDir.getValue() + File.separator + file),
+                            Settings.faceDir.getAbsolutePath(),
                             Utils.setExtension(name, ".png"),
                             regex, FACE_TYPE.NORMAL_FACE);
                 }
@@ -688,7 +688,7 @@ public class FaceManager {
                     return toReturn;
                 }
                 if (file.startsWith("http")) {//online
-                    return downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                    return downloadFace(file, Settings.faceDir.getAbsolutePath(),
                             Utils.setExtension(name, ".png"), name, FACE_TYPE.NORMAL_FACE);//name is regex, so case sensitive
                 } else {//local
                     if (Utils.checkName(file) || localCheck) {
@@ -697,8 +697,8 @@ public class FaceManager {
                         else toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
                         return toReturn;
                     }
-                    return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
-                            GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                    return downloadFace(new File(Settings.defaultFaceDir.getValue() + File.separator + file),
+                            Settings.faceDir.getAbsolutePath(),
                             Utils.setExtension(name, ".png"),
                             name, //<- this will be the regex, so case sensitive
                             FACE_TYPE.NORMAL_FACE);
@@ -732,7 +732,7 @@ public class FaceManager {
 
                     file = split[4];
                     if (file.startsWith("http")) {//online
-                        return downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                        return downloadFace(file, Settings.faceDir.getAbsolutePath(),
                                 Utils.setExtension(name, ".png"), regex, FACE_TYPE.NORMAL_FACE);//save locally
                     } else {//local
                         if (Utils.checkName(file) || localCheck) {
@@ -742,8 +742,8 @@ public class FaceManager {
                                 toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
                             return toReturn;
                         }
-                        return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
-                                GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                        return downloadFace(new File(Settings.defaultFaceDir.getValue() + File.separator + file),
+                                Settings.faceDir.getAbsolutePath(),
                                 Utils.setExtension(name, ".png"),
                                 regex, //< this will be the regex, so case sensitive
                                 FACE_TYPE.NORMAL_FACE);
@@ -769,7 +769,7 @@ public class FaceManager {
                     } else if (type == 1) {//file change; !changeface <name> 1 <new URL/file>
                         file = split[3];
                         if (file.startsWith("http")) {//online
-                            return downloadFace(file, GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                            return downloadFace(file, Settings.faceDir.getAbsolutePath(),
                                     Utils.setExtension(name, ".png"), face.getRegex(), FACE_TYPE.NORMAL_FACE);//save locally
                         } else {//local
                             if (Utils.checkName(file) || localCheck) {
@@ -779,8 +779,8 @@ public class FaceManager {
                                     toReturn.setResponseText("Failed to add face, the local directory is not set properly!");
                                 return toReturn;
                             }
-                            return downloadFace(new File(GUIMain.currentSettings.defaultFaceDir + File.separator + file),
-                                    GUIMain.currentSettings.faceDir.getAbsolutePath(),
+                            return downloadFace(new File(Settings.defaultFaceDir.getValue() + File.separator + file),
+                                    Settings.faceDir.getAbsolutePath(),
                                     Utils.setExtension(name, ".png"),
                                     face.getRegex(), FACE_TYPE.NORMAL_FACE);
                         }

@@ -4,6 +4,7 @@ import gui.forms.GUIMain;
 import gui.listeners.PaneMenuListener;
 import util.Constants;
 import util.Utils;
+import util.settings.Settings;
 
 import javax.accessibility.AccessibleComponent;
 import javax.swing.*;
@@ -187,7 +188,7 @@ public class DraggableTabbedPane extends JTabbedPane {
                             menuItem.addActionListener(listener);
                             popupMenu.add(menuItem);
 
-                            if (GUIMain.currentSettings.showTabPulses) {
+                            if (Settings.showTabPulses.getValue()) {
                                 menuItem = new JMenuItem("Toggle Tab Pulsing " +
                                         (first ? (detected.shouldPulseLoc() ? "OFF" : "ON") :
                                                 (detectedCombo.shouldPulseLoc() ? "OFF" : "ON")));

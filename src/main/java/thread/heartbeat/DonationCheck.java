@@ -1,7 +1,7 @@
 package thread.heartbeat;
 
-import gui.forms.GUIMain;
 import util.Timer;
+import util.settings.Settings;
 
 /**
  * Created by Nick on 11/15/2014.
@@ -18,9 +18,9 @@ public class DonationCheck implements HeartbeatThread {
 
     @Override
     public boolean shouldBeat() {
-        return GUIMain.currentSettings != null && GUIMain.currentSettings.donationManager != null
-                && GUIMain.currentSettings.donationManager.canCheck()
-                && GUIMain.currentSettings.donationManager.ranFirstCheck
+        return Settings.donationManager != null
+                && Settings.donationManager.canCheck()
+                && Settings.donationManager.ranFirstCheck
                 && !toCheck.isRunning()
                 && !beating;
     }
@@ -28,7 +28,7 @@ public class DonationCheck implements HeartbeatThread {
     @Override
     public void beat() {
         beating = true;
-        GUIMain.currentSettings.donationManager.checkDonations(true);
+        Settings.donationManager.checkDonations(true);
     }
 
     @Override

@@ -6,6 +6,7 @@ import irc.IRCViewer;
 import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.Queue;
 import util.Timer;
+import util.settings.Settings;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -155,7 +156,7 @@ public class AccountManager extends Thread {
     }
 
     public void createReconnectThread(PircBot b) {
-        if (!GUIMain.currentSettings.autoReconnectAccounts) return;
+        if (!Settings.autoReconnectAccounts.getValue()) return;
         if (reconnectThreads.get(b.getNick()) != null) return;
         ReconnectThread rt = new ReconnectThread(b);
         rt.start();
@@ -202,7 +203,7 @@ public class AccountManager extends Thread {
             }
             if (isDone) {
                 reconnectThreads.remove(doer.getNick());
-                cachedTasks.forEach(GUIMain.currentSettings.accountManager::addTask);
+                cachedTasks.forEach(Settings.accountManager::addTask);
                 GUIMain.logCurrent("Successfully reconnected the account: " + doer.getNick() + " !");
             }
         }

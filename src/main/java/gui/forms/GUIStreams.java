@@ -7,6 +7,7 @@ import thread.ThreadEngine;
 import thread.heartbeat.FollowCheck;
 import util.APIRequests;
 import util.Utils;
+import util.settings.Settings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class GUIStreams extends JFrame {
 
     private Oauth getKey() {
-        return GUIMain.currentSettings.accountManager.getUserAccount().getKey();
+        return Settings.accountManager.getUserAccount().getKey();
     }
 
     public GUIStreams() {
@@ -143,7 +144,7 @@ public class GUIStreams extends JFrame {
     public void setVisible(boolean b) {
         if (!newChannel.getText().isEmpty()) newChannel.setText("");
         if (b) parseFollowed();
-        setAlwaysOnTop(GUIMain.alwaysOnTop);
+        setAlwaysOnTop(Settings.alwaysOnTop.getValue());
         super.setVisible(b);
     }
 

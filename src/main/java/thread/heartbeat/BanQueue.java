@@ -4,6 +4,7 @@ import gui.forms.GUIMain;
 import irc.message.Message;
 import irc.message.MessageQueue;
 import util.Timer;
+import util.settings.Settings;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -56,7 +57,7 @@ public class BanQueue implements HeartbeatThread {
         while (!GUIMain.shutDown && it.hasNext()) {
             User u = it.next();
             if (!u.timer.isRunning()) {
-                String name = u.name.equalsIgnoreCase(GUIMain.currentSettings.accountManager.getViewer().getNick()) ?
+                String name = u.name.equalsIgnoreCase(Settings.accountManager.getViewer().getNick()) ?
                         ("You have ") : (u.name + " has ");
                 if (u.count > 1) {
                     MessageQueue.addMessage(new Message().setChannel(u.channel.substring(1))

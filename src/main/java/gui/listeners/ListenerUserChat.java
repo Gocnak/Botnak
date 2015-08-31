@@ -2,6 +2,7 @@ package gui.listeners;
 
 import gui.forms.GUIMain;
 import lib.pircbot.org.jibble.pircbot.User;
+import util.settings.Settings;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -206,7 +207,7 @@ public class ListenerUserChat extends KeyAdapter {
         if (subWord.length() < 2) {
             return;
         }
-        User[] users = GUIMain.currentSettings.channelManager.getUsers(subWord);
+        User[] users = Settings.channelManager.getUsers(subWord);
         if (users.length > 0) {
             ArrayList<String> names = new ArrayList<>();
             for (User u : users) {

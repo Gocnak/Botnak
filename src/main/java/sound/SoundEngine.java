@@ -6,6 +6,7 @@ import util.Permissions;
 import util.Response;
 import util.Timer;
 import util.Utils;
+import util.settings.Settings;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -26,10 +27,8 @@ public class SoundEngine {
         return engine;
     }
 
-    private int delay = 10000;//default to 10 seconds
-    private int permission = 1;//default to sub+ permission
     private boolean soundToggle = true;
-    private Timer soundTimer = new Timer(delay);
+    private Timer soundTimer;
     private ConcurrentHashMap<String, Sound> soundMap;
     private Stack<Sound> subStack, donationStack;
     private Sound lastSubSound, lastDonationSound;
@@ -43,16 +42,14 @@ public class SoundEngine {
         player = new SoundPlayer();
         subStack = new Stack<>();
         donationStack = new Stack<>();
-        lastSubSound = lastDonationSound = null;
+        lastSubSound = null;
+        lastDonationSound = null;
+        soundTimer = new Timer(Settings.soundEngineDelay.getValue());
     }
 
     public void setDelay(int newDelay) {
-        delay = newDelay;
-        soundTimer = new Timer(delay);
-    }
-
-    public int getDelay() {
-        return delay;
+        Settings.soundEngineDelay.setValue(newDelay);
+        soundTimer = new Timer(newDelay);
     }
 
     public ConcurrentHashMap<String, Sound> getSoundMap() {
@@ -80,11 +77,11 @@ public class SoundEngine {
     }
 
     public void setPermission(int perm) {
-        permission = perm;
+        Settings.soundEnginePermission.setValue(perm);
     }
 
     public int getPermission() {
-        return permission;
+        return Settings.soundEnginePermission.getValue();
     }
 
     /**
@@ -124,8 +121,8 @@ public class SoundEngine {
 
     private Sound getSpecialSound(boolean isSub) {
         if ((isSub ? subStack : donationStack).isEmpty()) {//refreshes and reshuffles
-            if (isSub) GUIMain.currentSettings.loadSubSounds();
-            else GUIMain.currentSettings.loadDonationSounds();
+            if (isSub) Settings.loadSubSounds();
+            else Settings.loadDonationSounds();
         }
         Sound sound = (isSub ? subStack : donationStack).pop();
         if (isSub) lastSubSound = sound;
@@ -226,7 +223,7 @@ public class SoundEngine {
      */
     private boolean soundCheck(String sound, String sender, String channel) {
         //set the permission
-        User u = GUIMain.currentSettings.channelManager.getUser(sender, true);
+        User u = Settings.channelManager.getUser(sender, true);
         ArrayList<Permissions.Permission> permissions = Permissions.getUserPermissions(u, channel);
         Sound snd = soundMap.get(sound.toLowerCase());
         if (snd != null && snd.isEnabled()) {
@@ -247,9 +244,8 @@ public class SoundEngine {
      */
     public Response handleSound(String s, boolean change) {
         Response toReturn = new Response();
-        if (GUIMain.currentSettings.defaultSoundDir != null &&
-                !GUIMain.currentSettings.defaultSoundDir.equals("null") &&
-                !GUIMain.currentSettings.defaultSoundDir.equals("")) {
+        if (!Settings.defaultSoundDir.getValue().equals("null") &&
+                !Settings.defaultSoundDir.getValue().equals("")) {
             try {
                 String[] split = s.split(" ");
                 String name = split[1].toLowerCase();//both commands have this in common.
@@ -262,13 +258,13 @@ public class SoundEngine {
                         return toReturn;
                     }
                     String files = split[3];
-                    if (perm < 0 || permission > 4) {
+                    if (perm < 0 || perm > 4) {
                         toReturn.setResponseText("Failed to handle sound due to a bad permission!");
                         return toReturn;
                     }
                     if (!files.contains(",")) {//isn't multiple
                         //this can be !addsound sound 0 sound or !changesound sound 0 newsound
-                        String filename = GUIMain.currentSettings.defaultSoundDir + File.separator + Utils.setExtension(files, ".wav");
+                        String filename = Settings.defaultSoundDir.getValue() + File.separator + Utils.setExtension(files, ".wav");
                         if (Utils.areFilesGood(filename)) {
                             if (soundMap.containsKey(name)) {//they could technically change the permission here as well
                                 if (!change) {//!addsound
@@ -298,7 +294,7 @@ public class SoundEngine {
                         ArrayList<String> list = new ArrayList<>();
                         String[] filesSplit = files.split(",");
                         for (String str : filesSplit) {
-                            list.add(GUIMain.currentSettings.defaultSoundDir + File.separator + Utils.setExtension(str, ".wav"));
+                            list.add(Settings.defaultSoundDir.getValue() + File.separator + Utils.setExtension(str, ".wav"));
                         }             //calls the areFilesGood boolean in it (filters bad files already)
                         filesSplit = Utils.checkFiles(list.toArray(new String[list.size()]));
                         list.clear();//recycle time!
@@ -339,7 +335,7 @@ public class SoundEngine {
                                 toReturn.setResponseText("Failed to change the permission, please give a permission from 0 to 4!");
                             }
                         } catch (NumberFormatException e) {//maybe it really is a 1-char-named sound?
-                            String test = GUIMain.currentSettings.defaultSoundDir + File.separator + Utils.setExtension(split[2], ".wav");
+                            String test = Settings.defaultSoundDir.getValue() + File.separator + Utils.setExtension(split[2], ".wav");
                             if (Utils.areFilesGood(test)) { //wow...
                                 if (change) {
                                     soundMap.put(name, new Sound(soundMap.get(name).getPermission(), test));
@@ -361,7 +357,7 @@ public class SoundEngine {
                             String[] filesSplit = split[2].split(",");
                             ArrayList<String> list = new ArrayList<>();
                             for (String str : filesSplit) {
-                                list.add(GUIMain.currentSettings.defaultSoundDir + File.separator + Utils.setExtension(str, ".wav"));
+                                list.add(Settings.defaultSoundDir.getValue() + File.separator + Utils.setExtension(str, ".wav"));
                             }             //calls the areFilesGood boolean in it (filters bad files already)
                             filesSplit = Utils.checkFiles(list.toArray(new String[list.size()]));
                             if (!change) {//!addsound soundname more,sounds
@@ -388,7 +384,7 @@ public class SoundEngine {
                                 }
                             }
                         } else {//singular
-                            String test = GUIMain.currentSettings.defaultSoundDir + File.separator + Utils.setExtension(split[2], ".wav");
+                            String test = Settings.defaultSoundDir.getValue() + File.separator + Utils.setExtension(split[2], ".wav");
                             if (Utils.areFilesGood(test)) {
                                 if (!change) {//!addsound sound newsound
                                     if (soundMap.containsKey(name)) {//getting the old permission/files
@@ -476,7 +472,6 @@ public class SoundEngine {
             }
             soundTime = Utils.handleInt(soundTime);
             int delay = soundTime / 1000;
-            GUIMain.instance.updateSoundDelay(delay);
             toReturn.setResponseText("Sound delay " + (delay < 2 ? (delay == 0 ? "off." : "is now 1 second.") : ("is now " + delay + " seconds.")));
             setDelay(soundTime);
             toReturn.wasSuccessful();
@@ -492,7 +487,6 @@ public class SoundEngine {
             int perm = Integer.parseInt(first);
             if (perm > -1 && perm < 5) {
                 setPermission(perm);
-                GUIMain.instance.updateSoundPermission(perm);
                 toReturn.wasSuccessful();
                 toReturn.setResponseText("Sound permission successfully changed to: " + Utils.getPermissionString(perm));
             } else {

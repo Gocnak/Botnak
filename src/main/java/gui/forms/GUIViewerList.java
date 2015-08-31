@@ -2,6 +2,7 @@ package gui.forms;
 
 import gui.listeners.ListenerName;
 import thread.heartbeat.UserManager;
+import util.settings.Settings;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -162,7 +163,7 @@ public class GUIViewerList extends JFrame {
 
     @Override
     public void setVisible(boolean b) {
-        setAlwaysOnTop(GUIMain.alwaysOnTop);
+        setAlwaysOnTop(Settings.alwaysOnTop.getValue());
         super.setVisible(b);
     }
 

@@ -10,6 +10,7 @@ import lib.pircbot.org.jibble.pircbot.PircBot;
 import lib.pircbot.org.jibble.pircbot.User;
 import thread.heartbeat.BanQueue;
 import util.Utils;
+import util.settings.Settings;
 
 import java.util.Optional;
 
@@ -17,15 +18,15 @@ import java.util.Optional;
 public class IRCViewer extends MessageHandler {
 
     public PircBot getViewer() {
-        return GUIMain.currentSettings.accountManager.getViewer();
+        return Settings.accountManager.getViewer();
     }
 
     public void doConnect(String channel) {
         channel = channel.startsWith("#") ? channel : "#" + channel;
-        GUIMain.currentSettings.accountManager.addTask(new Task(getViewer(), Task.Type.JOIN_CHANNEL, channel));
-        if (GUIMain.currentSettings.logChat) Utils.logChat(null, channel, 0);
+        Settings.accountManager.addTask(new Task(getViewer(), Task.Type.JOIN_CHANNEL, channel));
+        if (Settings.logChat.getValue()) Utils.logChat(null, channel, 0);
         if (!GUIMain.channelSet.contains(channel)) GUIMain.channelSet.add(channel);
-        if (GUIMain.currentSettings.ffzFacesEnable) {
+        if (Settings.ffzFacesEnable.getValue()) {
             if (FaceManager.doneWithFrankerFaces)
                 FaceManager.handleFFZChannel(channel.substring(1));
         }
@@ -39,7 +40,7 @@ public class IRCViewer extends MessageHandler {
      */
     public void doLeave(String channel) {
         if (!channel.startsWith("#")) channel = "#" + channel;
-        GUIMain.currentSettings.accountManager.addTask(new Task(getViewer(), Task.Type.LEAVE_CHANNEL, channel));
+        Settings.accountManager.addTask(new Task(getViewer(), Task.Type.LEAVE_CHANNEL, channel));
         GUIMain.channelSet.remove(channel);
     }
 
@@ -49,13 +50,13 @@ public class IRCViewer extends MessageHandler {
      * @param forget If true, will forget the user.
      */
     public synchronized void close(boolean forget) {
-        GUIMain.log("Logging out of user: " + GUIMain.currentSettings.accountManager.getUserAccount().getName());
-        GUIMain.currentSettings.accountManager.addTask(new Task(getViewer(), Task.Type.DISCONNECT, null));
+        GUIMain.log("Logging out of user: " + Settings.accountManager.getUserAccount().getName());
+        Settings.accountManager.addTask(new Task(getViewer(), Task.Type.DISCONNECT, null));
         if (forget) {
-            GUIMain.currentSettings.accountManager.setUserAccount(null);
+            Settings.accountManager.setUserAccount(null);
         }
         GUIMain.viewer = null;
-        GUIMain.currentSettings.channelManager.dispose();
+        Settings.channelManager.dispose();
     }
 
     @Override
@@ -71,7 +72,7 @@ public class IRCViewer extends MessageHandler {
     @Override
     public void onBeingHosted(final String line) {
         MessageQueue.addMessage(new Message(line, Message.MessageType.HOSTED_NOTIFY)
-                .setChannel(GUIMain.currentSettings.accountManager.getUserAccount().getName()));
+                .setChannel(Settings.accountManager.getUserAccount().getName()));
     }
 
     @Override
@@ -98,21 +99,21 @@ public class IRCViewer extends MessageHandler {
         Message m = new Message().setChannel(channel).setType(Message.MessageType.SUB_NOTIFY).setContent(line);
         if (Utils.isMainChannel(channel)) {
             if (line.endsWith("subscribed!")) {//new sub
-                if (GUIMain.currentSettings.subscriberManager.addNewSubscriber(newSub, channel)) return;
+                if (Settings.subscriberManager.addNewSubscriber(newSub, channel)) return;
             } else {
                 //it's the (blah blah has subbed for more than 1 month!)
                 //Botnak already handles this, so we can construct this message again since the user feels entitled
                 //to tell us they've remained subbed... again
                 //the catch is the message they send isn't automatic, so there's a chance it won't be sent (ex: on an IRC client, shy, etc)
                 //HOWEVER, we will make sure Botnak does not increment the sub counter for this
-                Optional<Subscriber> s = GUIMain.currentSettings.subscriberManager.getSubscriber(newSub);
+                Optional<Subscriber> s = Settings.subscriberManager.getSubscriber(newSub);
                 if (s.isPresent()) {
                     if (!s.get().isActive()) {
                         s.get().setActive(true);//fixes issue #87 (I hope)
                     }
                 }
                 m = m.setExtra(false);//anything other than "null" works
-                GUIMain.currentSettings.subscriberManager.notifyTrayIcon(m.getContent(), true);
+                Settings.subscriberManager.notifyTrayIcon(m.getContent(), true);
             }
         } //else it's someone else's channel, just print the message
         MessageQueue.addMessage(m);
@@ -120,7 +121,7 @@ public class IRCViewer extends MessageHandler {
 
     public void onDisconnect() {
         if (!GUIMain.shutDown && getViewer() != null) {
-            GUIMain.currentSettings.accountManager.createReconnectThread(getViewer());
+            Settings.accountManager.createReconnectThread(getViewer());
         }
     }
 
@@ -128,10 +129,10 @@ public class IRCViewer extends MessageHandler {
         if (name != null) {
             BanQueue.addToMap(channel, name);
         } else {
-            if (GUIMain.currentSettings.actuallyClearChat) GUIMain.getChatPane(channel).cleanupChat();
+            if (Settings.actuallyClearChat.getValue()) GUIMain.getChatPane(channel).cleanupChat();
             MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.BAN_NOTIFY)
                     .setContent("The chat was cleared by a moderator" +
-                            (GUIMain.currentSettings.actuallyClearChat ? " (Prevented by Botnak)." : ".")));
+                            (Settings.actuallyClearChat.getValue() ? " (Prevented by Botnak)." : ".")));
         }
     }
 
@@ -161,7 +162,7 @@ public class IRCViewer extends MessageHandler {
 
     @Override
     public void onConnect() {
-        GUIMain.currentSettings.channelManager.addUser(new User(getViewer().getNick()));
+        Settings.channelManager.addUser(new User(getViewer().getNick()));
         GUIMain.channelSet.forEach(this::doConnect);
         GUIMain.updateTitle(null);
     }

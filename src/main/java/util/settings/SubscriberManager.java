@@ -32,8 +32,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class SubscriberManager {
 
-    public boolean ranInitialCheck = false;
-
     private CopyOnWriteArraySet<Subscriber> subscribers;
 
     private Subscriber lastSubscriber = null;
@@ -80,7 +78,7 @@ public class SubscriberManager {
      * @param currentlyActive Boolean used to determine current sub status of the user.
      */
     public void updateSubscriber(User u, String channel, boolean currentlyActive) {
-        if (u.getNick().equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName()))
+        if (u.getNick().equalsIgnoreCase(Settings.accountManager.getUserAccount().getName()))
             return;
         //you will always be your own sub, silly
 
@@ -112,8 +110,8 @@ public class SubscriberManager {
 
                     //or twitchnotify could have been a douchenozzle and did not send the message
                     String content = s.get().getName() + " has RE-subscribed offline!";
-                    if (GUIMain.currentSettings.botAnnounceSubscribers) {
-                        GUIMain.currentSettings.accountManager.getBot().sendMessage(channel, ".me " + u.getNick() + " has just RE-subscribed!");
+                    if (Settings.botAnnounceSubscribers.getValue()) {
+                        Settings.accountManager.getBot().sendMessage(channel, ".me " + u.getNick() + " has just RE-subscribed!");
                     }
                     MessageQueue.addMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
                     s.get().resetStreak();
@@ -129,8 +127,8 @@ public class SubscriberManager {
                 // this is a new, offline sub. Botnak is going to throw a new sub message just
                 // as if they had subbed the instant they sent the message
                 //or twitchnotify could have been a douchenozzle and did not send the message
-                if (GUIMain.currentSettings.botAnnounceSubscribers) {
-                    GUIMain.currentSettings.accountManager.getBot().sendMessage(channel, ".me " + u.getNick() + " has just subscribed!");
+                if (Settings.botAnnounceSubscribers.getValue()) {
+                    Settings.accountManager.getBot().sendMessage(channel, ".me " + u.getNick() + " has just subscribed!");
                 }
                 String content = u.getNick().toLowerCase() + " has subscribed offline!";
                 MessageQueue.addMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
@@ -182,7 +180,7 @@ public class SubscriberManager {
     }
 
     private void playSubscriberSound() {
-        if (GUIMain.currentSettings.loadedSubSounds)
+        if (Settings.loadedSubSounds)
             SoundEngine.getEngine().playSpecialSound(true);
     }
 
@@ -211,7 +209,7 @@ public class SubscriberManager {
                     if (passes == passesCompleted) {
                         fillSubscribers(set);
                         GUIMain.log("Successfully scanned " + set.size() + " subscriber(s)!");
-                        ranInitialCheck = true;
+                        Settings.scannedInitialSubscribers.setValue(true);
                     } else {
                         JSONArray subs = entire.getJSONArray("subscriptions");
                         for (int subIndex = 0; subIndex < subs.length(); subIndex++) {

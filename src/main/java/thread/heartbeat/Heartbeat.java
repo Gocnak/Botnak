@@ -1,6 +1,7 @@
 package thread.heartbeat;
 
 import gui.forms.GUIMain;
+import util.settings.Settings;
 
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
@@ -35,10 +36,10 @@ public class Heartbeat extends Thread {
         addHeartbeatThread(new ViewerCount());
         addHeartbeatThread(new UserManager());
         addHeartbeatThread(new BanQueue());
-        if (GUIMain.currentSettings.trackDonations) {
+        if (Settings.trackDonations.getValue()) {
             addHeartbeatThread(new DonationCheck());
         }
-        if (GUIMain.currentSettings.trackFollowers) {
+        if (Settings.trackFollowers.getValue()) {
             FollowCheck fc = new FollowCheck();
             fc.initialBeat();
             addHeartbeatThread(fc);

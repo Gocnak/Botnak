@@ -24,11 +24,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class DonationManager {
 
-    public boolean ranFirstCheck, scannedInitialDonations;
+    public boolean ranFirstCheck;
     private Donation lastDonation;
     private CopyOnWriteArraySet<Donor> donors;
     private CopyOnWriteArraySet<Donation> donations;
-    private String client_ID, access_code;
     private static NumberFormat CURRENCY_FORMAT, DECIMAL_FORMAT;
 
     //for displaying the numbers
@@ -52,11 +51,8 @@ public class DonationManager {
     }
 
     public DonationManager() {
-        client_ID = "";
-        access_code = "";
         lastDonation = null;
         ranFirstCheck = false;
-        scannedInitialDonations = true;
         CURRENCY_FORMAT = null;
         DECIMAL_FORMAT = null;
         donors = new CopyOnWriteArraySet<>();
@@ -64,7 +60,7 @@ public class DonationManager {
     }
 
     public boolean canCheck() {
-        return !client_ID.isEmpty() && !access_code.isEmpty();
+        return !getClientID().isEmpty() && !getAccessCode().isEmpty();
     }
 
     /**
@@ -95,14 +91,14 @@ public class DonationManager {
                     don.addDonated(d.getAmount());
                 }
                 if (!isLocal) {
-                    GUIMain.currentSettings.saveDonations();
-                    GUIMain.currentSettings.saveDonors();
+                    Settings.saveDonations();
+                    Settings.saveDonors();
                     setLastDonation(d);
                     if (BotnakTrayIcon.shouldDisplayDonations()) {
                         GUIMain.getSystemTrayIcon().displayDonation(d);
                     }
                     MessageQueue.addMessage(new Message()
-                            .setChannel(GUIMain.currentSettings.accountManager.getUserAccount().getName())
+                            .setChannel(Settings.accountManager.getUserAccount().getName())
                             .setType(Message.MessageType.DONATION_NOTIFY)
                             .setContent(String.format("%s has just donated %s! Lifetime total: %s ", d.getFromWho(),
                                     getCurrencyFormat().format(d.getAmount()), getCurrencyFormat().format(don.getDonated())))
@@ -156,20 +152,12 @@ public class DonationManager {
         return false;
     }
 
-    public void setAccessCode(String access_code) {
-        this.access_code = access_code;
-    }
-
-    public void setClientID(String client_ID) {
-        this.client_ID = client_ID;
-    }
-
     public String getClientID() {
-        return client_ID;
+        return Settings.donationClientID.getValue();
     }
 
     public String getAccessCode() {
-        return access_code;
+        return Settings.donationAuthCode.getValue();
     }
 
     public CopyOnWriteArraySet<Donor> getDonors() {

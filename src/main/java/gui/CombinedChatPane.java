@@ -5,6 +5,7 @@ import gui.listeners.ListenerFace;
 import gui.listeners.ListenerName;
 import gui.listeners.ListenerURL;
 import util.Utils;
+import util.settings.Settings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -194,7 +195,7 @@ public class CombinedChatPane extends ChatPane {
         pane.setFocusable(false);
         pane.setMargin(new Insets(0, 0, 0, 0));
         pane.setBackground(Color.black);
-        pane.setFont(GUIMain.currentSettings.font);
+        pane.setFont(Settings.font.getValue());
         pane.addMouseListener(new ListenerURL());
         pane.addMouseListener(new ListenerName());
         pane.addMouseListener(new ListenerFace());

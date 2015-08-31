@@ -1,8 +1,8 @@
 package face;
 
 import gui.ChatPane;
-import gui.forms.GUIMain;
 import lib.scalr.Scalr;
+import util.settings.Settings;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -33,19 +33,19 @@ public class Icons {
         ImageIcon icon = null;
         switch (i) {
             case MOD:
-                icon = sizeIcon(GUIMain.currentSettings.modIcon);
+                icon = sizeIcon(Settings.modIcon.getValue());
                 break;
             case BROADCASTER:
-                icon = sizeIcon(GUIMain.currentSettings.broadIcon);
+                icon = sizeIcon(Settings.broadIcon.getValue());
                 break;
             case ADMIN:
-                icon = sizeIcon(GUIMain.currentSettings.adminIcon);
+                icon = sizeIcon(Settings.adminIcon.getValue());
                 break;
             case STAFF:
-                icon = sizeIcon(GUIMain.currentSettings.staffIcon);
+                icon = sizeIcon(Settings.staffIcon.getValue());
                 break;
             case TURBO:
-                icon = sizeIcon(GUIMain.currentSettings.turboIcon);
+                icon = sizeIcon(Settings.turboIcon.getValue());
                 break;
             case SUBSCRIBER:
                 URL subIcon = FaceManager.getSubIcon(channel);
@@ -97,7 +97,7 @@ public class Icons {
         ImageIcon icon;
         try {
             BufferedImage img = ImageIO.read(image);
-            int size = GUIMain.currentSettings.font.getSize();
+            int size = Settings.font.getValue().getSize();
             img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, size, size);
             icon = new ImageIcon(img);
             icon.getImage().flush();

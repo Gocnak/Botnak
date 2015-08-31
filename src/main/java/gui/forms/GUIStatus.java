@@ -4,6 +4,7 @@ import irc.account.Oauth;
 import thread.ThreadEngine;
 import util.APIRequests;
 import util.Response;
+import util.settings.Settings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,13 +15,13 @@ import java.awt.*;
 public class GUIStatus extends JFrame {
 
     public String getChannel() {
-        return GUIMain.currentSettings.accountManager.getUserAccount() == null ? null :
-                GUIMain.currentSettings.accountManager.getUserAccount().getName();
+        return Settings.accountManager.getUserAccount() == null ? null :
+                Settings.accountManager.getUserAccount().getName();
     }
 
     public Oauth getKey() {
-        return GUIMain.currentSettings.accountManager.getUserAccount() == null ? null :
-                GUIMain.currentSettings.accountManager.getUserAccount().getKey();
+        return Settings.accountManager.getUserAccount() == null ? null :
+                Settings.accountManager.getUserAccount().getKey();
     }
 
     public GUIStatus() {
@@ -72,7 +73,7 @@ public class GUIStatus extends JFrame {
 
     @Override
     public void setVisible(boolean b) {
-        setAlwaysOnTop(GUIMain.alwaysOnTop);
+        setAlwaysOnTop(Settings.alwaysOnTop.getValue());
         super.setVisible(b);
     }
 

@@ -10,7 +10,6 @@ import util.settings.Settings;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.text.StyleConstants;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeSelectionModel;
@@ -92,34 +91,34 @@ public class GUISettings extends JFrame {
         //handled by manager
 
         //directories
-        GUIMain.currentSettings.defaultFaceDir = faceDir.getText();
-        GUIMain.currentSettings.defaultSoundDir = soundDir.getText();
+        Settings.defaultFaceDir.setValue(faceDir.getText());
+        Settings.defaultSoundDir.setValue(soundDir.getText());
 
         //icons
-        GUIMain.currentSettings.useMod = useCustomMod.isSelected();
-        GUIMain.currentSettings.useBroad = useCustomBroad.isSelected();
-        GUIMain.currentSettings.useAdmin = useCustomAdmin.isSelected();
-        GUIMain.currentSettings.useStaff = useCustomStaff.isSelected();
+        Settings.useMod.setValue(useCustomMod.isSelected());
+        Settings.useBroad.setValue(useCustomBroad.isSelected());
+        Settings.useAdmin.setValue(useCustomAdmin.isSelected());
+        Settings.useStaff.setValue(useCustomStaff.isSelected());
         try {
             if (useCustomMod.isSelected()) {
-                GUIMain.currentSettings.modIcon = new URL(customMod.getText());
+                Settings.modIcon.setValue(new URL(customMod.getText()));
             } else {
-                GUIMain.currentSettings.modIcon = GUISettings.class.getResource("/image/mod.png");
+                Settings.modIcon.setValue(GUISettings.class.getResource("/image/mod.png"));
             }
             if (useCustomBroad.isSelected()) {
-                GUIMain.currentSettings.broadIcon = new URL(customBroad.getText());
+                Settings.broadIcon.setValue(new URL(customBroad.getText()));
             } else {
-                GUIMain.currentSettings.broadIcon = GUISettings.class.getResource("/image/broad.png");
+                Settings.broadIcon.setValue(GUISettings.class.getResource("/image/broad.png"));
             }
             if (useCustomAdmin.isSelected()) {
-                GUIMain.currentSettings.adminIcon = new URL(customAdminField.getText());
+                Settings.adminIcon.setValue(new URL(customAdminField.getText()));
             } else {
-                GUIMain.currentSettings.adminIcon = GUISettings.class.getResource("/image/admin.png");
+                Settings.adminIcon.setValue(GUISettings.class.getResource("/image/admin.png"));
             }
             if (useCustomStaff.isSelected()) {
-                GUIMain.currentSettings.staffIcon = new URL(customStaffField.getText());
+                Settings.staffIcon.setValue(new URL(customStaffField.getText()));
             } else {
-                GUIMain.currentSettings.staffIcon = GUISettings.class.getResource("/image/staff.png");
+                Settings.staffIcon.setValue(GUISettings.class.getResource("/image/staff.png"));
             }
         } catch (Exception e) {
             GUIMain.log(e);
@@ -156,9 +155,9 @@ public class GUISettings extends JFrame {
         }
 
         //appearance
-        GUIMain.currentSettings.logChat = logChatCheck.isSelected();
-        GUIMain.currentSettings.chatMax = (int) clearChatSpinner.getValue();
-        GUIMain.currentSettings.cleanupChat = clearChatCheck.isSelected();
+        Settings.logChat.setValue(logChatCheck.isSelected());
+        Settings.chatMax.setValue((int) clearChatSpinner.getValue());
+        Settings.cleanupChat.setValue(clearChatCheck.isSelected());
         String comm = buttonGroup.getSelection().getActionCommand();
         if (comm != null) {
             if (comm.equals("HiFi")) {
@@ -207,7 +206,7 @@ public class GUISettings extends JFrame {
 
     @Override
     public void setVisible(boolean b) {
-        setAlwaysOnTop(GUIMain.alwaysOnTop);
+        setAlwaysOnTop(Settings.alwaysOnTop.getValue());
         super.setVisible(b);
     }
 
@@ -336,17 +335,13 @@ public class GUISettings extends JFrame {
 
     public void changeFontButtonActionPerformed() {
         JFontChooser jfc = new JFontChooser(Constants.fontSizeArray);
-        jfc.setSelectedFont(GUIMain.currentSettings.font);
+        jfc.setSelectedFont(Settings.font.getValue());
         if (jfc.showDialog(this) == JFontChooser.OK_OPTION) {
             Font f = jfc.getSelectedFont();
             if (f != null) {
-                GUIMain.currentSettings.font = f;
-                StyleConstants.setFontFamily(GUIMain.norm, GUIMain.currentSettings.font.getFamily());
-                StyleConstants.setFontSize(GUIMain.norm, GUIMain.currentSettings.font.getSize());
-                StyleConstants.setBold(GUIMain.norm, GUIMain.currentSettings.font.isBold());
-                StyleConstants.setItalic(GUIMain.norm, GUIMain.currentSettings.font.isItalic());
-                currentFontLabel.setText(Utils.fontToString(GUIMain.currentSettings.font));
-                currentFontLabel.setFont(GUIMain.currentSettings.font);
+                Settings.font.setValue(f);
+                currentFontLabel.setText(Utils.fontToString(f));
+                currentFontLabel.setFont(f);
             }
         }
     }
@@ -554,13 +549,13 @@ public class GUISettings extends JFrame {
                 botUser.setEnabled(false);
                 botPass.setEnabled(false);
                 if (GUIMain.loadedSettingsUser()) {
-                    normUser.setText(GUIMain.currentSettings.accountManager.getUserAccount().getName());
-                    normPass.setText(GUIMain.currentSettings.accountManager.getUserAccount().getKey().getKey());
+                    normUser.setText(Settings.accountManager.getUserAccount().getName());
+                    normPass.setText(Settings.accountManager.getUserAccount().getKey().getKey());
                     userLogoutButton.setEnabled(true);
                 }
                 if (GUIMain.loadedSettingsBot()) {
-                    botUser.setText(GUIMain.currentSettings.accountManager.getBotAccount().getName());
-                    botPass.setText(GUIMain.currentSettings.accountManager.getBotAccount().getKey().getKey());
+                    botUser.setText(Settings.accountManager.getBotAccount().getName());
+                    botPass.setText(Settings.accountManager.getBotAccount().getKey().getKey());
                     botLogoutButton.setEnabled(true);
                 }
 
@@ -697,7 +692,7 @@ public class GUISettings extends JFrame {
                 faceButton.setText("Browse...");
                 faceButton.setFocusable(false);
                 faceButton.addActionListener(e -> faceButtonActionPerformed());
-                faceDir.setText(GUIMain.currentSettings.defaultFaceDir);
+                faceDir.setText(Settings.defaultFaceDir.getValue());
 
                 //---- textArea1 ----
                 textArea1.setText("This should be a seperate folder from the one found in the Botnak folder. \nFiles in this directory can be read whenever \"!addface\" or \"!changeface\" is called from the chat. \nIt is recommended that you set this to a Dropbox (shared) folder so that people can add faces locally.");
@@ -722,7 +717,7 @@ public class GUISettings extends JFrame {
                 soundsButton.setText("Browse...");
                 soundsButton.setFocusable(false);
                 soundsButton.addActionListener(e -> soundsButtonActionPerformed());
-                soundDir.setText(GUIMain.currentSettings.defaultSoundDir);
+                soundDir.setText(Settings.defaultSoundDir.getValue());
 
                 GroupLayout customDirPanelLayout = new GroupLayout(customDirPanel);
                 customDirPanel.setLayout(customDirPanelLayout);
@@ -796,9 +791,9 @@ public class GUISettings extends JFrame {
                 useCustomMod.setText("Use Custom Mod Icon");
                 useCustomMod.setFocusable(false);
                 useCustomMod.addChangeListener(e -> useCustomModStateChanged());
-                useCustomMod.setSelected(GUIMain.currentSettings.useMod);
-                customMod.setText(GUIMain.currentSettings.modIcon.toString());
-                setIcon(customModIconCurrent, GUIMain.currentSettings.modIcon);
+                useCustomMod.setSelected(Settings.useMod.getValue());
+                customMod.setText(Settings.modIcon.toString());
+                setIcon(customModIconCurrent, Settings.modIcon.getValue());
 
                 //---- label3 ----
                 label3.setText("Custom Mod Icon:");
@@ -815,9 +810,9 @@ public class GUISettings extends JFrame {
                 useCustomBroad.setText("Use Custom Broadcaster Icon");
                 useCustomBroad.setFocusable(false);
                 useCustomBroad.addChangeListener(e -> useCustomBroadStateChanged());
-                useCustomBroad.setSelected(GUIMain.currentSettings.useBroad);
-                customBroad.setText(GUIMain.currentSettings.broadIcon.toString());
-                setIcon(customBroadIconCurrent, GUIMain.currentSettings.broadIcon);
+                useCustomBroad.setSelected(Settings.useBroad.getValue());
+                customBroad.setText(Settings.broadIcon.toString());
+                setIcon(customBroadIconCurrent, Settings.broadIcon.getValue());
 
                 //---- label4 ----
                 label4.setText("Custom Broadcaster Icon:");
@@ -834,9 +829,9 @@ public class GUISettings extends JFrame {
                 useCustomAdmin.setText("Use Custom Admin Icon");
                 useCustomAdmin.setFocusable(false);
                 useCustomAdmin.addChangeListener(e -> useCustomAdminStateChanged());
-                useCustomAdmin.setSelected(GUIMain.currentSettings.useAdmin);
-                customAdminField.setText(GUIMain.currentSettings.adminIcon.toString());
-                setIcon(customAdminIconCurrent, GUIMain.currentSettings.adminIcon);
+                useCustomAdmin.setSelected(Settings.useAdmin.getValue());
+                customAdminField.setText(Settings.adminIcon.toString());
+                setIcon(customAdminIconCurrent, Settings.adminIcon.getValue());
 
                 //---- customAdminButton ----
                 customAdminButton.setText("Browse...");
@@ -847,9 +842,9 @@ public class GUISettings extends JFrame {
                 useCustomStaff.setText("Use Custom Staff Icon");
                 useCustomStaff.setFocusable(false);
                 useCustomStaff.addChangeListener(e -> useCustomStaffStateChanged());
-                useCustomStaff.setSelected(GUIMain.currentSettings.useStaff);
-                customStaffField.setText(GUIMain.currentSettings.staffIcon.toString());
-                setIcon(customStaffIconCurrent, GUIMain.currentSettings.staffIcon);
+                useCustomStaff.setSelected(Settings.useStaff.getValue());
+                customStaffField.setText(Settings.staffIcon.toString());
+                setIcon(customStaffIconCurrent, Settings.staffIcon.getValue());
 
 
                 //---- label13 ----
@@ -1128,7 +1123,7 @@ public class GUISettings extends JFrame {
 
                 //---- clearChatCheck ----
                 clearChatCheck.setText("Clear The Chat");
-                clearChatCheck.setSelected(GUIMain.currentSettings.cleanupChat);
+                clearChatCheck.setSelected(Settings.cleanupChat.getValue());
                 clearChatCheck.setFocusable(false);
                 clearChatCheck.addChangeListener(e -> clearChatCheckStateChanged());
 
@@ -1139,16 +1134,16 @@ public class GUISettings extends JFrame {
                 label20.setText("lines");
 
                 //---- clearChatSpinner ----
-                if (GUIMain.currentSettings.chatMax < 40) GUIMain.currentSettings.chatMax = 40;
-                clearChatSpinner.setModel(new SpinnerNumberModel(GUIMain.currentSettings.chatMax, 40, null, 5));
+                if (Settings.chatMax.getValue() < 40) Settings.chatMax.setValue(40);
+                clearChatSpinner.setModel(new SpinnerNumberModel(Settings.chatMax.getValue(), 40, null, 5));
                 ((JSpinner.DefaultEditor) clearChatSpinner.getEditor()).getTextField().setEditable(false);
                 clearChatSpinner.setFocusable(false);
-                clearChatSpinner.setEnabled(GUIMain.currentSettings.cleanupChat);
+                clearChatSpinner.setEnabled(Settings.cleanupChat.getValue());
 
                 //---- logChatCheck ----
                 logChatCheck.setText("Log The Chat To File");
                 logChatCheck.setFocusable(false);
-                logChatCheck.setSelected(GUIMain.currentSettings.logChat);
+                logChatCheck.setSelected(Settings.logChat.getValue());
 
                 //---- label26 ----
                 label26.setText("Appearance");
@@ -1158,8 +1153,8 @@ public class GUISettings extends JFrame {
                 label27.setText("Current Font:");
 
                 //---- currentFontLabel ----
-                currentFontLabel.setText(Utils.fontToString(GUIMain.currentSettings.font));
-                currentFontLabel.setFont(GUIMain.currentSettings.font);
+                currentFontLabel.setText(Utils.fontToString(Settings.font.getValue()));
+                currentFontLabel.setFont(Settings.font.getValue());
 
                 //---- changeFontButton ----
                 changeFontButton.setText("Change Font...");

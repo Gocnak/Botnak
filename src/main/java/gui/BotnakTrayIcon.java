@@ -5,6 +5,7 @@ import irc.message.Message;
 import util.Constants;
 import util.misc.Donation;
 import util.settings.DonationManager;
+import util.settings.Settings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -31,30 +32,30 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
         menuItem.addActionListener(this);
         menu.add(menuItem);
         CheckboxMenuItem toAdd = new CheckboxMenuItem("Mute Notifications");
-        toAdd.setState(GUIMain.currentSettings.stMuted);
+        toAdd.setState(Settings.stMuted.getValue());
         toAdd.addItemListener(this);
         menu.add(toAdd);
         menu.addSeparator();
 
         Menu options = new Menu("Toggle Showing...");
         toAdd = new CheckboxMenuItem("Mentions");
-        toAdd.setState(GUIMain.currentSettings.stShowMentions);
+        toAdd.setState(Settings.stShowMentions.getValue());
         toAdd.addItemListener(this);
         options.add(toAdd);
         toAdd = new CheckboxMenuItem("Donations");
-        toAdd.setState(GUIMain.currentSettings.stShowDonations);
+        toAdd.setState(Settings.stShowDonations.getValue());
         toAdd.addItemListener(this);
         options.add(toAdd);
         toAdd = new CheckboxMenuItem("Followed Streams");
-        toAdd.setState(GUIMain.currentSettings.stShowActivity);
+        toAdd.setState(Settings.stShowActivity.getValue());
         toAdd.addItemListener(this);
         options.add(toAdd);
         toAdd = new CheckboxMenuItem("Followers");
-        toAdd.setState(GUIMain.currentSettings.stShowNewFollowers);
+        toAdd.setState(Settings.stShowNewFollowers.getValue());
         toAdd.addItemListener(this);
         options.add(toAdd);
         toAdd = new CheckboxMenuItem("Subscribers");
-        toAdd.setState(GUIMain.currentSettings.stShowSubscribers);
+        toAdd.setState(Settings.stShowSubscribers.getValue());
         toAdd.addItemListener(this);
         options.add(toAdd);
         menu.add(options);
@@ -68,18 +69,18 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
         try {
             SystemTray.getSystemTray().add(this);
         } catch (AWTException e) {
-            GUIMain.currentSettings.stUseSystemTray = false;
+            Settings.stUseSystemTray.setValue(false);
             GUIMain.log("Unable to start System Tray due to exception:");
             GUIMain.log(e);
         }
     }
 
     private static boolean shouldDisplay() {
-        return GUIMain.currentSettings.stUseSystemTray && !GUIMain.currentSettings.stMuted;
+        return Settings.stUseSystemTray.getValue() && !Settings.stMuted.getValue();
     }
 
     public static boolean shouldDisplayMentions() {
-        return shouldDisplay() && GUIMain.currentSettings.stShowMentions;
+        return shouldDisplay() && Settings.stShowMentions.getValue();
     }
 
     public void displayMention(Message m) {
@@ -88,7 +89,7 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
 
 
     public static boolean shouldDisplayDonations() {
-        return shouldDisplay() && GUIMain.currentSettings.stShowDonations;
+        return shouldDisplay() && Settings.stShowDonations.getValue();
     }
 
     public void displayDonation(Donation d) {
@@ -98,7 +99,7 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
 
 
     public static boolean shouldDisplayNewFollowers() {
-        return shouldDisplay() && GUIMain.currentSettings.stShowNewFollowers;
+        return shouldDisplay() && Settings.stShowNewFollowers.getValue();
     }
 
     public void displayNewFollower(String name) {
@@ -107,7 +108,7 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
 
 
     public static boolean shouldDisplayFollowedActivity() {
-        return shouldDisplay() && GUIMain.currentSettings.stShowActivity;
+        return shouldDisplay() && Settings.stShowActivity.getValue();
     }
 
     public void displayLiveChannel(String name) {
@@ -116,7 +117,7 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
 
 
     public static boolean shouldDisplayNewSubscribers() {
-        return shouldDisplay() && GUIMain.currentSettings.stShowSubscribers;
+        return shouldDisplay() && Settings.stShowSubscribers.getValue();
     }
 
     public void displaySubscriber(String content, boolean continued) {
@@ -141,17 +142,17 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
             CheckboxMenuItem item = (CheckboxMenuItem) e.getSource();
             boolean bool = (e.getStateChange() == ItemEvent.SELECTED);
             if (item.getLabel().startsWith("Mute ")) {
-                GUIMain.currentSettings.stMuted = bool;
+                Settings.stMuted.setValue(bool);
             } else if (item.getLabel().startsWith("Ment")) {
-                GUIMain.currentSettings.stShowMentions = bool;
+                Settings.stShowMentions.setValue(bool);
             } else if (item.getLabel().startsWith("Dona")) {
-                GUIMain.currentSettings.stShowDonations = bool;
+                Settings.stShowDonations.setValue(bool);
             } else if (item.getLabel().startsWith("Subs")) {
-                GUIMain.currentSettings.stShowSubscribers = bool;
+                Settings.stShowSubscribers.setValue(bool);
             } else if (item.getLabel().equals("Followers")) {
-                GUIMain.currentSettings.stShowNewFollowers = bool;
+                Settings.stShowNewFollowers.setValue(bool);
             } else if (item.getLabel().startsWith("Followed")) {
-                GUIMain.currentSettings.stShowActivity = bool;
+                Settings.stShowActivity.setValue(bool);
             }
         }
     }

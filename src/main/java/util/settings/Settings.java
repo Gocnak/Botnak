@@ -23,6 +23,7 @@ import javax.swing.filechooser.FileSystemView;
 import javax.swing.text.StyleConstants;
 import java.awt.*;
 import java.io.*;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -41,114 +42,122 @@ import java.util.stream.Collectors;
 public class Settings {
 
     //accounts
-    public AccountManager accountManager = null;
-    public ChannelManager channelManager = null;
-    public boolean autoReconnectAccounts = true;
-    public String lastFMAccount = "";
-    public int botReplyType = 0;
-    //0 = none, 1 = botnak user only, 2 = everyone
+    public static AccountManager accountManager = null;
+    public static ChannelManager channelManager = null;
+
 
     //donations
-    public DonationManager donationManager = null;
-    public boolean loadedDonationSounds = false;
-    public SubscriberManager subscriberManager = null;
-    public boolean loadedSubSounds = false;
+    public static DonationManager donationManager = null;
+    public static boolean loadedDonationSounds = false;
+    public static SubscriberManager subscriberManager = null;
+    public static boolean loadedSubSounds = false;
 
-    //custom directories
-    public String defaultSoundDir = "";
-    public String defaultFaceDir = "";
-
-    //icons
-    public URL modIcon;
-    public URL broadIcon;
-    public URL adminIcon;
-    public URL staffIcon;
-    public URL turboIcon;
-    public boolean useMod = false;//"should use a custom mod icon"
-    public boolean useBroad = false;
-    public boolean useAdmin = false;
-    public boolean useStaff = false;
-
-    //font
-    public Font font;
 
     //directories
     public static File defaultDir = new File(FileSystemView.getFileSystemView().getDefaultDirectory().getAbsolutePath()
             + File.separator + "Botnak");
-    public File faceDir = new File(defaultDir + File.separator + "Faces");
-    public File nameFaceDir = new File(defaultDir + File.separator + "NameFaces");
-    public File twitchFaceDir = new File(defaultDir + File.separator + "TwitchFaces");
-    public File frankerFaceZDir = new File(defaultDir + File.separator + "FrankerFaceZ");
-    public File subIconsDir = new File(defaultDir + File.separator + "SubIcons");
-    public File subSoundDir = new File(defaultDir + File.separator + "SubSounds");
-    public File donationSoundDir = new File(defaultDir + File.separator + "DonationSounds");
-    public File logDir = new File(defaultDir + File.separator + "Logs");
+    public static File faceDir = new File(defaultDir + File.separator + "Faces");
+    public static File nameFaceDir = new File(defaultDir + File.separator + "NameFaces");
+    public static File twitchFaceDir = new File(defaultDir + File.separator + "TwitchFaces");
+    public static File frankerFaceZDir = new File(defaultDir + File.separator + "FrankerFaceZ");
+    public static File subIconsDir = new File(defaultDir + File.separator + "SubIcons");
+    public static File subSoundDir = new File(defaultDir + File.separator + "SubSounds");
+    public static File donationSoundDir = new File(defaultDir + File.separator + "DonationSounds");
+    public static File logDir = new File(defaultDir + File.separator + "Logs");
     //files
-    public File accountsFile = new File(defaultDir + File.separator + "acc.ini");
-    public File tabsFile = new File(defaultDir + File.separator + "tabs.txt");
-    public File soundsFile = new File(defaultDir + File.separator + "sounds.txt");
-    public File faceFile = new File(defaultDir + File.separator + "faces.txt");
-    public File twitchFaceFile = new File(defaultDir + File.separator + "twitchfaces.txt");
-    public File userColFile = new File(defaultDir + File.separator + "usercols.txt");
-    public File commandsFile = new File(defaultDir + File.separator + "commands.txt");
-    public File ccommandsFile = new File(defaultDir + File.separator + "chatcom.txt");
-    public File defaultsFile = new File(defaultDir + File.separator + "defaults.ini");
+    public static File accountsFile = new File(defaultDir + File.separator + "acc.ini");
+    public static File tabsFile = new File(defaultDir + File.separator + "tabs.txt");
+    public static File soundsFile = new File(defaultDir + File.separator + "sounds.txt");
+    public static File faceFile = new File(defaultDir + File.separator + "faces.txt");
+    public static File twitchFaceFile = new File(defaultDir + File.separator + "twitchfaces.txt");
+    public static File userColFile = new File(defaultDir + File.separator + "usercols.txt");
+    public static File commandsFile = new File(defaultDir + File.separator + "commands.txt");
+    public static File ccommandsFile = new File(defaultDir + File.separator + "chatcom.txt");
+    public static File defaultsFile = new File(defaultDir + File.separator + "defaults.ini");
     public static File lafFile = new File(defaultDir + File.separator + "laf.txt");
-    public File windowFile = new File(defaultDir + File.separator + "window.txt");
-    public File keywordsFile = new File(defaultDir + File.separator + "keywords.txt");
-    public File donorsFile = new File(defaultDir + File.separator + "donors.txt");
-    public File donationsFile = new File(defaultDir + File.separator + "donations.txt");
-    public File subsFile = new File(defaultDir + File.separator + "subs.txt");
+    public static File windowFile = new File(defaultDir + File.separator + "window.txt");
+    public static File keywordsFile = new File(defaultDir + File.separator + "keywords.txt");
+    public static File donorsFile = new File(defaultDir + File.separator + "donors.txt");
+    public static File donationsFile = new File(defaultDir + File.separator + "donations.txt");
+    public static File subsFile = new File(defaultDir + File.separator + "subs.txt");
 
     //appearance
-    public boolean logChat = false;
-    public int chatMax = 100;
-    public boolean cleanupChat = true;
     public static String lookAndFeel = "lib.jtattoo.com.jtattoo.plaf.hifi.HiFiLookAndFeel";
-    public int faceMaxHeight = 20;
     //Graphite = "lib.jtattoo.com.jtattoo.plaf.graphite.GraphiteLookAndFeel"
 
-    public String date;
-    public float soundVolumeGain = 100;
+    public static String date;
 
-
-    //NEW SETTINGS, TODO implement into new GUI and categorize later
-    public boolean ffzFacesEnable = true;
-    public boolean ffzFacesUseAll = false;
-    public boolean actuallyClearChat = true;
-    public boolean showDonorIcons = true;
-    public boolean showTabPulses = true;
-    public boolean trackDonations = true;
-    public boolean trackFollowers = false;
-
-    //Bot Reply
-    public boolean botAnnounceSubscribers = true;
-    public boolean botShowYTVideoDetails = true;
-    public boolean botShowTwitchVODDetails = true;
-    public boolean botShowPreviousSubSound = true;
-    public boolean botShowPreviousDonSound = true;
-    public boolean botUnshortenURLs = true;
 
     //System Tray
-    public boolean stUseSystemTray = true;
-    public boolean stMuted = false;
-    public boolean stShowSubscribers = false;
-    public boolean stShowNewFollowers = false;
-    public boolean stShowDonations = false;
-    public boolean stShowActivity = true;
-    public boolean stShowMentions = true;
+    public static Setting<Boolean> stShowMentions = new Setting<>("ST_DisplayDonations", false, Boolean.class);
+    public static Setting<Boolean> stShowDonations = new Setting<>("ST_DisplayMentions", false, Boolean.class);
+    public static Setting<Boolean> stShowActivity = new Setting<>("ST_DisplayActivity", false, Boolean.class);
+    public static Setting<Boolean> stMuted = new Setting<>("", false, Boolean.class);
+    public static Setting<Boolean> stUseSystemTray = new Setting<>("ST_UseSystemTray", false, Boolean.class);
+    public static Setting<Boolean> stShowSubscribers = new Setting<>("ST_DisplaySubscribers", false, Boolean.class);
+    public static Setting<Boolean> stShowNewFollowers = new Setting<>("ST_DisplayFollowers", false, Boolean.class);
+
+    //Bot Reply
+    public static Setting<Boolean> botAnnounceSubscribers = new Setting<>(""/*TODO*/, true, Boolean.class);
+    public static Setting<Boolean> botShowYTVideoDetails = new Setting<>(""/*TODO*/, true, Boolean.class);
+    public static Setting<Boolean> botShowTwitchVODDetails = new Setting<>(""/*TODO*/, true, Boolean.class);
+    public static Setting<Boolean> botShowPreviousSubSound = new Setting<>(""/*TODO*/, true, Boolean.class);
+    public static Setting<Boolean> botShowPreviousDonSound = new Setting<>(""/*TODO*/, true, Boolean.class);
+    public static Setting<Boolean> botUnshortenURLs = new Setting<>(""/*TODO*/, true, Boolean.class);
+
+    public static Setting<Boolean> ffzFacesEnable = new Setting<>("", true, Boolean.class);
+    public static Setting<Boolean> ffzFacesUseAll = new Setting<>("", false, Boolean.class);
+    public static Setting<Boolean> actuallyClearChat = new Setting<>("", false, Boolean.class);
+    public static Setting<Boolean> showDonorIcons = new Setting<>("", true, Boolean.class);
+    public static Setting<Boolean> showTabPulses = new Setting<>("", true, Boolean.class);
+    public static Setting<Boolean> trackDonations = new Setting<>("TrackDonations", false, Boolean.class);
+    public static Setting<Boolean> trackFollowers = new Setting<>("TrackFollowers", false, Boolean.class);
+
+    public static Setting<Boolean> cleanupChat = new Setting<>("ClearChat", true, Boolean.class);
+    public static Setting<Boolean> logChat = new Setting<>("LogChat", false, Boolean.class);
 
 
-    public Settings() {//default account
-        modIcon = Settings.class.getResource("/image/mod.png");
-        broadIcon = Settings.class.getResource("/image/broad.png");
-        adminIcon = Settings.class.getResource("/image/admin.png");
-        staffIcon = Settings.class.getResource("/image/staff.png");
-        turboIcon = Settings.class.getResource("/image/turbo.png");
+    //Icons TODO are these needed anymore?
+    public static Setting<Boolean> useMod = new Setting<>("UseMod", false, Boolean.class);
+    public static Setting<Boolean> useAdmin = new Setting<>("UseAdmin", false, Boolean.class);
+    public static Setting<Boolean> useStaff = new Setting<>("UseStaff", false, Boolean.class);
+    public static Setting<Boolean> useBroad = new Setting<>("UseBroad", false, Boolean.class);
+    public static Setting<URL> modIcon = new Setting<>("CustomMod", Settings.class.getResource("/image/mod.png"), URL.class);
+    public static Setting<URL> broadIcon = new Setting<>("CustomBroad", Settings.class.getResource("/image/broad.png"), URL.class);
+    public static Setting<URL> adminIcon = new Setting<>("CustomAdmin", Settings.class.getResource("/image/mod.png"), URL.class);
+    public static Setting<URL> staffIcon = new Setting<>("CustomStaff", Settings.class.getResource("/image/mod.png"), URL.class);
+    public static Setting<URL> turboIcon = new Setting<>("", Settings.class.getResource("/image/turbo.png"), URL.class);
+
+    public static Setting<Boolean> autoReconnectAccounts = new Setting<>("", true, Boolean.class);
+
+
+    public static Setting<Float> soundVolumeGain = new Setting<>(""/*TODO*/, 100f, Float.class);
+    public static Setting<Integer> faceMaxHeight = new Setting<>("FaceMaxHeight", 20, Integer.class);
+    public static Setting<Integer> chatMax = new Setting<>("MaxChat", 100, Integer.class);
+    public static Setting<Integer> botReplyType = new Setting<>("BotReplyType", 0, Integer.class);
+    //0 = none, 1 = botnak user only, 2 = everyone
+
+    public static Setting<String> lastFMAccount = new Setting<>("LastFMAccount", "", String.class);
+    public static Setting<String> defaultSoundDir = new Setting<>("SoundDir", "", String.class);
+    public static Setting<String> defaultFaceDir = new Setting<>("FaceDir", "", String.class);
+
+    public static Setting<String> donationClientID = new Setting<>("DCID", "", String.class);
+    public static Setting<String> donationAuthCode = new Setting<>("DCOAUTH", "", String.class);
+    public static Setting<Boolean> scannedInitialDonations = new Setting<>("RanInitDonations", true, Boolean.class);
+    public static Setting<Boolean> scannedInitialSubscribers = new Setting<>("RanInitSub", false, Boolean.class);
+    public static Setting<Integer> soundEngineDelay = new Setting<>("SoundEngineDelay", 10000, Integer.class);
+    public static Setting<Integer> soundEnginePermission = new Setting<>("SoundEnginePerm", 1, Integer.class);
+
+    public static Setting<Boolean> alwaysOnTop = new Setting<>("AlwaysOnTop", false, Boolean.class);
+
+    public static Setting<Font> font = new Setting<>("Font", new Font("Calibri", Font.PLAIN, 18), Font.class);
+
+    private static ArrayList<Setting> settings;
+
+    public static void init() {
         long time = System.currentTimeMillis();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yy");
         date = sdf.format(new Date(time));
-        font = new Font("Calibri", Font.PLAIN, 18);
         defaultDir.mkdirs();
         faceDir.mkdirs();
         nameFaceDir.mkdirs();
@@ -156,12 +165,38 @@ public class Settings {
         subIconsDir.mkdirs();
         subSoundDir.mkdirs();
         donationSoundDir.mkdirs();
+        //collection for bulk saving/loading
+        //(otherwise it would have been a bunch of hardcode...)
+        settings = new ArrayList<>();
+        try {
+            for (Field f : Settings.class.getDeclaredFields()) {
+                if (f.getType().getName().equals(Setting.class.getName())) {
+                    settings.add((Setting) f.get(null));
+                }
+            }
+        } catch (Exception e) {
+            GUIMain.log(e);
+        }
+        /**
+         * "After the fact":
+         * These change listeners are used to update the main GUI upon the setting change.
+         */
+        soundEngineDelay.addChangeListener(GUIMain.instance::updateSoundDelay);
+        soundEnginePermission.addChangeListener(GUIMain.instance::updateSoundPermission);
+        botReplyType.addChangeListener(GUIMain.instance::updateBotReplyPerm);
+        font.addChangeListener(f -> {
+            StyleConstants.setFontFamily(GUIMain.norm, f.getFamily());
+            StyleConstants.setFontSize(GUIMain.norm, f.getSize());
+            StyleConstants.setBold(GUIMain.norm, f.isBold());
+            StyleConstants.setItalic(GUIMain.norm, f.isItalic());
+        });
+        alwaysOnTop.addChangeListener(GUIMain.instance::updateAlwaysOnTopStatus);
     }
 
     /**
      * This void loads everything Botnak will use, and sets the appropriate settings.
      */
-    public void load() {
+    public static void load() {
         loadWindow();
         accountManager = new AccountManager();
         channelManager = new ChannelManager();
@@ -205,16 +240,16 @@ public class Settings {
             loadDonations();//these are stored locally
         }
         //checks online for offline donations and adds them
-        if (donationManager.canCheck() && donationManager.scannedInitialDonations) {
+        if (donationManager.canCheck() && scannedInitialDonations.getValue()) {
             donationManager.checkDonations(false);
             donationManager.ranFirstCheck = true;
         }
-        if (!donationManager.scannedInitialDonations) {
+        if (!scannedInitialDonations.getValue()) {
             donationManager.scanInitialDonations(0);
-            donationManager.scannedInitialDonations = true;
+            scannedInitialDonations.setValue(true);
         }
         if (accountManager.getUserAccount().getKey().canReadSubscribers()) {
-            if (!subscriberManager.ranInitialCheck && accountManager.getUserAccount() != null) {
+            if (!scannedInitialSubscribers.getValue() && accountManager.getUserAccount() != null) {
                 subscriberManager.scanInitialSubscribers(accountManager.getUserAccount().getName(),
                         accountManager.getUserAccount().getKey(), 0, new HashSet<>());
             }
@@ -239,7 +274,7 @@ public class Settings {
             GUIMain.log("Loading name faces...");
             loadNameFaces();
         }
-        if (ffzFacesEnable) {
+        if (ffzFacesEnable.getValue()) {
             frankerFaceZDir.mkdirs();
             File[] files = frankerFaceZDir.listFiles();
             if (files != null && files.length > 0) {
@@ -265,7 +300,7 @@ public class Settings {
     /**
      * This handles saving all the settings that need saved.
      */
-    public void save() {
+    public static void save() {
         saveLAF();
         saveWindow();
         if (accountManager.getUserAccount() != null || accountManager.getBotAccount() != null) savePropData(0);
@@ -287,7 +322,7 @@ public class Settings {
      * *********VOIDS*************
      */
 
-    public void loadPropData(int type) {
+    public static void loadPropData(int type) {
         Properties p = new Properties();
         if (type == 0) {//accounts
             try {
@@ -329,67 +364,8 @@ public class Settings {
         if (type == 1) {//defaults
             try {
                 p.load(new FileInputStream(defaultsFile));
-                donationManager.scannedInitialDonations = Boolean.parseBoolean(p.getProperty("RanInitDonations", "true"));
-                subscriberManager.ranInitialCheck = Boolean.parseBoolean(p.getProperty("RanInitSub", "false"));
-                trackFollowers = Boolean.parseBoolean(p.getProperty("TrackFollowers", "false"));
-                trackDonations = Boolean.parseBoolean(p.getProperty("TrackDonations", "false"));
-                lastFMAccount = p.getProperty("LastFMAccount", "");
-                String donation_client_id = p.getProperty("DCID", "");
-                String donation_client_oauth = p.getProperty("DCOAUTH", "");
-                if (!"".equals(donation_client_id)) donationManager.setClientID(donation_client_id);
-                if (!"".equals(donation_client_oauth)) donationManager.setAccessCode(donation_client_oauth);
-                defaultFaceDir = p.getProperty("FaceDir", "");
-                defaultSoundDir = p.getProperty("SoundDir", "");
-                useMod = Boolean.parseBoolean(p.getProperty("UseMod", "false"));
-                try {
-                    modIcon = new URL(p.getProperty("CustomMod", modIcon.toString()));
-                } catch (Exception e) {
-                    GUIMain.log(e);
-                }
-                useBroad = Boolean.parseBoolean(p.getProperty("UseBroad", "false"));
-                try {
-                    broadIcon = new URL(p.getProperty("CustomBroad", broadIcon.toString()));
-                } catch (Exception e) {
-                    GUIMain.log(e);
-                }
-                useAdmin = Boolean.parseBoolean(p.getProperty("UseAdmin", "false"));
-                try {
-                    adminIcon = new URL(p.getProperty("CustomAdmin", adminIcon.toString()));
-                } catch (Exception e) {
-                    GUIMain.log(e);
-                }
-                useStaff = Boolean.parseBoolean(p.getProperty("UseStaff", "false"));
-                try {
-                    staffIcon = new URL(p.getProperty("CustomStaff", staffIcon.toString()));
-                } catch (Exception e) {
-                    GUIMain.log(e);
-                }
-                cleanupChat = Boolean.parseBoolean(p.getProperty("ClearChat", "true"));
-                logChat = Boolean.parseBoolean(p.getProperty("LogChat", "false"));
-                if (logChat) logDir.mkdirs();
-                chatMax = Integer.parseInt(p.getProperty("MaxChat", "100"));
-                faceMaxHeight = Integer.parseInt(p.getProperty("FaceMaxHeight", "20"));
-                font = Utils.stringToFont(p.getProperty("Font").split(","));
-                StyleConstants.setFontFamily(GUIMain.norm, font.getFamily());
-                StyleConstants.setFontSize(GUIMain.norm, font.getSize());
-                int parsed = Integer.parseInt(p.getProperty("SoundEnginePerm", "1"));
-                SoundEngine.getEngine().setPermission(parsed);
-                GUIMain.instance.updateSoundPermission(parsed);
-                parsed = Integer.parseInt(p.getProperty("SoundEngineDelay", "10000"));
-                SoundEngine.getEngine().setDelay(parsed);
-                GUIMain.instance.updateSoundDelay(parsed / 1000);
-                botReplyType = Integer.parseInt(p.getProperty("BotReplyType", "0"));
-                GUIMain.instance.updateBotReplyPerm(botReplyType);
-                stUseSystemTray = Boolean.parseBoolean(p.getProperty("ST_UseSystemTray", "false"));
-                stShowActivity = Boolean.parseBoolean(p.getProperty("ST_DisplayActivity", "false"));
-                stShowDonations = Boolean.parseBoolean(p.getProperty("ST_DisplayDonations", "false"));
-                stShowMentions = Boolean.parseBoolean(p.getProperty("ST_DisplayMentions", "false"));
-                stShowNewFollowers = Boolean.parseBoolean(p.getProperty("ST_DisplayFollowers", "false"));
-                stShowSubscribers = Boolean.parseBoolean(p.getProperty("ST_DisplaySubscribers", "false"));
-                GUIMain.alwaysOnTop = Boolean.parseBoolean(p.getProperty("AlwaysOnTop", "false"));
-                GUIMain.instance.setAlwaysOnTop(GUIMain.alwaysOnTop);
-                GUIMain.instance.alwaysOnTopToggle.setState(GUIMain.alwaysOnTop);
-
+                settings.forEach(s -> s.load(p));
+                if (logChat.getValue()) logDir.mkdirs();
                 GUIMain.log("Loaded defaults!");
             } catch (Exception e) {
                 GUIMain.log(e);
@@ -397,7 +373,7 @@ public class Settings {
         }
     }
 
-    public void savePropData(int type) {
+    public static void savePropData(int type) {
         Properties p = new Properties();
         File writerFile = null;
         String detail = "";
@@ -423,43 +399,7 @@ public class Settings {
                 detail = "Account Info";
                 break;
             case 1:
-                p.put("RanInitSub", String.valueOf(subscriberManager.ranInitialCheck));
-                p.put("RanInitDonations", String.valueOf(donationManager.scannedInitialDonations));
-                p.put("TrackDonations", String.valueOf(trackDonations));
-                p.put("TrackFollowers", String.valueOf(trackFollowers));
-                p.put("LastFMAccount", lastFMAccount);
-                p.put("DCID", donationManager.getClientID());
-                p.put("DCOAUTH", donationManager.getAccessCode());
-                if (defaultFaceDir != null && !defaultFaceDir.equals("")) {
-                    p.put("FaceDir", defaultFaceDir);
-                }
-                if (defaultSoundDir != null && !defaultSoundDir.equals("")) {
-                    p.put("SoundDir", defaultSoundDir);
-                }
-                p.put("UseMod", String.valueOf(useMod));
-                p.put("CustomMod", modIcon.toString());
-                p.put("UseBroad", String.valueOf(useBroad));
-                p.put("CustomBroad", broadIcon.toString());
-                p.put("UseAdmin", String.valueOf(useAdmin));
-                p.put("CustomAdmin", adminIcon.toString());
-                p.put("UseStaff", String.valueOf(useStaff));
-                p.put("CustomStaff", staffIcon.toString());
-                p.put("MaxChat", String.valueOf(chatMax));
-                p.put("FaceMaxHeight", String.valueOf(faceMaxHeight));
-                p.put("ClearChat", String.valueOf(cleanupChat));
-                p.put("LogChat", String.valueOf(logChat));
-                p.put("Font", Utils.fontToString(font));
-                p.put("SoundEnginePerm", String.valueOf(SoundEngine.getEngine().getPermission()));
-                p.put("SoundEngineDelay", String.valueOf(SoundEngine.getEngine().getDelay()));
-                p.put("BotReplyType", String.valueOf(botReplyType));
-                p.put("ST_UseSystemTray", String.valueOf(stUseSystemTray));
-                p.put("ST_DisplayActivity", String.valueOf(stShowActivity));
-                p.put("ST_DisplayDonations", String.valueOf(stShowDonations));
-                p.put("ST_DisplayMentions", String.valueOf(stShowMentions));
-                p.put("ST_DisplayFollowers", String.valueOf(stShowNewFollowers));
-                p.put("ST_DisplaySubscribers", String.valueOf(stShowSubscribers));
-                p.put("AlwaysOnTop", String.valueOf(GUIMain.alwaysOnTop));
-
+                settings.forEach(s -> s.save(p));
                 writerFile = defaultsFile;
                 detail = "Defaults/Other Settings";
                 break;
@@ -481,7 +421,7 @@ public class Settings {
     /**
      * Sounds
      */
-    public void loadSounds() {
+    public static void loadSounds() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(soundsFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -502,7 +442,7 @@ public class Settings {
         }
     }
 
-    public void saveSounds() {
+    public static void saveSounds() {
         try (PrintWriter br = new PrintWriter(soundsFile)) {
             Set<String> keys = SoundEngine.getEngine().getSoundMap().keySet();
             keys.stream().filter(s -> s != null && SoundEngine.getEngine().getSoundMap().get(s) != null).forEach(s -> {
@@ -522,7 +462,7 @@ public class Settings {
         }
     }
 
-    public boolean doLoadSubSounds() {
+    private static boolean doLoadSubSounds() {
         if (loadSubSounds()) {
             GUIMain.log("Loaded sub sounds!");
             loadedSubSounds = true;
@@ -530,7 +470,7 @@ public class Settings {
         } else return false;
     }
 
-    public boolean loadSubSounds() {
+    public static boolean loadSubSounds() {
         boolean toReturn = false;
         try {
             File[] files = subSoundDir.listFiles();
@@ -547,13 +487,13 @@ public class Settings {
         return toReturn;
     }
 
-    private void doLoadDonationSounds() {
+    private static void doLoadDonationSounds() {
         loadDonationSounds();
         loadedDonationSounds = true;
         GUIMain.log("Loaded donation sounds!");
     }
 
-    public void loadDonationSounds() {
+    public static void loadDonationSounds() {
         try {
             File[] files = donationSoundDir.listFiles();
             if (files != null && files.length > 0) {
@@ -571,7 +511,7 @@ public class Settings {
     /**
      * User Colors
      */
-    public void loadUserColors() {
+    public static void loadUserColors() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(userColFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -584,7 +524,7 @@ public class Settings {
         }
     }
 
-    public void saveUserColors() {
+    public static void saveUserColors() {
         try (PrintWriter br = new PrintWriter(userColFile)) {
             GUIMain.userColMap.keySet().stream().filter(
                     s -> s != null && GUIMain.userColMap.get(s) != null).forEach(
@@ -603,7 +543,7 @@ public class Settings {
      * The map is unique, as the key is the name of the face, which could be the same as the regex
      * if it was added via !addface and no regex was specified.
      */
-    public void saveFaces() {
+    public static void saveFaces() {
         try (PrintWriter br = new PrintWriter(faceFile)) {
             FaceManager.faceMap.keySet().stream().filter(s -> s != null && FaceManager.faceMap.get(s) != null).forEach(s -> {
                 Face fa = FaceManager.faceMap.get(s);
@@ -618,7 +558,7 @@ public class Settings {
      * Loads the face data stored in the faces.txt file. This only gets called
      * if that file exists.
      */
-    public void loadFaces() {
+    public static void loadFaces() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(faceFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -636,7 +576,7 @@ public class Settings {
     /**
      * Saves the default twitch faces.
      */
-    public void saveTwitchFaces() {
+    public static void saveTwitchFaces() {
         try (PrintWriter br = new PrintWriter(twitchFaceFile)) {
             FaceManager.twitchFaceMap.keySet().stream().filter(s -> s != null && FaceManager.twitchFaceMap.get(s) != null)
                     .forEach(s -> {
@@ -651,7 +591,7 @@ public class Settings {
     /**
      * Loads the default twitch faces already saved on the computer.
      */
-    public void loadDefaultTwitchFaces() {
+    public static void loadDefaultTwitchFaces() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(twitchFaceFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -677,7 +617,7 @@ public class Settings {
      * <p>
      * We can be a little more broad about this saving, since it's a per-channel basis
      */
-    public void loadFFZFaces(File[] channels) {
+    public static void loadFFZFaces(File[] channels) {
         for (File channel : channels) {
             if (channel.isDirectory() && channel.length() > 0) {
                 File[] faces = channel.listFiles();
@@ -702,7 +642,7 @@ public class Settings {
      * <p>
      * trigger[message (content)[arguments?
      */
-    public void loadCommands() {
+    public static void loadCommands() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(commandsFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -720,7 +660,7 @@ public class Settings {
         }
     }
 
-    public void saveCommands() {
+    public static void saveCommands() {
         try (PrintWriter br = new PrintWriter(commandsFile)) {
             for (Command next : GUIMain.commandSet) {
                 if (next != null) {
@@ -750,7 +690,7 @@ public class Settings {
     /**
      * Console Commands
      */
-    public void saveConCommands() {
+    public static void saveConCommands() {
         try (PrintWriter br = new PrintWriter(ccommandsFile)) {
             for (ConsoleCommand next : GUIMain.conCommands) {
                 if (next != null) {
@@ -774,7 +714,7 @@ public class Settings {
         }
     }
 
-    ConsoleCommand.Action getAction(String key) {
+    private static ConsoleCommand.Action getAction(String key) {
         ConsoleCommand.Action act = null;
         for (ConsoleCommand.Action a : ConsoleCommand.Action.values()) {
             if (a.toString().equalsIgnoreCase(key)) {
@@ -785,7 +725,7 @@ public class Settings {
         return act;
     }
 
-    public void loadConsoleCommands() {
+    public static void loadConsoleCommands() {
         HashSet<ConsoleCommand> hardcoded = new HashSet<>();
         hardcoded.add(new ConsoleCommand("addface", ConsoleCommand.Action.ADD_FACE, Permissions.Permission.MODERATOR.permValue, null));
         hardcoded.add(new ConsoleCommand("changeface", ConsoleCommand.Action.CHANGE_FACE, Permissions.Permission.MODERATOR.permValue, null));
@@ -877,7 +817,7 @@ public class Settings {
     /**
      * Keywords
      */
-    public void loadKeywords() {
+    public static void loadKeywords() {
         if (Utils.areFilesGood(keywordsFile.getAbsolutePath())) {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(keywordsFile.toURI().toURL().openStream()))) {
                 String line;
@@ -912,7 +852,7 @@ public class Settings {
         GUIMain.log("Loaded keywords!");
     }
 
-    public void saveKeywords() {
+    public static void saveKeywords() {
         try (PrintWriter br = new PrintWriter(keywordsFile)) {
             Set<String> keys = GUIMain.keywordMap.keySet();
             keys.stream().filter(word -> word != null).forEach(word -> {
@@ -927,7 +867,7 @@ public class Settings {
     /**
      * Sub icons
      */
-    public void loadSubIcons(File[] subIconFiles) {
+    public static void loadSubIcons(File[] subIconFiles) {
         for (File f : subIconFiles) {
             FaceManager.subIconSet.add(new SubscriberIcon(Utils.removeExt(f.getName()), f.getAbsolutePath()));
         }
@@ -936,7 +876,7 @@ public class Settings {
     /**
      * Donators
      */
-    public void loadDonors() {
+    public static void loadDonors() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(donorsFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -956,7 +896,7 @@ public class Settings {
     }
 
 
-    public void saveDonors() {
+    public static void saveDonors() {
         try (PrintWriter br = new PrintWriter(donorsFile)) {
             donationManager.getDonors().stream().forEach(d -> br.println(d.getName() + "," +
                     DonationManager.getDecimalFormat().format(d.getDonated())));
@@ -970,7 +910,7 @@ public class Settings {
      * Donations. This ranges from people just giving you money to
      * people subscribing to your channel.
      */
-    public void saveDonations() {
+    public static void saveDonations() {
         try (PrintWriter br = new PrintWriter(donationsFile)) {
             donationManager.getDonations().stream().sorted().forEach(d ->
                     br.println(d.getDonationID() + "[" + d.getFromWho() + "[" + d.getNote() + "["
@@ -981,7 +921,7 @@ public class Settings {
         }
     }
 
-    public void loadDonations() {
+    public static void loadDonations() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(donationsFile.toURI().toURL().openStream()))) {
             String line;
             HashSet<Donation> donations = new HashSet<>();
@@ -995,9 +935,7 @@ public class Settings {
                     amount = 0.0;
                 }
                 Donation d = new Donation(split[0], split[1], split[2], amount, Date.from(Instant.parse(split[4])));
-                if ((mostRecent == null || mostRecent.compareTo(d) > 0) &&
-                        !d.getDonationID().equalsIgnoreCase("SUBSCRIBER") &&
-                        !d.getDonationID().equals("LOCAL"))
+                if ((mostRecent == null || mostRecent.compareTo(d) > 0) && !d.getDonationID().equals("LOCAL"))
                     mostRecent = d;
                 donations.add(d);
             }
@@ -1022,7 +960,7 @@ public class Settings {
      * Saves each subscriber with the first date Botnak meets them
      * and each month check to see if they're still subbed, if not, make them an ex-subscriber
      */
-    public void saveSubscribers() {
+    public static void saveSubscribers() {
         try (PrintWriter br = new PrintWriter(subsFile)) {
             subscriberManager.getSubscribers().stream().sorted().forEach(
                     s -> br.println(s.getName() + "[" + s.getStarted().toString() + "["
@@ -1032,7 +970,7 @@ public class Settings {
         }
     }
 
-    public void loadSubscribers() {
+    public static void loadSubscribers() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(subsFile.toURI().toURL().openStream()))) {
             String line;
             HashSet<Subscriber> subscribers = new HashSet<>();
@@ -1074,7 +1012,7 @@ public class Settings {
      * <p>
      * Single tabs can be invisible if they are in a combined tab.
      */
-    public void saveTabState() {
+    public static void saveTabState() {
         try (PrintWriter br = new PrintWriter(tabsFile)) {
             int currentSelectedIndex = GUIMain.channelPane.getSelectedIndex();
             for (int i = 1; i < GUIMain.channelPane.getTabCount() - 1; i++) {
@@ -1106,7 +1044,7 @@ public class Settings {
         }
     }
 
-    public void loadTabState() {
+    public static void loadTabState() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(tabsFile.toURI().toURL().openStream()))) {
             String line;
             int index = 0;
@@ -1116,7 +1054,7 @@ public class Settings {
                 boolean isSelected = Boolean.parseBoolean(split[1]);
                 if (isSingle) {
                     String channel = split[2];
-                    if (GUIMain.currentSettings.accountManager.getUserAccount() != null) {
+                    if (accountManager.getUserAccount() != null) {
                         String channelName = "#" + channel;
                         GUIMain.channelSet.add(channelName);
                     }
@@ -1130,7 +1068,7 @@ public class Settings {
                     String[] channels = split[4].split(",");
                     ArrayList<ChatPane> cps = new ArrayList<>();
                     for (String c : channels) {
-                        if (GUIMain.currentSettings.accountManager.getUserAccount() != null) {
+                        if (accountManager.getUserAccount() != null) {
                             String channelName = "#" + c;
                             GUIMain.channelSet.add(channelName);
                         }
@@ -1160,7 +1098,7 @@ public class Settings {
     /**
      * Name faces
      */
-    public void loadNameFaces() {
+    public static void loadNameFaces() {
         try {
             File[] nameFaces = nameFaceDir.listFiles();
             if (nameFaces == null) return;
@@ -1194,7 +1132,7 @@ public class Settings {
         }
     }
 
-    public void saveLAF() {
+    public static void saveLAF() {
         try (PrintWriter pr = new PrintWriter(lafFile)) {
             pr.println(lookAndFeel);
         } catch (Exception e) {
@@ -1205,7 +1143,7 @@ public class Settings {
     /**
      * Window Properties (location and size)
      */
-    public void loadWindow() {
+    public static void loadWindow() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(windowFile.toURI().toURL().openStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -1232,7 +1170,7 @@ public class Settings {
         }
     }
 
-    public void saveWindow() {
+    public static void saveWindow() {
         try (PrintWriter pr = new PrintWriter(windowFile)) {
             pr.println("p" + GUIMain.instance.getLocationOnScreen().x + "," + GUIMain.instance.getLocationOnScreen().y);
             pr.println("s" + GUIMain.instance.getSize().getWidth() + "," + GUIMain.instance.getSize().getHeight());

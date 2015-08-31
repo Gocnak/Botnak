@@ -5,6 +5,7 @@ import gui.CombinedChatPane;
 import gui.forms.GUIMain;
 import lib.pircbot.org.jibble.pircbot.User;
 import util.Utils;
+import util.settings.Settings;
 
 import javax.swing.*;
 import javax.swing.text.AttributeSet;
@@ -50,8 +51,8 @@ public class ListenerName extends MouseAdapter {
         ListenerNameActionListener nameActionListener = new ListenerNameActionListener();
         if (!(channel.equals("") || channel.equalsIgnoreCase("all"))) {
             if (GUIMain.viewer != null) {
-                User u = GUIMain.currentSettings.channelManager.getUser(name, false);//get the user in question
-                User main = GUIMain.currentSettings.channelManager.getUser(GUIMain.currentSettings.accountManager.getUserAccount().getName(), false);//get yourself
+                User u = Settings.channelManager.getUser(name, false);//get the user in question
+                User main = Settings.channelManager.getUser(Settings.accountManager.getUserAccount().getName(), false);//get yourself
                 if (main != null) {
                     int count = 0; //don't worry about it
                     //can't ban broadcaster or admin/staff/global mod
@@ -101,23 +102,23 @@ public class ListenerName extends MouseAdapter {
                 String channel = "#" + GUIMain.channelPane.getTitleAt(GUIMain.channelPane.getSelectedIndex());
                 if (text.startsWith("Ban")) {
                     if (GUIMain.viewer != null) {
-                        GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".ban " + user);
+                        Settings.accountManager.getViewer().sendMessage(channel, ".ban " + user);
                     }
                 } else if (text.startsWith("Purge")) {
                     if (GUIMain.viewer != null) {
-                        GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".timeout " + user + " 1");
+                        Settings.accountManager.getViewer().sendMessage(channel, ".timeout " + user + " 1");
                     }
                 } else if (text.startsWith("Timeout")) {
                     if (GUIMain.viewer != null) {
-                        GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".timeout " + user);
+                        Settings.accountManager.getViewer().sendMessage(channel, ".timeout " + user);
                     }
                 } else if (text.startsWith("Mod")) {
                     if (GUIMain.viewer != null) {
-                        GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".mod " + user);
+                        Settings.accountManager.getViewer().sendMessage(channel, ".mod " + user);
                     }
                 } else if (text.startsWith("Un-mod")) {
                     if (GUIMain.viewer != null) {
-                        GUIMain.currentSettings.accountManager.getViewer().sendMessage(channel, ".unmod " + user);
+                        Settings.accountManager.getViewer().sendMessage(channel, ".unmod " + user);
                     }
                 } else if (text.startsWith("Go to")) {
                     //ex: Go to gocnak's channel

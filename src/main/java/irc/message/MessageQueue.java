@@ -5,6 +5,7 @@ import gui.CombinedChatPane;
 import gui.forms.GUIMain;
 import lib.pircbot.org.jibble.pircbot.Queue;
 import sound.SoundEngine;
+import util.settings.Settings;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -71,7 +72,7 @@ public class MessageQueue extends Thread {
                         GUIMain.getChatPane(mess.getChannel()).log(wrap, false);
                     } else if (mess.getType() == Message.MessageType.DONATION_NOTIFY) {
                         GUIMain.getChatPane(mess.getChannel()).onDonation(wrap);
-                        if (GUIMain.currentSettings.loadedDonationSounds) {
+                        if (Settings.loadedDonationSounds) {
                             SoundEngine.getEngine().playSpecialSound(false);
                         }
                     } else if (mess.getType() == Message.MessageType.CLEAR_TEXT) {

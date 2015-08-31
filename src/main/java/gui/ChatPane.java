@@ -17,6 +17,7 @@ import lib.pircbot.org.jibble.pircbot.User;
 import util.Constants;
 import util.Utils;
 import util.misc.Donation;
+import util.settings.Settings;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -114,7 +115,7 @@ public class ChatPane implements DocumentListener {
     public boolean shouldPulse() {
         boolean shouldPulseLocal = (this instanceof CombinedChatPane) ?
                 ((CombinedChatPane) this).getActiveChatPane().shouldPulseLoc() : shouldPulseLoc;
-        return GUIMain.currentSettings.showTabPulses && shouldPulseLocal && isTabVisible() &&
+        return Settings.showTabPulses.getValue() && shouldPulseLocal && isTabVisible() &&
                 GUIMain.channelPane.getSelectedIndex() != index && index != 0;
     }
 
@@ -183,14 +184,14 @@ public class ChatPane implements DocumentListener {
     @Override
     public void insertUpdate(DocumentEvent e) {
         maybeScrollToBottom();
-        if (GUIMain.currentSettings.cleanupChat) {
+        if (Settings.cleanupChat.getValue()) {
             try {
                 if (e.getDocument().getText(e.getOffset(), e.getLength()).contains("\n")) {
                     cleanupCounter++;
                 }
             } catch (Exception ignored) {
             }
-            if (cleanupCounter > GUIMain.currentSettings.chatMax) {
+            if (cleanupCounter > Settings.chatMax.getValue()) {
                 /* cleanup every n messages */
                 if (!messageOut) {
                     MessageQueue.addMessage(new Message().setType(Message.MessageType.CLEAR_TEXT).setExtra(this));
@@ -332,15 +333,15 @@ public class ChatPane implements DocumentListener {
         if (textPane == null) return;
         Message message = m.getLocal();
         SimpleAttributeSet user = new SimpleAttributeSet();
-        StyleConstants.setFontFamily(user, GUIMain.currentSettings.font.getFamily());
-        StyleConstants.setFontSize(user, GUIMain.currentSettings.font.getSize());
+        StyleConstants.setFontFamily(user, Settings.font.getValue().getFamily());
+        StyleConstants.setFontSize(user, Settings.font.getValue().getSize());
         String sender = message.getSender().toLowerCase();
         String channel = message.getChannel();
         String mess = message.getContent();
         boolean isMe = (message.getType() == Message.MessageType.ACTION_MESSAGE);
         try {
             print(m, "\n" + getTime(), GUIMain.norm);
-            User u = GUIMain.currentSettings.channelManager.getUser(sender, true);
+            User u = Settings.channelManager.getUser(sender, true);
             Color c;
             if (u.getColor() != null) {
                 if (GUIMain.userColMap.containsKey(sender)) {
@@ -366,7 +367,7 @@ public class ChatPane implements DocumentListener {
             if (u.isGlobalMod()) {
                 insertIcon(m, IconEnum.GLOBAL_MOD, null);
             }
-            if (GUIMain.currentSettings.showDonorIcons) {
+            if (Settings.showDonorIcons.getValue()) {
                 if (u.isDonor()) {
                     insertIcon(m, u.getDonationStatus(), null);
                 }
@@ -382,7 +383,7 @@ public class ChatPane implements DocumentListener {
                 insertIcon(m, IconEnum.SUBSCRIBER, channel);
             } else {
                 if (Utils.isMainChannel(channel)) {
-                    Optional<Subscriber> sub = GUIMain.currentSettings.subscriberManager.getSubscriber(sender);
+                    Optional<Subscriber> sub = Settings.subscriberManager.getSubscriber(sender);
                     if (sub.isPresent() && !sub.get().isActive()) {
                         insertIcon(m, IconEnum.EX_SUBSCRIBER, channel);
                     }
@@ -414,14 +415,14 @@ public class ChatPane implements DocumentListener {
             printMessage(m, mess, set, u);
 
             if (BotnakTrayIcon.shouldDisplayMentions() && !Utils.isTabSelected(index)) {
-                if (mess.contains(GUIMain.currentSettings.accountManager.getUserAccount().getName())) {
+                if (mess.contains(Settings.accountManager.getUserAccount().getName())) {
                     GUIMain.getSystemTrayIcon().displayMention(m.getLocal());
                 }
             }
 
             if (Utils.isMainChannel(channel))
                 //check status of the sub, has it been a month?
-                GUIMain.currentSettings.subscriberManager.updateSubscriber(u, channel, isSubscriber);
+                Settings.subscriberManager.updateSubscriber(u, channel, isSubscriber);
             if (shouldPulse())
                 GUIMain.instance.pulseTab(this);
         } catch (Exception e) {
@@ -486,7 +487,7 @@ public class ChatPane implements DocumentListener {
         if (u != null && u.getEmotes() != null) {
             FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE, null, u.getEmotes());
         }
-        if (GUIMain.currentSettings.ffzFacesEnable) {
+        if (Settings.ffzFacesEnable.getValue()) {
             FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.FRANKER_FACE, channel, null);
         }
     }
@@ -569,7 +570,7 @@ public class ChatPane implements DocumentListener {
         {
             final StyledDocument doc = textPane.getStyledDocument();
             try {
-                if (GUIMain.currentSettings.logChat && chan != null) {
+                if (Settings.logChat.getValue() && chan != null) {
                     String[] toRemove = doc.getText(0, start).split("\\n");
                     Utils.logChat(toRemove, chan, 1);
                 }
@@ -598,7 +599,7 @@ public class ChatPane implements DocumentListener {
         pane.setFocusable(false);
         pane.setMargin(new Insets(0, 0, 0, 0));
         pane.setBackground(Color.black);
-        pane.setFont(GUIMain.currentSettings.font);
+        pane.setFont(Settings.font.getValue());
         pane.addMouseListener(new ListenerURL());
         pane.addMouseListener(new ListenerName());
         pane.addMouseListener(new ListenerFace());
@@ -612,7 +613,7 @@ public class ChatPane implements DocumentListener {
      * Deletes the pane and removes the tab from the tabbed pane.
      */
     public void deletePane() {
-        if (GUIMain.currentSettings.logChat) {
+        if (Settings.logChat.getValue()) {
             Utils.logChat(getText().split("\\n"), chan, 2);
         }
         GUIViewerList list = GUIMain.viewerLists.get(chan);

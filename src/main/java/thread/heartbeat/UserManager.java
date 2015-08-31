@@ -8,6 +8,7 @@ import lib.pircbot.org.jibble.pircbot.ChannelManager;
 import lib.pircbot.org.jibble.pircbot.User;
 import util.Timer;
 import util.Utils;
+import util.settings.Settings;
 
 import javax.swing.tree.TreePath;
 import java.awt.*;
@@ -34,13 +35,13 @@ public class UserManager implements HeartbeatThread {
 
     @Override
     public boolean shouldBeat() {
-        return !beating && GUIMain.currentSettings.channelManager != null && !toUpdate.isRunning();
+        return !beating && Settings.channelManager != null && !toUpdate.isRunning();
     }
 
     @Override
     public void beat() {
         beating = true;
-        String[] channels = GUIMain.currentSettings.channelManager.getChannelNames();
+        String[] channels = Settings.channelManager.getChannelNames();
         URL url;
         for (String chan : channels) {
             String chanOut = chan.substring(1);
@@ -111,7 +112,7 @@ public class UserManager implements HeartbeatThread {
     }
 
     private ChannelManager getChannelManager() {
-        return GUIMain.currentSettings.channelManager;
+        return Settings.channelManager;
     }
 
     @Override

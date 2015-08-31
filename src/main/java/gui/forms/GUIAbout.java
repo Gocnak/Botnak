@@ -3,6 +3,7 @@ package gui.forms;
 import thread.ThreadEngine;
 import util.Constants;
 import util.Utils;
+import util.settings.Settings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -38,7 +39,7 @@ public class GUIAbout extends JFrame {
 
     @Override
     public void setVisible(boolean b) {
-        setAlwaysOnTop(GUIMain.alwaysOnTop);
+        setAlwaysOnTop(Settings.alwaysOnTop.getValue());
         super.setVisible(b);
     }
 

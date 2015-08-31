@@ -18,6 +18,7 @@ import face.FaceManager;
 import gui.forms.GUIMain;
 import irc.message.MessageHandler;
 import util.Constants;
+import util.settings.Settings;
 
 import java.awt.*;
 import java.io.*;
@@ -63,7 +64,7 @@ import java.util.StringTokenizer;
 public class PircBot {
 
     public ChannelManager getChannelManager() {
-        return GUIMain.currentSettings.channelManager;
+        return Settings.channelManager;
     }
 
     private MessageHandler handler;
@@ -544,7 +545,7 @@ public class PircBot {
         String[] parts = line.split(" ");
         String tags = parts[0];
         String channel = parts[3];
-        parseTags(tags, GUIMain.currentSettings.accountManager.getUserAccount().getName(), channel);
+        parseTags(tags, Settings.accountManager.getUserAccount().getName(), channel);
     }
 
     private void parseTags(String line, String user, String channel) {

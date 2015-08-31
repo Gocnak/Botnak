@@ -5,6 +5,7 @@ import irc.account.Account;
 import irc.account.Oauth;
 import irc.account.Task;
 import util.Utils;
+import util.settings.Settings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,8 +17,8 @@ import java.awt.event.ActionEvent;
 public class GUIAuthorizeAccount extends JFrame {
 
     private Account getAccount(boolean bot) {
-        return bot ? GUIMain.currentSettings.accountManager.getBotAccount() :
-                GUIMain.currentSettings.accountManager.getUserAccount();
+        return bot ? Settings.accountManager.getBotAccount() :
+                Settings.accountManager.getUserAccount();
     }
 
     private TokenListener listener;
@@ -78,9 +79,9 @@ public class GUIAuthorizeAccount extends JFrame {
         if (!name.isEmpty() && oauth.length() == 36) {
             if (isForBotAccount) {
                 if (getAccount(true) == null) {
-                    GUIMain.currentSettings.accountManager.setBotAccount(
+                    Settings.accountManager.setBotAccount(
                             new Account(name, new Oauth(oauth, false, false, false, false)));
-                    GUIMain.currentSettings.accountManager.addTask(new Task(null, Task.Type.CREATE_BOT_ACCOUNT, null));
+                    Settings.accountManager.addTask(new Task(null, Task.Type.CREATE_BOT_ACCOUNT, null));
                     if (GUIMain.settings != null) {
                         GUISettings.normUser.setText(name);
                         GUISettings.normPass.setText(oauth);
@@ -88,10 +89,10 @@ public class GUIAuthorizeAccount extends JFrame {
                 }
             } else {
                 if (getAccount(false) == null) {
-                    GUIMain.currentSettings.accountManager.setUserAccount(
+                    Settings.accountManager.setUserAccount(
                             new Account(name, new Oauth(oauth, boxEditStatus.isSelected(), boxCommercial.isSelected(),
                                     boxReadSubs.isSelected(), boxFollowed.isSelected())));
-                    GUIMain.currentSettings.accountManager.addTask(new Task(null, Task.Type.CREATE_VIEWER_ACCOUNT, null));
+                    Settings.accountManager.addTask(new Task(null, Task.Type.CREATE_VIEWER_ACCOUNT, null));
                     if (GUIMain.settings != null) {
                         GUISettings.botUser.setText(name);
                         GUISettings.botPass.setText(oauth);
@@ -111,7 +112,7 @@ public class GUIAuthorizeAccount extends JFrame {
 
     @Override
     public void setVisible(boolean b) {
-        setAlwaysOnTop(GUIMain.alwaysOnTop);
+        setAlwaysOnTop(Settings.alwaysOnTop.getValue());
         super.setVisible(b);
     }
 

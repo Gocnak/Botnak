@@ -5,6 +5,7 @@ import gui.forms.GUIMain;
 import irc.account.Account;
 import util.APIRequests;
 import util.Timer;
+import util.settings.Settings;
 
 import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -36,7 +37,7 @@ public class FollowCheck implements HeartbeatThread {
     }
 
     private Account getUserAccount() {
-        return GUIMain.currentSettings.accountManager.getUserAccount();
+        return Settings.accountManager.getUserAccount();
     }
 
     //called to initialize

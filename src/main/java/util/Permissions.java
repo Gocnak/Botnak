@@ -3,6 +3,7 @@ package util;
 import gui.forms.GUIMain;
 import irc.Subscriber;
 import lib.pircbot.org.jibble.pircbot.User;
+import util.settings.Settings;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -47,7 +48,7 @@ public class Permissions {
         ArrayList<Permission> permissionList = new ArrayList<>();
         permissionList.add(Permission.ALL);
         if (Utils.isMainChannel(channel)) {
-            Optional<Subscriber> sub = GUIMain.currentSettings.subscriberManager.getSubscriber(u.getNick());
+            Optional<Subscriber> sub = Settings.subscriberManager.getSubscriber(u.getNick());
             if (sub.isPresent() && !sub.get().isActive()) {
                 permissionList.add(Permission.EX_SUBSCRIBER);
             }
@@ -63,7 +64,7 @@ public class Permissions {
         if (u.isOp(channel) || u.isAdmin() || u.isStaff() || u.isGlobalMod()) {
             permissionList.add(Permission.MODERATOR);
         }
-        if (GUIMain.viewer != null && GUIMain.currentSettings.accountManager.getUserAccount().getName().equalsIgnoreCase(u.getNick())) {
+        if (GUIMain.viewer != null && Settings.accountManager.getUserAccount().getName().equalsIgnoreCase(u.getNick())) {
             permissionList.add(Permission.BROADCASTER);
         }
         return permissionList;

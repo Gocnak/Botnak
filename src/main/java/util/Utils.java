@@ -6,6 +6,7 @@ import gui.forms.GUIMain;
 import lib.pircbot.org.jibble.pircbot.User;
 import util.comm.Command;
 import util.comm.ConsoleCommand;
+import util.settings.Settings;
 
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
@@ -113,36 +114,53 @@ public class Utils {
     /**
      * Converts a formatted string (@see #fontToString()) into a font.
      *
-     * @param toFont The string to be turned into a font.
+     * @param fontString The string to be turned into a font.
      * @return The font.
      */
-    public static Font stringToFont(String[] toFont) {
+    public static Font stringToFont(String fontString) {
+        String[] toFont = fontString.substring(fontString.indexOf('[') + 1, fontString.length() - 1).split(",");
         Font f = new Font("Calibri", Font.PLAIN, 18);
-        if (toFont != null && toFont.length == 3) {
-            String name = toFont[0];
-            int size;
-            int type;
-            try {
-                size = Integer.parseInt(toFont[1]);
-            } catch (Exception e) {
-                size = 18;
-            }
-            switch (toFont[2]) {
-                case "Plain":
-                    type = Font.PLAIN;
-                    break;
-                case "Italic":
-                    type = Font.ITALIC;
-                    break;
-                case "Bold Italic":
-                    type = Font.BOLD + Font.ITALIC;
-                    break;
-                case "Bold":
-                    type = Font.BOLD;
-                    break;
-                default:
-                    type = Font.PLAIN;
-                    break;
+        if (toFont.length == 4) {
+            String name = "Calibri";
+            int size = 18;
+            int type = Font.PLAIN;
+            for (String keyValPair : toFont) {
+                String[] split = keyValPair.split("=");
+                String key = split[0];
+                String val = split[1];
+                switch (key) {
+                    case "name":
+                        name = val;
+                        break;
+                    case "style":
+                        switch (val) {
+                            case "plain":
+                                type = Font.PLAIN;
+                                break;
+                            case "italic":
+                                type = Font.ITALIC;
+                                break;
+                            case "bolditalic":
+                                type = Font.BOLD + Font.ITALIC;
+                                break;
+                            case "bold":
+                                type = Font.BOLD;
+                                break;
+                            default:
+                                type = Font.PLAIN;
+                                break;
+                        }
+                        break;
+                    case "size":
+                        try {
+                            size = Integer.parseInt(val);
+                        } catch (Exception e) {
+                            size = 18;
+                        }
+                        break;
+                    default:
+                        break;
+                }
             }
             f = new Font(name, type, size);
         }
@@ -226,9 +244,9 @@ public class Utils {
         if (channel.startsWith("#")) channel = channel.substring(1);
         try {
             PrintWriter out = new PrintWriter(new BufferedWriter(
-                    new FileWriter(new File(GUIMain.currentSettings.logDir.getAbsolutePath() + File.separator + channel + ".txt"), true)));
+                    new FileWriter(new File(Settings.logDir.getAbsolutePath() + File.separator + channel + ".txt"), true)));
             if (type == 0) {
-                out.println("====================== " + GUIMain.currentSettings.date + " ======================");
+                out.println("====================== " + Settings.date + " ======================");
             }
             if (message != null && !(message.length == 0 || (message.length == 1 && message[0].equalsIgnoreCase("")))) {
                 for (String s : message) {
@@ -238,7 +256,7 @@ public class Utils {
                 }
             }
             if (type == 2) {
-                out.println("====================== End of " + GUIMain.currentSettings.date + " ======================");
+                out.println("====================== End of " + Settings.date + " ======================");
             }
             out.close();
         } catch (IOException e) {
@@ -324,8 +342,8 @@ public class Utils {
     public static SimpleAttributeSet URLStyle(String URL) {
         SimpleAttributeSet attrs = new SimpleAttributeSet();
         StyleConstants.setForeground(attrs, new Color(43, 162, 235));
-        StyleConstants.setFontFamily(attrs, GUIMain.currentSettings.font.getFamily());
-        StyleConstants.setFontSize(attrs, GUIMain.currentSettings.font.getSize());
+        StyleConstants.setFontFamily(attrs, Settings.font.getValue().getFamily());
+        StyleConstants.setFontSize(attrs, Settings.font.getValue().getSize());
         StyleConstants.setUnderline(attrs, true);
         attrs.addAttribute(HTML.Attribute.HREF, URL);
         return attrs;
@@ -571,7 +589,7 @@ public class Utils {
      * @return The console command, or null if the user didn't meet the requirements.
      */
     public static ConsoleCommand getConsoleCommand(String key, String channel, User u) {
-        String master = GUIMain.currentSettings.accountManager.getUserAccount().getName();
+        String master = Settings.accountManager.getUserAccount().getName();
         if (!channel.contains(master)) return null;
         if (u != null) {
             for (ConsoleCommand c : GUIMain.conCommands) {
@@ -604,8 +622,8 @@ public class Utils {
      * @return true if indeed the channel, otherwise false.
      */
     public static boolean isMainChannel(String channel) {
-        return GUIMain.currentSettings.accountManager.getUserAccount() != null &&
-                (channel.replaceAll("#", "").equalsIgnoreCase(GUIMain.currentSettings.accountManager.getUserAccount().getName()));
+        return Settings.accountManager.getUserAccount() != null &&
+                (channel.replaceAll("#", "").equalsIgnoreCase(Settings.accountManager.getUserAccount().getName()));
     }
 
     /**

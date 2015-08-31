@@ -4,6 +4,7 @@ import gui.forms.GUIMain;
 import irc.account.Oauth;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
+import util.settings.Settings;
 
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
@@ -376,15 +377,15 @@ public class APIRequests {
          */
         public static Response getCurrentlyPlaying() {
             Response toReturn = new Response();
-            if ("".equals(GUIMain.currentSettings.lastFMAccount)) {
+            if ("".equals(Settings.lastFMAccount.getValue())) {
                 toReturn.setResponseText("Failed to fetch current playing song, the user has no last.fm account set!");
                 return toReturn;
             }
             //TODO check the song requests engine to see if that is currently playing
-            String tracks_url = "http://www.last.fm/user/" + GUIMain.currentSettings.lastFMAccount + "/now";
+            String tracks_url = "http://www.last.fm/user/" + Settings.lastFMAccount.getValue() + "/now";
             try {
                 URL request = new URL("http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
-                        GUIMain.currentSettings.lastFMAccount + "&api_key=e0d3467ebb54bb110787dd3d77705e1a&format=json");
+                        Settings.lastFMAccount.getValue() + "&api_key=e0d3467ebb54bb110787dd3d77705e1a&format=json");
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 JSONObject outermost = new JSONObject(line);
                 JSONObject recentTracks = outermost.getJSONObject("recenttracks");

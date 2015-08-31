@@ -60,15 +60,11 @@ public class GUIMain extends JFrame {
 
     public static GUIMain instance;
 
-    public static Settings currentSettings;
-
     private static BotnakTrayIcon systemTrayIcon;
 
     public static Heartbeat heartbeat;
 
     private static ChatPane systemLogsPane;
-
-    public static boolean alwaysOnTop = false;
 
     public GUIMain() {
         new MessageQueue();
@@ -87,23 +83,27 @@ public class GUIMain extends JFrame {
         FaceManager.init();
         SoundEngine.init();
         StyleConstants.setForeground(norm, Color.white);
+        StyleConstants.setFontFamily(norm, Settings.font.getValue().getFamily());
+        StyleConstants.setFontSize(norm, Settings.font.getValue().getSize());
+        StyleConstants.setBold(norm, Settings.font.getValue().isBold());
+        StyleConstants.setItalic(norm, Settings.font.getValue().isItalic());
         initComponents();
         systemLogsPane = new ChatPane("System Logs", allChatsScroll, allChats, null, 0);
         chatPanes.put("System Logs", systemLogsPane);
-        currentSettings = new Settings();
+        Settings.init();
         ThreadEngine.submit(() -> {
-            currentSettings.load();
-            if (currentSettings.stUseSystemTray) getSystemTrayIcon();
+            Settings.load();
+            if (Settings.stUseSystemTray.getValue()) getSystemTrayIcon();
             heartbeat = new Heartbeat();
         });
     }
 
     public static boolean loadedSettingsUser() {
-        return currentSettings != null && currentSettings.accountManager.getUserAccount() != null;
+        return Settings.accountManager != null && Settings.accountManager.getUserAccount() != null;
     }
 
     public static boolean loadedSettingsBot() {
-        return currentSettings != null && currentSettings.accountManager.getBotAccount() != null;
+        return Settings.accountManager != null && Settings.accountManager.getBotAccount() != null;
     }
 
     public static boolean loadedCommands() {
@@ -113,8 +113,8 @@ public class GUIMain extends JFrame {
     public void chatButtonActionPerformed() {
         userResponsesIndex = 0;
         String channel = channelPane.getTitleAt(channelPane.getSelectedIndex());
-        if (GUIMain.currentSettings.accountManager.getViewer() == null) return;
-        if (!GUIMain.currentSettings.accountManager.getViewer().isConnected()) {
+        if (Settings.accountManager.getViewer() == null) return;
+        if (!Settings.accountManager.getViewer().isConnected()) {
             logCurrent("Failed to send message, currently trying to reconnect!");
             return;
         }
@@ -131,14 +131,14 @@ public class GUIMain extends JFrame {
                 }
                 if (!"".equals(userInput)) {
                     for (String c : channels) {
-                        GUIMain.currentSettings.accountManager.getViewer().sendMessage("#" + c, userInput);
+                        Settings.accountManager.getViewer().sendMessage("#" + c, userInput);
                     }
                     if (!userResponses.contains(userInput)) userResponses.add(userInput);
                 }
                 userChat.setText("");
             } else {
                 if (!"".equals(userInput)) {
-                    GUIMain.currentSettings.accountManager.getViewer().sendMessage("#" + channel, userInput);
+                    Settings.accountManager.getViewer().sendMessage("#" + channel, userInput);
                     if (!userResponses.contains(userInput)) userResponses.add(userInput);
                 }
                 userChat.setText("");
@@ -172,7 +172,7 @@ public class GUIMain extends JFrame {
      */
     public static void logCurrent(Object message) {
         String channel = channelPane.getTitleAt(channelPane.getSelectedIndex());
-        if (message != null && GUIMain.chatPanes != null && !GUIMain.chatPanes.isEmpty())
+        if (message != null && chatPanes != null && !chatPanes.isEmpty())
             MessageQueue.addMessage(new Message().setChannel("#" + channel)
                     .setContent(message.toString()).setType(Message.MessageType.LOG_MESSAGE));
     }
@@ -198,7 +198,7 @@ public class GUIMain extends JFrame {
             // Not a throwable.. Darn strings
             toPrint = message.toString();
         }
-        if (GUIMain.chatPanes == null || GUIMain.chatPanes.isEmpty()) {//allowing for errors to at least go somewhere
+        if (chatPanes == null || chatPanes.isEmpty()) {//allowing for errors to at least go somewhere
             System.out.println(toPrint == null ? "Null toPrint!" : toPrint);
         } else {
             MessageQueue.addMessage(new Message(toPrint, type));
@@ -213,14 +213,14 @@ public class GUIMain extends JFrame {
             stanSB.append(viewerCount);
             stanSB.append(" ");
         }
-        if (currentSettings != null) {
-            if (currentSettings.accountManager.getUserAccount() != null) {
+        if (Settings.accountManager != null) {
+            if (Settings.accountManager.getUserAccount() != null) {
                 stanSB.append("| User: ");
-                stanSB.append(currentSettings.accountManager.getUserAccount().getName());
+                stanSB.append(Settings.accountManager.getUserAccount().getName());
             }
-            if (currentSettings.accountManager.getBotAccount() != null) {
+            if (Settings.accountManager.getBotAccount() != null) {
                 stanSB.append(" | Bot: ");
-                stanSB.append(currentSettings.accountManager.getBotAccount().getName());
+                stanSB.append(Settings.accountManager.getBotAccount().getName());
             }
         }
         instance.setTitle(stanSB.toString());
@@ -240,10 +240,10 @@ public class GUIMain extends JFrame {
         }
         if (systemTrayIcon != null) systemTrayIcon.close();
         SoundEngine.getEngine().close();
-        currentSettings.save();
+        Settings.save();
         heartbeat.interrupt();
         ThreadEngine.close();
-        if (currentSettings.logChat) {
+        if (Settings.logChat.getValue()) {
             String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
             for (String s : keys) {
                 ChatPane cp = chatPanes.get(s);
@@ -278,26 +278,37 @@ public class GUIMain extends JFrame {
     }
 
     private void openSoundsOptionActionPerformed() {
-        Utils.openWebPage(new File(currentSettings.defaultSoundDir).toURI().toString());
+        Utils.openWebPage(new File(Settings.defaultSoundDir.getValue()).toURI().toString());
     }
 
     private void autoReconnectToggleItemStateChanged(ItemEvent e) {
-        currentSettings.autoReconnectAccounts = e.getStateChange() == ItemEvent.SELECTED;
+        Settings.autoReconnectAccounts.setValue(e.getStateChange() == ItemEvent.SELECTED);
         if (e.getStateChange() == ItemEvent.SELECTED) {
             if (viewer != null && viewer.getViewer() != null && !viewer.getViewer().isConnected()) {
-                currentSettings.accountManager.createReconnectThread(viewer.getViewer());
+                Settings.accountManager.createReconnectThread(viewer.getViewer());
             }
             if (bot != null && bot.getBot() != null && !bot.getBot().isConnected()) {
-                currentSettings.accountManager.createReconnectThread(bot.getBot());
+                Settings.accountManager.createReconnectThread(bot.getBot());
             }
         }
     }
 
     private void alwaysOnTopToggleItemStateChanged(ItemEvent e) {
-        alwaysOnTop = (e.getStateChange() == ItemEvent.SELECTED);
+        Settings.alwaysOnTop.setValue(e.getStateChange() == ItemEvent.SELECTED);
+    }
+
+    public void updateAlwaysOnTopStatus(boolean newBool) {
+        if (alwaysOnTopToggle.isSelected() != newBool) {
+            alwaysOnTopToggle.setSelected(newBool);
+            //this is going to be called from the setting load,
+            //which will probably, in turn, fire another
+            //change event, setting the setting to the same setting it is,
+            //but since no change happens, this void is not called again,
+            //and we can continue on in the original call
+        }
         Window[] windows = getWindows();
         for (Window w : windows) {
-            w.setAlwaysOnTop(alwaysOnTop);
+            w.setAlwaysOnTop(newBool);
         }
     }
 
@@ -322,7 +333,7 @@ public class GUIMain extends JFrame {
         Response r = SoundEngine.getEngine().toggleSound(null, false);
         if (r.isSuccessful()) {
             if (bot != null) {
-                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                         r.getResponseText());
             }
         }
@@ -343,7 +354,7 @@ public class GUIMain extends JFrame {
 
     private void subOnlyToggleItemStateChanged() {
         if (viewer != null) {
-            viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+            viewer.getViewer().sendRawMessage("#" + Settings.accountManager.getUserAccount().getName(),
                     subOnlyToggle.isSelected() ? "/subscribers" : "/subscribersoff");
         }
     }
@@ -571,7 +582,7 @@ public class GUIMain extends JFrame {
                         botReplyAll.setText("Reply to all");
                         botReplyAll.addActionListener(e -> {
                             if (bot != null) {
-                                Response r = bot.parseReplyType("2", currentSettings.accountManager.getUserAccount().getName());
+                                Response r = bot.parseReplyType("2", Settings.accountManager.getUserAccount().getName());
                                 logCurrent(r.getResponseText());
                             }
                         });
@@ -581,7 +592,7 @@ public class GUIMain extends JFrame {
                         botReplyJustYou.setText("Reply to you");
                         botReplyJustYou.addActionListener(e -> {
                             if (bot != null) {
-                                Response r = bot.parseReplyType("1", currentSettings.accountManager.getUserAccount().getName());
+                                Response r = bot.parseReplyType("1", Settings.accountManager.getUserAccount().getName());
                                 logCurrent(r.getResponseText());
                             }
                         });
@@ -591,7 +602,7 @@ public class GUIMain extends JFrame {
                         botReplyNobody.setText("Reply to none");
                         botReplyNobody.addActionListener(e -> {
                             if (bot != null) {
-                                Response r = bot.parseReplyType("0", currentSettings.accountManager.getUserAccount().getName());
+                                Response r = bot.parseReplyType("0", Settings.accountManager.getUserAccount().getName());
                                 logCurrent(r.getResponseText());
                             }
                         });
@@ -651,7 +662,7 @@ public class GUIMain extends JFrame {
                         soundDelayOffOption.addActionListener(e -> {
                             if (bot != null) {
                                 Response r = SoundEngine.getEngine().setSoundDelay("0");
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                             }
                         });
@@ -662,7 +673,7 @@ public class GUIMain extends JFrame {
                         soundDelay5secOption.addActionListener(e -> {
                             if (bot != null) {
                                 Response r = SoundEngine.getEngine().setSoundDelay("5");
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                             }
                         });
@@ -673,7 +684,7 @@ public class GUIMain extends JFrame {
                         soundDelay10secOption.addActionListener(e -> {
                             if (bot != null) {
                                 Response r = SoundEngine.getEngine().setSoundDelay("10");
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                             }
                         });
@@ -685,7 +696,7 @@ public class GUIMain extends JFrame {
                         soundDelay20secOption.addActionListener(e -> {
                             if (bot != null) {
                                 Response r = SoundEngine.getEngine().setSoundDelay("20");
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                             }
                         });
@@ -707,7 +718,7 @@ public class GUIMain extends JFrame {
                         soundPermEveryoneOption.addActionListener(e -> {
                             if (bot != null) {
                                 Response r = SoundEngine.getEngine().setSoundPermission("0");
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                             }
                         });
@@ -718,7 +729,7 @@ public class GUIMain extends JFrame {
                         soundPermSDMBOption.addActionListener(e -> {
                             if (bot != null) {
                                 Response r = SoundEngine.getEngine().setSoundPermission("1");
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                             }
                         });
@@ -730,7 +741,7 @@ public class GUIMain extends JFrame {
                         soundPermDMBOption.addActionListener(e -> {
                             if (bot != null) {
                                 Response r = SoundEngine.getEngine().setSoundPermission("2");
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                             }
                         });
@@ -741,7 +752,7 @@ public class GUIMain extends JFrame {
                         soundPermModAndBroadOption.addActionListener(e -> {
                             if (bot != null) {
                                 Response r = SoundEngine.getEngine().setSoundPermission("3");
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                             }
                         });
@@ -752,7 +763,7 @@ public class GUIMain extends JFrame {
                         soundPermBroadOption.addActionListener(e -> {
                             if (bot != null) {
                                 Response r = SoundEngine.getEngine().setSoundPermission("4");
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                             }
                         });
@@ -775,9 +786,9 @@ public class GUIMain extends JFrame {
                         timeOption30sec.setText("30 sec");
                         timeOption30sec.addActionListener(e -> {
                             if (bot != null) {
-                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
-                                        "30", currentSettings.accountManager.getUserAccount().getName());
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                        "30", Settings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                                 ThreadEngine.submit(() -> {
                                     try {
@@ -794,9 +805,9 @@ public class GUIMain extends JFrame {
                         timeOption60sec.setText("1 min");
                         timeOption60sec.addActionListener(e -> {
                             if (bot != null) {
-                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
-                                        "1m", currentSettings.accountManager.getUserAccount().getName());
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                        "1m", Settings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                                 ThreadEngine.submit(() -> {
                                     try {
@@ -813,9 +824,9 @@ public class GUIMain extends JFrame {
                         timeOption90sec.setText("1 min 30 sec");
                         timeOption90sec.addActionListener(e -> {
                             if (bot != null) {
-                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
-                                        "1m30s", currentSettings.accountManager.getUserAccount().getName());
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                        "1m30s", Settings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                                 ThreadEngine.submit(() -> {
                                     try {
@@ -832,9 +843,9 @@ public class GUIMain extends JFrame {
                         timeOption120sec.setText("2 min");
                         timeOption120sec.addActionListener(e -> {
                             if (bot != null) {
-                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
-                                        "2m", currentSettings.accountManager.getUserAccount().getName());
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                        "2m", Settings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                                 ThreadEngine.submit(() -> {
                                     try {
@@ -851,9 +862,9 @@ public class GUIMain extends JFrame {
                         timeOption150sec.setText("2 min 30 sec");
                         timeOption150sec.addActionListener(e -> {
                             if (bot != null) {
-                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
-                                        "2m30s", currentSettings.accountManager.getUserAccount().getName());
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                        "2m30s", Settings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                                 ThreadEngine.submit(() -> {
                                     try {
@@ -870,9 +881,9 @@ public class GUIMain extends JFrame {
                         timeOption180sec.setText("3 min");
                         timeOption180sec.addActionListener(e -> {
                             if (bot != null) {
-                                Response r = bot.playAdvert(currentSettings.accountManager.getUserAccount().getKey(),
-                                        "3m", currentSettings.accountManager.getUserAccount().getName());
-                                bot.getBot().sendMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                        "3m", Settings.accountManager.getUserAccount().getName());
+                                bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
                                 ThreadEngine.submit(() -> {
                                     try {
@@ -905,7 +916,7 @@ public class GUIMain extends JFrame {
                         slowModeOffOption.setText("Off");
                         slowModeOffOption.addActionListener(e -> {
                             if (viewer != null) {
-                                viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                viewer.getViewer().sendRawMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         "/slowoff");
                             }
                         });
@@ -916,7 +927,7 @@ public class GUIMain extends JFrame {
                         slowMode5secOption.setText("5 seconds");
                         slowMode5secOption.addActionListener(e -> {
                             if (viewer != null) {
-                                viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                viewer.getViewer().sendRawMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         "/slow 5");
                             }
                         });
@@ -926,7 +937,7 @@ public class GUIMain extends JFrame {
                         slowMode10secOption.setText("10 seconds");
                         slowMode10secOption.addActionListener(e -> {
                             if (viewer != null) {
-                                viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                viewer.getViewer().sendRawMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         "/slow 10");
                             }
                         });
@@ -936,7 +947,7 @@ public class GUIMain extends JFrame {
                         slowMode15secOption.setText("15 seconds");
                         slowMode15secOption.addActionListener(e -> {
                             if (viewer != null) {
-                                viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                viewer.getViewer().sendRawMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         "/slow 15");
                             }
                         });
@@ -946,7 +957,7 @@ public class GUIMain extends JFrame {
                         slowMode30secOption.setText("30 seconds");
                         slowMode30secOption.addActionListener(e -> {
                             if (viewer != null) {
-                                viewer.getViewer().sendRawMessage("#" + currentSettings.accountManager.getUserAccount().getName(),
+                                viewer.getViewer().sendRawMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         "/slow 30");
                             }
                         });

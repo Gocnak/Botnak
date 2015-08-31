@@ -14,8 +14,8 @@ found at http://www.jibble.org/licenses/
 package lib.pircbot.org.jibble.pircbot;
 
 import face.IconEnum;
-import gui.forms.GUIMain;
 import irc.Donor;
+import util.settings.Settings;
 
 import java.awt.*;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -88,7 +88,7 @@ public class User implements Comparable<User> {
      * @return true if the user is an operator in the channel.
      */
     public boolean isOp(String channel) {
-        Channel c = GUIMain.currentSettings.channelManager.getChannel(channel);
+        Channel c = Settings.channelManager.getChannel(channel);
         return c != null && c.isMod(getNick());
     }
 
@@ -142,12 +142,12 @@ public class User implements Comparable<User> {
      * @return true if the user is a subscriber of the channel, else false.
      */
     public boolean isSubscriber(String channel) {
-        Channel c = GUIMain.currentSettings.channelManager.getChannel(channel);
+        Channel c = Settings.channelManager.getChannel(channel);
         return c != null && c.isSubscriber(this);
     }
 
     public boolean isDonor() {
-        donor = GUIMain.currentSettings.donationManager.getDonor(getNick());
+        donor = Settings.donationManager.getDonor(getNick());
         return donor != null;
     }
 

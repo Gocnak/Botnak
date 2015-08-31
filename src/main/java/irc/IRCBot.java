@@ -18,6 +18,7 @@ import util.comm.Command;
 import util.comm.ConsoleCommand;
 import util.misc.Raffle;
 import util.misc.Vote;
+import util.settings.Settings;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -27,7 +28,7 @@ import java.util.Date;
 public class IRCBot extends MessageHandler {
 
     public PircBot getBot() {
-        return GUIMain.currentSettings.accountManager.getBot();
+        return Settings.accountManager.getBot();
     }
 
     public ArrayList<String> winners;
@@ -51,7 +52,7 @@ public class IRCBot extends MessageHandler {
 
     public void doConnect(String channel) {
         if (!channel.startsWith("#")) channel = "#" + channel;
-        GUIMain.currentSettings.accountManager.addTask(new Task(getBot(), Task.Type.JOIN_CHANNEL, channel));
+        Settings.accountManager.addTask(new Task(getBot(), Task.Type.JOIN_CHANNEL, channel));
     }
 
     /**
@@ -62,7 +63,7 @@ public class IRCBot extends MessageHandler {
      */
     public void doLeave(String channel) {
         if (!channel.startsWith("#")) channel = "#" + channel;
-        GUIMain.currentSettings.accountManager.addTask(new Task(getBot(), Task.Type.LEAVE_CHANNEL, channel));
+        Settings.accountManager.addTask(new Task(getBot(), Task.Type.LEAVE_CHANNEL, channel));
     }
 
     /**
@@ -71,17 +72,17 @@ public class IRCBot extends MessageHandler {
      * @param forget True if you are logging out, false if shutting down.
      */
     public void close(boolean forget) {
-        GUIMain.log("Logging out of bot: " + GUIMain.currentSettings.accountManager.getBotAccount().getName());
-        GUIMain.currentSettings.accountManager.addTask(new Task(getBot(), Task.Type.DISCONNECT, null));
+        GUIMain.log("Logging out of bot: " + Settings.accountManager.getBotAccount().getName());
+        Settings.accountManager.addTask(new Task(getBot(), Task.Type.DISCONNECT, null));
         if (forget) {
-            GUIMain.currentSettings.accountManager.setBotAccount(null);
+            Settings.accountManager.setBotAccount(null);
         }
         GUIMain.bot = null;
     }
 
     public void onDisconnect() {
         if (!GUIMain.shutDown && getBot() != null) {
-            GUIMain.currentSettings.accountManager.createReconnectThread(getBot());
+            Settings.accountManager.createReconnectThread(getBot());
         }
     }
 
@@ -97,24 +98,24 @@ public class IRCBot extends MessageHandler {
 
     @Override
     public void onMessage(String channel, String sender, String message) {
-        if (message != null && channel != null && sender != null && GUIMain.currentSettings.accountManager.getViewer() != null) {
-            String botnakUserName = GUIMain.currentSettings.accountManager.getUserAccount().getName();
+        if (message != null && channel != null && sender != null && Settings.accountManager.getViewer() != null) {
+            String botnakUserName = Settings.accountManager.getUserAccount().getName();
             sender = sender.toLowerCase();
             if (!channel.contains(botnakUserName.toLowerCase())) {//in other channels
-                int replyType = GUIMain.currentSettings.botReplyType;
+                int replyType = Settings.botReplyType.getValue();
                 if (replyType == 0) return;
                 //0 = reply to nobody (just spectate), 1 = reply to just the Botnak user, 2 = reply to everyone
                 if (replyType == 1 && !sender.equalsIgnoreCase(botnakUserName)) return;
             }
 
             boolean senderIsBot = sender.equalsIgnoreCase(getBot().getNick());
-            boolean userIsBot = botnakUserName.equalsIgnoreCase(GUIMain.currentSettings.accountManager.getBotAccount().getName());
+            boolean userIsBot = botnakUserName.equalsIgnoreCase(Settings.accountManager.getBotAccount().getName());
             //if the sender of the message is the bot, but
             //the user account is NOT the bot, just return, we don't want the bot to trigger anything
             if (senderIsBot && !userIsBot) return;
 
             //raffles
-            User u = GUIMain.currentSettings.channelManager.getUser(sender, true);
+            User u = Settings.channelManager.getUser(sender, true);
             if (!raffles.isEmpty()) {
                 if (!winners.contains(u.getNick().toLowerCase())) {
                     for (Raffle r : raffles) {
@@ -141,13 +142,13 @@ public class IRCBot extends MessageHandler {
                 }
             }
 
-            Oauth key = GUIMain.currentSettings.accountManager.getUserAccount().getKey();
+            Oauth key = Settings.accountManager.getUserAccount().getKey();
             String[] split = message.split(" ");
 
             //URL Checking
-            boolean ytVidDetail = GUIMain.currentSettings.botShowYTVideoDetails;
-            boolean twitchVOD = GUIMain.currentSettings.botShowTwitchVODDetails;
-            boolean unshortenURLs = GUIMain.currentSettings.botUnshortenURLs;
+            boolean ytVidDetail = Settings.botShowYTVideoDetails.getValue();
+            boolean twitchVOD = Settings.botShowTwitchVODDetails.getValue();
+            boolean unshortenURLs = Settings.botUnshortenURLs.getValue();
             if (ytVidDetail || twitchVOD || unshortenURLs) {
                 ThreadEngine.submit(() -> {
                     int count = 0;
@@ -188,15 +189,15 @@ public class IRCBot extends MessageHandler {
                     switch (consoleCommand.getAction()) {
                         case ADD_FACE:
                             commandResponse = FaceManager.handleFace(mess);
-                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveFaces();
+                            if (commandResponse.isSuccessful()) Settings.saveFaces();
                             break;
                         case CHANGE_FACE:
                             commandResponse = FaceManager.handleFace(mess);
-                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveFaces();
+                            if (commandResponse.isSuccessful()) Settings.saveFaces();
                             break;
                         case REMOVE_FACE:
                             commandResponse = FaceManager.removeFace(first);
-                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveFaces();
+                            if (commandResponse.isSuccessful()) Settings.saveFaces();
                             break;
                         case TOGGLE_FACE:
                             commandResponse = FaceManager.toggleFace(first);
@@ -228,33 +229,33 @@ public class IRCBot extends MessageHandler {
                             break;
                         case ADD_KEYWORD:
                             commandResponse = Utils.handleKeyword(mess);
-                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveKeywords();
+                            if (commandResponse.isSuccessful()) Settings.saveKeywords();
                             break;
                         case REMOVE_KEYWORD:
                             commandResponse = Utils.handleKeyword(mess);
-                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveKeywords();
+                            if (commandResponse.isSuccessful()) Settings.saveKeywords();
                             break;
                         case SET_USER_COL:
                             commandResponse = Utils.handleColor(sender, mess, u.getColor());
-                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveUserColors();
+                            if (commandResponse.isSuccessful()) Settings.saveUserColors();
                             break;
                         case SET_COMMAND_PERMISSION:
                             commandResponse = Utils.setCommandPermission(mess);
-                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveConCommands();
+                            if (commandResponse.isSuccessful()) Settings.saveConCommands();
                             break;
                         case ADD_TEXT_COMMAND:
                             commandResponse = Utils.addCommands(mess);
-                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveCommands();
+                            if (commandResponse.isSuccessful()) Settings.saveCommands();
                             break;
                         case REMOVE_TEXT_COMMAND:
                             commandResponse = Utils.removeCommands(first);
-                            if (commandResponse.isSuccessful()) GUIMain.currentSettings.saveCommands();
+                            if (commandResponse.isSuccessful()) Settings.saveCommands();
                             break;
                         case ADD_DONATION:
-                            commandResponse = GUIMain.currentSettings.donationManager.parseDonation(split);
+                            commandResponse = Settings.donationManager.parseDonation(split);
                             break;
                         case SET_SUB_SOUND:
-                            if (GUIMain.currentSettings.loadSubSounds()) {
+                            if (Settings.loadSubSounds()) {
                                 getBot().sendMessage(channel, "Reloaded sub sounds!");
                             }
                             break;
@@ -264,7 +265,7 @@ public class IRCBot extends MessageHandler {
                         case SET_NAME_FACE:
                             if (first.startsWith("http")) {
                                 commandResponse = FaceManager.downloadFace(first,
-                                        GUIMain.currentSettings.nameFaceDir.getAbsolutePath(),
+                                        Settings.nameFaceDir.getAbsolutePath(),
                                         Utils.setExtension(sender, ".png"), sender, FaceManager.FACE_TYPE.NAME_FACE);
                             }
                             break;
@@ -444,14 +445,14 @@ public class IRCBot extends MessageHandler {
                             commandResponse = APIRequests.Twitch.getUptimeString(channel.substring(1));
                             break;
                         case SEE_PREV_SOUND_DON:
-                            if (GUIMain.currentSettings.botShowPreviousDonSound) {
-                                if (GUIMain.currentSettings.loadedDonationSounds)
+                            if (Settings.botShowPreviousDonSound.getValue()) {
+                                if (Settings.loadedDonationSounds)
                                     commandResponse = SoundEngine.getEngine().getLastDonationSound();
                             }
                             break;
                         case SEE_PREV_SOUND_SUB:
-                            if (GUIMain.currentSettings.botShowPreviousSubSound) {
-                                if (GUIMain.currentSettings.loadedSubSounds)
+                            if (Settings.botShowPreviousSubSound.getValue()) {
+                                if (Settings.loadedSubSounds)
                                     commandResponse = SoundEngine.getEngine().getLastSubSound();
                             }
                             break;
@@ -460,13 +461,13 @@ public class IRCBot extends MessageHandler {
                             break;
                         case SEE_OR_SET_VOLUME:
                             if ("".equals(first)) {
-                                getBot().sendMessage(channel, "The current Sound volume is " + String.format("%.1f", GUIMain.currentSettings.soundVolumeGain));
+                                getBot().sendMessage(channel, "The current Sound volume is " + String.format("%.1f", Settings.soundVolumeGain.getValue()));
                             } else {
                                 try {
                                     Float volume = Float.parseFloat(first);
                                     volume = Utils.capNumber(0F, 100F, volume);
-                                    GUIMain.currentSettings.soundVolumeGain = volume;
-                                    getBot().sendMessage(channel, "The Sound volume was successfully set to " + String.format("%.1f", GUIMain.currentSettings.soundVolumeGain));
+                                    Settings.soundVolumeGain.setValue(volume);
+                                    getBot().sendMessage(channel, "The Sound volume was successfully set to " + String.format("%.1f", Settings.soundVolumeGain.getValue()));
                                 } catch (Exception e) {
                                     getBot().sendMessage(channel, "Failed to change Sound volume! Usage: \"!volume (number)\"");
                                 }
@@ -554,12 +555,12 @@ public class IRCBot extends MessageHandler {
             if (!"".equals(first)) {
                 int perm = Integer.parseInt(first);
                 perm = Utils.capNumber(0, 2, perm);
-                GUIMain.currentSettings.botReplyType = perm;
+                Settings.botReplyType.setValue(perm);
                 GUIMain.instance.updateBotReplyPerm(perm);
                 toReturn.setResponseText("Successfully changed the bot reply type (for other channels) to: " + getReplyType(perm, botnakUser));
             } else {
                 toReturn.setResponseText("Current bot reply type for other channels is: " +
-                        getReplyType(GUIMain.currentSettings.botReplyType, botnakUser));
+                        getReplyType(Settings.botReplyType.getValue(), botnakUser));
             }
         } catch (Exception ignored) {
             toReturn.setResponseText("Failed to set bot reply type due to an exception!");
