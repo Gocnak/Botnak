@@ -417,6 +417,9 @@ public class Utils {
             }
 
         } else {
+            if (toParse.contains("s")) {
+                toParse = toParse.substring(0, toParse.indexOf('s'));
+            }
             try {
                 toRet = Integer.parseInt(toParse);
             } catch (Exception e) {

@@ -182,7 +182,7 @@ public class DraggableTabbedPane extends JTabbedPane {
                         boolean second = (detectedCombo != null);
                         if (first || second) {
                             JPopupMenu popupMenu = new JPopupMenu();
-                            PaneMenuListener listener = new PaneMenuListener();
+                            PaneMenuListener listener = Constants.listenerPaneMenu;
 
                             JMenuItem menuItem = new JMenuItem("Pop-out chat");
                             menuItem.addActionListener(listener);

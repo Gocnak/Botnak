@@ -67,7 +67,7 @@ public class Vote extends Thread {
     public void run() {
         while (!GUIMain.shutDown && pollTime.isRunning()) {
             try {
-                Thread.sleep(20);
+                sleep(20);
             } catch (Exception ignored) {
             }
         }
@@ -149,6 +149,7 @@ public class Vote extends Thread {
         for (String s : results) {
             Settings.accountManager.getBot().sendMessage(channel, s);
         }
+        //TODO update GUIVote if it exists
     }
 
     public String[] getResults() {

@@ -41,7 +41,6 @@ public class ConsoleCommand {
         ADD_TEXT_COMMAND,
         REMOVE_TEXT_COMMAND,
         ADD_DONATION,
-        SET_SUB_SOUND,
         SET_SOUND_PERMISSION,
         SET_NAME_FACE,
         REMOVE_NAME_FACE,

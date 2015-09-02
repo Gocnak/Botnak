@@ -91,8 +91,8 @@ public class DonationManager {
                     don.addDonated(d.getAmount());
                 }
                 if (!isLocal) {
-                    Settings.saveDonations();
-                    Settings.saveDonors();
+                    Settings.DONATIONS.save();
+                    Settings.DONORS.save();
                     setLastDonation(d);
                     if (BotnakTrayIcon.shouldDisplayDonations()) {
                         GUIMain.getSystemTrayIcon().displayDonation(d);

@@ -307,7 +307,7 @@ public class APIRequests {
                     for (int i = 0; i < streams.length(); i++) {
                         JSONObject stream = streams.getJSONObject(i);
                         JSONObject channel = stream.getJSONObject("channel");
-                        toReturn.add(channel.getString("name"));
+                        toReturn.add(channel.getString("name").toLowerCase());
                     }
                 }
             } catch (Exception e) {

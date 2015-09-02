@@ -18,9 +18,6 @@ import java.awt.event.MouseEvent;
  */
 public class ListenerFace extends MouseAdapter {
 
-    public ListenerFace() {
-    }
-
     @Override
     public void mouseReleased(MouseEvent e) {
         JTextPane editor = (JTextPane) e.getSource();

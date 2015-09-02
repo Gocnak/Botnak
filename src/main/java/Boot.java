@@ -28,7 +28,7 @@ public class Boot {
              */
             private void setLookAndFeel() {
                 try {
-                    Settings.loadLAF();
+                    Settings.LAF.load();
                     UIManager.setLookAndFeel(Settings.lookAndFeel);
                 } catch (Exception e) {
                     e.printStackTrace();

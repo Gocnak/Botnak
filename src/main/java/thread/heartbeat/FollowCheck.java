@@ -17,11 +17,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class FollowCheck implements HeartbeatThread {
 
-    public static CopyOnWriteArraySet<String> followedChannels;
-    public static CopyOnWriteArraySet<String> followers;
+    public static CopyOnWriteArraySet<String> followers, followedChannels;
     private Timer toUpdate;
-    private boolean beating;
-    private boolean initialBeat;
+    private boolean beating, initialBeat;
+    private int count = 0;
 
     public FollowCheck() {
         beating = false;
@@ -51,7 +50,7 @@ public class FollowCheck implements HeartbeatThread {
     public void beat() {
         beating = true;
         ArrayList<String> livePeople = APIRequests.Twitch.getLiveFollowedChannels(getUserAccount().getKey().getKey().split(":")[1]);
-        if (!livePeople.isEmpty()) {
+        if (!livePeople.isEmpty() && count != livePeople.size()) {
             livePeople.forEach(p -> {
                 if (!followedChannels.contains(p)) {
                     followedChannels.add(p);
@@ -63,6 +62,7 @@ public class FollowCheck implements HeartbeatThread {
             followedChannels.removeIf(s -> !livePeople.contains(s));
             if (GUIMain.streams != null && GUIMain.streams.isVisible())
                 GUIMain.streams.parseFollowed();
+            count = livePeople.size();
         }
         try {
             Thread.sleep(1000L);

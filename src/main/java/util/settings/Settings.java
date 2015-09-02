@@ -34,10 +34,6 @@ import java.util.stream.Collectors;
 /**
  * This class is the container for every setting Botnak has.
  * There's accounts, booleans of all sorts, and ints, you name it.
- * <p>
- * What is unique about this is you can define an "account" which
- * may be in the future to prevent unnecessary logging out. For now
- * we can continue to use a "default" account.
  */
 public class Settings {
 
@@ -154,6 +150,19 @@ public class Settings {
 
     private static ArrayList<Setting> settings;
 
+    public static Window WINDOW = new Window();
+    public static LookAndFeel LAF = new LookAndFeel();
+    public static TabState TAB_STATE = new TabState();
+    public static Subscribers SUBSCRIBERS = new Subscribers();
+    public static Donations DONATIONS = new Donations();
+    public static Donors DONORS = new Donors();
+    public static Sounds SOUNDS = new Sounds();
+    public static Commands COMMANDS = new Commands();
+    public static UserColors USER_COLORS = new UserColors();
+    public static TwitchFaces TWITCH_FACES = new TwitchFaces();
+    public static Faces FACES = new Faces();
+    public static Keywords KEYWORDS = new Keywords();
+
     public static void init() {
         long time = System.currentTimeMillis();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yy");
@@ -169,7 +178,8 @@ public class Settings {
         //(otherwise it would have been a bunch of hardcode...)
         settings = new ArrayList<>();
         try {
-            for (Field f : Settings.class.getDeclaredFields()) {
+            Field[] fields = Settings.class.getDeclaredFields();
+            for (Field f : fields) {
                 if (f.getType().getName().equals(Setting.class.getName())) {
                     settings.add((Setting) f.get(null));
                 }
@@ -197,7 +207,7 @@ public class Settings {
      * This void loads everything Botnak will use, and sets the appropriate settings.
      */
     public static void load() {
-        loadWindow();
+        WINDOW.load();
         accountManager = new AccountManager();
         channelManager = new ChannelManager();
         accountManager.start();
@@ -213,11 +223,14 @@ public class Settings {
         }
         if (Utils.areFilesGood(tabsFile.getAbsolutePath()) && accountManager.getUserAccount() != null) {
             GUIMain.log("Loading tabs...");
-            loadTabState();
+            TAB_STATE.load();
+            GUIMain.channelPane.setSelectedIndex(TabState.startIndex);
+            GUIMain.log("Loaded tabs!");
         }
         if (Utils.areFilesGood(soundsFile.getAbsolutePath())) {
             GUIMain.log("Loading sounds...");
-            loadSounds();
+            SOUNDS.load();
+            GUIMain.log("Loaded sounds!");
         }
         if (subSoundDir.exists() && subSoundDir.list().length > 0) {
             GUIMain.log("Loading sub sounds...");
@@ -229,15 +242,29 @@ public class Settings {
         }
         if (Utils.areFilesGood(userColFile.getAbsolutePath())) {
             GUIMain.log("Loading user colors...");
-            loadUserColors();
+            USER_COLORS.load();
+            GUIMain.log("Loaded user colors!");
         }
         if (Utils.areFilesGood(donorsFile.getAbsolutePath())) {
             GUIMain.log("Loading donors...");
-            loadDonors();
+            DONORS.load();
+            GUIMain.log("Loaded donors!");
         }
         if (Utils.areFilesGood(donationsFile.getAbsolutePath())) {
             GUIMain.log("Loading donations...");
-            loadDonations();//these are stored locally
+            DONATIONS.load();//these are stored locally
+            if (Donations.mostRecent != null) {
+                donationManager.setLastDonation(Donations.mostRecent);
+                GUIMain.log(String.format("Most recent donation: %s for %s", Donations.mostRecent.getFromWho(),
+                        DonationManager.getCurrencyFormat().format(Donations.mostRecent.getAmount())));
+            }
+            if (!Donations.donations.isEmpty()) {
+                donationManager.fillDonations(Donations.donations);
+                Donations.donations.clear();
+                Donations.donations = null;
+                Donations.mostRecent = null;
+                GUIMain.log("Loaded donations!");
+            }
         }
         //checks online for offline donations and adds them
         if (donationManager.canCheck() && scannedInitialDonations.getValue()) {
@@ -256,11 +283,21 @@ public class Settings {
         }
         if (Utils.areFilesGood(subsFile.getAbsolutePath())) {
             GUIMain.log("Loading subscribers...");
-            loadSubscribers();
+            SUBSCRIBERS.load();
+            if (Subscribers.mostRecent != null) {
+                subscriberManager.setLastSubscriber(Subscribers.mostRecent);
+                GUIMain.log("Most recent subscriber: " + Subscribers.mostRecent.getName());
+            }
+            if (!Subscribers.subscribers.isEmpty()) subscriberManager.fillSubscribers(Subscribers.subscribers);
+            Subscribers.subscribers.clear();
+            Subscribers.subscribers = null;
+            Subscribers.mostRecent = null;
+            GUIMain.log("Loaded subscribers!");
         }
         if (Utils.areFilesGood(commandsFile.getAbsolutePath())) {
             GUIMain.log("Loading text commands...");
-            loadCommands();
+            COMMANDS.load();
+            GUIMain.log("Loaded text commands!");
         }
         if (subIconsDir.exists()) {
             File[] subIcons = subIconsDir.listFiles();
@@ -282,17 +319,25 @@ public class Settings {
                 loadFFZFaces(files);
             }
         }
-        GUIMain.log("Loading keywords...");
-        loadKeywords();//first time boot adds the username
+        if (keywordsFile.exists()) {
+            GUIMain.log("Loading keywords...");
+            KEYWORDS.load();
+        } else {
+            if (accountManager.getUserAccount() != null) {
+                GUIMain.keywordMap.put(accountManager.getUserAccount().getName(), Color.orange);
+            }
+        }
         GUIMain.log("Loading console commands...");
         loadConsoleCommands();//has to be out of the check for files for first time boot
         if (Utils.areFilesGood(faceFile.getAbsolutePath())) {
             GUIMain.log("Loading custom faces...");
-            loadFaces();
+            FACES.load();
+            FaceManager.doneWithFaces = true;
+            GUIMain.log("Loaded custom faces!");
         }
         GUIMain.log("Loading default Twitch faces...");
         if (Utils.areFilesGood(twitchFaceFile.getAbsolutePath())) {
-            loadDefaultTwitchFaces();
+            TWITCH_FACES.load();
         }
         FaceManager.loadDefaultFaces();
     }
@@ -301,20 +346,20 @@ public class Settings {
      * This handles saving all the settings that need saved.
      */
     public static void save() {
-        saveLAF();
-        saveWindow();
+        LAF.save();
+        WINDOW.save();
         if (accountManager.getUserAccount() != null || accountManager.getBotAccount() != null) savePropData(0);
         savePropData(1);
-        if (!SoundEngine.getEngine().getSoundMap().isEmpty()) saveSounds();
-        if (!FaceManager.faceMap.isEmpty()) saveFaces();
-        if (!FaceManager.twitchFaceMap.isEmpty()) saveTwitchFaces();
-        saveTabState();
-        if (!GUIMain.userColMap.isEmpty()) saveUserColors();
-        if (GUIMain.loadedCommands()) saveCommands();
-        if (!GUIMain.keywordMap.isEmpty()) saveKeywords();
-        if (!donationManager.getDonors().isEmpty()) saveDonors();
-        if (!donationManager.getDonations().isEmpty()) saveDonations();
-        if (!subscriberManager.getSubscribers().isEmpty()) saveSubscribers();
+        if (!SoundEngine.getEngine().getSoundMap().isEmpty()) SOUNDS.save();
+        if (!FaceManager.faceMap.isEmpty()) FACES.save();
+        if (!FaceManager.twitchFaceMap.isEmpty()) TWITCH_FACES.save();
+        TAB_STATE.save();
+        if (!GUIMain.userColMap.isEmpty()) USER_COLORS.save();
+        if (GUIMain.loadedCommands()) COMMANDS.save();
+        if (!GUIMain.keywordMap.isEmpty()) KEYWORDS.save();
+        if (!donationManager.getDonors().isEmpty()) DONORS.save();
+        if (!donationManager.getDonations().isEmpty()) DONATIONS.save();
+        if (!subscriberManager.getSubscribers().isEmpty()) SUBSCRIBERS.save();
         saveConCommands();
     }
 
@@ -421,89 +466,43 @@ public class Settings {
     /**
      * Sounds
      */
-    public static void loadSounds() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(soundsFile.toURI().toURL().openStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split(",");
-                int startIdx = line.indexOf(",", line.indexOf(",", 0) + 1);//name,0,<- bingo
-                String[] split2add = line.substring(startIdx + 1).split(",");//files
-                int perm = 0;
-                try {
-                    perm = Integer.parseInt(split[1]);
-                } catch (NumberFormatException e) {
-                    GUIMain.log(split[0] + " has a problem. Making it public.");
-                }
-                SoundEngine.getEngine().getSoundMap().put(split[0].toLowerCase(), new Sound(perm, split2add));
-            }
-            GUIMain.log("Loaded sounds!");
-        } catch (Exception e) {
-            GUIMain.log(e);
-        }
-    }
+    private static class Sounds extends AbstractFileSave {
 
-    public static void saveSounds() {
-        try (PrintWriter br = new PrintWriter(soundsFile)) {
-            Set<String> keys = SoundEngine.getEngine().getSoundMap().keySet();
-            keys.stream().filter(s -> s != null && SoundEngine.getEngine().getSoundMap().get(s) != null).forEach(s -> {
-                Sound boii = SoundEngine.getEngine().getSoundMap().get(s);//you're too young to play that sound, boy
-                StringBuilder sb = new StringBuilder();
-                sb.append(s);
+        @Override
+        public void handleLineLoad(String line) {
+            String[] split = line.split(",");
+            int startIdx = line.indexOf(",", line.indexOf(",", 0) + 1);//name,0,<- bingo
+            String[] split2add = line.substring(startIdx + 1).split(",");//files
+            int perm = 0;
+            try {
+                perm = Integer.parseInt(split[1]);
+            } catch (NumberFormatException e) {
+                GUIMain.log(split[0] + " has a problem. Making it public.");
+            }
+            SoundEngine.getEngine().getSoundMap().put(split[0].toLowerCase(), new Sound(perm, split2add));
+        }
+
+        @Override
+        public void handleLineSave(PrintWriter pw) {
+            Iterator<Map.Entry<String, Sound>> keys = SoundEngine.getEngine().getSoundMap().entrySet().iterator();
+            StringBuilder sb = new StringBuilder();
+            while (keys.hasNext()) {
+                Map.Entry<String, Sound> entry = keys.next();
+                sb.append(entry.getKey());
                 sb.append(",");
-                sb.append(boii.getPermission());
-                for (String soundboy : boii.getSounds().data) {
+                sb.append(entry.getValue().getPermission());
+                for (String sound : entry.getValue().getSounds().data) {
                     sb.append(",");
-                    sb.append(soundboy);
+                    sb.append(sound);
                 }
-                br.println(sb.toString());
-            });
-        } catch (Exception e) {
-            GUIMain.log(e);
-        }
-    }
-
-    private static boolean doLoadSubSounds() {
-        if (loadSubSounds()) {
-            GUIMain.log("Loaded sub sounds!");
-            loadedSubSounds = true;
-            return true;
-        } else return false;
-    }
-
-    public static boolean loadSubSounds() {
-        boolean toReturn = false;
-        try {
-            File[] files = subSoundDir.listFiles();
-            if (files != null && files.length > 0) {
-                for (File f : files) {
-                    SoundEngine.getEngine().getSubStack().add(new Sound(5, f.getAbsolutePath()));
-                }
-                Collections.shuffle(SoundEngine.getEngine().getSubStack());
-                toReturn = true;
+                pw.println(sb.toString());
+                sb.setLength(0);
             }
-        } catch (Exception e) {
-            GUIMain.log(e);
         }
-        return toReturn;
-    }
 
-    private static void doLoadDonationSounds() {
-        loadDonationSounds();
-        loadedDonationSounds = true;
-        GUIMain.log("Loaded donation sounds!");
-    }
-
-    public static void loadDonationSounds() {
-        try {
-            File[] files = donationSoundDir.listFiles();
-            if (files != null && files.length > 0) {
-                for (File f : files) {
-                    SoundEngine.getEngine().getDonationStack().add(new Sound(5, f.getAbsolutePath()));
-                }
-                Collections.shuffle(SoundEngine.getEngine().getDonationStack());
-            }
-        } catch (Exception e) {
-            GUIMain.log(e);
+        @Override
+        public File getFile() {
+            return soundsFile;
         }
     }
 
@@ -511,128 +510,95 @@ public class Settings {
     /**
      * User Colors
      */
-    public static void loadUserColors() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(userColFile.toURI().toURL().openStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split(",");
-                GUIMain.userColMap.put(split[0], new Color(Integer.parseInt(split[1]), Integer.parseInt(split[2]), Integer.parseInt(split[3])));
+    public static class UserColors extends AbstractFileSave {
+
+        @Override
+        public void handleLineLoad(String line) {
+            String[] split = line.split(",");
+            GUIMain.userColMap.put(split[0], new Color(Integer.parseInt(split[1]), Integer.parseInt(split[2]), Integer.parseInt(split[3])));
+        }
+
+        @Override
+        public void handleLineSave(PrintWriter pw) {
+            Iterator<Map.Entry<String, Color>> entries = GUIMain.userColMap.entrySet().iterator();
+            StringBuilder sb = new StringBuilder();
+            while (entries.hasNext()) {
+                Map.Entry<String, Color> entry = entries.next();
+                sb.append(entry.getKey());
+                sb.append(",");
+                sb.append(entry.getValue().getRed());
+                sb.append(",");
+                sb.append(entry.getValue().getGreen());
+                sb.append(",");
+                sb.append(entry.getValue().getBlue());
+                pw.println(sb.toString());
+                sb.setLength(0);
             }
-            GUIMain.log("Loaded user colors!");
-        } catch (Exception e) {
-            GUIMain.log(e);
+        }
+
+        @Override
+        public File getFile() {
+            return userColFile;
         }
     }
-
-    public static void saveUserColors() {
-        try (PrintWriter br = new PrintWriter(userColFile)) {
-            GUIMain.userColMap.keySet().stream().filter(
-                    s -> s != null && GUIMain.userColMap.get(s) != null).forEach(
-                    s -> br.println(s + "," +
-                            GUIMain.userColMap.get(s).getRed() + "," +
-                            GUIMain.userColMap.get(s).getGreen() + "," +
-                            GUIMain.userColMap.get(s).getBlue()));
-        } catch (Exception e) {
-            GUIMain.log(e);
-        }
-    }
-
 
     /**
-     * Saves the faces to the given text file.
-     * The map is unique, as the key is the name of the face, which could be the same as the regex
-     * if it was added via !addface and no regex was specified.
+     * Normal faces
      */
-    public static void saveFaces() {
-        try (PrintWriter br = new PrintWriter(faceFile)) {
+    public static class Faces extends AbstractFileSave {
+
+        @Override
+        public void handleLineLoad(String line) {
+            String[] split = line.split(",");
+            //                        name           name/regex   path
+            FaceManager.faceMap.put(split[0], new Face(split[1], split[2]));
+        }
+
+        @Override
+        public void handleLineSave(PrintWriter pw) {
             FaceManager.faceMap.keySet().stream().filter(s -> s != null && FaceManager.faceMap.get(s) != null).forEach(s -> {
                 Face fa = FaceManager.faceMap.get(s);
-                br.println(s + "," + fa.getRegex() + "," + fa.getFilePath());
+                pw.println(s + "," + fa.getRegex() + "," + fa.getFilePath());
             });
-        } catch (Exception e) {
-            GUIMain.log(e);
+        }
+
+        @Override
+        public File getFile() {
+            return faceFile;
         }
     }
 
     /**
-     * Loads the face data stored in the faces.txt file. This only gets called
-     * if that file exists.
+     * Twitch Faces
      */
-    public static void loadFaces() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(faceFile.toURI().toURL().openStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
+    public static class TwitchFaces extends AbstractFileSave {
+
+        @Override
+        public void handleLineLoad(String line) {
+            try {
                 String[] split = line.split(",");
-                //                        name           name/regex   path
-                FaceManager.faceMap.put(split[0], new Face(split[1], split[2]));
+                int emoteID = Integer.parseInt(split[0]);
+                TwitchFace tf = new TwitchFace(split[1],
+                        new File(twitchFaceDir + File.separator + String.valueOf(emoteID) + ".png").getAbsolutePath(),
+                        Boolean.parseBoolean(split[2]));
+                FaceManager.twitchFaceMap.put(emoteID, tf);
+            } catch (Exception e) {
+                GUIMain.log(e);
             }
-            FaceManager.doneWithFaces = true;
-            GUIMain.log("Loaded custom faces!");
-        } catch (Exception e) {
-            GUIMain.log(e);
         }
-    }
 
-    /**
-     * Saves the default twitch faces.
-     */
-    public static void saveTwitchFaces() {
-        try (PrintWriter br = new PrintWriter(twitchFaceFile)) {
+        @Override
+        public void handleLineSave(PrintWriter pw) {
             FaceManager.twitchFaceMap.keySet().stream().filter(s -> s != null && FaceManager.twitchFaceMap.get(s) != null)
                     .forEach(s -> {
                         TwitchFace fa = FaceManager.twitchFaceMap.get(s);
-                        br.println(s + "," + fa.getRegex() + "," + Boolean.toString(fa.isEnabled()));
+                        pw.println(s + "," + fa.getRegex() + "," + Boolean.toString(fa.isEnabled()));
                     });
-        } catch (Exception e) {
-            GUIMain.log(e);
         }
-    }
 
-    /**
-     * Loads the default twitch faces already saved on the computer.
-     */
-    public static void loadDefaultTwitchFaces() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(twitchFaceFile.toURI().toURL().openStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                try {
-                    String[] split = line.split(",");
-                    int emoteID = Integer.parseInt(split[0]);
-                    TwitchFace tf = new TwitchFace(split[1],
-                            new File(twitchFaceDir + File.separator + String.valueOf(emoteID) + ".png").getAbsolutePath(),
-                            Boolean.parseBoolean(split[2]));
-                    FaceManager.twitchFaceMap.put(emoteID, tf);
-                } catch (Exception e) {
-                    GUIMain.log(e);
-                }
-            }
-        } catch (Exception e) {
-            GUIMain.log(e);
-        }
-    }
-
-
-    /**
-     * FrankerFaceZ
-     * <p>
-     * We can be a little more broad about this saving, since it's a per-channel basis
-     */
-    public static void loadFFZFaces(File[] channels) {
-        for (File channel : channels) {
-            if (channel.isDirectory() && channel.length() > 0) {
-                File[] faces = channel.listFiles();
-                if (faces != null) {
-                    ArrayList<FrankerFaceZ> loadedFaces = new ArrayList<>();
-                    for (File face : faces) {
-                        if (face != null) {
-                            loadedFaces.add(new FrankerFaceZ(face.getName(), face.getAbsolutePath(), true));
-                        }
-                    }
-                    FaceManager.ffzFaceMap.put(channel.getName(), loadedFaces);
-                } else {
-                    channel.delete();
-                }
-            }
+        @Override
+        public File getFile() {
+            return twitchFaceFile;
         }
     }
 
@@ -642,26 +608,21 @@ public class Settings {
      * <p>
      * trigger[message (content)[arguments?
      */
-    public static void loadCommands() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(commandsFile.toURI().toURL().openStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split("\\[");
-                String[] contents = split[1].split("\\]");
-                Command c = new Command(split[0], contents);
-                if (split.length > 2) {
-                    c.addArguments(split[2].split(","));
-                }
-                GUIMain.commandSet.add(c);
-            }
-            GUIMain.log("Loaded text commands!");
-        } catch (Exception e) {
-            GUIMain.log(e);
-        }
-    }
+    public static class Commands extends AbstractFileSave {
 
-    public static void saveCommands() {
-        try (PrintWriter br = new PrintWriter(commandsFile)) {
+        @Override
+        public void handleLineLoad(String line) {
+            String[] split = line.split("\\[");
+            String[] contents = split[1].split("\\]");
+            Command c = new Command(split[0], contents);
+            if (split.length > 2) {
+                c.addArguments(split[2].split(","));
+            }
+            GUIMain.commandSet.add(c);
+        }
+
+        @Override
+        public void handleLineSave(PrintWriter pw) {
             for (Command next : GUIMain.commandSet) {
                 if (next != null) {
                     String name = next.getTrigger();
@@ -671,19 +632,22 @@ public class Settings {
                         sb.append(contents[i]);
                         if (i != (contents.length - 1)) sb.append("]");
                     }
-                    br.print(name + "[" + sb.toString());
+                    pw.print(name + "[" + sb.toString());
                     if (next.hasArguments()) {
-                        br.print("[");
+                        pw.print("[");
                         for (int i = 0; i < next.countArguments(); i++) {
-                            br.print(next.getArguments().get(i));
-                            if (i != (next.countArguments() - 1)) br.print(",");
+                            pw.print(next.getArguments().get(i));
+                            if (i != (next.countArguments() - 1)) pw.print(",");
                         }
                     }
-                    br.println();
+                    pw.println();
                 }
             }
-        } catch (Exception e) {
-            GUIMain.log(e);
+        }
+
+        @Override
+        public File getFile() {
+            return commandsFile;
         }
     }
 
@@ -745,7 +709,6 @@ public class Settings {
         hardcoded.add(new ConsoleCommand("addcommand", ConsoleCommand.Action.ADD_TEXT_COMMAND, Permissions.Permission.MODERATOR.permValue, null));
         hardcoded.add(new ConsoleCommand("removecommand", ConsoleCommand.Action.REMOVE_TEXT_COMMAND, Permissions.Permission.MODERATOR.permValue, null));
         hardcoded.add(new ConsoleCommand("adddonation", ConsoleCommand.Action.ADD_DONATION, Permissions.Permission.BROADCASTER.permValue, null));
-        hardcoded.add(new ConsoleCommand("setsubsound", ConsoleCommand.Action.SET_SUB_SOUND, Permissions.Permission.MODERATOR.permValue, null));
         hardcoded.add(new ConsoleCommand("setsoundperm", ConsoleCommand.Action.SET_SOUND_PERMISSION, Permissions.Permission.MODERATOR.permValue, null));
         hardcoded.add(new ConsoleCommand("setnameface", ConsoleCommand.Action.SET_NAME_FACE, Permissions.Permission.SUBSCRIBER.permValue, null));
         hardcoded.add(new ConsoleCommand("removenameface", ConsoleCommand.Action.REMOVE_NAME_FACE, Permissions.Permission.SUBSCRIBER.permValue, null));
@@ -817,91 +780,71 @@ public class Settings {
     /**
      * Keywords
      */
-    public static void loadKeywords() {
-        if (Utils.areFilesGood(keywordsFile.getAbsolutePath())) {
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(keywordsFile.toURI().toURL().openStream()))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    String[] split = line.split(",");
-                    int r, g, b;
-                    try {
-                        r = Integer.parseInt(split[1]);
-                    } catch (Exception e) {
-                        r = 255;
-                    }
-                    try {
-                        g = Integer.parseInt(split[2]);
-                    } catch (Exception e) {
-                        g = 255;
-                    }
-                    try {
-                        b = Integer.parseInt(split[3]);
-                    } catch (Exception e) {
-                        b = 255;
-                    }
-                    GUIMain.keywordMap.put(split[0], new Color(r, g, b));
-                }
-            } catch (Exception e) {
-                GUIMain.log(e);
-            }
-        } else {
-            if (accountManager.getUserAccount() != null) {
-                GUIMain.keywordMap.put(accountManager.getUserAccount().getName(), Color.orange);
-            }
-        }
-        GUIMain.log("Loaded keywords!");
-    }
+    public static class Keywords extends AbstractFileSave {
 
-    public static void saveKeywords() {
-        try (PrintWriter br = new PrintWriter(keywordsFile)) {
+        @Override
+        public void handleLineLoad(String line) {
+            String[] split = line.split(",");
+            int r, g, b;
+            try {
+                r = Integer.parseInt(split[1]);
+            } catch (Exception e) {
+                r = 255;
+            }
+            try {
+                g = Integer.parseInt(split[2]);
+            } catch (Exception e) {
+                g = 255;
+            }
+            try {
+                b = Integer.parseInt(split[3]);
+            } catch (Exception e) {
+                b = 255;
+            }
+            GUIMain.keywordMap.put(split[0], new Color(r, g, b));
+        }
+
+        @Override
+        public void handleLineSave(PrintWriter pw) {
             Set<String> keys = GUIMain.keywordMap.keySet();
             keys.stream().filter(word -> word != null).forEach(word -> {
                 Color c = GUIMain.keywordMap.get(word);
-                br.println(word + "," + c.getRed() + "," + c.getGreen() + "," + c.getBlue());
+                pw.println(word + "," + c.getRed() + "," + c.getGreen() + "," + c.getBlue());
             });
-        } catch (Exception e) {
-            GUIMain.log(e);
         }
-    }
 
-    /**
-     * Sub icons
-     */
-    public static void loadSubIcons(File[] subIconFiles) {
-        for (File f : subIconFiles) {
-            FaceManager.subIconSet.add(new SubscriberIcon(Utils.removeExt(f.getName()), f.getAbsolutePath()));
+        @Override
+        public File getFile() {
+            return keywordsFile;
         }
     }
 
     /**
      * Donators
      */
-    public static void loadDonors() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(donorsFile.toURI().toURL().openStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split(",");
-                double amount;
-                try {
-                    amount = Double.parseDouble(split[1]);
-                } catch (Exception e) {
-                    amount = 0.0;
-                }
-                donationManager.getDonors().add(new Donor(split[0], amount));
+    public static class Donors extends AbstractFileSave {
+
+        @Override
+        public void handleLineLoad(String line) {
+            String[] split = line.split(",");
+            double amount;
+            try {
+                amount = Double.parseDouble(split[1]);
+            } catch (Exception e) {
+                amount = 0.0;
             }
-            GUIMain.log("Loaded donors!");
-        } catch (Exception e) {
-            GUIMain.log(e);
+            donationManager.getDonors().add(new Donor(split[0], amount));
         }
-    }
 
-
-    public static void saveDonors() {
-        try (PrintWriter br = new PrintWriter(donorsFile)) {
-            donationManager.getDonors().stream().forEach(d -> br.println(d.getName() + "," +
+        @Override
+        public void handleLineSave(PrintWriter pw) {
+            donationManager.getDonors().stream().forEach(d -> pw.println(d.getName() + "," +
                     DonationManager.getDecimalFormat().format(d.getDonated())));
-        } catch (Exception e) {
-            GUIMain.log(e);
+        }
+
+        @Override
+        public File getFile() {
+            return donorsFile;
         }
     }
 
@@ -910,46 +853,37 @@ public class Settings {
      * Donations. This ranges from people just giving you money to
      * people subscribing to your channel.
      */
-    public static void saveDonations() {
-        try (PrintWriter br = new PrintWriter(donationsFile)) {
+    public static class Donations extends AbstractFileSave {
+
+        private static HashSet<Donation> donations = new HashSet<>();
+        private static Donation mostRecent = null;
+
+        @Override
+        public void handleLineLoad(String line) {
+            String[] split = line.split("\\[");
+            double amount;
+            try {
+                amount = Double.parseDouble(split[3]);
+            } catch (Exception e) {
+                amount = 0.0;
+            }
+            Donation d = new Donation(split[0], split[1], split[2], amount, Date.from(Instant.parse(split[4])));
+            if ((mostRecent == null || mostRecent.compareTo(d) > 0) && !d.getDonationID().equals("LOCAL"))
+                mostRecent = d;
+            donations.add(d);
+        }
+
+        @Override
+        public void handleLineSave(PrintWriter pw) {
             donationManager.getDonations().stream().sorted().forEach(d ->
-                    br.println(d.getDonationID() + "[" + d.getFromWho() + "[" + d.getNote() + "["
+                    pw.println(d.getDonationID() + "[" + d.getFromWho() + "[" + d.getNote() + "["
                             + DonationManager.getDecimalFormat().format(d.getAmount()) + "["
                             + Instant.ofEpochMilli(d.getDateReceived().getTime()).toString()));
-        } catch (Exception e) {
-            GUIMain.log(e);
         }
-    }
 
-    public static void loadDonations() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(donationsFile.toURI().toURL().openStream()))) {
-            String line;
-            HashSet<Donation> donations = new HashSet<>();
-            Donation mostRecent = null;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split("\\[");
-                double amount;
-                try {
-                    amount = Double.parseDouble(split[3]);
-                } catch (Exception e) {
-                    amount = 0.0;
-                }
-                Donation d = new Donation(split[0], split[1], split[2], amount, Date.from(Instant.parse(split[4])));
-                if ((mostRecent == null || mostRecent.compareTo(d) > 0) && !d.getDonationID().equals("LOCAL"))
-                    mostRecent = d;
-                donations.add(d);
-            }
-            if (mostRecent != null) {
-                donationManager.setLastDonation(mostRecent);
-                GUIMain.log(String.format("Most recent donation: %s for %s", mostRecent.getFromWho(),
-                        DonationManager.getCurrencyFormat().format(mostRecent.getAmount())));
-            }
-            if (!donations.isEmpty()) {
-                donationManager.fillDonations(donations);
-                GUIMain.log("Loaded donations!");
-            }
-        } catch (Exception e) {
-            GUIMain.log(e);
+        @Override
+        public File getFile() {
+            return donationsFile;
         }
     }
 
@@ -960,35 +894,29 @@ public class Settings {
      * Saves each subscriber with the first date Botnak meets them
      * and each month check to see if they're still subbed, if not, make them an ex-subscriber
      */
-    public static void saveSubscribers() {
-        try (PrintWriter br = new PrintWriter(subsFile)) {
-            subscriberManager.getSubscribers().stream().sorted().forEach(
-                    s -> br.println(s.getName() + "[" + s.getStarted().toString() + "["
-                            + String.valueOf(s.isActive()) + "[" + s.getStreak()));
-        } catch (Exception e) {
-            GUIMain.log(e);
-        }
-    }
+    private static class Subscribers extends AbstractFileSave {
 
-    public static void loadSubscribers() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(subsFile.toURI().toURL().openStream()))) {
-            String line;
-            HashSet<Subscriber> subscribers = new HashSet<>();
-            Subscriber mostRecent = null;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split("\\[");
-                Subscriber s = new Subscriber(split[0], LocalDateTime.parse(split[1]), Boolean.parseBoolean(split[2]), Integer.parseInt(split[3]));
-                subscribers.add(s);
-                if (mostRecent == null || mostRecent.compareTo(s) > 0) mostRecent = s;
-            }
-            if (mostRecent != null) {
-                subscriberManager.setLastSubscriber(mostRecent);
-                GUIMain.log("Most recent subscriber: " + mostRecent.getName());
-            }
-            if (!subscribers.isEmpty()) subscriberManager.fillSubscribers(subscribers);
-            GUIMain.log("Loaded subscribers!");
-        } catch (Exception e) {
-            GUIMain.log(e);
+        private static HashSet<Subscriber> subscribers = new HashSet<>();
+        private static Subscriber mostRecent = null;
+
+        @Override
+        public void handleLineLoad(String line) {
+            String[] split = line.split("\\[");
+            Subscriber s = new Subscriber(split[0], LocalDateTime.parse(split[1]), Boolean.parseBoolean(split[2]), Integer.parseInt(split[3]));
+            subscribers.add(s);
+            if (mostRecent == null || mostRecent.compareTo(s) > 0) mostRecent = s;
+        }
+
+        @Override
+        public void handleLineSave(PrintWriter pw) {
+            subscriberManager.getSubscribers().stream().sorted().forEach(
+                    s -> pw.println(s.getName() + "[" + s.getStarted().toString() + "[" + String.valueOf(s.isActive())
+                            + "[" + s.getStreak()));
+        }
+
+        @Override
+        public File getFile() {
+            return subsFile;
         }
     }
 
@@ -1012,15 +940,60 @@ public class Settings {
      * <p>
      * Single tabs can be invisible if they are in a combined tab.
      */
-    public static void saveTabState() {
-        try (PrintWriter br = new PrintWriter(tabsFile)) {
+    private static class TabState extends AbstractFileSave {
+
+        public static int startIndex = 0;
+
+        @Override
+        public void handleLineLoad(String line) {
+            String[] split = line.split("\\[");
+            boolean isSingle = Boolean.parseBoolean(split[0]);
+            boolean isSelected = Boolean.parseBoolean(split[1]);
+            if (isSingle) {
+                String channel = split[2];
+                if (accountManager.getUserAccount() != null) {
+                    String channelName = "#" + channel;
+                    GUIMain.channelSet.add(channelName);
+                }
+                ChatPane cp = ChatPane.createPane(channel);
+                GUIMain.chatPanes.put(cp.getChannel(), cp);
+                GUIMain.channelPane.insertTab(cp.getChannel(), null, cp.getScrollPane(), null, cp.getIndex());
+                if (isSelected) startIndex = cp.getIndex();
+            } else {
+                String activeChannel = split[2];
+                String title = split[3];
+                String[] channels = split[4].split(",");
+                ArrayList<ChatPane> cps = new ArrayList<>();
+                for (String c : channels) {
+                    if (accountManager.getUserAccount() != null) {
+                        String channelName = "#" + c;
+                        GUIMain.channelSet.add(channelName);
+                    }
+                    ChatPane cp = ChatPane.createPane(c);
+                    GUIMain.chatPanes.put(cp.getChannel(), cp);
+                    cps.add(cp);
+                }
+                CombinedChatPane ccp = CombinedChatPane.createCombinedChatPane(cps.toArray(new ChatPane[cps.size()]));
+                GUIMain.channelPane.insertTab(ccp.getTabTitle(), null, ccp.getScrollPane(), null, ccp.getIndex());
+                ccp.setCustomTitle(title);
+                if (isSelected) startIndex = ccp.getIndex();
+                if (!activeChannel.equalsIgnoreCase("all")) {
+                    ccp.setActiveChannel(activeChannel);
+                    ccp.setActiveScrollPane(activeChannel);
+                }
+                GUIMain.combinedChatPanes.add(ccp);
+            }
+        }
+
+        @Override
+        public void handleLineSave(PrintWriter pw) {
             int currentSelectedIndex = GUIMain.channelPane.getSelectedIndex();
             for (int i = 1; i < GUIMain.channelPane.getTabCount() - 1; i++) {
                 ChatPane current = Utils.getChatPane(i);
                 if (current != null) {
                     if (current.isTabVisible()) {
                         boolean selected = current.getIndex() == currentSelectedIndex;
-                        br.println("true[" + String.valueOf(selected) + "[" + current.getChannel());
+                        pw.println("true[" + String.valueOf(selected) + "[" + current.getChannel());
                     }
                 } else {
                     CombinedChatPane cc = Utils.getCombinedChatPane(i);
@@ -1028,72 +1001,89 @@ public class Settings {
                         //all the panes in them should be set to false
                         //their indexes are technically going to be -1
                         boolean selected = cc.getIndex() == currentSelectedIndex;
-                        br.print("false[" + String.valueOf(selected) + "[" + cc.getActiveChannel() + "[" + cc.getTabTitle() + "[");
+                        pw.print("false[" + String.valueOf(selected) + "[" + cc.getActiveChannel() + "[" + cc.getTabTitle() + "[");
                         String[] chans = cc.getChannels();
                         for (int s = 0; s < chans.length; s++) {
                             String toPrint = chans[s];
-                            br.print(toPrint);
-                            if (s != chans.length - 1) br.print(",");
+                            pw.print(toPrint);
+                            if (s != chans.length - 1) pw.print(",");
                         }
-                        br.println();
+                        pw.println();
                     }
                 }
             }
-        } catch (Exception e) {
-            GUIMain.log(e);
+        }
+
+        @Override
+        public File getFile() {
+            return tabsFile;
         }
     }
 
-    public static void loadTabState() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(tabsFile.toURI().toURL().openStream()))) {
-            String line;
-            int index = 0;
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split("\\[");
-                boolean isSingle = Boolean.parseBoolean(split[0]);
-                boolean isSelected = Boolean.parseBoolean(split[1]);
-                if (isSingle) {
-                    String channel = split[2];
-                    if (accountManager.getUserAccount() != null) {
-                        String channelName = "#" + channel;
-                        GUIMain.channelSet.add(channelName);
-                    }
-                    ChatPane cp = ChatPane.createPane(channel);
-                    GUIMain.chatPanes.put(cp.getChannel(), cp);
-                    GUIMain.channelPane.insertTab(cp.getChannel(), null, cp.getScrollPane(), null, cp.getIndex());
-                    if (isSelected) index = cp.getIndex();
-                } else {
-                    String activeChannel = split[2];
-                    String title = split[3];
-                    String[] channels = split[4].split(",");
-                    ArrayList<ChatPane> cps = new ArrayList<>();
-                    for (String c : channels) {
-                        if (accountManager.getUserAccount() != null) {
-                            String channelName = "#" + c;
-                            GUIMain.channelSet.add(channelName);
-                        }
-                        ChatPane cp = ChatPane.createPane(c);
-                        GUIMain.chatPanes.put(cp.getChannel(), cp);
-                        cps.add(cp);
-                    }
-                    CombinedChatPane ccp = CombinedChatPane.createCombinedChatPane(cps.toArray(new ChatPane[cps.size()]));
-                    GUIMain.channelPane.insertTab(ccp.getTabTitle(), null, ccp.getScrollPane(), null, ccp.getIndex());
-                    ccp.setCustomTitle(title);
-                    if (isSelected) index = ccp.getIndex();
-                    if (!activeChannel.equalsIgnoreCase("all")) {
-                        ccp.setActiveChannel(activeChannel);
-                        ccp.setActiveScrollPane(activeChannel);
-                    }
-                    GUIMain.combinedChatPanes.add(ccp);
+    /**
+     * Look and Feel
+     */
+    public static class LookAndFeel extends AbstractFileSave {
+
+        @Override
+        public void handleLineLoad(String line) {
+            if (line.contains("jtattoo")) lookAndFeel = line;
+        }
+
+        @Override
+        public void handleLineSave(PrintWriter pw) {
+            pw.println(lookAndFeel);
+        }
+
+        @Override
+        public File getFile() {
+            return lafFile;
+        }
+    }
+
+    /**
+     * Window Location and Size
+     */
+    private static class Window extends AbstractFileSave {
+
+        @Override
+        public void handleLineLoad(String line) {
+            String[] parts = line.substring(1).split(",");
+            String first = parts[0];
+            String second = parts[1];
+            if (line.startsWith("p")) {
+                try {
+                    int x = Integer.parseInt(first);
+                    int y = Integer.parseInt(second);
+                    GUIMain.instance.setLocation(x, y);
+                } catch (Exception e) {
+                    GUIMain.log(e);
+                }
+            } else if (line.startsWith("s")) {
+                try {
+                    double w = Double.parseDouble(first);
+                    double h = Double.parseDouble(second);
+                    GUIMain.instance.setSize((int) w, (int) h);
+                } catch (Exception e) {
+                    GUIMain.log(e);
                 }
             }
-            GUIMain.channelPane.setSelectedIndex(index);
-            GUIMain.log("Loaded tabs!");
-        } catch (Exception e) {
-            GUIMain.log(e);
+        }
+
+        @Override
+        public void handleLineSave(PrintWriter pw) {
+            pw.println("p" + GUIMain.instance.getLocationOnScreen().x + "," + GUIMain.instance.getLocationOnScreen().y);
+            pw.println("s" + GUIMain.instance.getSize().getWidth() + "," + GUIMain.instance.getSize().getHeight());
+        }
+
+
+        @Override
+        public File getFile() {
+            return windowFile;
         }
     }
 
+    //Other methods that don't follow standardization
 
     /**
      * Name faces
@@ -1112,70 +1102,72 @@ public class Settings {
         }
     }
 
+    private static void doLoadSubSounds() {
+        loadSubSounds();
+        loadedSubSounds = true;
+        GUIMain.log("Loaded sub sounds!");
+    }
 
-    /**
-     * Look and Feel
-     */
-    public static void loadLAF() {
+    public static void loadSubSounds() {
+        loadShuffleSet(subSoundDir, SoundEngine.getEngine().getSubStack());
+    }
+
+    private static void doLoadDonationSounds() {
+        loadDonationSounds();
+        loadedDonationSounds = true;
+        GUIMain.log("Loaded donation sounds!");
+    }
+
+    public static void loadDonationSounds() {
+        loadShuffleSet(donationSoundDir, SoundEngine.getEngine().getDonationStack());
+    }
+
+    private static void loadShuffleSet(File directory, Deque<Sound> stack) {
         try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(lafFile.toURI().toURL().openStream()));
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.contains("jtattoo")) {
-                    lookAndFeel = line;
-                    break;
+            File[] files = directory.listFiles();
+            if (files != null && files.length > 0) {
+                ArrayList<Sound> sounds = new ArrayList<>();
+                for (File f : files) {
+                    sounds.add(new Sound(5, f.getAbsolutePath()));
                 }
+                Collections.shuffle(sounds);
+                stack.addAll(sounds);
             }
-            br.close();
-        } catch (Exception e) {
-            lookAndFeel = "lib.jtattoo.com.jtattoo.plaf.hifi.HiFiLookAndFeel";//default to HiFi
-        }
-    }
-
-    public static void saveLAF() {
-        try (PrintWriter pr = new PrintWriter(lafFile)) {
-            pr.println(lookAndFeel);
         } catch (Exception e) {
             GUIMain.log(e);
         }
     }
 
     /**
-     * Window Properties (location and size)
+     * Sub icons
      */
-    public static void loadWindow() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(windowFile.toURI().toURL().openStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.substring(1).split(",");
-                String first = parts[0];
-                String second = parts[1];
-                if (line.startsWith("p")) {
-                    try {
-                        int x = Integer.parseInt(first);
-                        int y = Integer.parseInt(second);
-                        GUIMain.instance.setLocation(x, y);
-                    } catch (Exception ignored) {
-                    }
-                } else if (line.startsWith("s")) {
-                    try {
-                        double w = Double.parseDouble(first);
-                        double h = Double.parseDouble(second);
-                        GUIMain.instance.setSize((int) w, (int) h);
-                    } catch (Exception ignored) {
-                    }
-                }
-            }
-        } catch (Exception ignored) {
+    public static void loadSubIcons(File[] subIconFiles) {
+        for (File f : subIconFiles) {
+            FaceManager.subIconSet.add(new SubscriberIcon(Utils.removeExt(f.getName()), f.getAbsolutePath()));
         }
     }
 
-    public static void saveWindow() {
-        try (PrintWriter pr = new PrintWriter(windowFile)) {
-            pr.println("p" + GUIMain.instance.getLocationOnScreen().x + "," + GUIMain.instance.getLocationOnScreen().y);
-            pr.println("s" + GUIMain.instance.getSize().getWidth() + "," + GUIMain.instance.getSize().getHeight());
-        } catch (Exception e) {
-            GUIMain.log(e);
+    /**
+     * FrankerFaceZ
+     * <p>
+     * We can be a little more broad about this saving, since it's a per-channel basis
+     */
+    public static void loadFFZFaces(File[] channels) {
+        for (File channel : channels) {
+            if (channel.isDirectory() && channel.length() > 0) {
+                File[] faces = channel.listFiles();
+                if (faces != null) {
+                    ArrayList<FrankerFaceZ> loadedFaces = new ArrayList<>();
+                    for (File face : faces) {
+                        if (face != null) {
+                            loadedFaces.add(new FrankerFaceZ(face.getName(), face.getAbsolutePath(), true));
+                        }
+                    }
+                    FaceManager.ffzFaceMap.put(channel.getName(), loadedFaces);
+                } else {
+                    channel.delete();
+                }
+            }
         }
     }
 }

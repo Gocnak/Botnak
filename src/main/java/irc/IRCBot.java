@@ -189,15 +189,15 @@ public class IRCBot extends MessageHandler {
                     switch (consoleCommand.getAction()) {
                         case ADD_FACE:
                             commandResponse = FaceManager.handleFace(mess);
-                            if (commandResponse.isSuccessful()) Settings.saveFaces();
+                            if (commandResponse.isSuccessful()) Settings.FACES.save();
                             break;
                         case CHANGE_FACE:
                             commandResponse = FaceManager.handleFace(mess);
-                            if (commandResponse.isSuccessful()) Settings.saveFaces();
+                            if (commandResponse.isSuccessful()) Settings.FACES.save();
                             break;
                         case REMOVE_FACE:
                             commandResponse = FaceManager.removeFace(first);
-                            if (commandResponse.isSuccessful()) Settings.saveFaces();
+                            if (commandResponse.isSuccessful()) Settings.FACES.save();
                             break;
                         case TOGGLE_FACE:
                             commandResponse = FaceManager.toggleFace(first);
@@ -229,15 +229,15 @@ public class IRCBot extends MessageHandler {
                             break;
                         case ADD_KEYWORD:
                             commandResponse = Utils.handleKeyword(mess);
-                            if (commandResponse.isSuccessful()) Settings.saveKeywords();
+                            if (commandResponse.isSuccessful()) Settings.KEYWORDS.save();
                             break;
                         case REMOVE_KEYWORD:
                             commandResponse = Utils.handleKeyword(mess);
-                            if (commandResponse.isSuccessful()) Settings.saveKeywords();
+                            if (commandResponse.isSuccessful()) Settings.KEYWORDS.save();
                             break;
                         case SET_USER_COL:
                             commandResponse = Utils.handleColor(sender, mess, u.getColor());
-                            if (commandResponse.isSuccessful()) Settings.saveUserColors();
+                            if (commandResponse.isSuccessful()) Settings.USER_COLORS.save();
                             break;
                         case SET_COMMAND_PERMISSION:
                             commandResponse = Utils.setCommandPermission(mess);
@@ -245,19 +245,14 @@ public class IRCBot extends MessageHandler {
                             break;
                         case ADD_TEXT_COMMAND:
                             commandResponse = Utils.addCommands(mess);
-                            if (commandResponse.isSuccessful()) Settings.saveCommands();
+                            if (commandResponse.isSuccessful()) Settings.COMMANDS.save();
                             break;
                         case REMOVE_TEXT_COMMAND:
                             commandResponse = Utils.removeCommands(first);
-                            if (commandResponse.isSuccessful()) Settings.saveCommands();
+                            if (commandResponse.isSuccessful()) Settings.COMMANDS.save();
                             break;
                         case ADD_DONATION:
                             commandResponse = Settings.donationManager.parseDonation(split);
-                            break;
-                        case SET_SUB_SOUND:
-                            if (Settings.loadSubSounds()) {
-                                getBot().sendMessage(channel, "Reloaded sub sounds!");
-                            }
                             break;
                         case SET_SOUND_PERMISSION:
                             commandResponse = SoundEngine.getEngine().setSoundPermission(first);
@@ -556,7 +551,6 @@ public class IRCBot extends MessageHandler {
                 int perm = Integer.parseInt(first);
                 perm = Utils.capNumber(0, 2, perm);
                 Settings.botReplyType.setValue(perm);
-                GUIMain.instance.updateBotReplyPerm(perm);
                 toReturn.setResponseText("Successfully changed the bot reply type (for other channels) to: " + getReplyType(perm, botnakUser));
             } else {
                 toReturn.setResponseText("Current bot reply type for other channels is: " +

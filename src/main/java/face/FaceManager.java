@@ -210,7 +210,7 @@ public class FaceManager {
         ThreadEngine.submit(() -> {
             buildMap();
             GUIMain.log("Loaded Twitch faces!");
-            Settings.saveTwitchFaces();
+            Settings.TWITCH_FACES.save();
             doneWithTwitchFaces = true;
             if (Settings.ffzFacesEnable.getValue()) {
                 handleFFZChannel("global");//this corrects the global emotes and downloads them if we don't have them
@@ -316,7 +316,7 @@ public class FaceManager {
     }
 
     public static void handleEmoteSet(String emotes) {
-        if (checkedEmoteSets || !doneWithTwitchFaces) return;
+        if (checkedEmoteSets) return;
         ThreadEngine.submit(() -> {
             try {
                 checkedEmoteSets = true;
@@ -334,8 +334,10 @@ public class FaceManager {
                             JSONObject emote = set.getJSONObject(i);
                             int ID = emote.getInt("id");
                             main.addEmote(ID);
-                            if (twitchFaceMap.get(ID) == null) {
-                                downloadEmote(ID);
+                            if (doneWithTwitchFaces) {
+                                if (twitchFaceMap.get(ID) == null) {
+                                    downloadEmote(ID);
+                                }
                             }
                         }
                     }

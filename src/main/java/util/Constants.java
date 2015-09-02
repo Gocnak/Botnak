@@ -1,7 +1,8 @@
 package util;
 
+import gui.WrapEditorKit;
 import gui.forms.GUIMain;
-import gui.listeners.TabTitleEditListener;
+import gui.listeners.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.filechooser.FileFilter;
@@ -63,6 +64,13 @@ public class Constants {
      * credit: TDuva
      */
     public static final Matcher urlMatcher = Pattern.compile(urlRegex).matcher("");
+
+    //Listeners
+    public static final WrapEditorKit wrapEditorKit = new WrapEditorKit();
+    public static final ListenerURL listenerURL = new ListenerURL();
+    public static final ListenerName listenerName = new ListenerName();
+    public static final ListenerFace listenerFace = new ListenerFace();
+    public static final PaneMenuListener listenerPaneMenu = new PaneMenuListener();
 
     //Credit TDuva from his Chatty bot for some of theses, as well as the
     //"namedcolor" class idea.

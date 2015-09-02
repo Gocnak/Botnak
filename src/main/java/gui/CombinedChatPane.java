@@ -1,9 +1,7 @@
 package gui;
 
 import gui.forms.GUIMain;
-import gui.listeners.ListenerFace;
-import gui.listeners.ListenerName;
-import gui.listeners.ListenerURL;
+import util.Constants;
 import util.Utils;
 import util.settings.Settings;
 
@@ -190,15 +188,15 @@ public class CombinedChatPane extends ChatPane {
         JScrollPane scrollPane = new JScrollPane();
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         JTextPane pane = new JTextPane();
-        pane.setEditorKit(new WrapEditorKit());
+        pane.setEditorKit(Constants.wrapEditorKit);
         pane.setEditable(false);
         pane.setFocusable(false);
         pane.setMargin(new Insets(0, 0, 0, 0));
         pane.setBackground(Color.black);
         pane.setFont(Settings.font.getValue());
-        pane.addMouseListener(new ListenerURL());
-        pane.addMouseListener(new ListenerName());
-        pane.addMouseListener(new ListenerFace());
+        pane.addMouseListener(Constants.listenerURL);
+        pane.addMouseListener(Constants.listenerName);
+        pane.addMouseListener(Constants.listenerFace);
         scrollPane.setViewportView(pane);
         for (ChatPane cp : panes) {
             cp.setTabVisible(false);

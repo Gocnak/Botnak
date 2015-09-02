@@ -212,7 +212,6 @@ public class GUISettings extends JFrame {
 
     public void saveButtonActionPerformed() {
         save();
-        cancelButtonActionPerformed();
     }
 
     public void cancelButtonActionPerformed() {

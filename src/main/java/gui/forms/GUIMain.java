@@ -1,9 +1,10 @@
 package gui.forms;
 
 import face.FaceManager;
-import gui.*;
-import gui.listeners.ListenerName;
-import gui.listeners.ListenerURL;
+import gui.BotnakTrayIcon;
+import gui.ChatPane;
+import gui.CombinedChatPane;
+import gui.DraggableTabbedPane;
 import gui.listeners.ListenerUserChat;
 import gui.listeners.NewTabListener;
 import irc.IRCBot;
@@ -185,6 +186,7 @@ public class GUIMain extends JFrame {
      * @param message The message to log.
      */
     public static void log(Object message) {
+        if (message == null) return;
         String toPrint;
         Message.MessageType type = Message.MessageType.LOG_MESSAGE; // Moved here to allow for changing message type to something like error for throwables
         if (message instanceof Throwable) {
@@ -982,7 +984,7 @@ public class GUIMain extends JFrame {
                     helpMenu.add(projectGithubOption);
 
                     //---- projectWikiOption ----
-                    projectWikiOption.setText("Wiki");
+                    projectWikiOption.setText("Botnak Wiki");
                     projectWikiOption.addActionListener(e -> projectWikiOptionActionPerformed());
                     helpMenu.add(projectWikiOption);
                     JMenuItem bugReport = new JMenuItem("Report an Issue");
@@ -1018,9 +1020,9 @@ public class GUIMain extends JFrame {
                     allChats.setFont(new Font("Calibri", Font.PLAIN, 16));
                     allChats.setMargin(new Insets(0, 0, 0, 0));
                     allChats.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-                    allChats.addMouseListener(new ListenerURL());
-                    allChats.addMouseListener(new ListenerName());
-                    allChats.setEditorKit(new WrapEditorKit());
+                    allChats.addMouseListener(Constants.listenerURL);
+                    allChats.addMouseListener(Constants.listenerName);
+                    allChats.setEditorKit(Constants.wrapEditorKit);
                     allChatsScroll.setViewportView(allChats);
                 }
                 channelPane.addTab("System Logs", allChatsScroll);

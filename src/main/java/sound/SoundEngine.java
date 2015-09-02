@@ -9,10 +9,7 @@ import util.Utils;
 import util.settings.Settings;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -30,7 +27,7 @@ public class SoundEngine {
     private boolean soundToggle = true;
     private Timer soundTimer;
     private ConcurrentHashMap<String, Sound> soundMap;
-    private Stack<Sound> subStack, donationStack;
+    private Deque<Sound> subStack, donationStack;
     private Sound lastSubSound, lastDonationSound;
 
     public static void init() {
@@ -40,8 +37,8 @@ public class SoundEngine {
     public SoundEngine() {
         soundMap = new ConcurrentHashMap<>();
         player = new SoundPlayer();
-        subStack = new Stack<>();
-        donationStack = new Stack<>();
+        subStack = new ArrayDeque<>();
+        donationStack = new ArrayDeque<>();
         lastSubSound = null;
         lastDonationSound = null;
         soundTimer = new Timer(Settings.soundEngineDelay.getValue());
@@ -56,11 +53,11 @@ public class SoundEngine {
         return soundMap;
     }
 
-    public Stack<Sound> getSubStack() {
+    public Deque<Sound> getSubStack() {
         return subStack;
     }
 
-    public Stack<Sound> getDonationStack() {
+    public Deque<Sound> getDonationStack() {
         return donationStack;
     }
 
