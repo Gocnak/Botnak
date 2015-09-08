@@ -259,7 +259,7 @@ public class DraggableTabbedPane extends JTabbedPane {
             for (int i = 0; i < getTabCount(); i++) {
                 String title = getTitleAt(i);
                 ChatPane toUpdate = GUIMain.chatPanes.get(title);
-                if (toUpdate != null) GUIMain.chatPanes.get(title).setIndex(i);
+                if (toUpdate != null) toUpdate.setIndex(i);
             }
         }
         if (!GUIMain.combinedChatPanes.isEmpty()) {
@@ -316,7 +316,6 @@ public class DraggableTabbedPane extends JTabbedPane {
         g2.setRenderingHints(antialiasing);
         if (toPlace != null && toPlace.getType() != TabTypeEnum.TAB_NEITHER) {
             g2.setColor(Color.orange);
-            g2.setFont(new Font("Arial", Font.PLAIN, 10));
             Polygon toFill = getFillShape(toPlace);
             g2.fillPolygon(toFill);
             g2.drawRect((int) toPlace.getRectangle().getX(), (int) toPlace.getRectangle().getY(), (int) toPlace.getRectangle().getWidth(),

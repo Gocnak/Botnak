@@ -2,7 +2,7 @@ package irc.message;
 
 /**
  * Created by Nick on 3/30/2014.
- *
+ * <p>
  * This is an abstract class because the Bot and Viewer classes implement different
  * methods for different reasons. IRCBot doesn't need to implement all of these methods
  * and IRCViewer may not as well.
@@ -20,7 +20,6 @@ public abstract class MessageHandler {
      */
     public void onMessage(String channel, String sender, String message) {
     }
-
 
     /**
      * This method catches the new subscriber for a certain channel
@@ -76,7 +75,6 @@ public abstract class MessageHandler {
      */
     public void onAction(String sender, String target, String action) {
     }
-
 
     /**
      * This method carries out the actions to be performed when the PircBot
@@ -145,4 +143,16 @@ public abstract class MessageHandler {
      */
     public void onRoomstate(String channel, String tags) {
     }
+
+
+    /**
+     * Called from a PircBotWhisper instance to notify of a whisper.
+     *
+     * @param sender   The user that sent the whisper.
+     * @param receiver The receiver of the whisper.
+     * @param contents The contents of the whisper.
+     */
+    public void onWhisper(String sender, String receiver, String contents) {
+    }
+
 }

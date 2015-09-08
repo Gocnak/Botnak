@@ -6,8 +6,8 @@ import irc.account.Task;
 import irc.message.Message;
 import irc.message.MessageHandler;
 import irc.message.MessageQueue;
-import lib.pircbot.org.jibble.pircbot.PircBot;
-import lib.pircbot.org.jibble.pircbot.User;
+import lib.pircbot.PircBot;
+import lib.pircbot.User;
 import thread.heartbeat.BanQueue;
 import util.Utils;
 import util.settings.Settings;
@@ -121,7 +121,10 @@ public class IRCViewer extends MessageHandler {
 
     public void onDisconnect() {
         if (!GUIMain.shutDown && getViewer() != null) {
-            Settings.accountManager.createReconnectThread(getViewer());
+            GUIMain.logCurrent("Detected a disconnection for the account: " + getViewer().getNick());
+            if (Settings.autoReconnectAccounts.getValue())
+                Settings.accountManager.createReconnectThread(getViewer());
+            else GUIMain.logCurrent("Auto-reconnects disabled, please check Preferences -> Auto-Reconnect!");
         }
     }
 
@@ -139,6 +142,12 @@ public class IRCViewer extends MessageHandler {
     @Override
     public void onJTVMessage(String channel, String line, String tags) {
         MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.JTV_NOTIFY).setContent(line));
+    }
+
+    @Override
+    public void onWhisper(String user, String receiver, String contents) {
+        MessageQueue.addMessage(new Message().setType(Message.MessageType.WHISPER_MESSAGE).setSender(user).setContent(contents)
+                .setExtra(receiver));
     }
 
     @Override

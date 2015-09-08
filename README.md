@@ -42,4 +42,6 @@ TDuva
 
 Jbzdarkid
 
+Chrisazy
+
 and anyone else reporting issues about this monstrosity of code!

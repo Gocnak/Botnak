@@ -3,8 +3,8 @@ package irc.account;
 import gui.forms.GUIMain;
 import irc.IRCBot;
 import irc.IRCViewer;
-import lib.pircbot.org.jibble.pircbot.PircBot;
-import lib.pircbot.org.jibble.pircbot.Queue;
+import lib.pircbot.PircBot;
+import lib.pircbot.Queue;
 import util.Timer;
 import util.settings.Settings;
 
@@ -128,7 +128,7 @@ public class AccountManager extends Thread {
                         }
                         break;
                     case CONNECT:
-                        if (t.doer.connect("irc.twitch.tv", 6667)) {
+                        if (t.doer.connect()) {
                             GUIMain.log(t.message);
                         } else {
                             if (!t.doer.isConnected()) {
@@ -161,7 +161,7 @@ public class AccountManager extends Thread {
         ReconnectThread rt = new ReconnectThread(b);
         rt.start();
         reconnectThreads.put(b.getNick(), rt);
-        GUIMain.logCurrent("Detected a disconnection, attempting to reconnect the account: " + b.getNick() + " !");
+        GUIMain.logCurrent("Attempting to reconnect the account: " + b.getNick() + " ...");
     }
 
     private class ReconnectThread extends Thread {
@@ -195,7 +195,7 @@ public class AccountManager extends Thread {
                     } catch (Exception ignored) {
                     }
                 }
-                if (doer.connect("irc.twitch.tv", 6667)) {
+                if (doer.connect()) {
                     isDone = true;
                 } else {
                     t.reset();

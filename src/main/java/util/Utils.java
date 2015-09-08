@@ -3,7 +3,7 @@ package util;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.forms.GUIMain;
-import lib.pircbot.org.jibble.pircbot.User;
+import lib.pircbot.User;
 import util.comm.Command;
 import util.comm.ConsoleCommand;
 import util.settings.Settings;
@@ -852,6 +852,32 @@ public class Utils {
             toReturn.setResponseText("Failed to update user color, user or message is null!");
         }
         return toReturn;
+    }
+
+    /**
+     * Gets a color from the given user, whether it be
+     *  1. From the manually-set User Color map.
+     *  2. From their Twitch color set on the website.
+     *  3. The generated color from their name's hash code.
+     * @param u The user to get the color of.
+     * @return The color of the user.
+     */
+    public static Color getColorFromUser(User u) {
+        Color c;
+        String name = u.getNick();
+        if (u.getColor() != null) {
+            if (GUIMain.userColMap.containsKey(name)) {
+                c = GUIMain.userColMap.get(name);
+            } else {
+                c = u.getColor();
+                if (!Utils.checkColor(c)) {
+                    c = Utils.getColorFromHashcode(name.hashCode());
+                }
+            }
+        } else {//temporarily assign their color as randomly generated
+            c = Utils.getColorFromHashcode(name.hashCode());
+        }
+        return c;
     }
 
     /**

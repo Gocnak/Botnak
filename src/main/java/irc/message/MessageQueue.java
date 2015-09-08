@@ -3,7 +3,7 @@ package irc.message;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.forms.GUIMain;
-import lib.pircbot.org.jibble.pircbot.Queue;
+import lib.pircbot.Queue;
 import sound.SoundEngine;
 import util.settings.Settings;
 
@@ -47,9 +47,13 @@ public class MessageQueue extends Thread {
                 MessageWrapper wrap = new MessageWrapper(mess);
                 try {//try catch for security, if one message fails, we still want to receive messages
                     if (mess.getType() == Message.MessageType.LOG_MESSAGE) {
-                        if (mess.getChannel() != null)
+                        if (mess.getChannel() != null) {
                             GUIMain.getChatPane(mess.getChannel()).log(wrap, true);
-                        else GUIMain.getSystemLogsPane().log(wrap, true);
+                        } else if (mess.getExtra() != null) {
+                            ((ChatPane)mess.getExtra()).log(wrap, true);
+                        } else {
+                            GUIMain.getSystemLogsPane().log(wrap, true);
+                        }
                     } else if (mess.getType() == Message.MessageType.NORMAL_MESSAGE ||
                             mess.getType() == Message.MessageType.ACTION_MESSAGE) {
                         if (!GUIMain.combinedChatPanes.isEmpty()) {
@@ -77,6 +81,8 @@ public class MessageQueue extends Thread {
                         }
                     } else if (mess.getType() == Message.MessageType.CLEAR_TEXT) {
                         wrap.addPrint(((ChatPane) mess.getExtra())::cleanupChat);
+                    } else if (mess.getType() == Message.MessageType.WHISPER_MESSAGE) {
+                        GUIMain.getCurrentPane().onWhisper(wrap);
                     }
                     addToQueue(wrap);
                 } catch (Exception e) {

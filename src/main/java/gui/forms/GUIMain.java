@@ -172,10 +172,21 @@ public class GUIMain extends JFrame {
      * @param message The message to log.
      */
     public static void logCurrent(Object message) {
-        String channel = channelPane.getTitleAt(channelPane.getSelectedIndex());
-        if (message != null && chatPanes != null && !chatPanes.isEmpty())
-            MessageQueue.addMessage(new Message().setChannel("#" + channel)
-                    .setContent(message.toString()).setType(Message.MessageType.LOG_MESSAGE));
+        ChatPane current = getCurrentPane();
+        if (message != null && chatPanes != null && !chatPanes.isEmpty() && current != null)
+            MessageQueue.addMessage(new Message().setType(Message.MessageType.LOG_MESSAGE)
+                    .setContent(message.toString()).setExtra(current));
+    }
+
+    public static ChatPane getCurrentPane() {
+        ChatPane toReturn;
+        int index = channelPane.getSelectedIndex();
+        if (index == 0) return getSystemLogsPane();
+        toReturn = Utils.getChatPane(index);
+        if (toReturn == null) {
+            toReturn = Utils.getCombinedChatPane(index);
+        }
+        return toReturn == null ? getSystemLogsPane() : toReturn;
     }
 
     /**
@@ -334,7 +345,7 @@ public class GUIMain extends JFrame {
     private void soundsToggleItemStateChanged() {
         Response r = SoundEngine.getEngine().toggleSound(null, false);
         if (r.isSuccessful()) {
-            if (bot != null) {
+            if (bot != null && bot.getBot() != null) {
                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                         r.getResponseText());
             }
@@ -557,6 +568,7 @@ public class GUIMain extends JFrame {
                     //---- openLogViewerOption ----
                     openLogViewerOption.setText("Open Log Viewer");
                     openLogViewerOption.addActionListener(e -> openLogViewerOptionActionPerformed());
+                    openLogViewerOption.setEnabled(false);//TODO
                     fileMenu.add(openLogViewerOption);
 
                     //---- openSoundsOption ----
@@ -662,7 +674,7 @@ public class GUIMain extends JFrame {
                         //---- soundDelayOffOption ----
                         soundDelayOffOption.setText("None (Off)");
                         soundDelayOffOption.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = SoundEngine.getEngine().setSoundDelay("0");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -673,7 +685,7 @@ public class GUIMain extends JFrame {
                         //---- soundDelay5secOption ----
                         soundDelay5secOption.setText("5 seconds");
                         soundDelay5secOption.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = SoundEngine.getEngine().setSoundDelay("5");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -684,7 +696,7 @@ public class GUIMain extends JFrame {
                         //---- soundDelay10secOption ----
                         soundDelay10secOption.setText("10 seconds");
                         soundDelay10secOption.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = SoundEngine.getEngine().setSoundDelay("10");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -696,7 +708,7 @@ public class GUIMain extends JFrame {
                         //---- soundDelay20secOption ----
                         soundDelay20secOption.setText("20 seconds");
                         soundDelay20secOption.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = SoundEngine.getEngine().setSoundDelay("20");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -718,7 +730,7 @@ public class GUIMain extends JFrame {
                         //---- soundPermEveryoneOption ----
                         soundPermEveryoneOption.setText("Everyone");
                         soundPermEveryoneOption.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = SoundEngine.getEngine().setSoundPermission("0");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -729,7 +741,7 @@ public class GUIMain extends JFrame {
                         //---- soundPermSDMBOption ----
                         soundPermSDMBOption.setText("Subs, Donors, Mods, Broadcaster");
                         soundPermSDMBOption.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = SoundEngine.getEngine().setSoundPermission("1");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -741,7 +753,7 @@ public class GUIMain extends JFrame {
                         //---- soundPermDMBOption ----
                         soundPermDMBOption.setText("Donors, Mods, Broadcaster");
                         soundPermDMBOption.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = SoundEngine.getEngine().setSoundPermission("2");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -752,7 +764,7 @@ public class GUIMain extends JFrame {
                         //---- soundPermModAndBroadOption ----
                         soundPermModAndBroadOption.setText("Mods and Broadcaster Only");
                         soundPermModAndBroadOption.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = SoundEngine.getEngine().setSoundPermission("3");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -763,7 +775,7 @@ public class GUIMain extends JFrame {
                         //---- soundPermBroadOption ----
                         soundPermBroadOption.setText("Broadcaster Only");
                         soundPermBroadOption.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = SoundEngine.getEngine().setSoundPermission("4");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -787,7 +799,7 @@ public class GUIMain extends JFrame {
                         //---- timeOption30sec ----
                         timeOption30sec.setText("30 sec");
                         timeOption30sec.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
                                         "30", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
@@ -795,7 +807,7 @@ public class GUIMain extends JFrame {
                                 ThreadEngine.submit(() -> {
                                     try {
                                         Thread.sleep(30000);
-                                        logCurrent("The advertisement has ended.");
+                                        logCurrent("The 30-second advertisement has ended.");
                                     } catch (InterruptedException ignored) {
                                     }
                                 });
@@ -806,7 +818,7 @@ public class GUIMain extends JFrame {
                         //---- timeOption60sec ----
                         timeOption60sec.setText("1 min");
                         timeOption60sec.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
                                         "1m", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
@@ -814,7 +826,7 @@ public class GUIMain extends JFrame {
                                 ThreadEngine.submit(() -> {
                                     try {
                                         Thread.sleep(60000);
-                                        logCurrent("The advertisement has ended.");
+                                        logCurrent("The 1-minute advertisement has ended.");
                                     } catch (InterruptedException ignored) {
                                     }
                                 });
@@ -825,7 +837,7 @@ public class GUIMain extends JFrame {
                         //---- timeOption90sec ----
                         timeOption90sec.setText("1 min 30 sec");
                         timeOption90sec.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
                                         "1m30s", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
@@ -833,7 +845,7 @@ public class GUIMain extends JFrame {
                                 ThreadEngine.submit(() -> {
                                     try {
                                         Thread.sleep(90000);
-                                        logCurrent("The advertisement has ended.");
+                                        logCurrent("The 1-minute 30-second advertisement has ended.");
                                     } catch (InterruptedException ignored) {
                                     }
                                 });
@@ -844,7 +856,7 @@ public class GUIMain extends JFrame {
                         //---- timeOption120sec ----
                         timeOption120sec.setText("2 min");
                         timeOption120sec.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
                                         "2m", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
@@ -852,7 +864,7 @@ public class GUIMain extends JFrame {
                                 ThreadEngine.submit(() -> {
                                     try {
                                         Thread.sleep(120000);
-                                        logCurrent("The advertisement has ended.");
+                                        logCurrent("The 2 minute advertisement has ended.");
                                     } catch (InterruptedException ignored) {
                                     }
                                 });
@@ -863,7 +875,7 @@ public class GUIMain extends JFrame {
                         //---- timeOption150sec ----
                         timeOption150sec.setText("2 min 30 sec");
                         timeOption150sec.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
                                         "2m30s", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
@@ -871,7 +883,7 @@ public class GUIMain extends JFrame {
                                 ThreadEngine.submit(() -> {
                                     try {
                                         Thread.sleep(150000);
-                                        logCurrent("The advertisement has ended.");
+                                        logCurrent("The 2 minute 30 second advertisement has ended.");
                                     } catch (InterruptedException ignored) {
                                     }
                                 });
@@ -882,7 +894,7 @@ public class GUIMain extends JFrame {
                         //---- timeOption180sec ----
                         timeOption180sec.setText("3 min");
                         timeOption180sec.addActionListener(e -> {
-                            if (bot != null) {
+                            if (bot != null && bot.getBot() != null) {
                                 Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
                                         "3m", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
@@ -890,7 +902,7 @@ public class GUIMain extends JFrame {
                                 ThreadEngine.submit(() -> {
                                     try {
                                         Thread.sleep(180000);
-                                        logCurrent("The advertisement has ended.");
+                                        logCurrent("The 3 minute advertisement has ended.");
                                     } catch (InterruptedException ignored) {
                                     }
                                 });

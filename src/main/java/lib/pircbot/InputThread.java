@@ -12,7 +12,7 @@ found at http://www.jibble.org/licenses/
 */
 
 
-package lib.pircbot.org.jibble.pircbot;
+package lib.pircbot;
 
 import gui.forms.GUIMain;
 
@@ -89,7 +89,14 @@ public class InputThread extends Thread {
                     String line;
                     while (((line = _breader.readLine()) != null) && !GUIMain.shutDown) {
                         try {
-                            _bot.handleLine(line);
+                            _bot.log(line);
+                            if (line.startsWith("PING ")) {
+                                // Respond to the ping and return immediately.
+                                sendRawLine("PONG " + line.substring(5));
+                            } else {
+                                line = line.replaceAll("\\s+", " ");
+                                _bot.handleLine(line);
+                            }
                         } catch (Throwable t) {
                             // Stick the whole stack trace into a String so we can output it nicely.
                             GUIMain.log(t);

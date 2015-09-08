@@ -12,7 +12,7 @@ found at http://www.jibble.org/licenses/
 */
 
 
-package lib.pircbot.org.jibble.pircbot;
+package lib.pircbot;
 
 import face.FaceManager;
 import gui.forms.GUIMain;
@@ -21,36 +21,33 @@ import util.Constants;
 import util.settings.Settings;
 
 import java.awt.*;
-import java.io.*;
-import java.net.InetAddress;
-import java.net.Socket;
 import java.util.StringTokenizer;
 
 /**
  * PircBot is a Java framework for writing IRC bots quickly and easily.
- * <p/>
+ * <p>
  * It provides an event-driven architecture to handle common IRC
  * events, flood protection, DCC support, ident support, and more.
  * The comprehensive logfile format is suitable for use with pisg to generate
  * channel statistics.
- * <p/>
+ * <p>
  * Methods of the PircBot class can be called to send events to the IRC server
  * that it connects to.  For example, calling the sendMessage method will
  * send a message to a channel or user on the IRC server.  Multiple servers
  * can be supported using multiple instances of PircBot.
- * <p/>
+ * <p>
  * To perform an action when the PircBot receives a normal message from the IRC
  * server, you would override the onMessage method defined in the PircBot
  * class.  All on<i>XYZ</i> methods in the PircBot class are automatically called
  * when the event <i>XYZ</i> happens, so you would override these if you wish
  * to do something when it does happen.
- * <p/>
+ * <p>
  * Some event methods, such as onPing, should only really perform a specific
  * function (i.e. respond to a PING from the server).  For your convenience, such
  * methods are already correctly implemented in the PircBot and should not
  * normally need to be overridden.  Please read the full documentation for each
  * method to see which ones are already implemented by the PircBot class.
- * <p/>
+ * <p>
  * Please visit the PircBot homepage at
  * <a href="http://www.jibble.org/pircbot.php">http://www.jibble.org/pircbot.php</a>
  * for full revision history, a beginners guide to creating your first PircBot
@@ -62,6 +59,8 @@ import java.util.StringTokenizer;
  * @version 1.5.0 (Build time: Mon Dec 14 20:07:17 2009)
  */
 public class PircBot {
+
+    private PircBotConnection connection, whisperConnection;
 
     public ChannelManager getChannelManager() {
         return Settings.channelManager;
@@ -80,8 +79,9 @@ public class PircBot {
      */
     public PircBot(MessageHandler messageHandler) {
         handler = messageHandler;
+        connection = new PircBotConnection(this, PircBotConnection.ConnectionType.NORMAL);
+        whisperConnection = new PircBotConnection(this, PircBotConnection.ConnectionType.WHISPER);
     }
-
 
     /**
      * Attempt to connect to the specified IRC server using the supplied
@@ -91,129 +91,18 @@ public class PircBot {
      * @param hostname The hostname of the server to connect to.
      * @param port     The port number to connect to on the server.
      */
-    public final boolean connect(String hostname, int port) {
-
-        if (isConnected()) {
-            return false;
+    public boolean connect() {
+        //TODO if useWhispers
+        boolean whisper = false, normal = false;
+        if (whisperConnection.connect()) {
+            GUIMain.log("Whisper connected!");
+            whisper = true;
         }
-        _server = hostname;
-        _port = port;
-        if (_password == null || "".equals(_password)) return false;
-
-        // Don't clear the outqueue - there might be something important in it!
-
-        // Clear everything we may have know about channels.
-        //removeAllChannels();
-
-        // Connect to the server.
-        Socket socket;
-        InputStream socketIn;
-        OutputStream socketOut;
-        try {
-            socket = new Socket(hostname, port);
-            socketIn = socket.getInputStream();
-            socketOut = socket.getOutputStream();
-        } catch (Exception e) {
-            GUIMain.log(e);
-            return false;
+        if (connection.connect()) {
+            getMessageHandler().onConnect();
+            normal = true;
         }
-
-        log("*** Connected to server.");
-
-        _inetAddress = socket.getLocalAddress();
-
-        InputStreamReader inputStreamReader;
-        OutputStreamWriter outputStreamWriter;
-
-        // Assume the specified encoding is valid for this JVM.
-        try {
-            inputStreamReader = new InputStreamReader(socketIn, "UTF-8");
-            outputStreamWriter = new OutputStreamWriter(socketOut, "UTF-8");
-        } catch (Exception e) {
-            return false;
-        }
-        BufferedReader breader = new BufferedReader(inputStreamReader);
-        BufferedWriter bwriter = new BufferedWriter(outputStreamWriter);
-        _outputThread = new OutputThread(this, _outQueue, bwriter);
-        // Attempt to join the server.
-        _outputThread.sendRawLine("PASS " + _password);
-        _outputThread.sendRawLine("NICK " + getNick());
-
-        _inputThread = new InputThread(this, socket, breader);
-
-        // Read stuff back from the server to see if we connected.
-        String line;
-        try {
-            while ((line = breader.readLine()) != null) {
-                handleLine(line);
-                if (line.contains("Login unsuccessful")) {
-                    socket.close();
-                    _inputThread.dispose();
-                    _inputThread = null;
-                    return false;
-                }
-                int firstSpace = line.indexOf(" ");
-                int secondSpace = line.indexOf(" ", firstSpace + 1);
-                if (secondSpace >= 0) {
-                    String code = line.substring(firstSpace + 1, secondSpace);
-                    if (code.equals("004")) {
-                        // We're connected to the server.
-                        break;
-                    } else if (code.equals("433")) {
-                        socket.close();
-                        _inputThread = null;
-                        return false;
-                    } else if (code.startsWith("5") || code.startsWith("4")) {
-                        socket.close();
-                        _inputThread = null;
-                        return false;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            try {
-                socket.close();
-            } catch (Exception ignored) {
-            }
-            _inputThread = null;
-            return false;
-        }
-
-        log("*** Logged onto server.");
-
-        // This makes the socket timeout on read operations after 5 minutes.
-        // Maybe in some future version I will let the user change this at runtime.
-        try {
-            socket.setSoTimeout(5 * 60 * 1000);
-        } catch (Exception e) {
-            return false;
-        }
-
-        // Now start the InputThread to read all other lines from the server.
-        _inputThread.start();
-
-        // Now start the outputThread that will be used to send all messages.
-        _outputThread.start();
-        sendRawLine("CAP REQ :twitch.tv/commands");
-        sendRawLine("CAP REQ :twitch.tv/tags");
-        getMessageHandler().onConnect();
-        return true;
-    }
-
-
-    /**
-     * Reconnects to the IRC server that we were previously connected to.
-     * If necessary, the appropriate port number and password will be used.
-     * This method will throw an IrcException if we have never connected
-     * to an IRC server previously.
-     *
-     * @since PircBot 0.9.9
-     */
-    public final void reconnect() {
-        if (getServer() == null || getPassword() == null || getPort() == -1) {
-            return;
-        }
-        connect(getServer(), getPort());
+        return (whisper || normal);
     }
 
 
@@ -226,7 +115,7 @@ public class PircBot {
      * @see #quitServer() quitServer
      * @see #quitServer(String) quitServer
      */
-    public final synchronized void disconnect() {
+    public void disconnect() {
         quitServer();
     }
 
@@ -236,7 +125,7 @@ public class PircBot {
      *
      * @param channel The name of the channel to join (eg "#cs").
      */
-    public final void joinChannel(String channel) {
+    public void joinChannel(String channel) {
         sendRawLine("JOIN " + channel);
         getChannelManager().addChannel(new Channel(channel));
     }
@@ -247,7 +136,7 @@ public class PircBot {
      *
      * @param channel The name of the channel to leave.
      */
-    public final void partChannel(String channel) {
+    public void partChannel(String channel) {
         sendRawLine("PART " + channel);
         getChannelManager().removeChannel(channel);
     }
@@ -259,7 +148,7 @@ public class PircBot {
      * onDisconnect() method will be called as soon as the IRC server
      * disconnects us.
      */
-    public final void quitServer() {
+    public void quitServer() {
         quitServer("");
     }
 
@@ -272,7 +161,7 @@ public class PircBot {
      *
      * @param reason The reason for quitting the server.
      */
-    public final void quitServer(String reason) {
+    public void quitServer(String reason) {
         sendRawLine("QUIT :" + reason);
     }
 
@@ -283,50 +172,65 @@ public class PircBot {
      *
      * @param line The raw line to send to the IRC server.
      */
-    public final void sendRawLine(String line) {
+    public void sendRawLine(String line) {
         if (isConnected()) {
-            _outputThread.sendRawLine(line);
+            connection.getOutputThread().sendRawLine(line);
         }
     }
 
-    /**
-     * Sends a raw line through the outgoing message queue.
-     *
-     * @param line The raw line to send to the IRC server.
-     */
-    public final void sendRawLineViaQueue(String line) {
-        if (line == null) return;
-        if (isConnected()) {
-            _outQueue.add(line);
-        }
+
+    public boolean isConnected() {
+        return connection.isConnected();
     }
 
+    public boolean isWhisperConnected() {
+        return whisperConnection.isConnected();
+    }
 
     /**
      * Sends a message to a channel or a private message to a user.  These
      * messages are added to the outgoing message queue and sent at the
      * earliest possible opportunity.
-     * <p/>
+     * <p>
      * Some examples: -
      * <pre>    // Send the message "Hello!" to the channel #cs.
      *    sendMessage("#cs", "Hello!");
-     * <p/>
+     * <p>
      *    // Send a private message to Paul that says "Hi".
      *    sendMessage("Paul", "Hi");</pre>
-     * <p/>
+     * <p>
      * You may optionally apply colours, boldness, underlining, etc to
      * the message by using the <code>Colors</code> class.
      *
      * @param target  The name of the channel or user nick to send to.
      * @param message The message to send.
      */
-    public final void sendMessage(String target, String message) {
-        sendRawMessage(target, message);
-        if (message.startsWith("/me")) {
-            handleLine(":" + getNick() + "!" + getNick() + "@" + getNick() + ".tmi.twitch.tv PRIVMSG " + target + " :\u0001ACTION " + message.substring(4) + "\u0001");
+    public void sendMessage(String target, String message) {
+        if (message.startsWith("/w")) {
+            String[] split = message.split(" ", 3);
+            sendWhisper(split[1], split[2]);
+            getMessageHandler().onWhisper(getNick(), split[1], split[2]);
         } else {
-            handleLine(":" + getNick() + "!" + getNick() + "@" + getNick() + ".tmi.twitch.tv PRIVMSG " + target + " :" + message);
+            sendRawMessage(target, message);
+            if (message.startsWith("/me")) {
+                getMessageHandler().onAction(getNick(), target, message.substring(4));
+                //handleLine(":" + getNick() + "!" + getNick() + "@" + getNick() + ".tmi.twitch.tv PRIVMSG " + target + " :\u0001ACTION " + message.substring(4) + "\u0001");
+            } else {
+                //handleLine(":" + getNick() + "!" + getNick() + "@" + getNick() + ".tmi.twitch.tv PRIVMSG " + target + " :" + message);
+                getMessageHandler().onMessage(target, getNick(), message);
+            }
         }
+    }
+
+
+    public void sendWhisper(String target, String message) {
+        sendRawWhisper("/w " + target + " " + message);
+    }
+
+    public void sendRawWhisper(String raw) {
+        if (isWhisperConnected())
+            whisperConnection.getOutQueue().add("PRIVMSG #jtv :" + raw);
+        else log("Whisper not connected!");
     }
 
     /**
@@ -336,7 +240,8 @@ public class PircBot {
      * @param message The message to send.
      */
     public void sendRawMessage(String channel, String message) {
-        _outQueue.add("PRIVMSG " + channel + " :" + message);
+        if (isConnected())
+            connection.getOutQueue().add("PRIVMSG " + channel + " :" + message);
     }
 
     /**
@@ -351,7 +256,7 @@ public class PircBot {
      * by a log entry that has ">>>" immediately following the space character
      * after the timestamp.  DCC events use "+++" and warnings about unhandled
      * Exceptions and Errors use "###".
-     * <p/>
+     * <p>
      * This implementation of the method will only cause log entries to be
      * output if the PircBot has had its verbose mode turned on by calling
      * setVerbose(true);
@@ -365,24 +270,11 @@ public class PircBot {
 
     /**
      * This method handles events when any line of text arrives from the server,
-     * then calling the appropriate method in the PircBot.  This method is
-     * protected and only called by the InputThread for this instance.
-     * <p/>
-     * This method may not be overridden!
+     * then calling the appropriate method in the PircBot.
      *
      * @param line The raw line of text from the server.
      */
-    protected void handleLine(String line) {
-        log(line);
-
-        // Check for server pings.
-        if (line.startsWith("PING ")) {
-            // Respond to the ping and return immediately.
-            sendRawLine("PONG " + line.substring(5));
-            return;
-        }
-        line = line.replaceAll("\\s+", " ");
-
+    public void handleLine(String line) {
         String sourceNick = "";
         String sourceLogin = "";
         String sourceHostname = "";
@@ -404,7 +296,7 @@ public class PircBot {
         String command = tokenizer.nextToken();
         String target = null;
 
-        if (checkCommand(command, tags, line, content, tokenizer)) return;
+        if (checkCommand(command, tags, line, content, tokenizer, senderInfo)) return;
 
         int exclamation = senderInfo.indexOf("!");
         int at = senderInfo.indexOf("@");
@@ -490,28 +382,7 @@ public class PircBot {
         }
     }
 
-    /**
-     * This method is called by the PircBot when a numeric response
-     * is received from the IRC server.  We use this method to
-     * allow PircBot to process various responses from the server
-     * before then passing them on to the onServerResponse method.
-     * <p/>
-     * Note that this method is private and should not appear in any
-     * of the javadoc generated documenation.
-     *
-     * @param code     The three-digit numerical code for the response.
-     * @param response The full response from the IRC server.
-     */
-    private void processServerResponse(int code, String response) {
-        if (code == 366) {//"END OF NAMES"
-            int channelEndIndex = response.indexOf(" :");
-            String channel = response.substring(response.lastIndexOf(' ', channelEndIndex - 1) + 1, channelEndIndex);
-            sendRawMessage(channel, ".mods");//start building mod list
-        }
-        onServerResponse(code, response);
-    }
-
-    private boolean checkCommand(String command, String tags, String line, String content, StringTokenizer tokenizer) {
+    private boolean checkCommand(String command, String tags, String line, String content, StringTokenizer tokenizer, String senderInfo) {
         String target;
         if ("CLEARCHAT".equals(command)) {
             target = tokenizer.nextToken();
@@ -536,6 +407,12 @@ public class PircBot {
             target = tokenizer.nextToken();
             getMessageHandler().onRoomstate(target, tags);
             parseTags(tags, null, target);
+            return true;
+        } else if ("WHISPER".equals(command)) {
+            target = tokenizer.nextToken();
+            String nick = senderInfo.substring(1, senderInfo.indexOf('!'));
+            parseTags(tags, nick, null);
+            getMessageHandler().onWhisper(nick, target, content);
             return true;
         }
         return false;
@@ -615,40 +492,64 @@ public class PircBot {
     }
 
     /**
-     * This method is called when we receive a numeric response from the
-     * IRC server.
-     * <p/>
-     * Numerics in the range from 001 to 099 are used for client-server
-     * connections only and should never travel between servers.  Replies
-     * generated in response to commands are found in the range from 200
-     * to 399.  Error replies are found in the range from 400 to 599.
-     * <p/>
-     * For example, we can use this method to discover the topic of a
-     * channel when we join it.  If we join the channel #test which
-     * has a topic of &quot;I am King of Test&quot; then the response
-     * will be &quot;<code>PircBot #test :I Am King of Test</code>&quot;
-     * with a code of 332 to signify that this is a topic.
-     * (This is just an example - note that overriding the
-     * <code>onTopic</code> method is an easier way of finding the
-     * topic for a channel). Check the IRC RFC for the full list of other
-     * command response codes.
-     * <p/>
-     * PircBot implements the interface ReplyConstants, which contains
-     * contstants that you may find useful here.
-     * <p/>
-     * The implementation of this method in the PircBot abstract class
-     * performs no actions and may be overridden as required.
+     * Determines if a user is admin, staff, turbo, or subscriber and sets their prefix accordingly.
+     *
+     * @param channel The channel it's for
+     * @param type    The user type
+     * @param user    The user
+     */
+    public void handleSpecial(String channel, String type, String user) {
+        if (user != null) {
+            Channel c = getChannelManager().getChannel(channel);
+            switch (type) {
+                case "mod":
+                    if (c != null) c.addMods(user);
+                    break;
+                case "subscriber":
+                    if (c != null) c.addSubscriber(user);
+                    break;
+                case "turbo":
+                    getChannelManager().getUser(user, true).setTurbo(true);
+                    break;
+                case "admin":
+                    getChannelManager().getUser(user, true).setAdmin(true);
+                    break;
+                case "global_mod":
+                    getChannelManager().getUser(user, true).setGlobalMod(true);
+                    break;
+                case "staff":
+                    getChannelManager().getUser(user, true).setStaff(true);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    /**
+     * This method is called by the PircBot when a numeric response
+     * is received from the IRC server.  We use this method to
+     * allow PircBot to process various responses from the server
+     * before then passing them on to the onServerResponse method.
+     * <p>
+     * Note that this method is private and should not appear in any
+     * of the javadoc generated documenation.
      *
      * @param code     The three-digit numerical code for the response.
      * @param response The full response from the IRC server.
      */
-    protected void onServerResponse(int code, String response) {
+    public void processServerResponse(int code, String response) {
+        if (code == 366) {//"END OF NAMES"
+            int channelEndIndex = response.indexOf(" :");
+            String channel = response.substring(response.lastIndexOf(' ', channelEndIndex - 1) + 1, channelEndIndex);
+            sendRawMessage(channel, ".mods");//start building mod list
+        }
     }
 
     /**
      * This method is called whenever we receive a line from the server that
      * the PircBot has not been programmed to recognise.
-     * <p/>
+     * <p>
      * The implementation of this method in the PircBot abstract class
      * performs no actions and may be overridden as required.
      *
@@ -703,7 +604,7 @@ public class PircBot {
      * Returns the current nick of the bot. Note that if you have just changed
      * your nick, this method will still return the old nick until confirmation
      * of the nick change is received from the server.
-     * <p/>
+     * <p>
      * The nick returned by this method is maintained only by the PircBot
      * class and is guaranteed to be correct in the context of the IRC server.
      *
@@ -722,18 +623,6 @@ public class PircBot {
      */
     public String getVersion() {
         return _version;
-    }
-
-
-    /**
-     * Returns whether or not the PircBot is currently connected to a server.
-     * The result of this method should only act as a rough guide,
-     * as the result may not be valid by the time you act upon it.
-     *
-     * @return True if and only if the PircBot is currently connected to a server.
-     */
-    public final synchronized boolean isConnected() {
-        return _inputThread != null && _inputThread.isConnected();
     }
 
 
@@ -768,51 +657,6 @@ public class PircBot {
 
 
     /**
-     * Gets the number of lines currently waiting in the outgoing message Queue.
-     * If this returns 0, then the Queue is empty and any new message is likely
-     * to be sent to the IRC server immediately.
-     *
-     * @return The number of lines in the outgoing message Queue.
-     * @since PircBot 0.9.9
-     */
-    public final int getOutgoingQueueSize() {
-        return _outQueue.size();
-    }
-
-
-    /**
-     * Returns the name of the last IRC server the PircBot tried to connect to.
-     * This does not imply that the connection attempt to the server was
-     * successful (we suggest you look at the onConnect method).
-     * A value of null is returned if the PircBot has never tried to connect
-     * to a server.
-     *
-     * @return The name of the last machine we tried to connect to. Returns
-     * null if no connection attempts have ever been made.
-     */
-    public final String getServer() {
-        return _server;
-    }
-
-
-    /**
-     * Returns the port number of the last IRC server that the PircBot tried
-     * to connect to.
-     * This does not imply that the connection attempt to the server was
-     * successful (we suggest you look at the onConnect method).
-     * A value of -1 is returned if the PircBot has never tried to connect
-     * to a server.
-     *
-     * @return The port number of the last IRC server we connected to.
-     * Returns -1 if no connection attempts have ever been made.
-     * @since PircBot 0.9.9
-     */
-    public final int getPort() {
-        return _port;
-    }
-
-
-    /**
      * Returns the last password that we used when connecting to an IRC server.
      * This does not imply that the connection attempt to the server was
      * successful (we suggest you look at the onConnect method).
@@ -825,18 +669,6 @@ public class PircBot {
      */
     public final String getPassword() {
         return _password;
-    }
-
-    /**
-     * Returns the InetAddress used by the PircBot.
-     * This can be used to find the I.P. address from which the PircBot is
-     * connected to a server.
-     *
-     * @return The current local InetAddress, or null if never connected.
-     * @since PircBot 1.4.4
-     */
-    public InetAddress getInetAddress() {
-        return _inetAddress;
     }
 
 
@@ -890,9 +722,9 @@ public class PircBot {
      */
     public String toString() {
         return "Version{" + _version + "}" +
-                " Connected{" + isConnected() + "}" +
-                " Server{" + _server + "}" +
-                " Port{" + _port + "}" +
+                " Connected{" + connection.isConnected() + "}" +
+                " Server{" + connection.getServer() + "}" +
+                " Port{" + connection.getPort() + "}" +
                 " Password{" + _password + "}";
     }
 
@@ -912,61 +744,8 @@ public class PircBot {
         return getChannelManager().getChannelNames();
     }
 
-    /**
-     * Disposes of all thread resources used by this PircBot. This may be
-     * useful when writing bots or clients that use multiple servers (and
-     * therefore multiple PircBot instances) or when integrating a PircBot
-     * with an existing program.
-     * <p/>
-     * Each PircBot runs its own threads for dispatching messages from its
-     * outgoing message queue and receiving messages from the server.
-     * Calling dispose() ensures that these threads are
-     * stopped, thus freeing up system resources and allowing the PircBot
-     * object to be garbage collected if there are no other references to
-     * it.
-     * <p/>
-     * Once a PircBot object has been disposed, it should not be used again.
-     * Attempting to use a PircBot that has been disposed may result in
-     * unpredictable behaviour.
-     *
-     * @since 1.2.2
-     */
     public void dispose() {
-        if (_outputThread != null) _outputThread.interrupt();
-        if (_inputThread != null) _inputThread.dispose();
-    }
-
-    /**
-     * Determines if a user is admin, staff, turbo, or subscriber and sets their prefix accordingly.
-     *
-     * @param line The line to parse.
-     */
-    public void handleSpecial(String channel, String type, String user) {
-        if (user != null) {
-            Channel c = getChannelManager().getChannel(channel);
-            switch (type) {
-                case "mod":
-                    if (c != null) c.addMods(user);
-                    break;
-                case "subscriber":
-                    if (c != null) c.addSubscriber(user);
-                    break;
-                case "turbo":
-                    getChannelManager().getUser(user, true).setTurbo(true);
-                    break;
-                case "admin":
-                    getChannelManager().getUser(user, true).setAdmin(true);
-                    break;
-                case "global_mod":
-                    getChannelManager().getUser(user, true).setGlobalMod(true);
-                    break;
-                case "staff":
-                    getChannelManager().getUser(user, true).setStaff(true);
-                    break;
-                default:
-                    break;
-            }
-        }
+        if (connection != null) connection.dispose();
     }
 
     public void handleColor(String color, String user) {
@@ -1004,24 +783,13 @@ public class PircBot {
         }
     }
 
-
-    // Connection stuff.
-    private InputThread _inputThread = null;
-    private OutputThread _outputThread = null;
-    private InetAddress _inetAddress = null;
-
-    // Details about the last server that we connected to.
-    private String _server = null;
-    private int _port = -1;
     private String _password = null;
 
     // Outgoing message stuff.
-    private Queue<String> _outQueue = new Queue<>();
     private long _messageDelay = 1000;
 
     // Default settings for the PircBot.
     private boolean _verbose = false;
     private String _nick = null;
     private String _version = "Botnak " + Constants.VERSION;
-
 }

@@ -10,7 +10,7 @@ import irc.Subscriber;
 import irc.message.Message;
 import irc.message.MessageQueue;
 import irc.message.MessageWrapper;
-import lib.pircbot.org.jibble.pircbot.User;
+import lib.pircbot.User;
 import util.Constants;
 import util.Utils;
 import util.misc.Donation;
@@ -104,7 +104,7 @@ public class ChatPane implements DocumentListener {
      * <p>
      * This boolean checks to see if the tab wasn't toggled, if it's visible (not in a combined tab),
      * and if it's not selected.
-     *
+     * <p>
      * The global setting will override this.
      *
      * @return True if this tab should pulse, else false.
@@ -220,8 +220,8 @@ public class ChatPane implements DocumentListener {
             // We're back at the bottom, reset timer
             scrollbarTimestamp = -1;
             scrollToBottom();
-        } else if(scrollbarTimestamp != -1){
-            if(System.currentTimeMillis() - scrollbarTimestamp >= 10 * 1000L) {
+        } else if (scrollbarTimestamp != -1) {
+            if (System.currentTimeMillis() - scrollbarTimestamp >= 10 * 1000L) {
                 // If the time difference is more than 10 seconds, scroll to bottom anyway after resetting time
                 scrollbarTimestamp = -1;
                 scrollToBottom();
@@ -442,7 +442,7 @@ public class ChatPane implements DocumentListener {
         HashMap<Integer, SimpleAttributeSet> rangesStyle = new HashMap<>();
 
         findLinks(text, ranges, rangesStyle);
-        findEmoticons(text, ranges, rangesStyle, u, m.getLocal().getChannel().replaceAll("#", ""));
+        findEmoticons(text, ranges, rangesStyle, u, m.getLocal().getChannel());
 
         // Actually print everything
         int lastPrintedPos = 0;
@@ -484,7 +484,8 @@ public class ChatPane implements DocumentListener {
         if (u != null && u.getEmotes() != null) {
             FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.TWITCH_FACE, null, u.getEmotes());
         }
-        if (Settings.ffzFacesEnable.getValue()) {
+        if (Settings.ffzFacesEnable.getValue() && channel != null) {
+            channel = channel.replaceAll("#", "");
             FaceManager.handleFaces(ranges, rangesStyle, text, FaceManager.FACE_TYPE.FRANKER_FACE, channel, null);
         }
     }
@@ -527,6 +528,41 @@ public class ChatPane implements DocumentListener {
 
     public void onSub(MessageWrapper m) {
         onIconMessage(m, IconEnum.SUBSCRIBER);
+    }
+
+    public void onWhisper(MessageWrapper m) {
+        SimpleAttributeSet senderSet, receiverSet;
+
+        String sender = m.getLocal().getSender();
+        String receiver = (String) m.getLocal().getExtra();
+        print(m, "\n" + getTime(), GUIMain.norm);
+        User senderUser = Settings.channelManager.getUser(sender, true);
+        User receiverUser = Settings.channelManager.getUser(receiver, true);
+        senderSet = getUserSet(senderUser);
+        receiverSet = getUserSet(receiverUser);
+
+
+        //name stuff
+        print(m, " ", GUIMain.norm);
+        senderSet.addAttribute(HTML.Attribute.NAME, senderUser.getDisplayName());
+        receiverSet.addAttribute(HTML.Attribute.NAME, receiverUser.getDisplayName());
+        FaceManager.handleNameFaces(sender, senderSet);
+        FaceManager.handleNameFaces(receiverUser.getNick(), receiverSet);
+        print(m, senderUser.getDisplayName(), senderSet);
+        print(m, " (whisper)-> ", GUIMain.norm);
+        print(m, receiverUser.getDisplayName(), receiverSet);
+        print(m, ": ", GUIMain.norm);
+
+        printMessage(m, m.getLocal().getContent(), GUIMain.norm, senderUser);
+    }
+
+    private SimpleAttributeSet getUserSet(User u) {
+        SimpleAttributeSet user = new SimpleAttributeSet();
+        StyleConstants.setFontFamily(user, Settings.font.getValue().getFamily());
+        StyleConstants.setFontSize(user, Settings.font.getValue().getSize());
+        StyleConstants.setForeground(user, Utils.getColorFromUser(u));
+        user.addAttribute(HTML.Attribute.NAME, u.getDisplayName());
+        return user;
     }
 
     public void onDonation(MessageWrapper m) {

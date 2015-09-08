@@ -1,6 +1,6 @@
 package irc.account;
 
-import lib.pircbot.org.jibble.pircbot.PircBot;
+import lib.pircbot.PircBot;
 
 /**
  * Created by Nick on 7/16/2014.

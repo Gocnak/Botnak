@@ -39,11 +39,9 @@ public class Heartbeat extends Thread {
         if (Settings.trackDonations.getValue()) {
             addHeartbeatThread(new DonationCheck());
         }
-        if (Settings.trackFollowers.getValue()) {
-            FollowCheck fc = new FollowCheck();
-            fc.initialBeat();
-            addHeartbeatThread(fc);
-        }
+        FollowCheck fc = new FollowCheck();
+        fc.initialBeat();
+        addHeartbeatThread(fc);
         start();
     }
 

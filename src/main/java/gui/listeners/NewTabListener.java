@@ -4,6 +4,7 @@ import gui.DraggableTabbedPane;
 import gui.forms.GUIMain;
 import gui.forms.GUIStreams;
 
+import javax.swing.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -18,10 +19,14 @@ public class NewTabListener extends MouseAdapter {
         DraggableTabbedPane pane = (DraggableTabbedPane) e.getSource();
         int idx = pane.getUI().tabForCoordinate(pane, e.getX(), e.getY());
         if (idx != -1 && !pane.dragging && pane.getTitleAt(idx).equals("+")) {
-            if (GUIMain.streams == null) {
-                GUIMain.streams = new GUIStreams();
+            if (SwingUtilities.isLeftMouseButton(e)) {
+                if (GUIMain.streams == null) {
+                    GUIMain.streams = new GUIStreams();
+                }
+                GUIMain.streams.setVisible(true);
+            } else if (SwingUtilities.isRightMouseButton(e)) {
+                 //TODO make the topic tab GUI
             }
-            GUIMain.streams.setVisible(true);
         }
     }
 }

@@ -1,4 +1,4 @@
-package lib.pircbot.org.jibble.pircbot;
+package lib.pircbot;
 
 import java.util.Collections;
 import java.util.concurrent.CopyOnWriteArraySet;

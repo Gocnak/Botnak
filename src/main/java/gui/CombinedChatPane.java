@@ -1,6 +1,7 @@
 package gui;
 
 import gui.forms.GUIMain;
+import irc.message.MessageWrapper;
 import util.Constants;
 import util.Utils;
 import util.settings.Settings;
@@ -228,5 +229,13 @@ public class CombinedChatPane extends ChatPane {
         GUIMain.channelPane.updateIndexes();
         GUIMain.channelPane.fireStateChanged();
         GUIMain.combinedChatPanes.remove(this);
+    }
+
+    @Override
+    public void log(MessageWrapper message, boolean isSystem) {
+        if ("all".equalsIgnoreCase(activeChannel)) {
+            super.log(message, isSystem);
+        } else
+            getActiveChatPane().log(message, isSystem);
     }
 }

@@ -2,7 +2,7 @@ package util;
 
 import gui.forms.GUIMain;
 import irc.Subscriber;
-import lib.pircbot.org.jibble.pircbot.User;
+import lib.pircbot.User;
 import util.settings.Settings;
 
 import java.util.ArrayList;

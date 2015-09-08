@@ -99,6 +99,7 @@ public class Message {
         HOSTED_NOTIFY,
         DONATION_NOTIFY,
         JTV_NOTIFY,
+        WHISPER_MESSAGE,
         CLEAR_TEXT
     }
 }

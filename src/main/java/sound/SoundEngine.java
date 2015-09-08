@@ -1,7 +1,7 @@
 package sound;
 
 import gui.forms.GUIMain;
-import lib.pircbot.org.jibble.pircbot.User;
+import lib.pircbot.User;
 import util.Permissions;
 import util.Response;
 import util.Timer;

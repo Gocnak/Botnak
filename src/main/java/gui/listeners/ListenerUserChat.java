@@ -1,7 +1,7 @@
 package gui.listeners;
 
 import gui.forms.GUIMain;
-import lib.pircbot.org.jibble.pircbot.User;
+import lib.pircbot.User;
 import util.settings.Settings;
 
 import javax.swing.*;

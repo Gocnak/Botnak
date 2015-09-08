@@ -10,7 +10,7 @@ import irc.account.Account;
 import irc.account.AccountManager;
 import irc.account.Oauth;
 import irc.account.Task;
-import lib.pircbot.org.jibble.pircbot.ChannelManager;
+import lib.pircbot.ChannelManager;
 import sound.Sound;
 import sound.SoundEngine;
 import util.Permissions;
@@ -389,6 +389,7 @@ public class Settings {
                     }
                     boolean subs = Boolean.parseBoolean(p.getProperty("CanParseSubscribers", "false"));
                     boolean followed = Boolean.parseBoolean(p.getProperty("CanParseFollowedStreams", "false"));
+                    if (followed) trackFollowers.setValue(true);
                     accountManager.setUserAccount(new Account(userNorm, new Oauth(userNormPass, stat, ad, subs, followed)));
                 }
                 String userBot = p.getProperty("UserBot", "").toLowerCase();
@@ -820,7 +821,7 @@ public class Settings {
     }
 
     /**
-     * Donators
+     * Donors
      */
     public static class Donors extends AbstractFileSave {
 
@@ -850,8 +851,7 @@ public class Settings {
 
 
     /**
-     * Donations. This ranges from people just giving you money to
-     * people subscribing to your channel.
+     * Donations.
      */
     public static class Donations extends AbstractFileSave {
 

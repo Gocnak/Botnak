@@ -12,7 +12,7 @@ found at http://www.jibble.org/licenses/
 */
 
 
-package lib.pircbot.org.jibble.pircbot;
+package lib.pircbot;
 
 import java.io.BufferedWriter;
 
@@ -81,7 +81,7 @@ public class OutputThread extends Thread {
 
                 String line = _outQueue.next();
                 if (line != null) {
-                    _bot.sendRawLine(line);
+                    sendRawLine(line);
                 } else {
                     running = false;
                 }

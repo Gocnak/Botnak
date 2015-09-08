@@ -8,7 +8,7 @@ import irc.message.Message;
 import irc.message.MessageQueue;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
-import lib.pircbot.org.jibble.pircbot.User;
+import lib.pircbot.User;
 import sound.SoundEngine;
 import util.Utils;
 

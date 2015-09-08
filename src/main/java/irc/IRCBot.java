@@ -8,8 +8,8 @@ import irc.account.Task;
 import irc.message.Message;
 import irc.message.MessageHandler;
 import irc.message.MessageQueue;
-import lib.pircbot.org.jibble.pircbot.PircBot;
-import lib.pircbot.org.jibble.pircbot.User;
+import lib.pircbot.PircBot;
+import lib.pircbot.User;
 import sound.Sound;
 import sound.SoundEngine;
 import thread.ThreadEngine;
@@ -46,6 +46,7 @@ public class IRCBot extends MessageHandler {
 
     @Override
     public void onConnect() {
+        Settings.channelManager.addUser(new User(getBot().getNick()));
         GUIMain.channelSet.forEach(this::doConnect);
         GUIMain.updateTitle(null);
     }
@@ -82,7 +83,10 @@ public class IRCBot extends MessageHandler {
 
     public void onDisconnect() {
         if (!GUIMain.shutDown && getBot() != null) {
-            Settings.accountManager.createReconnectThread(getBot());
+            GUIMain.logCurrent("Detected a disconnection for the account: " + getBot().getNick());
+            if (Settings.autoReconnectAccounts.getValue())
+                Settings.accountManager.createReconnectThread(getBot());
+            else GUIMain.logCurrent("Auto-reconnects disabled, please check Preferences -> Auto-Reconnect!");
         }
     }
 

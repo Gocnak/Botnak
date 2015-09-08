@@ -3,7 +3,7 @@ package gui.listeners;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.forms.GUIMain;
-import lib.pircbot.org.jibble.pircbot.User;
+import lib.pircbot.User;
 import util.Utils;
 import util.settings.Settings;
 

@@ -49,24 +49,26 @@ public class FollowCheck implements HeartbeatThread {
     @Override
     public void beat() {
         beating = true;
-        ArrayList<String> livePeople = APIRequests.Twitch.getLiveFollowedChannels(getUserAccount().getKey().getKey().split(":")[1]);
-        if (!livePeople.isEmpty() && count != livePeople.size()) {
-            livePeople.forEach(p -> {
-                if (!followedChannels.contains(p)) {
-                    followedChannels.add(p);
-                    if (!initialBeat && BotnakTrayIcon.shouldDisplayFollowedActivity()) {
-                        GUIMain.getSystemTrayIcon().displayLiveChannel(p);
+        if (Settings.trackFollowers.getValue()) {
+            ArrayList<String> livePeople = APIRequests.Twitch.getLiveFollowedChannels(getUserAccount().getKey().getKey().split(":")[1]);
+            if (!livePeople.isEmpty() && count != livePeople.size()) {
+                livePeople.forEach(p -> {
+                    if (!followedChannels.contains(p)) {
+                        followedChannels.add(p);
+                        if (!initialBeat && BotnakTrayIcon.shouldDisplayFollowedActivity()) {
+                            GUIMain.getSystemTrayIcon().displayLiveChannel(p);
+                        }
                     }
-                }
-            });
-            followedChannels.removeIf(s -> !livePeople.contains(s));
-            if (GUIMain.streams != null && GUIMain.streams.isVisible())
-                GUIMain.streams.parseFollowed();
-            count = livePeople.size();
-        }
-        try {
-            Thread.sleep(1000L);
-        } catch (InterruptedException ignored) {
+                });
+                followedChannels.removeIf(s -> !livePeople.contains(s));
+                if (GUIMain.streams != null && GUIMain.streams.isVisible())
+                    GUIMain.streams.parseFollowed();
+                count = livePeople.size();
+            }
+            try {
+                Thread.sleep(1000L);
+            } catch (InterruptedException ignored) {
+            }
         }
         String[] lastFollowers = APIRequests.Twitch.getLast20Followers(getUserAccount().getName());
         if (lastFollowers.length > 0) {
