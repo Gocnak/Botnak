@@ -67,7 +67,6 @@ public class OutputThread extends Thread {
         }
     }
 
-
     /**
      * This method starts the Thread consuming from the outgoing message
      * Queue and sending lines to the server.
@@ -77,7 +76,7 @@ public class OutputThread extends Thread {
             boolean running = true;
             while (running) {
                 // Small delay to prevent spamming of the channel
-                Thread.sleep(_bot.getMessageDelay());
+                sleep(_bot.getMessageDelay());
 
                 String line = _outQueue.next();
                 if (line != null) {
@@ -86,13 +85,19 @@ public class OutputThread extends Thread {
                     running = false;
                 }
             }
-        } catch (InterruptedException e) {
+            bwriter.close();
+        } catch (Exception e) {
             // Just let the method return naturally...
         }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        bwriter.close();
+        super.finalize();
     }
 
     private PircBot _bot = null;
     private Queue<String> _outQueue = null;
     private BufferedWriter bwriter = null;
-
 }

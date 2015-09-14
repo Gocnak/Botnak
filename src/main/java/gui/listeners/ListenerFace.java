@@ -3,12 +3,10 @@ package gui.listeners;
 import face.Face;
 import face.FrankerFaceZ;
 import face.TwitchFace;
+import gui.forms.GUIMain;
 
 import javax.swing.*;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.DefaultStyledDocument;
-import javax.swing.text.Document;
-import javax.swing.text.Element;
+import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -23,6 +21,15 @@ public class ListenerFace extends MouseAdapter {
         JTextPane editor = (JTextPane) e.getSource();
         Point pt = new Point(e.getX(), e.getY());
         int pos = editor.viewToModel(pt);
+        try {
+            Rectangle rect = editor.modelToView(pos);
+            int lowerCorner = rect.y + rect.height;
+            if (e.getX() < rect.x && e.getY() < lowerCorner && pos > 0) {
+                pos--;
+            }
+        } catch (BadLocationException ex) {
+            GUIMain.log(ex);
+        }
         if (pos >= 0) {
             Document doc = editor.getDocument();
             if (doc instanceof DefaultStyledDocument) {

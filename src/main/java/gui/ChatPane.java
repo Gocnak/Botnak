@@ -96,7 +96,18 @@ public class ChatPane implements DocumentListener {
     public String getViewerCountString() {
         if (chan.equalsIgnoreCase("system logs")) return null;
         if (viewerCount == -1) return "Viewer count: Offline";
-        return String.format("Viewer count: %d (%d)", viewerCount, viewerPeak);
+        return String.format("Viewer count: %s (%s)", format(viewerCount), format(viewerPeak));
+    }
+
+    private String format(Object obj) {
+        String s = obj.toString();
+        int length = s.length();
+        if (length < 4) return s;
+        //1 000 000
+        for (int i = length - 3; i > 0; i -= 3) {
+            s = s.substring(0, i) + "," + s.substring(i);
+        }
+        return s;
     }
 
     /**
@@ -329,9 +340,6 @@ public class ChatPane implements DocumentListener {
     public void onMessage(MessageWrapper m, boolean showChannel) {
         if (textPane == null) return;
         Message message = m.getLocal();
-        SimpleAttributeSet user = new SimpleAttributeSet();
-        StyleConstants.setFontFamily(user, Settings.font.getValue().getFamily());
-        StyleConstants.setFontSize(user, Settings.font.getValue().getSize());
         String sender = message.getSender().toLowerCase();
         String channel = message.getChannel();
         String mess = message.getContent();
@@ -339,20 +347,7 @@ public class ChatPane implements DocumentListener {
         try {
             print(m, "\n" + getTime(), GUIMain.norm);
             User u = Settings.channelManager.getUser(sender, true);
-            Color c;
-            if (u.getColor() != null) {
-                if (GUIMain.userColMap.containsKey(sender)) {
-                    c = GUIMain.userColMap.get(sender);
-                } else {
-                    c = u.getColor();
-                    if (!Utils.checkColor(c)) {
-                        c = Utils.getColorFromHashcode(sender.hashCode());
-                    }
-                }
-            } else {//temporarily assign their color as randomly generated
-                c = Utils.getColorFromHashcode(sender.hashCode());
-            }
-            StyleConstants.setForeground(user, c);
+            SimpleAttributeSet user = getUserSet(u);
             if (channel.substring(1).equals(sender)) {
                 insertIcon(m, IconEnum.BROADCASTER, null);
             }
@@ -391,7 +386,6 @@ public class ChatPane implements DocumentListener {
             }
             //name stuff
             print(m, " ", GUIMain.norm);
-            user.addAttribute(HTML.Attribute.NAME, sender);
             SimpleAttributeSet userColor = new SimpleAttributeSet(user);
             FaceManager.handleNameFaces(sender, user);
             if (showChannel) {
@@ -412,7 +406,7 @@ public class ChatPane implements DocumentListener {
             printMessage(m, mess, set, u);
 
             if (BotnakTrayIcon.shouldDisplayMentions() && !Utils.isTabSelected(index)) {
-                if (mess.contains(Settings.accountManager.getUserAccount().getName())) {
+                if (mess.toLowerCase().contains(Settings.accountManager.getUserAccount().getName().toLowerCase())) {
                     GUIMain.getSystemTrayIcon().displayMention(m.getLocal());
                 }
             }
@@ -541,11 +535,8 @@ public class ChatPane implements DocumentListener {
         senderSet = getUserSet(senderUser);
         receiverSet = getUserSet(receiverUser);
 
-
         //name stuff
         print(m, " ", GUIMain.norm);
-        senderSet.addAttribute(HTML.Attribute.NAME, senderUser.getDisplayName());
-        receiverSet.addAttribute(HTML.Attribute.NAME, receiverUser.getDisplayName());
         FaceManager.handleNameFaces(sender, senderSet);
         FaceManager.handleNameFaces(receiverUser.getNick(), receiverSet);
         print(m, senderUser.getDisplayName(), senderSet);

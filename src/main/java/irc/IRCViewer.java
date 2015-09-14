@@ -119,12 +119,15 @@ public class IRCViewer extends MessageHandler {
         MessageQueue.addMessage(m);
     }
 
-    public void onDisconnect() {
+    public void onDisconnect(boolean whisper) {
         if (!GUIMain.shutDown && getViewer() != null) {
-            GUIMain.logCurrent("Detected a disconnection for the account: " + getViewer().getNick());
+            if (!whisper) GUIMain.logCurrent("Detected a disconnection for the account: " + getViewer().getNick());
             if (Settings.autoReconnectAccounts.getValue())
-                Settings.accountManager.createReconnectThread(getViewer());
-            else GUIMain.logCurrent("Auto-reconnects disabled, please check Preferences -> Auto-Reconnect!");
+                Settings.accountManager.createReconnectThread(whisper ? getViewer().getWhisperConnection() :
+                        getViewer().getConnection());
+            else {
+                if (!whisper) GUIMain.logCurrent("Auto-reconnects disabled, please check Preferences -> Auto-Reconnect!");
+            }
         }
     }
 

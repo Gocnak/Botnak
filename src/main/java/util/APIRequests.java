@@ -345,6 +345,12 @@ public class APIRequests {
             return toReturn.toArray(new String[toReturn.size()]);
         }
 
+        /**
+         * Gets the last 20 followers of a channel.
+         *
+         * @param channel The channel to check.
+         * @return A string array of (up to) the last 20 followers.
+         */
         public static String[] getLast20Followers(String channel) {
             ArrayList<String> toReturn = new ArrayList<>();
             try {

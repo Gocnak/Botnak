@@ -103,7 +103,7 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
     }
 
     public void displayNewFollower(String name) {
-        displayMessage("New Follower!", name + " is now following the channel!", MessageType.INFO);
+        displayMessage("New follower!", name + " is now following the channel!", MessageType.INFO);
     }
 
 
@@ -112,7 +112,7 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
     }
 
     public void displayLiveChannel(String name) {
-        displayMessage("Followed Stream went live!", name + " just started streaming.", MessageType.INFO);
+        displayMessage("Followed stream went live!", name + " just started streaming.", MessageType.INFO);
     }
 
 
@@ -121,7 +121,7 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
     }
 
     public void displaySubscriber(String content, boolean continued) {
-        displayMessage(continued ? "Continued Subscription!" : "New Subscriber!", content, MessageType.INFO);
+        displayMessage(continued ? "Continued subscription!" : "New Subscriber!", content, MessageType.INFO);
     }
 
     @Override

@@ -309,7 +309,7 @@ public class Settings {
         File[] nameFaces = nameFaceDir.listFiles();
         if (nameFaces != null && nameFaces.length > 0) {
             GUIMain.log("Loading name faces...");
-            loadNameFaces();
+            loadNameFaces(nameFaces);
         }
         if (ffzFacesEnable.getValue()) {
             frankerFaceZDir.mkdirs();
@@ -471,9 +471,8 @@ public class Settings {
 
         @Override
         public void handleLineLoad(String line) {
-            String[] split = line.split(",");
-            int startIdx = line.indexOf(",", line.indexOf(",", 0) + 1);//name,0,<- bingo
-            String[] split2add = line.substring(startIdx + 1).split(",");//files
+            String[] split = line.split(",", 3);
+            String[] split2add = split[2].split(",");//files
             int perm = 0;
             try {
                 perm = Integer.parseInt(split[1]);
@@ -1088,11 +1087,10 @@ public class Settings {
     /**
      * Name faces
      */
-    public static void loadNameFaces() {
+    public static void loadNameFaces(File[] nameFaces) {
         try {
-            File[] nameFaces = nameFaceDir.listFiles();
-            if (nameFaces == null) return;
             for (File nameFace : nameFaces) {
+                if (nameFace.isDirectory()) continue;
                 String name = Utils.removeExt(nameFace.getName());
                 FaceManager.nameFaceMap.put(name, new Face(name, nameFace.getAbsolutePath()));
             }

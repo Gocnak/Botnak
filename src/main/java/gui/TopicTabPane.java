@@ -6,4 +6,9 @@ package gui;
 public class TopicTabPane extends ChatPane {
 
 
+    public TopicTabPane() {
+
+    }
+
+
 }

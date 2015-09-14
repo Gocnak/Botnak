@@ -297,11 +297,17 @@ public class GUIMain extends JFrame {
     private void autoReconnectToggleItemStateChanged(ItemEvent e) {
         Settings.autoReconnectAccounts.setValue(e.getStateChange() == ItemEvent.SELECTED);
         if (e.getStateChange() == ItemEvent.SELECTED) {
-            if (viewer != null && viewer.getViewer() != null && !viewer.getViewer().isConnected()) {
-                Settings.accountManager.createReconnectThread(viewer.getViewer());
+            if (viewer != null && viewer.getViewer() != null) {
+                if (!viewer.getViewer().getConnection().isConnected())
+                    Settings.accountManager.createReconnectThread(viewer.getViewer().getConnection());
+                if (!viewer.getViewer().getWhisperConnection().isConnected())
+                    Settings.accountManager.createReconnectThread(viewer.getViewer().getWhisperConnection());
             }
-            if (bot != null && bot.getBot() != null && !bot.getBot().isConnected()) {
-                Settings.accountManager.createReconnectThread(bot.getBot());
+            if (bot != null && bot.getBot() != null) {
+                if (!bot.getBot().isConnected())
+                    Settings.accountManager.createReconnectThread(bot.getBot().getConnection());
+                if (!bot.getBot().getWhisperConnection().isConnected())
+                    Settings.accountManager.createReconnectThread(bot.getBot().getWhisperConnection());
             }
         }
     }

@@ -36,11 +36,11 @@ public class InputThread extends Thread {
      * The InputThread reads lines from the IRC server and allows the
      * PircBot to handle them.
      *
-     * @param bot     An instance of the underlying PircBot.
+     * @param conn    The instance of the connection.
      * @param breader The BufferedReader that reads lines from the server.
      */
-    InputThread(PircBot bot, Socket socket, BufferedReader breader) {
-        _bot = bot;
+    InputThread(PircBotConnection conn, Socket socket, BufferedReader breader) {
+        connection = conn;
         _socket = socket;
         _breader = breader;
         this.setName(this.getClass() + "-Thread");
@@ -54,7 +54,7 @@ public class InputThread extends Thread {
      * @param line The raw line to send to the IRC server.
      */
     void sendRawLine(String line) {
-        _bot.sendRawLine(line);
+        connection.sendRawLine(line);
     }
 
 
@@ -89,13 +89,13 @@ public class InputThread extends Thread {
                     String line;
                     while (((line = _breader.readLine()) != null) && !GUIMain.shutDown) {
                         try {
-                            _bot.log(line);
+                            connection.getBot().log(line);
                             if (line.startsWith("PING ")) {
                                 // Respond to the ping and return immediately.
                                 sendRawLine("PONG " + line.substring(5));
                             } else {
                                 line = line.replaceAll("\\s+", " ");
-                                _bot.handleLine(line);
+                                connection.getBot().handleLine(line);
                             }
                         } catch (Throwable t) {
                             // Stick the whole stack trace into a String so we can output it nicely.
@@ -121,9 +121,9 @@ public class InputThread extends Thread {
             // Just assume the socket was already closed.
         }
         if (!_disposed) {
-            _bot.log("*** Disconnected.");
+            connection.getBot().log("*** Disconnected.");
             _isConnected = false;
-            _bot.getMessageHandler().onDisconnect();
+            connection.getBot().getMessageHandler().onDisconnect(connection.isWhisper());
         }
     }
 
@@ -140,7 +140,7 @@ public class InputThread extends Thread {
         }
     }
 
-    private PircBot _bot = null;
+    private PircBotConnection connection = null;
     private Socket _socket = null;
     private BufferedReader _breader = null;
     private boolean _isConnected = true;

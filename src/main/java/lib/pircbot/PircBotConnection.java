@@ -17,7 +17,7 @@ public class PircBotConnection {
     private Queue<String> _outQueue = new Queue<>();
     private PircBot bot = null;
     private ConnectionType type;
-    private String _server;
+    private String _server, name;
 
     public OutputThread getOutputThread() {
         return _outputThread;
@@ -25,6 +25,22 @@ public class PircBotConnection {
 
     public Queue<String> getOutQueue() {
         return _outQueue;
+    }
+
+    public PircBot getBot() {
+        return bot;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public ConnectionType getType() {
+        return type;
+    }
+
+    public boolean isWhisper() {
+        return this.type == ConnectionType.WHISPER;
     }
 
     private InetAddress _inetAddress = null;
@@ -45,6 +61,7 @@ public class PircBotConnection {
     public PircBotConnection(PircBot bot, ConnectionType type) {
         this.bot = bot;
         this.type = type;
+        name = (isWhisper() ? bot.getNick() + "_whisper" : bot.getNick());
     }
 
     /**
@@ -100,7 +117,7 @@ public class PircBotConnection {
         _outputThread.sendRawLine("PASS " + bot.getPassword());
         _outputThread.sendRawLine("NICK " + bot.getNick());
 
-        _inputThread = new InputThread(bot, socket, breader);
+        _inputThread = new InputThread(this, socket, breader);
 
         // Read stuff back from the server to see if we connected.
         String line;
@@ -141,12 +158,10 @@ public class PircBotConnection {
 
         // This makes the socket timeout on read operations after 5 minutes.
         // Maybe in some future version I will let the user change this at runtime.
-        if (type != ConnectionType.WHISPER) {
-            try {
-                socket.setSoTimeout(5 * 60 * 1000);
-            } catch (Exception e) {
-                return false;
-            }
+        try {
+            socket.setSoTimeout(5 * 60 * 1000);
+        } catch (Exception e) {
+            return false;
         }
 
         // Now start the InputThread to read all other lines from the server.
@@ -226,5 +241,19 @@ public class PircBotConnection {
      */
     public InetAddress getInetAddress() {
         return _inetAddress;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return (obj instanceof PircBotConnection) &&
+                (((PircBotConnection) obj).getType() == this.getType()) &&
+                ((PircBotConnection) obj).getName().equals(this.getName()) &&
+                ((PircBotConnection) obj).getBot().equals(this.getBot());
+    }
+
+
+    public void sendRawLine(String line) {
+        if (getOutputThread() == null || line == null) return;
+        getOutputThread().sendRawLine(line);
     }
 }

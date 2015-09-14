@@ -92,15 +92,14 @@ public class PircBot {
      * @param port     The port number to connect to on the server.
      */
     public boolean connect() {
-        //TODO if useWhispers
         boolean whisper = false, normal = false;
-        if (whisperConnection.connect()) {
-            GUIMain.log("Whisper connected!");
-            whisper = true;
-        }
         if (connection.connect()) {
             getMessageHandler().onConnect();
             normal = true;
+        }
+        //TODO if useWhispers
+        if (whisperConnection.connect()) {
+            whisper = true;
         }
         return (whisper || normal);
     }
@@ -178,9 +177,16 @@ public class PircBot {
         }
     }
 
-
     public boolean isConnected() {
         return connection.isConnected();
+    }
+
+    public PircBotConnection getConnection() {
+        return connection;
+    }
+
+    public PircBotConnection getWhisperConnection() {
+        return whisperConnection;
     }
 
     public boolean isWhisperConnected() {
@@ -422,7 +428,7 @@ public class PircBot {
         String[] parts = line.split(" ");
         String tags = parts[0];
         String channel = parts[3];
-        parseTags(tags, Settings.accountManager.getUserAccount().getName(), channel);
+        parseTags(tags, getNick(), channel);
     }
 
     private void parseTags(String line, String user, String channel) {

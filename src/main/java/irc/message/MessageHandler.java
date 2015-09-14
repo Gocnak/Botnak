@@ -6,6 +6,8 @@ package irc.message;
  * This is an abstract class because the Bot and Viewer classes implement different
  * methods for different reasons. IRCBot doesn't need to implement all of these methods
  * and IRCViewer may not as well.
+ *
+ * Therefore, we do not use an interface, nor do we make all the methods abstract.
  */
 public abstract class MessageHandler {
     /**
@@ -93,8 +95,10 @@ public abstract class MessageHandler {
      * <p>
      * The implementation of this method in the PircBot abstract class
      * performs no actions and may be overridden as required.
+     *
+     * @param whisper If the connection is from a whisper connection.
      */
-    public void onDisconnect() {
+    public void onDisconnect(boolean whisper) {
     }
 
     /**

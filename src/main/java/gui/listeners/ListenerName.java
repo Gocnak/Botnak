@@ -8,10 +8,7 @@ import util.Utils;
 import util.settings.Settings;
 
 import javax.swing.*;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.DefaultStyledDocument;
-import javax.swing.text.Document;
-import javax.swing.text.Element;
+import javax.swing.text.*;
 import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -29,6 +26,15 @@ public class ListenerName extends MouseAdapter {
         JTextPane textPane = (JTextPane) e.getSource();
         Point pt = new Point(e.getX(), e.getY());
         int pos = textPane.viewToModel(pt);
+        try {
+            Rectangle rect = textPane.modelToView(pos);
+            int lowerCorner = rect.y + rect.height;
+            if (e.getX() < rect.x && e.getY() < lowerCorner && pos > 0) {
+                pos--;
+            }
+        } catch (BadLocationException ex) {
+            GUIMain.log(ex);
+        }
         if (pos >= 0) {
             Document doc = textPane.getDocument();
             if (doc instanceof DefaultStyledDocument) {
