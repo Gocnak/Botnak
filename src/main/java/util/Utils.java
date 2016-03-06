@@ -36,7 +36,7 @@ public class Utils {
      * @param param The max number to choose.
      */
     public static int nextInt(int param) {
-        return new Random().nextInt(param);
+        return random(0, param);
     }
 
     /**
@@ -856,9 +856,10 @@ public class Utils {
 
     /**
      * Gets a color from the given user, whether it be
-     *  1. From the manually-set User Color map.
-     *  2. From their Twitch color set on the website.
-     *  3. The generated color from their name's hash code.
+     * 1. From the manually-set User Color map.
+     * 2. From their Twitch color set on the website.
+     * 3. The generated color from their name's hash code.
+     *
      * @param u The user to get the color of.
      * @return The color of the user.
      */

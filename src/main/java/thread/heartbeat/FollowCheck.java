@@ -27,7 +27,7 @@ public class FollowCheck implements HeartbeatThread {
         initialBeat = true;
         followedChannels = new CopyOnWriteArraySet<>();
         followers = new CopyOnWriteArraySet<>();
-        toUpdate = new Timer(10000L);
+        toUpdate = new Timer(20000L);
     }
 
     @Override

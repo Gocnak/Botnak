@@ -30,7 +30,7 @@ public class GUIAuthorizeAccount extends JFrame {
         initComponents();
         if (!isForBotAccount && getAccount(false) != null) {
             Oauth key = getAccount(false).getKey();
-            statusPane.setText("Here is the current User OAuth key's permission. Logout of the User account if you wish to change it!");
+            statusPane.setText("Here is the current User OAuth key's permissions. Logout of the User account if you wish to change it!");
             accountNameField.setText(getAccount(false).getName());
             oauthField.setText(key.getKey());
             boxEditStatus.setSelected(key.canSetTitle());
@@ -83,8 +83,8 @@ public class GUIAuthorizeAccount extends JFrame {
                             new Account(name, new Oauth(oauth, false, false, false, false)));
                     Settings.accountManager.addTask(new Task(null, Task.Type.CREATE_BOT_ACCOUNT, null));
                     if (GUIMain.settings != null) {
-                        GUISettings.normUser.setText(name);
-                        GUISettings.normPass.setText(oauth);
+                        GUISettings.botUser.setText(name);
+                        GUISettings.botPass.setText(oauth);
                     }
                 }
             } else {
@@ -94,8 +94,8 @@ public class GUIAuthorizeAccount extends JFrame {
                                     boxReadSubs.isSelected(), boxFollowed.isSelected())));
                     Settings.accountManager.addTask(new Task(null, Task.Type.CREATE_VIEWER_ACCOUNT, null));
                     if (GUIMain.settings != null) {
-                        GUISettings.botUser.setText(name);
-                        GUISettings.botPass.setText(oauth);
+                        GUISettings.normUser.setText(name);
+                        GUISettings.normPass.setText(oauth);
                     }
                 }
             }

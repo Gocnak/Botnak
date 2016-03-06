@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class GUIStreams extends JFrame {
 
     private Oauth getKey() {
-        return Settings.accountManager.getUserAccount().getKey();
+        return (Settings.accountManager.getUserAccount() != null ? Settings.accountManager.getUserAccount().getKey() : null);
     }
 
     public GUIStreams() {
@@ -33,7 +33,7 @@ public class GUIStreams extends JFrame {
     }
 
     public void parseFollowed() {
-        if (getKey().canReadFollowed()) {
+        if (getKey() != null && getKey().canReadFollowed()) {
             CopyOnWriteArraySet<String> channels = FollowCheck.followedChannels;
             if (channels != null && channels.size() > 0) {
                 setFollowedListModel(channels.toArray(new String[channels.size()]));

@@ -220,9 +220,7 @@ public class PircBot {
             sendRawMessage(target, message);
             if (message.startsWith("/me")) {
                 getMessageHandler().onAction(getNick(), target, message.substring(4));
-                //handleLine(":" + getNick() + "!" + getNick() + "@" + getNick() + ".tmi.twitch.tv PRIVMSG " + target + " :\u0001ACTION " + message.substring(4) + "\u0001");
             } else {
-                //handleLine(":" + getNick() + "!" + getNick() + "@" + getNick() + ".tmi.twitch.tv PRIVMSG " + target + " :" + message);
                 getMessageHandler().onMessage(target, getNick(), message);
             }
         }

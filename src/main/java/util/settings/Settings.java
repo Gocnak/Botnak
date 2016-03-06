@@ -207,7 +207,7 @@ public class Settings {
      * This void loads everything Botnak will use, and sets the appropriate settings.
      */
     public static void load() {
-        WINDOW.load();
+        if (Utils.areFilesGood(WINDOW.getFile().getAbsolutePath())) WINDOW.load();
         accountManager = new AccountManager();
         channelManager = new ChannelManager();
         accountManager.start();
@@ -275,7 +275,7 @@ public class Settings {
             donationManager.scanInitialDonations(0);
             scannedInitialDonations.setValue(true);
         }
-        if (accountManager.getUserAccount().getKey().canReadSubscribers()) {
+        if (accountManager.getUserAccount() != null && accountManager.getUserAccount().getKey().canReadSubscribers()) {
             if (!scannedInitialSubscribers.getValue() && accountManager.getUserAccount() != null) {
                 subscriberManager.scanInitialSubscribers(accountManager.getUserAccount().getName(),
                         accountManager.getUserAccount().getKey(), 0, new HashSet<>());

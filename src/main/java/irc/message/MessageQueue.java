@@ -46,43 +46,53 @@ public class MessageQueue extends Thread {
             pool.execute(() -> {
                 MessageWrapper wrap = new MessageWrapper(mess);
                 try {//try catch for security, if one message fails, we still want to receive messages
-                    if (mess.getType() == Message.MessageType.LOG_MESSAGE) {
-                        if (mess.getChannel() != null) {
-                            GUIMain.getChatPane(mess.getChannel()).log(wrap, true);
-                        } else if (mess.getExtra() != null) {
-                            ((ChatPane)mess.getExtra()).log(wrap, true);
-                        } else {
-                            GUIMain.getSystemLogsPane().log(wrap, true);
-                        }
-                    } else if (mess.getType() == Message.MessageType.NORMAL_MESSAGE ||
-                            mess.getType() == Message.MessageType.ACTION_MESSAGE) {
-                        if (!GUIMain.combinedChatPanes.isEmpty()) {
-                            for (CombinedChatPane cc : GUIMain.combinedChatPanes) {
-                                for (String chan : cc.getChannels()) {
-                                    if (mess.getChannel().substring(1).equalsIgnoreCase(chan)) {
-                                        cc.onMessage(wrap, true);
-                                        break;
+                    switch (mess.getType()) {
+                        case LOG_MESSAGE:
+                            if (mess.getChannel() != null) {
+                                GUIMain.getChatPane(mess.getChannel()).log(wrap, true);
+                            } else if (mess.getExtra() != null) {
+                                ((ChatPane) mess.getExtra()).log(wrap, true);
+                            } else {
+                                GUIMain.getSystemLogsPane().log(wrap, true);
+                            }
+                            break;
+                        case NORMAL_MESSAGE:
+                        case ACTION_MESSAGE:
+                            if (!GUIMain.combinedChatPanes.isEmpty()) {
+                                for (CombinedChatPane cc : GUIMain.combinedChatPanes) {
+                                    for (String chan : cc.getChannels()) {
+                                        if (mess.getChannel().substring(1).equalsIgnoreCase(chan)) {
+                                            cc.onMessage(wrap, true);
+                                            break;
+                                        }
                                     }
                                 }
                             }
-                        }
-                        GUIMain.getChatPane(mess.getChannel()).onMessage(wrap, false);
-                    } else if (mess.getType() == Message.MessageType.SUB_NOTIFY) {
-                        GUIMain.getChatPane(mess.getChannel()).onSub(wrap);
-                    } else if (mess.getType() == Message.MessageType.BAN_NOTIFY ||
-                            mess.getType() == Message.MessageType.HOSTED_NOTIFY ||
-                            mess.getType() == Message.MessageType.HOSTING_NOTIFY ||
-                            mess.getType() == Message.MessageType.JTV_NOTIFY) {
-                        GUIMain.getChatPane(mess.getChannel()).log(wrap, false);
-                    } else if (mess.getType() == Message.MessageType.DONATION_NOTIFY) {
-                        GUIMain.getChatPane(mess.getChannel()).onDonation(wrap);
-                        if (Settings.loadedDonationSounds) {
-                            SoundEngine.getEngine().playSpecialSound(false);
-                        }
-                    } else if (mess.getType() == Message.MessageType.CLEAR_TEXT) {
-                        wrap.addPrint(((ChatPane) mess.getExtra())::cleanupChat);
-                    } else if (mess.getType() == Message.MessageType.WHISPER_MESSAGE) {
-                        GUIMain.getCurrentPane().onWhisper(wrap);
+                            GUIMain.getChatPane(mess.getChannel()).onMessage(wrap, false);
+                            break;
+                        case SUB_NOTIFY:
+                            GUIMain.getChatPane(mess.getChannel()).onSub(wrap);
+                            break;
+                        case BAN_NOTIFY:
+                        case HOSTED_NOTIFY:
+                        case HOSTING_NOTIFY:
+                        case JTV_NOTIFY:
+                            GUIMain.getChatPane(mess.getChannel()).log(wrap, false);
+                            break;
+                        case DONATION_NOTIFY:
+                            GUIMain.getChatPane(mess.getChannel()).onDonation(wrap);
+                            if (Settings.loadedDonationSounds) {
+                                SoundEngine.getEngine().playSpecialSound(false);
+                            }
+                            break;
+                        case CLEAR_TEXT:
+                            wrap.addPrint(((ChatPane) mess.getExtra())::cleanupChat);
+                            break;
+                        case WHISPER_MESSAGE:
+                            GUIMain.getCurrentPane().onWhisper(wrap);
+                            break;
+                        default:
+                            break;
                     }
                     addToQueue(wrap);
                 } catch (Exception e) {

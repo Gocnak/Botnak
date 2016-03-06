@@ -195,9 +195,6 @@ public class IRCBot extends MessageHandler {
                     Response commandResponse = null;
                     switch (consoleCommand.getAction()) {
                         case ADD_FACE:
-                            commandResponse = FaceManager.handleFace(mess);
-                            if (commandResponse.isSuccessful()) Settings.FACES.save();
-                            break;
                         case CHANGE_FACE:
                             commandResponse = FaceManager.handleFace(mess);
                             if (commandResponse.isSuccessful()) Settings.FACES.save();
@@ -210,10 +207,8 @@ public class IRCBot extends MessageHandler {
                             commandResponse = FaceManager.toggleFace(first);
                             break;
                         case ADD_SOUND:
-                            commandResponse = SoundEngine.getEngine().handleSound(mess, false);
-                            break;
                         case CHANGE_SOUND:
-                            commandResponse = SoundEngine.getEngine().handleSound(mess, true);
+                            commandResponse = SoundEngine.getEngine().handleSound(mess, consoleCommand.getAction() == ConsoleCommand.Action.CHANGE_SOUND);
                             break;
                         case REMOVE_SOUND:
                             commandResponse = SoundEngine.getEngine().removeSound(first);
@@ -226,18 +221,13 @@ public class IRCBot extends MessageHandler {
                             commandResponse = SoundEngine.getEngine().toggleSound(individualSound ? first : null, individualSound);
                             break;
                         case STOP_SOUND:
-                            commandResponse = SoundEngine.getEngine().stopSound(false);
-                            break;
                         case STOP_ALL_SOUNDS:
-                            commandResponse = SoundEngine.getEngine().stopSound(true);
+                            commandResponse = SoundEngine.getEngine().stopSound(consoleCommand.getAction() == ConsoleCommand.Action.STOP_ALL_SOUNDS);
                             break;
                         case SEE_SOUND_STATE:
                             commandResponse = SoundEngine.getEngine().getSoundState(first);
                             break;
                         case ADD_KEYWORD:
-                            commandResponse = Utils.handleKeyword(mess);
-                            if (commandResponse.isSuccessful()) Settings.KEYWORDS.save();
-                            break;
                         case REMOVE_KEYWORD:
                             commandResponse = Utils.handleKeyword(mess);
                             if (commandResponse.isSuccessful()) Settings.KEYWORDS.save();

@@ -110,10 +110,12 @@ public class AccountManager extends Thread {
                         break;
                     case DISCONNECT:
                         if (t.doer != null) {
-                            ReconnectThread potential = reconnectThreads.get(t.doer.getConnection().getName());
-                            if (potential != null) {
-                                potential.t.cancel();
-                                reconnectThreads.remove(t.doer.getNick());
+                            if (t.doer.getConnection() != null) {
+                                ReconnectThread potential = reconnectThreads.get(t.doer.getConnection().getName());
+                                if (potential != null) {
+                                    potential.t.cancel();
+                                    reconnectThreads.remove(t.doer.getNick());
+                                }
                             }
                             t.doer.disconnect();
                             t.doer.dispose();

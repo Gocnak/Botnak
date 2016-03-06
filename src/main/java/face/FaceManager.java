@@ -237,9 +237,9 @@ public class FaceManager {
             else toReturn.setResponseText("Failed to toggle face, not done checking Twitch faces!");
             return toReturn;
         }
-        Set<Integer> set = twitchFaceMap.keySet();
-        for (int es : set) {
-            TwitchFace fa = twitchFaceMap.get(es);
+        Set<Map.Entry<Integer, TwitchFace>> set = twitchFaceMap.entrySet();
+        for (Map.Entry<Integer, TwitchFace> entry : set) {
+            TwitchFace fa = entry.getValue();
             String regex = fa.getRegex();
             Pattern p = Pattern.compile(regex);
             Matcher m = p.matcher(faceName);
@@ -253,9 +253,9 @@ public class FaceManager {
         }
         String errorMessage = "Could not find face " + faceName + " in the loaded Twitch faces";
         if (Settings.ffzFacesEnable.getValue()) {
-            Set<String> channels = ffzFaceMap.keySet();
-            for (String chan : channels) {
-                ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(chan);
+            Set<Map.Entry<String, ArrayList<FrankerFaceZ>>> channels = ffzFaceMap.entrySet();
+            for (Map.Entry<String, ArrayList<FrankerFaceZ>> entry : channels) {
+                ArrayList<FrankerFaceZ> faces = entry.getValue();
                 for (FrankerFaceZ f : faces) {
                     if (f.getRegex().equalsIgnoreCase(faceName)) {
                         boolean newStatus = !f.isEnabled();
@@ -274,10 +274,10 @@ public class FaceManager {
     }
 
     public static void handleNameFaces(String object, SimpleAttributeSet set) {
-        Set<String> names = nameFaceMap.keySet();
-        for (String s : names) {
-            if (object.equalsIgnoreCase(s)) {
-                insertFace(set, nameFaceMap.get(s).getFilePath());
+        Set<Map.Entry<String, Face>> entries = nameFaceMap.entrySet();
+        for (Map.Entry<String, Face> e : entries) {
+            if (object.equalsIgnoreCase(e.getKey())) {
+                insertFace(set, e.getValue().getFilePath());
                 break;
             }
         }
@@ -365,45 +365,17 @@ public class FaceManager {
                             //boundary checks are only necessary for emotes that start and end with a word character.
                             regex = "\\b" + regex + "\\b";
                         }
-                        Pattern p = Pattern.compile(regex);
-                        Matcher m = p.matcher(object);
-                        while (m.find() && !GUIMain.shutDown) {
-                            int start = m.start();
-                            int end = m.end() - 1;
-                            if (!Utils.inRanges(start, ranges) && !Utils.inRanges(end, ranges)) {
-                                ranges.put(start, end);
-                                SimpleAttributeSet attrs = new SimpleAttributeSet();
-                                attrs.addAttribute("faceinfo", f);
-                                attrs.addAttribute("regex", m.group());
-                                insertFace(attrs, f.getFilePath());
-                                attrs.addAttribute("start", start);
-                                rangeStyles.put(start, attrs);
-                            }
-                        }
+                        insertFaceMetadata(f, ranges, rangeStyles, regex, object);
                     }
                 }
                 break;
             case NORMAL_FACE:
                 if (doneWithFaces) {
-                    Set<String> keys = faceMap.keySet();
-                    for (String key : keys) {
-                        Face f = faceMap.get(key);
+                    Set<Map.Entry<String, Face>> entries = faceMap.entrySet();
+                    for (Map.Entry<String, Face> entry : entries) {
+                        Face f = entry.getValue();
                         if (!Utils.checkRegex(f.getRegex()) || !Utils.areFilesGood(f.getFilePath())) continue;
-                        Pattern p = Pattern.compile(f.getRegex());
-                        Matcher m = p.matcher(object);
-                        while (m.find() && !GUIMain.shutDown) {
-                            int start = m.start();
-                            int end = m.end() - 1;
-                            if (!Utils.inRanges(start, ranges) && !Utils.inRanges(end, ranges)) {
-                                ranges.put(start, end);
-                                SimpleAttributeSet attrs = new SimpleAttributeSet();
-                                attrs.addAttribute("faceinfo", f);
-                                attrs.addAttribute("regex", m.group());
-                                insertFace(attrs, f.getFilePath());
-                                attrs.addAttribute("start", start);
-                                rangeStyles.put(start, attrs);
-                            }
-                        }
+                        insertFaceMetadata(f, ranges, rangeStyles, f.getRegex(), object);
                     }
                 }
                 break;
@@ -416,21 +388,7 @@ public class FaceManager {
                         ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(currentChannel);
                         if (faces != null) {
                             for (FrankerFaceZ f : faces) {
-                                Pattern p = Pattern.compile(f.getRegex());
-                                Matcher m = p.matcher(object);
-                                while (m.find() && !GUIMain.shutDown) {
-                                    int start = m.start();
-                                    int end = m.end() - 1;
-                                    if (!Utils.inRanges(start, ranges) && !Utils.inRanges(end, ranges)) {
-                                        ranges.put(start, end);
-                                        SimpleAttributeSet attrs = new SimpleAttributeSet();
-                                        attrs.addAttribute("faceinfo", f);
-                                        attrs.addAttribute("channel", currentChannel);
-                                        insertFace(attrs, f.getFilePath());
-                                        attrs.addAttribute("start", start);
-                                        rangeStyles.put(start, attrs);
-                                    }
-                                }
+                                insertFaceMetadata(f, ranges, rangeStyles, currentChannel, object);
                             }
                         }
                     }
@@ -438,6 +396,26 @@ public class FaceManager {
                 break;
             default:
                 break;
+        }
+    }
+
+    private static void insertFaceMetadata(Face f, Map<Integer, Integer> ranges, Map<Integer, SimpleAttributeSet> rangeStyles,
+                                           String regex, String object) {
+        boolean isFFZ = f instanceof FrankerFaceZ;
+        Pattern p = Pattern.compile(isFFZ ? f.getRegex() : regex);
+        Matcher m = p.matcher(object);
+        while (m.find() && !GUIMain.shutDown) {
+            int start = m.start();
+            int end = m.end() - 1;
+            if (!Utils.inRanges(start, ranges) && !Utils.inRanges(end, ranges)) {
+                ranges.put(start, end);
+                SimpleAttributeSet attrs = new SimpleAttributeSet();
+                attrs.addAttribute("faceinfo", f);
+                attrs.addAttribute(isFFZ ? "channel" : "regex", isFFZ ? regex : m.group());
+                insertFace(attrs, f.getFilePath());
+                attrs.addAttribute("start", start);
+                rangeStyles.put(start, attrs);
+            }
         }
     }
 
@@ -828,9 +806,12 @@ public class FaceManager {
      */
     private static BufferedImage trimWhitespaceFromImage(BufferedImage source) {
         try {
+            Dimension originalTopLeft = new Dimension(0, 0);
+            Dimension originalBottomRight = new Dimension(source.getWidth() - 1, source.getHeight() - 1);
             Dimension topLeft = colorSearch(source, true);
             Dimension bottomRight = colorSearch(source, false);
-            if (!topLeft.equals(bottomRight)) {
+            if (!topLeft.equals(originalTopLeft) || !bottomRight.equals(originalBottomRight)) {
+                //We only create an image if the algorithm cropped something
                 return createNewImage(source, topLeft, bottomRight);
             }
         } catch (Exception e) {
@@ -841,59 +822,59 @@ public class FaceManager {
     }
 
     //scans the row/column for Transparent color
-    static boolean check(BufferedImage bi, int value, boolean isWidth, boolean invert) {
-        int bound = isWidth ? bi.getWidth() : bi.getHeight();
-        if (!invert) {
-            for (int i = 0; i < bound; i++) {
-                Color c = isWidth ? getARGBColor(bi, i, value) : getARGBColor(bi, value, i);
-                if (c.getAlpha() != 0) return false;
-            }
-        } else {
-            for (int i = bound - 1; i > -1; i--) {
-                Color c = isWidth ? getARGBColor(bi, i, value) : getARGBColor(bi, value, i);
-                if (c.getAlpha() != 0) return false;
-            }
+    private static boolean check(BufferedImage bi, int value, boolean searchingHorizontally, boolean invert) {
+        int bound = searchingHorizontally ? bi.getWidth() : bi.getHeight();
+        int start = invert ? bound - 1 : 0;
+        int change = invert ? -1 : 1;
+        for (int i = start; invert ? i > -1 : i < bound; i += change) {
+            Color c = searchingHorizontally ? getARGBColor(bi, i, value) : getARGBColor(bi, value, i);
+            if (c.getAlpha() != 0) return false;
         }
         return true;
     }
 
+    //Main color search algorithm, searches for rows/columns of transparency
     private static Dimension colorSearch(BufferedImage bi, boolean topLeft) {
-        Color initial = getARGBColor(bi, (topLeft ? 0 : bi.getWidth() - 1), (topLeft ? 0 : bi.getHeight() - 1));
+        int startX = topLeft ? 0 : bi.getWidth() - 1;
+        int startY = topLeft ? 0 : bi.getHeight() - 1;
+        int previousWidth = startX;
+        int previousHeight = startY;
+        Color initial = getARGBColor(bi, startX, startY);
         if (initial.getAlpha() == 0) {
             //start the search
-            int previousHeight = topLeft ? 0 : bi.getHeight();
-            int width = topLeft ? 0 : bi.getWidth() - 1;
-            int height = topLeft ? 0 : bi.getHeight() - 1;
-            int previousWidth = topLeft ? 0 : bi.getWidth();
+            int width = startX;
+            int height = startY;
             boolean changeWidth = true, changeHeight = true;
             while (changeHeight || changeWidth) {
                 //check across the current row (horizontally) of pixels
-                if (changeHeight && check(bi, height, true, !topLeft)) {
-                    //it's empty, change the value
-                    previousHeight = height;
-                    if (topLeft) height++;
-                    else height--;
-                } else {
-                    //we hit color in this search, revert to previous
-                    changeHeight = false;
-                    height = previousHeight;
+                if (changeHeight) {
+                    if (check(bi, height, true, !topLeft)) {
+                        //it's empty, change the value
+                        previousHeight = height;
+                        height += topLeft ? 1 : -1;
+                    } else {
+                        //we hit color in this search, revert to previous
+                        changeHeight = false;
+                        height = previousHeight;
+                    }
                 }
                 //check going up/down (vertically) at the current width value
-                if (changeWidth && check(bi, width, false, !topLeft)) {
-                    //it's empty, change the value
-                    previousWidth = width;
-                    if (topLeft) width++;
-                    else width--;
-                } else {
-                    //we hit color in this search, revert to previous
-                    changeWidth = false;
-                    width = previousWidth;
+                if (changeWidth) {
+                    if (check(bi, width, false, !topLeft)) {
+                        //it's empty, change the value
+                        previousWidth = width;
+                        width += topLeft ? 1 : -1;
+                    } else {
+                        //we hit color in this search, revert to previous
+                        changeWidth = false;
+                        width = previousWidth;
+                    }
                 }
             }
-            return new Dimension(previousWidth, previousHeight);
+            return new Dimension(width, height);
         }
         //if the initial is a color, there's no point to even do the search
-        return new Dimension(0, 0);
+        return new Dimension(previousWidth, previousHeight);
     }
 
     private static Color getARGBColor(BufferedImage bi, int x, int y) {

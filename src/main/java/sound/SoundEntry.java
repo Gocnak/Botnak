@@ -115,7 +115,7 @@ public class SoundEntry implements Closeable {
          *      (Since without the normalization at 0% we get a gain of -9, that's out 0% level)
          * Shit's so cash.
          */
-        float vol = -(float) ((75F / 9F) * (Math.pow(10, ((100 - Settings.soundVolumeGain.getValue()) / 100)) - 1));
+        float vol = -((75F / 9F) * (float) (Math.pow(10, ((100 - Settings.soundVolumeGain.getValue()) / 100)) - 1));
         volume.setValue(vol);
         this.clip.start();
         //sepl.incrementAndGet(); TODO counter

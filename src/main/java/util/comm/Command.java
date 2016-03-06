@@ -81,12 +81,7 @@ public class Command {
 
     @Override
     public boolean equals(Object other) {
-        if (other != null) {
-            if (other instanceof Command) {
-                return ((Command) other).contents.equals(contents) &&
-                        ((Command) other).trigger.equals(trigger);
-            }
-        }
-        return false;
+        return other instanceof Command && ((Command) other).contents.equals(contents) &&
+                ((Command) other).trigger.equals(trigger);
     }
 }

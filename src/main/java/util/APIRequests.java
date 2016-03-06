@@ -11,6 +11,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,20 +32,26 @@ public class APIRequests {
             if (channelName.contains("#")) channelName = channelName.replace("#", "");
             Response toReturn = new Response();
             try {
-                URL nightdev = new URL("https://nightdev.com/hosted/uptime.php?channel=" + channelName);
-                String line = Utils.createAndParseBufferedReader(nightdev.openStream());
+                URL uptime = new URL("https://api.twitch.tv/kraken/streams/" + channelName);
+                String line = Utils.createAndParseBufferedReader(uptime.openStream());
                 if (!line.isEmpty()) {
-                    if (line.contains("is not")) {
-                        toReturn.setResponseText("The stream is not live!");
-                    } else if (line.contains("No chan")) {
-                        toReturn.setResponseText("Error checking uptime, no channel specified!");
-                    } else {
+                    JSONObject outer = new JSONObject(line);
+                    if (!outer.isNull("stream")) {
+                        JSONObject stream = outer.getJSONObject("stream");
+                        Instant started = Instant.parse(stream.getString("created_at"));
+                        Duration duration = Duration.between(started, Instant.now());
+                        int hours = (int) duration.abs().getSeconds() / 3600;
+                        int mins = ((int) duration.abs().getSeconds() % 3600) / 60;
                         toReturn.wasSuccessful();
-                        toReturn.setResponseText("The stream has been live for: " + line);
+                        toReturn.setResponseText("The stream has been live for: " +
+                                ((hours > 0 ? (hours + " hours ") : "") + mins + " minutes"));
+                    } else {
+                        toReturn.setResponseText("The stream is not live!");
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
                 toReturn.setResponseText("Error checking uptime due to Exception!");
+                GUIMain.log(e);
             }
             return toReturn;
         }
@@ -106,7 +113,7 @@ public class APIRequests {
         public static String[] getStatusOfStream(String channel) {
             String[] toRet = {"", ""};
             try {
-                if (channel.contains("#")) channel = channel.replace("#", "");
+                if (channel.contains("#")) channel = channel.replaceAll("#", "");
                 URL twitch = new URL("https://api.twitch.tv/kraken/channels/" + channel
                         + "?client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
                 String line = Utils.createAndParseBufferedReader(twitch.openStream());
@@ -311,7 +318,7 @@ public class APIRequests {
                     }
                 }
             } catch (Exception e) {
-                if (!e.getMessage().contains("401")) {
+                if (!e.getMessage().contains("401") && !e.getMessage().contains("503")) {
                     GUIMain.log("Failed to get live followed channels due to exception:");
                     GUIMain.log(e);
                 }
