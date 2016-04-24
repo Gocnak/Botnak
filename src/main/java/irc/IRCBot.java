@@ -81,14 +81,13 @@ public class IRCBot extends MessageHandler {
         GUIMain.bot = null;
     }
 
-    public void onDisconnect(boolean whisper) {
+    public void onDisconnect() {
         if (!GUIMain.shutDown && getBot() != null) {
-            if (!whisper) GUIMain.logCurrent("Detected a disconnection for the account: " + getBot().getNick());
+            GUIMain.logCurrent("Detected a disconnection for the account: " + getBot().getNick());
             if (Settings.autoReconnectAccounts.getValue())
-                Settings.accountManager.createReconnectThread(whisper ? getBot().getWhisperConnection() :
-                        getBot().getConnection());
+                Settings.accountManager.createReconnectThread(getBot().getConnection());
             else {
-                if (!whisper) GUIMain.logCurrent("Auto-reconnects disabled, please check Preferences -> Auto-Reconnect!");
+                GUIMain.logCurrent("Auto-reconnects disabled, please check Preferences -> Auto-Reconnect!");
             }
         }
     }

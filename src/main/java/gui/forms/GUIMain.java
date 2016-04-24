@@ -300,14 +300,10 @@ public class GUIMain extends JFrame {
             if (viewer != null && viewer.getViewer() != null) {
                 if (!viewer.getViewer().getConnection().isConnected())
                     Settings.accountManager.createReconnectThread(viewer.getViewer().getConnection());
-                if (!viewer.getViewer().getWhisperConnection().isConnected())
-                    Settings.accountManager.createReconnectThread(viewer.getViewer().getWhisperConnection());
             }
             if (bot != null && bot.getBot() != null) {
                 if (!bot.getBot().isConnected())
                     Settings.accountManager.createReconnectThread(bot.getBot().getConnection());
-                if (!bot.getBot().getWhisperConnection().isConnected())
-                    Settings.accountManager.createReconnectThread(bot.getBot().getWhisperConnection());
             }
         }
     }

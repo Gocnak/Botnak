@@ -60,7 +60,7 @@ import java.util.StringTokenizer;
  */
 public class PircBot {
 
-    private PircBotConnection connection, whisperConnection;
+    private PircBotConnection connection;
 
     public ChannelManager getChannelManager() {
         return Settings.channelManager;
@@ -80,7 +80,6 @@ public class PircBot {
     public PircBot(MessageHandler messageHandler) {
         handler = messageHandler;
         connection = new PircBotConnection(this, PircBotConnection.ConnectionType.NORMAL);
-        whisperConnection = new PircBotConnection(this, PircBotConnection.ConnectionType.WHISPER);
     }
 
     /**
@@ -92,16 +91,11 @@ public class PircBot {
      * @param port     The port number to connect to on the server.
      */
     public boolean connect() {
-        boolean whisper = false, normal = false;
         if (connection.connect()) {
             getMessageHandler().onConnect();
-            normal = true;
+            return true;
         }
-        //TODO if useWhispers
-        if (whisperConnection.connect()) {
-            whisper = true;
-        }
-        return (whisper || normal);
+        return false;
     }
 
 
@@ -185,14 +179,6 @@ public class PircBot {
         return connection;
     }
 
-    public PircBotConnection getWhisperConnection() {
-        return whisperConnection;
-    }
-
-    public boolean isWhisperConnected() {
-        return whisperConnection.isConnected();
-    }
-
     /**
      * Sends a message to a channel or a private message to a user.  These
      * messages are added to the outgoing message queue and sent at the
@@ -232,8 +218,8 @@ public class PircBot {
     }
 
     public void sendRawWhisper(String raw) {
-        if (isWhisperConnected())
-            whisperConnection.getOutQueue().add("PRIVMSG #jtv :" + raw);
+        if (isConnected())
+            connection.getOutQueue().add("PRIVMSG #jtv :" + raw);
         else log("Whisper not connected!");
     }
 

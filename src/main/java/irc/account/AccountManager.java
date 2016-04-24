@@ -167,8 +167,7 @@ public class AccountManager extends Thread {
         ReconnectThread rt = new ReconnectThread(connection);
         rt.start();
         reconnectThreads.put(connection.getName(), rt);
-        if (!connection.isWhisper())
-            GUIMain.logCurrent("Attempting to reconnect the account: " + connection.getBot().getNick() + " ...");
+        GUIMain.logCurrent("Attempting to reconnect the account: " + connection.getBot().getNick() + " ...");
     }
 
     private class ReconnectThread {
@@ -190,8 +189,7 @@ public class AccountManager extends Thread {
                     if (connection.connect()) {
                         reconnectThreads.remove(connection.getName());
                         cachedTasks.forEach(Settings.accountManager::addTask);
-                        if (!connection.isWhisper())
-                            GUIMain.logCurrent("Successfully reconnected the account: " + connection.getBot().getNick() + " !");
+                        GUIMain.logCurrent("Successfully reconnected the account: " + connection.getBot().getNick() + " !");
                         t.cancel();
                     }
                 }

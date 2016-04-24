@@ -123,7 +123,7 @@ public class InputThread extends Thread {
         if (!_disposed) {
             connection.getBot().log("*** Disconnected.");
             _isConnected = false;
-            connection.getBot().getMessageHandler().onDisconnect(connection.isWhisper());
+            connection.getBot().getMessageHandler().onDisconnect();
         }
     }
 

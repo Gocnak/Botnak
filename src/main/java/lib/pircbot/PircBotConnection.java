@@ -39,15 +39,10 @@ public class PircBotConnection {
         return type;
     }
 
-    public boolean isWhisper() {
-        return this.type == ConnectionType.WHISPER;
-    }
-
     private InetAddress _inetAddress = null;
 
     public enum ConnectionType {
-        NORMAL(6667, "irc.twitch.tv"),
-        WHISPER(443, "192.16.64.212", "192.16.64.180", "199.9.253.119", "199.9.253.120");
+        NORMAL(6667, "irc.chat.twitch.tv");
 
         int port;
         String[] hosts;
@@ -61,7 +56,7 @@ public class PircBotConnection {
     public PircBotConnection(PircBot bot, ConnectionType type) {
         this.bot = bot;
         this.type = type;
-        name = (isWhisper() ? bot.getNick() + "_whisper" : bot.getNick());
+        this.name = bot.getNick();
     }
 
     /**

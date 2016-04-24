@@ -96,9 +96,8 @@ public abstract class MessageHandler {
      * The implementation of this method in the PircBot abstract class
      * performs no actions and may be overridden as required.
      *
-     * @param whisper If the connection is from a whisper connection.
      */
-    public void onDisconnect(boolean whisper) {
+    public void onDisconnect() {
     }
 
     /**
