@@ -5,6 +5,7 @@ import gui.CombinedChatPane;
 import gui.forms.GUIMain;
 import lib.pircbot.Queue;
 import sound.SoundEngine;
+import util.Utils;
 import util.settings.Settings;
 
 import java.util.concurrent.ExecutorService;
@@ -90,6 +91,14 @@ public class MessageQueue extends Thread {
                             break;
                         case WHISPER_MESSAGE:
                             GUIMain.getCurrentPane().onWhisper(wrap);
+                            break;
+                        case CHEER_MESSAGE:
+                            GUIMain.getChatPane(mess.getChannel()).onCheer(wrap);
+                            //TODO: Update this to use a separate folder, if need be
+                            if (Settings.loadedDonationSounds && Utils.isMainChannel(mess.getChannel()))
+                            {
+                                SoundEngine.getEngine().playSpecialSound(false);
+                            }
                             break;
                         default:
                             break;

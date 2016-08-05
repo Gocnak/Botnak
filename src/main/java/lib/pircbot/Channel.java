@@ -1,6 +1,7 @@
 package lib.pircbot;
 
 import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -10,6 +11,7 @@ public class Channel {
 
     private CopyOnWriteArraySet<String> mods;
     private CopyOnWriteArraySet<String> subscribers;
+    private ConcurrentHashMap<String, Integer> cheers;
     private String name;
 
     /**
@@ -21,6 +23,7 @@ public class Channel {
         this.name = name;
         this.mods = new CopyOnWriteArraySet<>();
         this.subscribers = new CopyOnWriteArraySet<>();
+        this.cheers = new ConcurrentHashMap<>();
     }
 
     /**
@@ -91,11 +94,33 @@ public class Channel {
     }
 
     /**
+     *  Sets a user's cheer amount.
+     * @param user   The user to set.
+     * @param amount Their cheer amount.
+     */
+    public void setCheer(String user, int amount)
+    {
+        cheers.put(user, amount);
+    }
+
+    /**
+     * Gets the cheer amount of bits this user has cheered, otherwise -1.
+     *
+     * @param user The user in question.
+     * @return The amount of bits this user has cheered, otherwise -1.
+     */
+    public int getCheer(String user)
+    {
+        return cheers.containsKey(user) ? cheers.get(user) : -1;
+    }
+
+    /**
      * Clear the channel of its mods and subscribers.
      */
     public void clear() {
         mods.clear();
         subscribers.clear();
+        cheers.clear();
     }
 
     @Override

@@ -1,12 +1,19 @@
 package face;
 
 import gui.ChatPane;
+import gui.forms.GUIMain;
 import lib.scalr.Scalr;
+import util.AnimatedGifEncoder;
+import util.GifDecoder;
+import util.Utils;
 import util.settings.Settings;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.URL;
 
 /**
@@ -19,7 +26,8 @@ import java.net.URL;
  * @version 4/10/2015
  */
 
-public class Icons {
+public class Icons
+{
 
     /**
      * For a specified icon, returns the file containing the
@@ -29,9 +37,11 @@ public class Icons {
      * @return the icon along with what type it is
      */
 
-    public static BotnakIcon getIcon(IconEnum i, String channel) {
+    public static BotnakIcon getIcon(IconEnum i, String channel)
+    {
         ImageIcon icon = null;
-        switch (i) {
+        switch (i)
+        {
             case MOD:
                 icon = sizeIcon(Settings.modIcon.getValue());
                 break;
@@ -49,13 +59,15 @@ public class Icons {
                 break;
             case SUBSCRIBER:
                 URL subIcon = FaceManager.getSubIcon(channel);
-                if (subIcon != null) {
+                if (subIcon != null)
+                {
                     icon = sizeIcon(subIcon);
                 }
                 break;
             case EX_SUBSCRIBER:
                 URL exSubscriberIcon = FaceManager.getExSubscriberIcon(channel);
-                if (exSubscriberIcon != null) {
+                if (exSubscriberIcon != null)
+                {
                     icon = sizeIcon(exSubscriberIcon);
                 }
                 break;
@@ -77,8 +89,40 @@ public class Icons {
             case GLOBAL_MOD:
                 icon = sizeIcon(ChatPane.class.getResource("/image/globalmod.png"));
                 break;
-            case NONE:
+            case CHEER_BIT_AMT_RED:
+                icon = sizeGifIcon(ChatPane.class.getResource("/image/bits_red.gif"), i.name());
                 break;
+            case CHEER_BIT_AMT_BLUE:
+                icon = sizeGifIcon(ChatPane.class.getResource("/image/bits_blue.gif"), i.name());
+                break;
+            case CHEER_BIT_AMT_GREEN:
+                icon = sizeGifIcon(ChatPane.class.getResource("/image/bits_green.gif"), i.name());
+                break;
+            case CHEER_BIT_AMT_PURPLE:
+                icon = sizeGifIcon(ChatPane.class.getResource("/image/bits_purple.gif"), i.name());
+                break;
+            case CHEER_BIT_AMT_GRAY:
+                icon = sizeGifIcon(ChatPane.class.getResource("/image/bits_gray.gif"), i.name());
+                break;
+            case CHEER_1_99:
+                icon = sizeIcon(ChatPane.class.getResource("/image/bits_tier_gray.png"));
+                break;
+            case CHEER_100_999:
+                icon = sizeIcon(ChatPane.class.getResource("/image/bits_tier_purple.png"));
+                break;
+            case CHEER_1K_4K:
+                icon = sizeIcon(ChatPane.class.getResource("/image/bits_tier_green.png"));
+                break;
+            case CHEER_5K_9K:
+                icon = sizeIcon(ChatPane.class.getResource("/image/bits_tier_blue.png"));
+                break;
+            case CHEER_10K_99K:
+                icon = sizeIcon(ChatPane.class.getResource("/image/bits_tier_red.png"));
+                break;
+            case CHEER_100K:
+                icon = sizeIcon(ChatPane.class.getResource("/image/bits_tier_orange.png"));
+                break;
+            case NONE:
             default:
                 break;
         }
@@ -93,35 +137,98 @@ public class Icons {
      * @return ImageIcon the resized image
      */
 
-    public static ImageIcon sizeIcon(URL image) {
+    public static ImageIcon sizeIcon(URL image)
+    {
         ImageIcon icon;
-        try {
+        try
+        {
             BufferedImage img = ImageIO.read(image);
             int size = Settings.font.getValue().getSize();
             img = Scalr.resize(img, Scalr.Method.ULTRA_QUALITY, size, size);
             icon = new ImageIcon(img);
             icon.getImage().flush();
             return icon;
-        } catch (Exception e) {
+        } catch (Exception e)
+        {
             icon = new ImageIcon(image);
         }
         return icon;
     }
 
+    public static ImageIcon sizeGifIcon(URL image, String name)
+    {
+        ImageIcon icon;
+        File temp = new File(Settings.defaultDir + File.separator + Utils.setExtension(name, ".gif"));
+        //Only size this if we haven't already
+        if (temp.exists())
+        {
+            icon = new ImageIcon(temp.getAbsolutePath());
+        } else
+        {
+            try
+            {
+                InputStream is = image.openStream();
+                GifDecoder decoder = new GifDecoder();
+                int status = decoder.read(is);
+                if (status == 0)
+                {
+                    AnimatedGifEncoder age = new AnimatedGifEncoder();
+                    age.setRepeat(0);
+                    age.setQuality(1);
+                    temp.deleteOnExit();
+                    FileOutputStream fos = new FileOutputStream(temp);
+                    age.start(fos);
+                    int n = decoder.getFrameCount();
+                    int size = Settings.font.getValue().getSize();
+                    for (int i = 0; i < n; i++)
+                    {
+                        BufferedImage scaled = Scalr.resize(decoder.getFrame(i), Scalr.Method.ULTRA_QUALITY, size, size);
+                        age.addFrame(scaled);
+                        if (decoder.getDelay(i) == 0)
+                        {
+                            age.setDelay(100);
+                        } else
+                        {
+                            age.setDelay(decoder.getDelay(i));
+                        }
+                    }
+
+                    if (age.finish())
+                        fos.close();
+
+                    icon = new ImageIcon(temp.getAbsolutePath());
+                } else
+                {
+                    GUIMain.log("sizeGifIcon failed to read the input gif! Status: " + status);
+                    icon = new ImageIcon(image);
+                }
+                is.close();
+            } catch (Exception e)
+            {
+                icon = new ImageIcon(image);
+            }
+        }
+        return icon;
+    }
+
     //Wrapper class for logging purposes
-    public static class BotnakIcon {
+    public static class BotnakIcon
+    {
         public final IconEnum t;
         public final ImageIcon ii;
 
-        public IconEnum getType() {
+        public IconEnum getType()
+        {
             return t;
         }
 
-        public ImageIcon getImage() {
+        public ImageIcon getImage()
+        {
             return ii;
         }
 
-        public BotnakIcon(IconEnum type, ImageIcon icon) {
+        public BotnakIcon(IconEnum type, ImageIcon icon)
+        {
             t = type;
             ii = icon;
         }

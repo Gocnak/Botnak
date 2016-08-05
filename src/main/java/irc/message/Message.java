@@ -1,5 +1,7 @@
 package irc.message;
 
+import util.settings.Settings;
+
 /**
  * Created by Nick on 3/21/2014.
  */
@@ -30,6 +32,19 @@ public class Message {
     }
 
     /**
+     *
+     * @param channel The channel of the message.
+     * @param content The message's contents.
+     * @param type    The type of the message.
+     */
+    public Message(String channel, String content, MessageType type)
+    {
+        this.channel = channel;
+        this.content = content;
+        this.type = type;
+    }
+
+    /**
      * Constructs either an Action or Normal chat message.
      *
      * @param channel  The channel the message is in.
@@ -42,6 +57,20 @@ public class Message {
         this.channel = channel;
         this.sender = sender;
         type = (isAction ? MessageType.ACTION_MESSAGE : MessageType.NORMAL_MESSAGE);
+    }
+
+    /**
+     * Copy constructor.
+     *
+     * @param other The other message.
+     */
+    public Message(Message other)
+    {
+        this.channel = other.channel;
+        this.content = other.content;
+        this.type = other.type;
+        this.sender = other.sender;
+        this.extra = other.extra;
     }
 
     public String getContent() {
@@ -100,6 +129,73 @@ public class Message {
         DONATION_NOTIFY,
         JTV_NOTIFY,
         WHISPER_MESSAGE,
-        CLEAR_TEXT
+        CLEAR_TEXT,
+        CHEER_MESSAGE
+    }
+
+    public static class ClearChatMessage extends Message
+    {
+        public ClearChatMessage(String channel)
+        {
+            setChannel(channel);
+            setContent("The chat was cleared by a moderator" + (Settings.actuallyClearChat.getValue() ? " (Prevented by Botnak)." : "."));
+        }
+    }
+
+    public static class BanMessage extends Message
+    {
+        private String reason, recipient;
+        protected String action;
+
+        public BanMessage(String channel, String recipient, String reason)
+        {
+            setType(MessageType.BAN_NOTIFY);
+            setChannel(channel);
+            this.reason = reason != null ? " Reason: " + reason : "";
+            this.recipient = determineBanName(recipient);
+            this.action = "";
+        }
+
+        private String determineBanName(String name)
+        {
+            if (name.equalsIgnoreCase(Settings.accountManager.getViewer().getNick()))
+                return "You have ";
+            else if (name.equalsIgnoreCase(Settings.accountManager.getBot().getNick()))
+                return "Your bot has ";
+            else
+                return name + " has ";
+        }
+
+        @Override
+        public String getContent()
+        {
+            return recipient + "been " + action + reason;
+        }
+    }
+
+    public static class PermaBanMessage extends BanMessage
+    {
+        public PermaBanMessage(String channel, String recipient, String reason)
+        {
+            super(channel, recipient, reason);
+            action = "permanently banned.";
+        }
+    }
+
+    public static class TimeoutMessage extends BanMessage
+    {
+        public TimeoutMessage(String channel, String recipient, String reason, int duration)
+        {
+            super(channel, recipient, reason);
+            action = determineAction(duration);
+        }
+
+        private String determineAction(int duration)
+        {
+            if (duration == 1)
+                return "purged.";
+            else
+                return "timed out for " + duration + " seconds.";
+        }
     }
 }

@@ -36,6 +36,16 @@ public abstract class MessageHandler {
     }
 
     /**
+     *
+     * @param channel The channel that this resubscribe has happened in.
+     * @param personResubbing The person resubbing
+     * @param msg  The message that Twitch ever-so-nicely prints for us.
+     */
+    public void onResubscribe(String channel, String personResubbing, String msg)
+    {
+    }
+
+    /**
      * This method is called whenever a private message is sent to the PircBot.
      * <p>
      * The implementation of this method in the PircBot abstract class
@@ -53,14 +63,32 @@ public abstract class MessageHandler {
 
 
     /**
-     * This is called when the chat is cleared. This is used for a crude
-     * ban detection, or just the chat being cleared in general.
-     * <p>
-     * This can return "CLEARCHAT user" or "CLEARCHAT"
+     * This is called when the chat is cleared by a moderator.
      *
-     * @param line The "CLEARCHAT" line.
+     * @param channel  The channel the chat was cleared in.
      */
-    public void onClearChat(String channel, String line) {
+    public void onClearChat(String channel)
+    {
+    }
+
+    /**
+     * @param channel  The channel that the timeout was issued
+     * @param user     The user that received this timeout.
+     * @param duration The duration of the timeout.
+     * @param reason   The reason for the timeout, null if no reason.
+     */
+    public void onUserTimedOut(String channel, String user, int duration, String reason)
+    {
+    }
+
+    /**
+     *
+     * @param channel The channel the ban was issued.
+     * @param user   The user that received the ban.
+     * @param reason The reason for the ban, null if no reason
+     */
+    public void onUserPermaBanned(String channel, String user, String reason)
+    {
     }
 
 
@@ -158,4 +186,15 @@ public abstract class MessageHandler {
     public void onWhisper(String sender, String receiver, String contents) {
     }
 
+    /**
+     * Called when a user sends a Cheer message with bits.
+     *
+     * @param channel The channel that was cheered in.
+     * @param sender  The user that cheered.
+     * @param amount  The amount of bits they cheered for.
+     * @param message The message they included (if any)
+     */
+    public void onCheer(String channel, String sender, int amount, String message)
+    {
+    }
 }

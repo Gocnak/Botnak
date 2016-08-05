@@ -162,7 +162,12 @@ public class AccountManager extends Thread {
     }
 
     public void createReconnectThread(PircBotConnection connection) {
-        if (!Settings.autoReconnectAccounts.getValue()) return;
+        if (!Settings.autoReconnectAccounts.getValue())
+        {
+            GUIMain.logCurrent("Auto-reconnects disabled, please check Preferences -> Auto-Reconnect!");
+            return;
+        }
+        if (connection == null) return;
         if (reconnectThreads.get(connection.getName()) != null) return;
         ReconnectThread rt = new ReconnectThread(connection);
         rt.start();

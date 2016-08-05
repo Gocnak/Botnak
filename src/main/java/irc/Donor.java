@@ -58,6 +58,27 @@ public class Donor {
         return IconEnum.NONE;
     }
 
+    public static IconEnum getCheerStatus(int amount)
+    {
+        if (amount >= 100000) return IconEnum.CHEER_100K;
+        else if (amount >= 10000) return IconEnum.CHEER_10K_99K;
+        else if (amount >= 5000) return IconEnum.CHEER_5K_9K;
+        else if (amount >= 1000) return IconEnum.CHEER_1K_4K;
+        else if (amount >= 100) return IconEnum.CHEER_100_999;
+        else if (amount > 0) return IconEnum.CHEER_1_99;
+        return IconEnum.NONE;
+    }
+
+    public static IconEnum getCheerAmountStatus(int amount)
+    {
+        if (amount >= 10000) return IconEnum.CHEER_BIT_AMT_RED;
+        else if (amount >= 5000) return IconEnum.CHEER_BIT_AMT_BLUE;
+        else if (amount >= 1000) return IconEnum.CHEER_BIT_AMT_GREEN;
+        else if (amount >= 100) return IconEnum.CHEER_BIT_AMT_PURPLE;
+        else if (amount > 0) return IconEnum.CHEER_BIT_AMT_GRAY;
+        return IconEnum.NONE;
+    }
+
     /**
      * Adds the specified amount to the donator's donated amount.
      *

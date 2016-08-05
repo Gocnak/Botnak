@@ -35,7 +35,6 @@ public class Heartbeat extends Thread {
         delay = del;
         addHeartbeatThread(new ViewerCount());
         addHeartbeatThread(new UserManager());
-        addHeartbeatThread(new BanQueue());
         if (Settings.trackDonations.getValue()) {
             addHeartbeatThread(new DonationCheck());
         }

@@ -18,10 +18,16 @@ import face.FaceManager;
 import gui.forms.GUIMain;
 import irc.message.MessageHandler;
 import util.Constants;
+import util.Utils;
 import util.settings.Settings;
 
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * PircBot is a Java framework for writing IRC bots quickly and easily.
@@ -344,19 +350,27 @@ public class PircBot {
             }
         } else if (command.equals("PRIVMSG") && _channelPrefixes.indexOf(target.charAt(0)) >= 0) {
             //catch the subscriber message
-            if (sourceNick.equalsIgnoreCase("twitchnotify")) {//THIS MAY CHANGE IN THE FUTURE
-                if (line.contains("subscribed!") || line.contains("subscribed for")) {
-                    //we dont want to get the hosted sub messages, Botnak should be in that chat for that
-                    String user = content.split(" ")[0];
-                    getChannelManager().handleSubscriber(target, user);
-                    getMessageHandler().onNewSubscriber(target, content, user);
-                } else if (line.contains("resubscribed")) {
-                    getMessageHandler().onJTVMessage(target.substring(1), content, tags);
-                }
+            if (sourceNick.equalsIgnoreCase("twitchnotify") && line.contains("subscribed!"))
+            {//I WAS RIGHT
+                //we dont want to get the hosted sub messages, Botnak should be in that chat for that
+                String user = content.split(" ")[0];
+                getChannelManager().handleSubscriber(target, user);
+                getMessageHandler().onNewSubscriber(target, content, user);
                 return;
             }
-            // This is a normal message to a channel.
-            getMessageHandler().onMessage(target, sourceNick, content);
+            //This message is a cheer message!
+            else if (tags.contains("bits="))
+            {
+                HashMap<String, String> tagsMap = Utils.parseTagsToMap(tags);
+                if (!tagsMap.isEmpty())
+                {
+                    int bitAmount = Integer.parseInt(tagsMap.get("bits"));
+                    getMessageHandler().onCheer(target, sourceNick, bitAmount, content);
+                }
+                return;
+            } else
+                // This is a normal message to a channel.
+                getMessageHandler().onMessage(target, sourceNick, content);
         } else if ("PRIVMSG".equals(command)) {
             if (sourceNick.equals("jtv")) {
                 if (line.contains("now hosting you")) {
@@ -374,36 +388,63 @@ public class PircBot {
 
     private boolean checkCommand(String command, String tags, String line, String content, StringTokenizer tokenizer, String senderInfo) {
         String target;
-        if ("CLEARCHAT".equals(command)) {
-            target = tokenizer.nextToken();
-            getMessageHandler().onClearChat(target, (line.contains(" :")) ? content : null);
-            return true;
-        } else if ("HOSTTARGET".equals(command)) {
-            target = tokenizer.nextToken();
-            String[] split = content.split(" ");
-            getMessageHandler().onHosting(target.substring(1), split[0], split[1]);
-            return true;
-        } else if ("NOTICE".equals(command)) {
-            if (tags.contains("room_mods")) {
+        HashMap<String, String> tagsMap = Utils.parseTagsToMap(tags);
+        switch (command)
+        {
+            case "CLEARCHAT":
                 target = tokenizer.nextToken();
-                buildMods(target, content);
+                if (tagsMap.isEmpty())
+                    getMessageHandler().onClearChat(target);
+                else if (!tagsMap.containsKey("ban-duration"))
+                    getMessageHandler().onUserPermaBanned(target, content, tagsMap.get("ban-reason"));
+                else
+                    getMessageHandler().onUserTimedOut(target, content, Integer.parseInt(tagsMap.get("ban-duration")), tagsMap.get("ban-reason"));
                 return true;
-            } else if (!tags.contains("host_on") && !tags.contains("host_off")) {//handled above
+            case "HOSTTARGET":
                 target = tokenizer.nextToken();
-                getMessageHandler().onJTVMessage(target.substring(1), content, tags);
+                String[] split = content.split(" ");
+                getMessageHandler().onHosting(target.substring(1), split[0], split[1]);
                 return true;
-            }
-        } else if ("ROOMSTATE".equals(command)) {
-            target = tokenizer.nextToken();
-            getMessageHandler().onRoomstate(target, tags);
-            parseTags(tags, null, target);
-            return true;
-        } else if ("WHISPER".equals(command)) {
-            target = tokenizer.nextToken();
-            String nick = senderInfo.substring(1, senderInfo.indexOf('!'));
-            parseTags(tags, nick, null);
-            getMessageHandler().onWhisper(nick, target, content);
-            return true;
+            case "ROOMSTATE":
+                target = tokenizer.nextToken();
+                getMessageHandler().onRoomstate(target, tags);
+                parseTags(tags, null, target);
+                return true;
+            case "NOTICE":
+                if (tags.contains("room_mods"))
+                {
+                    target = tokenizer.nextToken();
+                    buildMods(target, content);
+                    return true;
+                } else if (!tags.contains("host_on") && !tags.contains("host_off"))
+                {//handled above
+                    target = tokenizer.nextToken();
+                    getMessageHandler().onJTVMessage(target.substring(1), content, tags);
+                    return true;
+                }
+                break;
+            case "WHISPER":
+                target = tokenizer.nextToken();
+                String nick = senderInfo.substring(1, senderInfo.indexOf('!'));
+                parseTags(tags, nick, null);
+                getMessageHandler().onWhisper(nick, target, content);
+                return true;
+            case "RECONNECT"://We need to reconnect to this server
+                GUIMain.logCurrent("Detected a RECONNECT command, currently reconnecting the connection for: " + _nick + "!");
+                getConnection().dispose();
+                Settings.accountManager.createReconnectThread(getConnection());
+                return true;
+            case "USERNOTICE": //User has resubscribed to this channel (for X months)
+                target = tokenizer.nextToken();
+                String user = tagsMap.get("login");
+                parseTags(line, user, target);
+                getMessageHandler().onResubscribe(target, user, tagsMap.get("system-msg"));
+                //Only send their message if there is one
+                if (content != null && line.indexOf(" :", line.indexOf(" :") + 2) > -1)
+                    getMessageHandler().onMessage(target, user, content);
+                return true;
+            default:
+                return false;
         }
         return false;
     }
@@ -416,55 +457,73 @@ public class PircBot {
     }
 
     private void parseTags(String line, String user, String channel) {
-        if (line != null) {
-            line = line.substring(1);
-            String[] parts = line.split(";");
-            for (String part : parts) {
-                String[] tags = part.split("=");
-                String key = tags[0].toLowerCase();
-                if (tags.length <= 1) continue;
-                String value = tags[1];
-                switch (key.toLowerCase()) {
+
+        HashMap<String, String> tags = Utils.parseTagsToMap(line);
+
+        if (!tags.isEmpty())
+        {
+            Set<Map.Entry<String, String>> entries = tags.entrySet();
+            for (Map.Entry<String, String> tag : entries)
+            {
+                switch (tag.getKey())
+                {
                     case "color":
-                        handleColor(value, user);
+                        handleColor(tag.getValue(), user);
                         break;
                     case "display-name":
-                        handleDisplayName(value, user);
+                        handleDisplayName(tag.getValue(), user);
                         break;
                     case "emotes":
-                        handleEmotes(value, user);
+                        handleEmotes(tag.getValue(), user);
                         break;
                     case "subscriber":
-                        if ("1".equals(value)) {
-                            handleSpecial(channel, key, user);
+                        if ("1".equals(tag.getValue()))
+                        {
+                            handleSpecial(channel, tag.getKey(), user);
                         }
                         break;
                     case "turbo":
-                        if ("1".equals(value)) {
-                            handleSpecial(null, key, user);
+                        if ("1".equals(tag.getValue()))
+                        {
+                            handleSpecial(null, tag.getKey(), user);
                         }
                         break;
                     case "user-type":
-                        handleSpecial(channel, value, user);
+                        handleSpecial(channel, tag.getValue(), user);
                         break;
                     case "r9k":
-                        if ("1".equals(value)) {
-                            getMessageHandler().onJTVMessage(channel, "This room is in r9k mode.", key);
+                        if ("1".equals(tag.getValue()))
+                        {
+                            getMessageHandler().onJTVMessage(channel, "This room is in r9k mode.", tag.getKey());
                         }
                         break;
                     case "slow":
-                        if (!"0".equals(value)) {
+                        if (!"0".equals(tag.getValue()))
+                        {
                             getMessageHandler().onJTVMessage(channel,
-                                    "This room is in slow mode. You may send messages every " + value + " seconds.", key);
+                                    "This room is in slow mode. You may send messages every " + tag.getValue() + " seconds.", tag.getKey());
                         }
                         break;
                     case "subs-only":
-                        if ("1".equals(value)) {
-                            getMessageHandler().onJTVMessage(channel, "This room is in subscribers-only mode.", key);
+                        if ("1".equals(tag.getValue()))
+                        {
+                            getMessageHandler().onJTVMessage(channel, "This room is in subscribers-only mode.", tag.getKey());
                         }
                         break;
                     case "emote-sets":
-                        FaceManager.handleEmoteSet(value);
+                        FaceManager.handleEmoteSet(tag.getValue());
+                        break;
+                    case "badges": // Although user-type handles most of this, we need it for bits status
+                        String badges = tag.getValue();
+                        Matcher m = Pattern.compile("bits/(\\d+)").matcher(badges);
+                        if (m.find())
+                        {
+                            getChannelManager().getChannel(channel).setCheer(user, Integer.parseInt(m.group(1)));
+                        }
+                        break;
+                    case "bits":
+                        //This message contains a cheer!
+                        //This is handled above, don't worry.
                         break;
                     default:
                         break;
@@ -752,7 +811,7 @@ public class PircBot {
 
     public void handleDisplayName(String name, String user) {
         if (name != null) {
-            getChannelManager().getUser(user, true).setDisplayName(name.replaceAll("\\\\s", " ").trim());
+            getChannelManager().getUser(user, true).setDisplayName(name.replaceAll("\\s", " ").trim());
         }
     }
 

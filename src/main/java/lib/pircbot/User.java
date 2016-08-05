@@ -151,6 +151,11 @@ public class User implements Comparable<User> {
         return donor != null;
     }
 
+    public int getCheer(String channel)
+    {
+        Channel c = Settings.channelManager.getChannel(channel);
+        return c.getCheer(getLowerNick());
+    }
     public void addEmote(int emote) {
         this.emotes.add(emote);
     }

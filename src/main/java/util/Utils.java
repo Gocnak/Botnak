@@ -1004,4 +1004,28 @@ public class Utils {
         else if (toCompare.floatValue() < numLesser.floatValue()) toReturn = numLesser;
         return toReturn;
     }
+
+    /**
+     * Parses Twitch's tags for an IRC message and spits them out into a HashMap.
+     *
+     * @param line The line to parse.
+     * @return A HashMap full of Key and Value pairs for the tags.
+     */
+    public static HashMap<String, String> parseTagsToMap(String line)
+    {
+        HashMap<String, String> toReturn = new HashMap<>();
+        if (line != null)
+        {
+            line = line.substring(1);
+            String[] parts = line.split(";");
+            for (String part : parts)
+            {
+                String[] objectPair = part.split("=");
+                //Don't add this key/pair value if there is no value.
+                if (objectPair.length <= 1) continue;
+                toReturn.put(objectPair[0], objectPair[1].replaceAll("\\\\s", " "));
+            }
+        }
+        return toReturn;
+    }
 }

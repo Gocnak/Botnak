@@ -359,11 +359,6 @@ public class ChatPane implements DocumentListener {
             if (u.isGlobalMod()) {
                 insertIcon(m, IconEnum.GLOBAL_MOD, null);
             }
-            if (Settings.showDonorIcons.getValue()) {
-                if (u.isDonor()) {
-                    insertIcon(m, u.getDonationStatus(), null);
-                }
-            }
             if (u.isStaff()) {
                 insertIcon(m, IconEnum.STAFF, null);
             }
@@ -384,6 +379,23 @@ public class ChatPane implements DocumentListener {
             if (u.isTurbo()) {
                 insertIcon(m, IconEnum.TURBO, null);
             }
+
+            //Cheering
+            int cheerTotal = u.getCheer(channel);
+            if (cheerTotal > 0)
+            {
+                insertIcon(m, Donor.getCheerStatus(cheerTotal), null);
+            }
+
+            // Third party donor
+            if (Settings.showDonorIcons.getValue())
+            {
+                if (u.isDonor())
+                {
+                    insertIcon(m, u.getDonationStatus(), null);
+                }
+            }
+
             //name stuff
             print(m, " ", GUIMain.norm);
             SimpleAttributeSet userColor = new SimpleAttributeSet(user);
@@ -559,6 +571,18 @@ public class ChatPane implements DocumentListener {
     public void onDonation(MessageWrapper m) {
         Donation d = (Donation) m.getLocal().getExtra();
         onIconMessage(m, Donor.getDonationStatus(d.getAmount()));
+    }
+
+    public void onCheer(MessageWrapper m)
+    {
+        int bitsAmount = (int) m.getLocal().getExtra();
+        //We're first going to send a "hey they cheered" message, then immediately follow it with their message
+        MessageWrapper mw = new MessageWrapper(new Message(m.getLocal()).setContent(m.getLocal().getSender() + " just cheered " + bitsAmount + " bits!"));
+        onIconMessage(mw, Donor.getCheerAmountStatus(bitsAmount));
+
+        //Let's get this message out there too.
+        m.getLocal().setContent(m.getLocal().getContent().replaceAll("(^|\\s)cheer\\d+(\\s|$)", ""));
+        onMessage(m, false);
     }
 
     public void insertIcon(MessageWrapper m, IconEnum type, String channel) {
