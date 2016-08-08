@@ -13,6 +13,7 @@ import irc.account.Task;
 import lib.pircbot.ChannelManager;
 import sound.Sound;
 import sound.SoundEngine;
+import thread.ShutdownHook;
 import util.Permissions;
 import util.Utils;
 import util.comm.Command;
@@ -52,6 +53,7 @@ public class Settings {
     //directories
     public static File defaultDir = new File(FileSystemView.getFileSystemView().getDefaultDirectory().getAbsolutePath()
             + File.separator + "Botnak");
+    public static File tmpDir = new File(defaultDir + File.separator + "_temp");
     public static File faceDir = new File(defaultDir + File.separator + "Faces");
     public static File nameFaceDir = new File(defaultDir + File.separator + "NameFaces");
     public static File twitchFaceDir = new File(defaultDir + File.separator + "TwitchFaces");
@@ -168,6 +170,10 @@ public class Settings {
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yy");
         date = sdf.format(new Date(time));
         defaultDir.mkdirs();
+        // This clears the temp directory
+        if (tmpDir.exists())
+            ShutdownHook.deleteTempOnExit();
+        tmpDir.mkdirs();
         faceDir.mkdirs();
         nameFaceDir.mkdirs();
         twitchFaceDir.mkdirs();

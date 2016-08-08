@@ -811,7 +811,7 @@ public class PircBot {
 
     public void handleDisplayName(String name, String user) {
         if (name != null) {
-            getChannelManager().getUser(user, true).setDisplayName(name.replaceAll("\\s", " ").trim());
+            getChannelManager().getUser(user, true).setDisplayName(name.replaceAll("\\\\s", " ").trim());
         }
     }
 

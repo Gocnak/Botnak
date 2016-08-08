@@ -31,6 +31,8 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -256,13 +258,17 @@ public class GUIMain extends JFrame {
         Settings.save();
         heartbeat.interrupt();
         ThreadEngine.close();
-        if (Settings.logChat.getValue()) {
-            String[] keys = chatPanes.keySet().toArray(new String[chatPanes.keySet().size()]);
-            for (String s : keys) {
-                ChatPane cp = chatPanes.get(s);
-                Utils.logChat(cp.getText().split("\\n"), s, 2);
+        Set<Map.Entry<String, ChatPane>> entries = chatPanes.entrySet();
+        for (Map.Entry<String, ChatPane> entry : entries)
+        {
+            String channel = entry.getKey();
+            ChatPane pane = entry.getValue();
+            if (Settings.logChat.getValue())
+            {
+                Utils.logChat(pane.getText().split("\\n"), channel, 2);
             }
         }
+        System.gc();
         dispose();
         System.exit(0);
     }

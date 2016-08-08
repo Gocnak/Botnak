@@ -158,7 +158,7 @@ public class Icons
     public static ImageIcon sizeGifIcon(URL image, String name)
     {
         ImageIcon icon;
-        File temp = new File(Settings.defaultDir + File.separator + Utils.setExtension(name, ".gif"));
+        File temp = new File(Settings.tmpDir + File.separator + Utils.setExtension(name, ".gif"));
         //Only size this if we haven't already
         if (temp.exists())
         {
@@ -175,7 +175,6 @@ public class Icons
                     AnimatedGifEncoder age = new AnimatedGifEncoder();
                     age.setRepeat(0);
                     age.setQuality(1);
-                    temp.deleteOnExit();
                     FileOutputStream fos = new FileOutputStream(temp);
                     age.start(fos);
                     int n = decoder.getFrameCount();
@@ -193,8 +192,8 @@ public class Icons
                         }
                     }
 
-                    if (age.finish())
-                        fos.close();
+                    age.finish();
+                    fos.close();
 
                     icon = new ImageIcon(temp.getAbsolutePath());
                 } else

@@ -576,13 +576,21 @@ public class ChatPane implements DocumentListener {
     public void onCheer(MessageWrapper m)
     {
         int bitsAmount = (int) m.getLocal().getExtra();
-        //We're first going to send a "hey they cheered" message, then immediately follow it with their message
-        MessageWrapper mw = new MessageWrapper(new Message(m.getLocal()).setContent(m.getLocal().getSender() + " just cheered " + bitsAmount + " bits!"));
-        onIconMessage(mw, Donor.getCheerAmountStatus(bitsAmount));
+        String bitString = "" + bitsAmount + " bit" + (bitsAmount > 1 ? "s" : "") + "!";
+        String cheerMessage = m.getLocal().getSender() + " just cheered " + bitString;
+        String originalMessage = m.getLocal().getContent().replaceAll("(^|\\s?)cheer\\d+(\\s?|$)", " ").trim().replaceAll("\\s+", " ");
 
-        //Let's get this message out there too.
-        m.getLocal().setContent(m.getLocal().getContent().replaceAll("(^|\\s)cheer\\d+(\\s|$)", ""));
-        onMessage(m, false);
+        //We're first going to send a "hey they cheered" message, then immediately follow it with their message
+        // This requires overriding the content to be the cheer message first (for the icons), then replacing it back
+        m.getLocal().setContent(cheerMessage);
+        onIconMessage(m, Donor.getCheerAmountStatus(bitsAmount));
+
+        //Let's get this message out there too, if they have one.
+        if (originalMessage.length() > 0)
+        {
+            m.getLocal().setContent(originalMessage);
+            onMessage(m, false);
+        }
     }
 
     public void insertIcon(MessageWrapper m, IconEnum type, String channel) {
