@@ -15,6 +15,7 @@ import java.awt.*;
 import java.io.*;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -960,7 +961,7 @@ public class Utils {
      */
     public static String createAndParseBufferedReader(InputStream input) {
         String toReturn = "";
-        try (InputStreamReader inputStreamReader = new InputStreamReader(input);
+        try (InputStreamReader inputStreamReader = new InputStreamReader(input, Charset.forName("UTF-8"));
              BufferedReader br = new BufferedReader(inputStreamReader)) {
             StringBuilder sb = new StringBuilder();
             parseBufferedReader(br, sb, false);
