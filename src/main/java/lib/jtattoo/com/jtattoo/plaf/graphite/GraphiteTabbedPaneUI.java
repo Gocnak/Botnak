@@ -72,10 +72,11 @@ public class GraphiteTabbedPaneUI extends BaseTabbedPaneUI {
     }
 
     protected Font getTabFont(boolean isSelected) {
+        Font superFont = super.getTabFont(isSelected);
         if (isSelected) {
-            return super.getTabFont(isSelected).deriveFont(Font.BOLD);
+            return superFont.deriveFont(Font.BOLD);
         } else {
-            return super.getTabFont(isSelected);
+            return superFont;
         }
     }
 

@@ -656,7 +656,7 @@ public class BaseBorders {
             if (((JToolBar) c).isFloatable()) {
                 Graphics2D g2D = (Graphics2D) g;
                 Composite savedComposite = g2D.getComposite();
-                AlphaComposite alpha = alpha = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f);
+                AlphaComposite alpha = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f);
                 g2D.setComposite(alpha);
                 if (((JToolBar) c).getOrientation() == HORIZONTAL) {
                     if (!JTattooUtilities.isLeftToRight(c)) {

@@ -69,7 +69,7 @@ public class DecorationHelper {
             try {
                 Class paramTypes[] = null;
                 Object args[] = null;
-                Method m = frame.getClass().getMethod("getExtendedState", paramTypes);
+                Method m = frame.getClass().getMethod("getExtendedState", null);
                 return (Integer) m.invoke(frame, args);
             } catch (Exception ex) {
             }

@@ -972,7 +972,8 @@ public class JSONObject {
      * @return this.
      * @throws JSONException
      */
-    public JSONObject put(String key, Collection value) throws JSONException {
+    public JSONObject put(String key, Collection<Object> value) throws JSONException
+    {
         this.put(key, new JSONArray(value));
         return this;
     }

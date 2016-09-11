@@ -85,7 +85,8 @@ public class GUIStatus extends JFrame {
         titleText = new JTextArea();
         titleText.setLineWrap(true);
         titleText.setWrapStyleWord(true);
-        titleText.setFont(new Font("Tahoma", Font.PLAIN, 11));
+        Font currentFont = Settings.font.getValue();
+        titleText.setFont(new Font(currentFont.getName(), currentFont.getStyle(), 11));
         gameText = new JTextField();
         JLabel label2 = new JLabel();
         playingGameToggle = new JCheckBox();

@@ -500,7 +500,7 @@ public class SoundEngine {
         if (all) {
             Collection<SoundEntry> coll = getCurrentPlayingSounds();
             if (!coll.isEmpty()) {
-                coll.stream().forEach(SoundEntry::close);
+                coll.forEach(SoundEntry::close);
                 toReturn.setResponseText("Successfully stopped all playing sounds!");
                 toReturn.wasSuccessful();
             } else {

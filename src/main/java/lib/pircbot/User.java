@@ -266,9 +266,6 @@ public class User implements Comparable<User> {
      * @return the result of calling compareTo on lowercased nicks.
      */
     public int compareTo(User o) {
-        if (o != null) {
-            return o._lowerNick.compareTo(_lowerNick);
-        }
-        return -1;
+        return o._lowerNick.compareTo(_lowerNick);
     }
 }

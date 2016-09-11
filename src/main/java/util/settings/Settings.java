@@ -238,13 +238,23 @@ public class Settings {
             SOUNDS.load();
             GUIMain.log("Loaded sounds!");
         }
-        if (subSoundDir.exists() && subSoundDir.list().length > 0) {
-            GUIMain.log("Loading sub sounds...");
-            doLoadSubSounds();
+        if (subSoundDir.exists())
+        {
+            String[] dirList = subSoundDir.list();
+            if (dirList != null && dirList.length > 0)
+            {
+                GUIMain.log("Loading sub sounds...");
+                doLoadSubSounds();
+            }
         }
-        if (donationSoundDir.exists() && donationSoundDir.list().length > 0) {
-            GUIMain.log("Loading donation sounds...");
-            doLoadDonationSounds();
+        if (donationSoundDir.exists())
+        {
+            String[] dirList = donationSoundDir.list();
+            if (dirList != null && dirList.length > 0)
+            {
+                GUIMain.log("Loading donation sounds...");
+                doLoadDonationSounds();
+            }
         }
         if (Utils.areFilesGood(userColFile.getAbsolutePath())) {
             GUIMain.log("Loading user colors...");
@@ -844,7 +854,7 @@ public class Settings {
 
         @Override
         public void handleLineSave(PrintWriter pw) {
-            donationManager.getDonors().stream().forEach(d -> pw.println(d.getName() + "," +
+            donationManager.getDonors().forEach(d -> pw.println(d.getName() + "," +
                     DonationManager.getDecimalFormat().format(d.getDonated())));
         }
 

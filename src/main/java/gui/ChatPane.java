@@ -401,10 +401,10 @@ public class ChatPane implements DocumentListener {
             SimpleAttributeSet userColor = new SimpleAttributeSet(user);
             FaceManager.handleNameFaces(sender, user);
             if (showChannel) {
-                print(m, u.getDisplayName(), user);
+                print(m, determineName(u), user);
                 print(m, " (" + channel.substring(1) + ")" + (isMe ? " " : ": "), GUIMain.norm);
             } else {
-                print(m, u.getDisplayName(), user);
+                print(m, determineName(u), user);
                 print(m, (!isMe ? ": " : " "), userColor);
             }
             //keyword?
@@ -431,6 +431,19 @@ public class ChatPane implements DocumentListener {
         } catch (Exception e) {
             GUIMain.log(e);
         }
+    }
+
+    /**
+     * Since Twitch added Weaboo support, we need to determine if this name
+     * is a Japanese/Korean/Chinese name. If it is, show their nick next to their name, otherwise,
+     * return their name as is.
+     * @param u The user in question.
+     * @return The display name, with their nick if needed.
+     */
+    private String determineName(User u)
+    {
+        boolean displayIsNick = u.getDisplayName().equalsIgnoreCase(u.getNick());
+        return displayIsNick ? u.getDisplayName() : u.getDisplayName() + " (" + u.getNick() + ")";
     }
 
     /**
@@ -564,7 +577,7 @@ public class ChatPane implements DocumentListener {
         StyleConstants.setFontFamily(user, Settings.font.getValue().getFamily());
         StyleConstants.setFontSize(user, Settings.font.getValue().getSize());
         StyleConstants.setForeground(user, Utils.getColorFromUser(u));
-        user.addAttribute(HTML.Attribute.NAME, u.getDisplayName());
+        user.addAttribute(HTML.Attribute.NAME, determineName(u));
         return user;
     }
 
@@ -650,6 +663,7 @@ public class ChatPane implements DocumentListener {
         JScrollPane scrollPane = new JScrollPane();
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         JTextPane pane = new JTextPane();
+        pane.setContentType("text/html; charset=UTF-8");
         pane.setEditorKit(Constants.wrapEditorKit);
         pane.setEditable(false);
         pane.setFocusable(false);

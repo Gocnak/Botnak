@@ -36,8 +36,8 @@ import java.util.Properties;
  */
 public class GraphiteLookAndFeel extends AbstractLookAndFeel {
     private static GraphiteDefaultTheme myTheme = null;
-    private static final ArrayList themesList = new ArrayList();
-    private static final HashMap themesMap = new HashMap();
+    private static final ArrayList<String> themesList = new ArrayList<>();
+    private static final HashMap<String, Properties> themesMap = new HashMap<>();
     private static final Properties defaultProps = new Properties();
     private static final Properties smallFontProps = new Properties();
     private static final Properties mediumFontProps = new Properties();
@@ -219,18 +219,18 @@ public class GraphiteLookAndFeel extends AbstractLookAndFeel {
     }
 
     public static Properties getThemeProperties(String name) {
-        return ((Properties) themesMap.get(name));
+        return themesMap.get(name);
     }
 
     public static void setTheme(String name) {
-        setTheme((Properties) themesMap.get(name));
+        setTheme(themesMap.get(name));
         if (myTheme != null) {
             AbstractTheme.setInternalName(name);
         }
     }
 
     public static void setTheme(String name, String licenseKey, String logoString) {
-        Properties props = (Properties) themesMap.get(name);
+        Properties props = themesMap.get(name);
         if (props != null) {
             props.put("licenseKey", licenseKey);
             props.put("logoString", logoString);
@@ -245,7 +245,8 @@ public class GraphiteLookAndFeel extends AbstractLookAndFeel {
         if (myTheme == null) {
             myTheme = new GraphiteDefaultTheme();
         }
-        if ((myTheme != null) && (themesProps != null)) {
+        if (themesProps != null)
+        {
             myTheme.setUpColor();
             myTheme.setProperties(themesProps);
             myTheme.setUpColorArrs();

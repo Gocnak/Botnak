@@ -20,7 +20,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
 import java.io.File;
-import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -214,7 +213,7 @@ public class FaceManager {
             doneWithTwitchFaces = true;
             if (Settings.ffzFacesEnable.getValue()) {
                 handleFFZChannel("global");//this corrects the global emotes and downloads them if we don't have them
-                GUIMain.channelSet.stream().forEach(s -> handleFFZChannel(s.replaceAll("#", "")));
+                GUIMain.channelSet.forEach(s -> handleFFZChannel(s.replaceAll("#", "")));
                 doneWithFrankerFaces = true;
                 GUIMain.log("Loaded FrankerFaceZ faces!");
             }
@@ -886,7 +885,8 @@ public class FaceManager {
         return new Color(red, green, blue, alpha);
     }
 
-    private static BufferedImage createNewImage(BufferedImage bi, Dimension topLeft, Dimension bottomRight) throws IOException {
+    private static BufferedImage createNewImage(BufferedImage bi, Dimension topLeft, Dimension bottomRight)
+    {
         return bi.getSubimage(topLeft.width, topLeft.height, bottomRight.width - topLeft.width, bottomRight.height - topLeft.height);
     }
 }

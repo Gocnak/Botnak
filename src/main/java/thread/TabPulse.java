@@ -93,9 +93,7 @@ public class TabPulse extends Thread {
 
     private void initColors() {
         Color[] colors = ColorHelper.createColorArr(controlColorDark, ColorHelper.darker(Color.orange, 20), 100);
-        for (int i = 0; i < (totalColors.length / 2); i++) {
-            totalColors[i] = colors[i];
-        }
+        System.arraycopy(colors, 0, totalColors, 0, totalColors.length / 2);
         for (int i = 100; i < totalColors.length; i++) {
             totalColors[i] = colors[(colors.length - 1) - (i - colors.length)];
         }

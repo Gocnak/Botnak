@@ -23,6 +23,8 @@ public class APIRequests {
 
     //Anything Twitch
     public static class Twitch {
+
+        private static final String CLIENT_ID = "client_id=qw8d3ve921t0n6e3if07l664f1jn1y7";
         /**
          * Gets stream uptime.
          *
@@ -32,7 +34,7 @@ public class APIRequests {
             if (channelName.contains("#")) channelName = channelName.replace("#", "");
             Response toReturn = new Response();
             try {
-                URL uptime = new URL("https://api.twitch.tv/kraken/streams/" + channelName);
+                URL uptime = new URL("https://api.twitch.tv/kraken/streams/" + channelName + "?" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(uptime.openStream());
                 if (!line.isEmpty()) {
                     JSONObject outer = new JSONObject(line);
@@ -65,8 +67,7 @@ public class APIRequests {
         public static boolean isChannelLive(String channelName) {
             boolean isLive = false;
             try {
-                URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName
-                        + "?client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
+                URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName + "?" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(twitch.openStream());
                 if (!line.isEmpty()) {
                     JSONObject jsonObject = new JSONObject(line);
@@ -86,8 +87,7 @@ public class APIRequests {
         public static int countViewers(String channelName) {
             int count = -1;
             try {//this could be parsed with JSON, but patterns work, and if it ain't broke...
-                URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName
-                        + "?client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
+                URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName + "?" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(twitch.openStream());
                 if (!line.isEmpty()) {
                     Matcher m = Constants.viewerTwitchPattern.matcher(line);
@@ -114,8 +114,7 @@ public class APIRequests {
             String[] toRet = {"", ""};
             try {
                 if (channel.contains("#")) channel = channel.replaceAll("#", "");
-                URL twitch = new URL("https://api.twitch.tv/kraken/channels/" + channel
-                        + "?client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
+                URL twitch = new URL("https://api.twitch.tv/kraken/channels/" + channel + "?" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(twitch.openStream());
                 if (!line.isEmpty()) {
                     JSONObject base = new JSONObject(line);
@@ -207,8 +206,7 @@ public class APIRequests {
                 String request = "https://api.twitch.tv/kraken/channels/" + channel +
                         "?channel[status]=" + URLEncoder.encode(title, "UTF-8") +
                         "&channel[game]=" + URLEncoder.encode(game, "UTF-8") +
-                        "&oauth_token=" + key.split(":")[1] + "&_method=put" +
-                        "&client_id=qw8d3ve921t0n6e3if07l664f1jn1y7";
+                        "&oauth_token=" + key.split(":")[1] + "&_method=put&" + CLIENT_ID;
                 URL twitch = new URL(request);
                 String line = Utils.createAndParseBufferedReader(twitch.openStream());
                 if (!line.isEmpty() && line.contains(title) && line.contains(game)) {
@@ -274,13 +272,12 @@ public class APIRequests {
             Response toReturn = new Response();
             try {
                 String ID = "";
-                Pattern p = Pattern.compile("/[vcb]/([^&\\?/]+)");
+                Pattern p = Pattern.compile("/[vcb]/([^&?/]+)");
                 Matcher m = p.matcher(URL);
                 if (m.find()) {
                     ID = m.group().replaceAll("/", "");
                 }
-                URL request = new URL("https://api.twitch.tv/kraken/videos/" + ID
-                        + "?client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
+                URL request = new URL("https://api.twitch.tv/kraken/videos/" + ID + "?" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);
@@ -305,8 +302,7 @@ public class APIRequests {
         public static ArrayList<String> getLiveFollowedChannels(String key) {
             ArrayList<String> toReturn = new ArrayList<>();
             try {
-                URL request = new URL("https://api.twitch.tv/kraken/streams/followed?oauth_token="
-                        + key + "&limit=100&client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
+                URL request = new URL("https://api.twitch.tv/kraken/streams/followed?oauth_token=" + key + "&limit=100&" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);
@@ -335,8 +331,7 @@ public class APIRequests {
         public static String[] getUsernameSuggestions(String partial) {
             ArrayList<String> toReturn = new ArrayList<>();
             try {
-                URL request = new URL("https://api.twitch.tv/kraken/search/channels?limit=10&q=" + partial +
-                        "&client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
+                URL request = new URL("https://api.twitch.tv/kraken/search/channels?limit=10&q=" + partial + "&" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);
@@ -361,8 +356,7 @@ public class APIRequests {
         public static String[] getLast20Followers(String channel) {
             ArrayList<String> toReturn = new ArrayList<>();
             try {
-                URL request = new URL("https://api.twitch.tv/kraken/channels/" + channel + "/follows?limit=20&" +
-                        "client_id=qw8d3ve921t0n6e3if07l664f1jn1y7");
+                URL request = new URL("https://api.twitch.tv/kraken/channels/" + channel + "/follows?limit=20&" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);
@@ -439,11 +433,11 @@ public class APIRequests {
             try {
                 Pattern p = null;
                 if (fullURL.contains("youtu.be/")) {
-                    p = Pattern.compile("youtu\\.be/([^&\\?/]+)");
+                    p = Pattern.compile("youtu\\.be/([^&?/]+)");
                 } else if (fullURL.contains("v=")) {
-                    p = Pattern.compile("v=([^&\\?/]+)");
+                    p = Pattern.compile("v=([^&?/]+)");
                 } else if (fullURL.contains("/embed/")) {
-                    p = Pattern.compile("youtube\\.com/embed/([^&\\?/]+)");
+                    p = Pattern.compile("youtube\\.com/embed/([^&?/]+)");
                 }
                 if (p == null) {
                     toReturn.setResponseText("Could not read YouTube URL!");
@@ -502,11 +496,11 @@ public class APIRequests {
             Response toReturn = new Response();
             toReturn.setResponseText("Failed to un-shorten URL! Click with caution!");
             try {
-                URL request = new URL("https://therealurl.appspot.com/?url=" + shortenedURL);
+                URL request = new URL("http://urlex.org/txt/" + shortenedURL);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
                     if (!line.equals(shortenedURL)) {
-                        line = getHost(line);
+                        line = getHost(line).replaceAll("\\.", ",");
                         toReturn.setResponseText("Linked Shortened URL directs to: " + line + " !");
                     } else {
                         toReturn.setResponseText("Invalid shortened URL!");

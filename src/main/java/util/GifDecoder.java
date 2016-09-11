@@ -325,9 +325,11 @@ public class GifDecoder
     public int read(BufferedInputStream is)
     {
         init();
-        if (is != null)
+        if (is == null) return STATUS_OPEN_ERROR;
+
+        try (BufferedInputStream bis = is)
         {
-            in = is;
+            in = bis;
             readHeader();
             if (!err())
             {
@@ -337,15 +339,9 @@ public class GifDecoder
                     status = STATUS_FORMAT_ERROR;
                 }
             }
-        } else
+        } catch (Exception e)
         {
             status = STATUS_OPEN_ERROR;
-        }
-        try
-        {
-            is.close();
-        } catch (IOException e)
-        {
         }
         return status;
     }
@@ -359,13 +355,12 @@ public class GifDecoder
     public int read(InputStream is)
     {
         init();
-        if (is != null)
+
+        if (is == null) return STATUS_OPEN_ERROR;
+
+        try (BufferedInputStream bis = (is instanceof BufferedInputStream) ? (BufferedInputStream) is : new BufferedInputStream(is))
         {
-            if (!(is instanceof BufferedInputStream))
-            {
-                is = new BufferedInputStream(is);
-            }
-            in = (BufferedInputStream) is;
+            in = bis;
             readHeader();
             if (!err())
             {
@@ -375,16 +370,11 @@ public class GifDecoder
                     status = STATUS_FORMAT_ERROR;
                 }
             }
-        } else
+        } catch (Exception e)
         {
             status = STATUS_OPEN_ERROR;
         }
-        try
-        {
-            is.close();
-        } catch (IOException e)
-        {
-        }
+
         return status;
     }
 
@@ -401,8 +391,7 @@ public class GifDecoder
         try
         {
             name = name.trim().toLowerCase();
-            if ((name.indexOf("file:") >= 0) ||
-                    (name.indexOf(":/") > 0))
+            if (name.contains("file:") || (name.indexOf(":/") > 0))
             {
                 URL url = new URL(name);
                 in = new BufferedInputStream(url.openStream());

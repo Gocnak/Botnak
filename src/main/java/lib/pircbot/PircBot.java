@@ -359,7 +359,7 @@ public class PircBot {
                 return;
             }
             //This message is a cheer message!
-            else if (tags.contains("bits="))
+            else if (tags != null && tags.contains("bits="))
             {
                 HashMap<String, String> tagsMap = Utils.parseTagsToMap(tags);
                 if (!tagsMap.isEmpty())
@@ -735,19 +735,6 @@ public class PircBot {
             return this.getNick().equals(other.getNick()) && this.getPassword().equals(other.getPassword());
         }
         return false;
-    }
-
-
-    /**
-     * Returns the hashCode of this PircBot. This method can be called by hashed
-     * collection classes and is useful for managing multiple instances of
-     * PircBots in such collections.
-     *
-     * @return the hash code for this instance of PircBot.
-     * @since PircBot 0.9.9
-     */
-    public int hashCode() {
-        return super.hashCode();
     }
 
 

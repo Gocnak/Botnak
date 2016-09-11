@@ -1,6 +1,5 @@
 package gui.forms;
 
-import gui.WrapEditorKit;
 import util.Constants;
 import util.Utils;
 
@@ -64,7 +63,7 @@ public class GUIUpdate extends JFrame {
         scrollPane1 = new JScrollPane();
         updateText = new JTextPane();
         updateText.setFocusable(false);
-        updateText.setEditorKit(new WrapEditorKit());
+        updateText.setEditorKit(Constants.wrapEditorKit);
         updateText.setText(text);
         updateText.setCaretPosition(0);
         downloadButton = new JButton();

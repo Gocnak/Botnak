@@ -136,7 +136,7 @@ public class ChannelManager {
      */
     public String[] getChannelNames() {
         ArrayList<String> names = new ArrayList<>();
-        channels.stream().forEach(c -> names.add(c.getName()));
+        channels.forEach(c -> names.add(c.getName()));
         return names.toArray(new String[names.size()]);
     }
 

@@ -95,7 +95,8 @@ public class MessageQueue extends Thread {
                         case CHEER_MESSAGE:
                             GUIMain.getChatPane(mess.getChannel()).onCheer(wrap);
                             //TODO: Update this to use a separate folder, if need be
-                            if (Settings.loadedDonationSounds && Utils.isMainChannel(mess.getChannel()))
+                            int cheerAmount = (int) wrap.getLocal().getExtra();
+                            if (Settings.loadedDonationSounds && Utils.isMainChannel(mess.getChannel()) && cheerAmount >= 200)
                             {
                                 SoundEngine.getEngine().playSpecialSound(false);
                             }

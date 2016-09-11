@@ -84,7 +84,7 @@ public class NoireLookAndFeel extends AbstractLookAndFeel {
     }
 
     public static Properties getThemeProperties(String name) {
-        return ((Properties) themesMap.get(name));
+        return themesMap.get(name);
     }
 
     public static void setTheme(String name) {
