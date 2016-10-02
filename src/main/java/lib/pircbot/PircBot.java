@@ -350,13 +350,19 @@ public class PircBot {
             }
         } else if (command.equals("PRIVMSG") && _channelPrefixes.indexOf(target.charAt(0)) >= 0) {
             //catch the subscriber message
-            if (sourceNick.equalsIgnoreCase("twitchnotify") && line.contains("subscribed!"))
-            {//I WAS RIGHT
-                //we dont want to get the hosted sub messages, Botnak should be in that chat for that
-                String user = content.split(" ")[0];
-                getChannelManager().handleSubscriber(target, user);
-                getMessageHandler().onNewSubscriber(target, content, user);
-                return;
+            if (sourceNick.equalsIgnoreCase("twitchnotify"))
+            {
+                if (line.contains("subscribed!"))
+                {
+                    //we dont want to get the hosted sub messages, Botnak should be in that chat for that
+                    String user = content.split(" ")[0];
+                    getChannelManager().handleSubscriber(target, user);
+                    getMessageHandler().onNewSubscriber(target, content, user);
+                    return;
+                } else if (line.contains("resubscribed"))
+                {
+                    getMessageHandler().onJTVMessage(target, content, null);
+                }
             }
             //This message is a cheer message!
             else if (tags != null && tags.contains("bits="))
@@ -515,11 +521,15 @@ public class PircBot {
                         break;
                     case "badges": // Although user-type handles most of this, we need it for bits status
                         String badges = tag.getValue();
-                        Matcher m = Pattern.compile("bits/(\\d+)").matcher(badges);
-                        if (m.find())
+                        if (badges.contains("bits"))
                         {
-                            getChannelManager().getChannel(channel).setCheer(user, Integer.parseInt(m.group(1)));
+                            Matcher m = Pattern.compile("bits/(\\d+)").matcher(badges);
+                            if (m.find())
+                                getChannelManager().getChannel(channel).setCheer(user, Integer.parseInt(m.group(1)));
                         }
+
+                        if (badges.contains("premium"))
+                            getChannelManager().getUser(user, true).setPrime(true);
                         break;
                     case "bits":
                         //This message contains a cheer!

@@ -8,6 +8,7 @@ public enum IconEnum {
     ADMIN("Admin"),
     STAFF("Staff"),
     TURBO("Turbo"),
+    PRIME("Prime"),
     SUBSCRIBER("Subscriber"),
     EX_SUBSCRIBER("Ex-Subscriber"),
     //These are what show when people do the actual cheering

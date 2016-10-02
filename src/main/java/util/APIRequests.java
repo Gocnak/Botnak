@@ -1,5 +1,6 @@
 package util;
 
+import face.FaceManager;
 import gui.forms.GUIMain;
 import irc.account.Oauth;
 import lib.JSON.JSONArray;
@@ -24,7 +25,57 @@ public class APIRequests {
     //Anything Twitch
     public static class Twitch {
 
-        private static final String CLIENT_ID = "client_id=qw8d3ve921t0n6e3if07l664f1jn1y7";
+        private static final String TWITCH_API = "https://api.twitch.tv/kraken";
+        public static final String CLIENT_ID = "client_id=qw8d3ve921t0n6e3if07l664f1jn1y7";
+
+        /**
+         * @param emotes The emoteset String that twitch provides in IRC.
+         * @return The JSON string of the set of emotes, otherwise an empty string.
+         */
+        public static String getEmoteSet(String emotes)
+        {
+            return Utils.createAndParseBufferedReader(TWITCH_API + "/chat/emoticon_images?emotesets=" + emotes + "&" + CLIENT_ID);
+        }
+
+        /**
+         * @return The JSON string of every Twitch emote.
+         */
+        public static String getAllEmotes()
+        {
+            return Utils.createAndParseBufferedReader(TWITCH_API + "/chat/emoticon_images?" + CLIENT_ID);
+        }
+
+        /**
+         * Fetches and downloads the given channel's subscriber icon.
+         *
+         * @param channel The channel to download the sub icon for.
+         * @return The path to the downloaded sub icon if successful, otherwise null.
+         */
+        public static String getSubIcon(String channel)
+        {
+            try
+            {
+                URL toRead = new URL(TWITCH_API + "/chat/" + channel.replaceAll("#", "") + "/badges?" + CLIENT_ID);
+                String line = Utils.createAndParseBufferedReader(toRead.openStream());
+                if (!line.isEmpty())
+                {
+                    JSONObject init = new JSONObject(line);
+                    if (init.has("subscriber"))
+                    {
+                        JSONObject sub = init.getJSONObject("subscriber");
+                        if (!sub.getString("image").equalsIgnoreCase("null"))
+                        {
+                            return FaceManager.downloadIcon(sub.getString("image"), channel);
+                        }
+                    }
+                }
+            } catch (Exception e)
+            {
+                GUIMain.log(e);
+            }
+            return null;
+        }
+
         /**
          * Gets stream uptime.
          *
@@ -33,8 +84,9 @@ public class APIRequests {
         public static Response getUptimeString(String channelName) {
             if (channelName.contains("#")) channelName = channelName.replace("#", "");
             Response toReturn = new Response();
-            try {
-                URL uptime = new URL("https://api.twitch.tv/kraken/streams/" + channelName + "?" + CLIENT_ID);
+            try
+            {
+                URL uptime = new URL(TWITCH_API + "/streams/" + channelName + "?" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(uptime.openStream());
                 if (!line.isEmpty()) {
                     JSONObject outer = new JSONObject(line);
@@ -66,8 +118,9 @@ public class APIRequests {
          */
         public static boolean isChannelLive(String channelName) {
             boolean isLive = false;
-            try {
-                URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName + "?" + CLIENT_ID);
+            try
+            {
+                URL twitch = new URL(TWITCH_API + "/streams/" + channelName + "?" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(twitch.openStream());
                 if (!line.isEmpty()) {
                     JSONObject jsonObject = new JSONObject(line);
@@ -87,7 +140,7 @@ public class APIRequests {
         public static int countViewers(String channelName) {
             int count = -1;
             try {//this could be parsed with JSON, but patterns work, and if it ain't broke...
-                URL twitch = new URL("https://api.twitch.tv/kraken/streams/" + channelName + "?" + CLIENT_ID);
+                URL twitch = new URL(TWITCH_API + "/streams/" + channelName + "?" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(twitch.openStream());
                 if (!line.isEmpty()) {
                     Matcher m = Constants.viewerTwitchPattern.matcher(line);
@@ -114,7 +167,7 @@ public class APIRequests {
             String[] toRet = {"", ""};
             try {
                 if (channel.contains("#")) channel = channel.replaceAll("#", "");
-                URL twitch = new URL("https://api.twitch.tv/kraken/channels/" + channel + "?" + CLIENT_ID);
+                URL twitch = new URL(TWITCH_API + "/channels/" + channel + "?" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(twitch.openStream());
                 if (!line.isEmpty()) {
                     JSONObject base = new JSONObject(line);
@@ -203,7 +256,7 @@ public class APIRequests {
             Response toReturn = new Response();
             try {
                 if (channel.contains("#")) channel = channel.replace("#", "");
-                String request = "https://api.twitch.tv/kraken/channels/" + channel +
+                String request = TWITCH_API + "/channels/" + channel +
                         "?channel[status]=" + URLEncoder.encode(title, "UTF-8") +
                         "&channel[game]=" + URLEncoder.encode(game, "UTF-8") +
                         "&oauth_token=" + key.split(":")[1] + "&_method=put&" + CLIENT_ID;
@@ -234,13 +287,13 @@ public class APIRequests {
                 length = Utils.capNumber(30, 180, length);//can't be longer than 3 mins/shorter than 30 sec
                 if ((length % 30) != 0) length = 30;//has to be divisible by 30 seconds
                 if (channel.contains("#")) channel = channel.replace("#", "");
-                String request = "https://api.twitch.tv/kraken/channels/" + channel + "/commercial";
+                String request = TWITCH_API + "/channels/" + channel + "/commercial";
                 URL twitch = new URL(request);
                 HttpURLConnection c = (HttpURLConnection) twitch.openConnection();
                 c.setRequestMethod("POST");
                 c.setDoOutput(true);
                 String toWrite = "length=" + length;
-                c.setRequestProperty("Client-ID", "qw8d3ve921t0n6e3if07l664f1jn1y7");
+                c.setRequestProperty("Client-ID", CLIENT_ID.split("=")[1]);
                 c.setRequestProperty("Authorization", "OAuth " + key.split(":")[1]);
                 c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
                 c.setRequestProperty("Content-Length", String.valueOf(toWrite.length()));
@@ -277,7 +330,7 @@ public class APIRequests {
                 if (m.find()) {
                     ID = m.group().replaceAll("/", "");
                 }
-                URL request = new URL("https://api.twitch.tv/kraken/videos/" + ID + "?" + CLIENT_ID);
+                URL request = new URL(TWITCH_API + "/videos/" + ID + "?" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);
@@ -301,8 +354,9 @@ public class APIRequests {
          */
         public static ArrayList<String> getLiveFollowedChannels(String key) {
             ArrayList<String> toReturn = new ArrayList<>();
-            try {
-                URL request = new URL("https://api.twitch.tv/kraken/streams/followed?oauth_token=" + key + "&limit=100&" + CLIENT_ID);
+            try
+            {
+                URL request = new URL(TWITCH_API + "/streams/followed?oauth_token=" + key + "&limit=100&" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);
@@ -330,8 +384,9 @@ public class APIRequests {
          */
         public static String[] getUsernameSuggestions(String partial) {
             ArrayList<String> toReturn = new ArrayList<>();
-            try {
-                URL request = new URL("https://api.twitch.tv/kraken/search/channels?limit=10&q=" + partial + "&" + CLIENT_ID);
+            try
+            {
+                URL request = new URL(TWITCH_API + "/search/channels?limit=10&q=" + partial + "&" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);
@@ -355,8 +410,9 @@ public class APIRequests {
          */
         public static String[] getLast20Followers(String channel) {
             ArrayList<String> toReturn = new ArrayList<>();
-            try {
-                URL request = new URL("https://api.twitch.tv/kraken/channels/" + channel + "/follows?limit=20&" + CLIENT_ID);
+            try
+            {
+                URL request = new URL(TWITCH_API + "/channels/" + channel + "/follows?limit=20&" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);

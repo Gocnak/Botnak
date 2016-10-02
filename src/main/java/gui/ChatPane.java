@@ -380,6 +380,9 @@ public class ChatPane implements DocumentListener {
                 insertIcon(m, IconEnum.TURBO, null);
             }
 
+            if (u.isPrime())
+                insertIcon(m, IconEnum.PRIME, null);
+
             //Cheering
             int cheerTotal = u.getCheer(channel);
             if (cheerTotal > 0)

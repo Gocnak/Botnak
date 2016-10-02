@@ -974,6 +974,24 @@ public class Utils {
     }
 
     /**
+     * Override for the #createAndParseBufferedReader(InputStream) method for just simple URLs.
+     * @param URL The URL to try to open.
+     * @return The parsed buffered reader if successful, otherwise an empty string.
+     */
+    public static String createAndParseBufferedReader(String URL)
+    {
+        try
+        {
+            return createAndParseBufferedReader(new URL(URL).openStream());
+        } catch (Exception e)
+        {
+            GUIMain.log("Could not parse buffered reader due to exception: ");
+            GUIMain.log(e);
+        }
+        return "";
+    }
+
+    /**
      * Opens a web page in the default web browser on the system.
      *
      * @param URL The URL to open.

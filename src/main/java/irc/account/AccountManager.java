@@ -168,7 +168,7 @@ public class AccountManager extends Thread {
             return;
         }
         if (connection == null) return;
-        if (reconnectThreads.get(connection.getName()) != null) return;
+        if (reconnectThreads.containsKey(connection.getName())) return;
         ReconnectThread rt = new ReconnectThread(connection);
         rt.start();
         reconnectThreads.put(connection.getName(), rt);

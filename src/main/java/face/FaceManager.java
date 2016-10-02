@@ -6,6 +6,7 @@ import lib.JSON.JSONObject;
 import lib.pircbot.User;
 import lib.scalr.Scalr;
 import thread.ThreadEngine;
+import util.APIRequests;
 import util.Response;
 import util.Utils;
 import util.settings.Settings;
@@ -144,25 +145,11 @@ public class FaceManager {
                 }
             }
         }
-        try {
-            URL toRead = new URL("https://api.twitch.tv/kraken/chat/" + channel.replace("#", "") + "/badges");
-            String line = Utils.createAndParseBufferedReader(toRead.openStream());
-            String path = null;
-            if (!line.isEmpty()) {
-                JSONObject init = new JSONObject(line);
-                if (init.has("subscriber")) {
-                    JSONObject sub = init.getJSONObject("subscriber");
-                    if (!sub.getString("image").equalsIgnoreCase("null")) {
-                        path = downloadIcon(sub.getString("image"), channel);
-                    }
-                }
-            }
-            if (path != null) {
-                subIconSet.add(new SubscriberIcon(channel, path));
-                return getSubIcon(channel);
-            }
-        } catch (Exception e) {
-            GUIMain.log(e);
+        String path = APIRequests.Twitch.getSubIcon(channel);
+        if (path != null)
+        {
+            subIconSet.add(new SubscriberIcon(channel, path));
+            return getSubIcon(channel);
         }
         return null;
     }
@@ -173,8 +160,7 @@ public class FaceManager {
     public static void buildMap() {
         try {
             // Load twitch faces
-            URL url = new URL("https://api.twitch.tv/kraken/chat/emoticon_images");
-            String line = Utils.createAndParseBufferedReader(url.openStream());
+            String line = APIRequests.Twitch.getAllEmotes();
             if (!line.isEmpty()) {
                 try {
                     JSONObject init = new JSONObject(line);
@@ -319,8 +305,7 @@ public class FaceManager {
         ThreadEngine.submit(() -> {
             try {
                 checkedEmoteSets = true;
-                URL url = new URL("https://api.twitch.tv/kraken/chat/emoticon_images?emotesets=" + emotes);
-                String line = Utils.createAndParseBufferedReader(url.openStream());
+                String line = APIRequests.Twitch.getEmoteSet(emotes);
                 if (!line.isEmpty()) {
                     User main = Settings.channelManager
                             .getUser(Settings.accountManager.getUserAccount().getName(), true);
