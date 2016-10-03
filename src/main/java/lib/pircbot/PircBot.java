@@ -352,16 +352,16 @@ public class PircBot {
             //catch the subscriber message
             if (sourceNick.equalsIgnoreCase("twitchnotify"))
             {
-                if (line.contains("subscribed!"))
+                if (line.contains("resubscribed"))
+                {
+                    getMessageHandler().onJTVMessage(target, content, null);
+                } else if (line.contains("subscribed"))
                 {
                     //we dont want to get the hosted sub messages, Botnak should be in that chat for that
                     String user = content.split(" ")[0];
                     getChannelManager().handleSubscriber(target, user);
                     getMessageHandler().onNewSubscriber(target, content, user);
                     return;
-                } else if (line.contains("resubscribed"))
-                {
-                    getMessageHandler().onJTVMessage(target, content, null);
                 }
             }
             //This message is a cheer message!
