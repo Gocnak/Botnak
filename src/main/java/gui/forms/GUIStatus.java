@@ -1,6 +1,6 @@
 package gui.forms;
 
-import irc.account.Oauth;
+import irc.account.OAuth;
 import thread.ThreadEngine;
 import util.APIRequests;
 import util.Response;
@@ -19,9 +19,10 @@ public class GUIStatus extends JFrame {
                 Settings.accountManager.getUserAccount().getName();
     }
 
-    public Oauth getKey() {
+    public OAuth getKey()
+    {
         return Settings.accountManager.getUserAccount() == null ? null :
-                Settings.accountManager.getUserAccount().getKey();
+                Settings.accountManager.getUserAccount().getOAuth();
     }
 
     public GUIStatus() {

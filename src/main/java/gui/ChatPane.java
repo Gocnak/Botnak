@@ -27,6 +27,7 @@ import javax.swing.text.html.HTML;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -54,14 +55,14 @@ public class ChatPane implements DocumentListener {
             frame.addWindowListener(new WindowAdapter() {
                 @Override
                 public void windowClosed(WindowEvent e) {
-                    getScrollPane().setViewportView(getTextPane());
+                    getScrollPane().setViewportView(scrollablePanel);
                     scrollToBottom();
                     setPoppedOutPane(null);
                 }
             });
             JScrollPane pane = new JScrollPane();
             frame.setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
-            pane.setViewportView(getTextPane());
+            pane.setViewportView(scrollablePanel);
             pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
             pane.getVerticalScrollBar().setPreferredSize(new Dimension(0, 0));
             frame.add(pane);
@@ -96,18 +97,9 @@ public class ChatPane implements DocumentListener {
     public String getViewerCountString() {
         if (chan.equalsIgnoreCase("system logs")) return null;
         if (viewerCount == -1) return "Viewer count: Offline";
-        return String.format("Viewer count: %s (%s)", format(viewerCount), format(viewerPeak));
-    }
-
-    private String format(Object obj) {
-        String s = obj.toString();
-        int length = s.length();
-        if (length < 4) return s;
-        //1 000 000
-        for (int i = length - 3; i > 0; i -= 3) {
-            s = s.substring(0, i) + "," + s.substring(i);
-        }
-        return s;
+        return String.format("Viewer count: %s (%s)",
+                NumberFormat.getInstance().format(viewerCount),
+                NumberFormat.getInstance().format(viewerPeak));
     }
 
     /**
@@ -382,6 +374,9 @@ public class ChatPane implements DocumentListener {
 
             if (u.isPrime())
                 insertIcon(m, IconEnum.PRIME, null);
+
+            if (u.isVerified())
+                insertIcon(m, IconEnum.VERIFIED, null);
 
             //Cheering
             int cheerTotal = u.getCheer(channel);

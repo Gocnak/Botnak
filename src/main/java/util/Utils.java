@@ -471,7 +471,7 @@ public class Utils {
                     }
                     bingo = bingoIndex + 1;//after second space is the message without arguments
                 }
-                String[] message = s.substring(bingo).split("\\]");
+                String[] message = s.substring(bingo).split("]");
                 Command c = new Command(name, message);
                 if (!arguments.isEmpty()) c.addArguments(arguments.toArray(new String[arguments.size()]));
                 if (GUIMain.commandSet.add(c)) {

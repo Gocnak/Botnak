@@ -3,7 +3,7 @@ package util.settings;
 import gui.BotnakTrayIcon;
 import gui.forms.GUIMain;
 import irc.Subscriber;
-import irc.account.Oauth;
+import irc.account.OAuth;
 import irc.message.Message;
 import irc.message.MessageQueue;
 import lib.JSON.JSONArray;
@@ -191,7 +191,8 @@ public class SubscriberManager {
     }
 
 
-    public void scanInitialSubscribers(String channel, Oauth key, int passesCompleted, HashSet<Subscriber> set) {
+    public void scanInitialSubscribers(String channel, OAuth key, int passesCompleted, HashSet<Subscriber> set)
+    {
         String oauth = key.getKey().split(":")[1];
         String urlString = "https://api.twitch.tv/kraken/channels/" + channel + "/subscriptions?oauth_token=" +
                 oauth + "&limit=100";

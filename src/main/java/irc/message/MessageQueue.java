@@ -3,11 +3,11 @@ package irc.message;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.forms.GUIMain;
-import lib.pircbot.Queue;
 import sound.SoundEngine;
 import util.Utils;
 import util.settings.Settings;
 
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -20,10 +20,10 @@ import java.util.concurrent.Executors;
 public class MessageQueue extends Thread {
 
     private static ExecutorService pool;
-    private static Queue<MessageWrapper> queue;
+    private static ArrayBlockingQueue<MessageWrapper> queue;
 
     public MessageQueue() {
-        queue = new Queue<>(100);
+        queue = new ArrayBlockingQueue<>(100, true);
         pool = Executors.newCachedThreadPool();
         start();
     }
@@ -31,9 +31,16 @@ public class MessageQueue extends Thread {
     @Override
     public synchronized void run() {
         while (!GUIMain.shutDown) {
-            MessageWrapper mess = queue.next();//locks for a new message, no need for Thread#sleep
-            if (mess != null && mess.getLocal() != null) {
-                mess.print();
+            try
+            {
+                MessageWrapper mess = queue.take();//locks for a new message, no need for Thread#sleep
+                if (mess != null && mess.getLocal() != null)
+                {
+                    mess.print();
+                }
+            } catch (Exception e)
+            {
+                GUIMain.log(e);
             }
         }
     }
@@ -90,7 +97,7 @@ public class MessageQueue extends Thread {
                             wrap.addPrint(((ChatPane) mess.getExtra())::cleanupChat);
                             break;
                         case WHISPER_MESSAGE:
-                            GUIMain.getCurrentPane().onWhisper(wrap);
+                            //GUIMain.getCurrentPane().onWhisper(wrap); TODO uncomment
                             break;
                         case CHEER_MESSAGE:
                             GUIMain.getChatPane(mess.getChannel()).onCheer(wrap);

@@ -3,12 +3,13 @@ package irc.account;
 /**
  * Created by Nick on 7/16/2014.
  */
-public class Oauth {
-
+public class OAuth
+{
     private String key;
     private boolean canSetTitle, canReadFollowed, canReadSubscribers, canPlayAd = false;
 
-    public Oauth(String key, boolean canSetTitle, boolean canPlayAd, boolean canReadSubscribers, boolean followed) {
+    public OAuth(String key, boolean canSetTitle, boolean canPlayAd, boolean canReadSubscribers, boolean followed)
+    {
         this.key = key;
         this.canPlayAd = canPlayAd;
         this.canSetTitle = canSetTitle;

@@ -3,7 +3,7 @@ package irc;
 import face.Face;
 import face.FaceManager;
 import gui.forms.GUIMain;
-import irc.account.Oauth;
+import irc.account.OAuth;
 import irc.account.Task;
 import irc.message.Message;
 import irc.message.MessageHandler;
@@ -148,7 +148,7 @@ public class IRCBot extends MessageHandler {
                 }
             }
 
-            Oauth key = Settings.accountManager.getUserAccount().getKey();
+            OAuth key = Settings.accountManager.getUserAccount().getOAuth();
             String[] split = message.split(" ");
 
             //URL Checking
@@ -508,13 +508,14 @@ public class IRCBot extends MessageHandler {
             int time = Utils.getTime(split[1]);
             if (time > 0) {
                 //TODO update the GUIVote if there is one
-                poll = new Vote(channel, time, message.substring(second).split("\\]"));
+                poll = new Vote(channel, time, message.substring(second).split("]"));
                 poll.start();
             }
         }
     }
 
-    public Response playAdvert(Oauth key, String first, String channel) {
+    public Response playAdvert(OAuth key, String first, String channel)
+    {
         Response r = new Response();
         if (key.canPlayAd()) {
             int length = Utils.getTime(first);

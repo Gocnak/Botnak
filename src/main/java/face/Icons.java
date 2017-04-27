@@ -60,6 +60,9 @@ public class Icons
             case PRIME:
                 icon = sizeIcon(ChatPane.class.getResource("/image/prime.png"));
                 break;
+            case VERIFIED:
+                icon = sizeIcon(ChatPane.class.getResource("/image/verified.png"));
+                break;
             case SUBSCRIBER:
                 URL subIcon = FaceManager.getSubIcon(channel);
                 if (subIcon != null)

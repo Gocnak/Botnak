@@ -15,6 +15,7 @@ found at http://www.jibble.org/licenses/
 package lib.pircbot;
 
 import java.io.BufferedWriter;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * A Thread which is responsible for sending messages to the IRC server.
@@ -39,7 +40,8 @@ public class OutputThread extends Thread {
      * @param bot      The underlying PircBot instance.
      * @param outQueue The Queue from which we will obtain our messages.
      */
-    OutputThread(PircBot bot, Queue<String> outQueue, BufferedWriter bufferedWriter) {
+    OutputThread(PircBot bot, ArrayBlockingQueue<String> outQueue, BufferedWriter bufferedWriter)
+    {
         _bot = bot;
         _outQueue = outQueue;
         bwriter = bufferedWriter;
@@ -78,7 +80,7 @@ public class OutputThread extends Thread {
                 // Small delay to prevent spamming of the channel
                 sleep(_bot.getMessageDelay());
 
-                String line = _outQueue.next();
+                String line = _outQueue.take();
                 if (line != null) {
                     sendRawLine(line);
                 } else {
@@ -98,6 +100,6 @@ public class OutputThread extends Thread {
     }
 
     private PircBot _bot = null;
-    private Queue<String> _outQueue = null;
+    private ArrayBlockingQueue<String> _outQueue = null;
     private BufferedWriter bwriter = null;
 }

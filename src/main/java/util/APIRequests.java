@@ -2,7 +2,7 @@ package util;
 
 import face.FaceManager;
 import gui.forms.GUIMain;
-import irc.account.Oauth;
+import irc.account.OAuth;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
 import util.settings.Settings;
@@ -14,6 +14,7 @@ import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,7 +26,10 @@ public class APIRequests {
     //Anything Twitch
     public static class Twitch {
 
+        private static ConcurrentHashMap<String, String> usersIDMap = new ConcurrentHashMap<>();
+
         private static final String TWITCH_API = "https://api.twitch.tv/kraken";
+        private static final String API_VERSION = "api_version=5"; // TODO removeme when the default is v5
         public static final String CLIENT_ID = "client_id=qw8d3ve921t0n6e3if07l664f1jn1y7";
 
         /**
@@ -46,6 +50,42 @@ public class APIRequests {
         }
 
         /**
+         * Since Twitch is eventually going to deprecate v3, we need to store a user and their corresponding ID. This
+         * method is in charge of obtaining said ID.
+         *
+         * @param channel The channel's name.
+         * @return The String of the ID for the channel.
+         */
+        public static String getChannelID(String channel)
+        {
+            if (usersIDMap.contains(channel))
+                return usersIDMap.get(channel);
+
+            try
+            {
+                URL toRead = new URL(TWITCH_API + "/users?login=" + channel + "&" + CLIENT_ID + "&" + API_VERSION);
+                String line = Utils.createAndParseBufferedReader(toRead.openStream());
+                if (!line.isEmpty())
+                {
+                    JSONObject init = new JSONObject(line);
+                    if (init.getInt("_total") > 0)
+                    {
+                        JSONArray users = init.getJSONArray("users");
+                        JSONObject user = users.getJSONObject(0);
+                        String ID = user.getString("_id");
+                        usersIDMap.put(channel, ID);
+                        return ID;
+                    }
+                }
+            } catch (Exception e)
+            {
+                GUIMain.log(e);
+            }
+
+            return "";
+        }
+
+        /**
          * Fetches and downloads the given channel's subscriber icon.
          *
          * @param channel The channel to download the sub icon for.
@@ -55,7 +95,9 @@ public class APIRequests {
         {
             try
             {
-                URL toRead = new URL(TWITCH_API + "/chat/" + channel.replaceAll("#", "") + "/badges?" + CLIENT_ID);
+                channel = channel.replaceAll("#", "");
+                String ID = getChannelID(channel);
+                URL toRead = new URL(TWITCH_API + "/chat/" + ID + "/badges?" + CLIENT_ID + "&" + API_VERSION);
                 String line = Utils.createAndParseBufferedReader(toRead.openStream());
                 if (!line.isEmpty())
                 {
@@ -81,12 +123,14 @@ public class APIRequests {
          *
          * @return the current stream uptime.
          */
-        public static Response getUptimeString(String channelName) {
-            if (channelName.contains("#")) channelName = channelName.replace("#", "");
+        public static Response getUptimeString(String channelName)
+        {
+            if (channelName.contains("#")) channelName = channelName.replaceAll("#", "");
             Response toReturn = new Response();
             try
             {
-                URL uptime = new URL(TWITCH_API + "/streams/" + channelName + "?" + CLIENT_ID);
+                String ID = getChannelID(channelName);
+                URL uptime = new URL(TWITCH_API + "/streams/" + ID + "?" + CLIENT_ID + "&" + API_VERSION);
                 String line = Utils.createAndParseBufferedReader(uptime.openStream());
                 if (!line.isEmpty()) {
                     JSONObject outer = new JSONObject(line);
@@ -213,7 +257,7 @@ public class APIRequests {
          * @param isTitle If the change is for the title or game.
          * @return The response Botnak has for the method.
          */
-        public static Response setStreamStatus(Oauth key, String channel, String message, boolean isTitle) {
+        public static Response setStreamStatus(OAuth key, String channel, String message, boolean isTitle) {
             Response toReturn = new Response();
             if (key.canSetTitle()) {
                 String add = isTitle ? "title" : "game";
@@ -342,6 +386,7 @@ public class APIRequests {
                 }
             } catch (Exception e) {
                 toReturn.setResponseText("Failed to parse Twitch VOD due to an Exception!");
+                GUIMain.log(e);
             }
             return toReturn;
         }
@@ -386,7 +431,7 @@ public class APIRequests {
             ArrayList<String> toReturn = new ArrayList<>();
             try
             {
-                URL request = new URL(TWITCH_API + "/search/channels?limit=10&q=" + partial + "&" + CLIENT_ID);
+                URL request = new URL(TWITCH_API + "/search/channels?limit=10&query=" + partial + "&" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);

@@ -2,7 +2,7 @@ package gui.forms;
 
 import gui.ChatPane;
 import gui.CombinedChatPane;
-import irc.account.Oauth;
+import irc.account.OAuth;
 import thread.ThreadEngine;
 import thread.heartbeat.FollowCheck;
 import util.APIRequests;
@@ -23,8 +23,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class GUIStreams extends JFrame {
 
-    private Oauth getKey() {
-        return (Settings.accountManager.getUserAccount() != null ? Settings.accountManager.getUserAccount().getKey() : null);
+    private OAuth getKey()
+    {
+        return (Settings.accountManager.getUserAccount() != null ? Settings.accountManager.getUserAccount().getOAuth() : null);
     }
 
     public GUIStreams() {

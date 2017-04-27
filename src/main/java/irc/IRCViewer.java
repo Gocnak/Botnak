@@ -95,7 +95,7 @@ public class IRCViewer extends MessageHandler {
     @Override
     public void onNewSubscriber(String channel, String line, String newSub) {
         Message m = new Message(channel, line, Message.MessageType.SUB_NOTIFY);
-        if (Utils.isMainChannel(channel) && line.endsWith("subscribed!"))
+        if (Utils.isMainChannel(channel))
         {
             if (Settings.subscriberManager.addNewSubscriber(newSub, channel)) return;
         } //else it's someone else's channel, just print the message

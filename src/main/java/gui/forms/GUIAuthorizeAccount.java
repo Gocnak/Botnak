@@ -2,7 +2,7 @@ package gui.forms;
 
 import gui.TokenListener;
 import irc.account.Account;
-import irc.account.Oauth;
+import irc.account.OAuth;
 import irc.account.Task;
 import util.Utils;
 import util.settings.Settings;
@@ -29,7 +29,7 @@ public class GUIAuthorizeAccount extends JFrame {
         listener = null;
         initComponents();
         if (!isForBotAccount && getAccount(false) != null) {
-            Oauth key = getAccount(false).getKey();
+            OAuth key = getAccount(false).getOAuth();
             statusPane.setText("Here is the current User OAuth key's permissions. Logout of the User account if you wish to change it!");
             accountNameField.setText(getAccount(false).getName());
             oauthField.setText(key.getKey());
@@ -43,7 +43,7 @@ public class GUIAuthorizeAccount extends JFrame {
             boxReadSubs.setEnabled(false);
             authorizeButton.setEnabled(false);
         } else if (isForBotAccount && getAccount(true) != null) {
-            Oauth key = getAccount(true).getKey();
+            OAuth key = getAccount(true).getOAuth();
             statusPane.setText("Here is the current Bot OAuth key. Logout of the Bot account if you wish to change it!");
             accountNameField.setText(getAccount(true).getName());
             oauthField.setText(key.getKey());
@@ -80,7 +80,7 @@ public class GUIAuthorizeAccount extends JFrame {
             if (isForBotAccount) {
                 if (getAccount(true) == null) {
                     Settings.accountManager.setBotAccount(
-                            new Account(name, new Oauth(oauth, false, false, false, false)));
+                            new Account(name, new OAuth(oauth, false, false, false, false)));
                     Settings.accountManager.addTask(new Task(null, Task.Type.CREATE_BOT_ACCOUNT, null));
                     if (GUIMain.settings != null) {
                         GUISettings.botUser.setText(name);
@@ -90,7 +90,7 @@ public class GUIAuthorizeAccount extends JFrame {
             } else {
                 if (getAccount(false) == null) {
                     Settings.accountManager.setUserAccount(
-                            new Account(name, new Oauth(oauth, boxEditStatus.isSelected(), boxCommercial.isSelected(),
+                            new Account(name, new OAuth(oauth, boxEditStatus.isSelected(), boxCommercial.isSelected(),
                                     boxReadSubs.isSelected(), boxFollowed.isSelected())));
                     Settings.accountManager.addTask(new Task(null, Task.Type.CREATE_VIEWER_ACCOUNT, null));
                     if (GUIMain.settings != null) {

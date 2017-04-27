@@ -35,7 +35,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class User implements Comparable<User> {
 
-    private boolean staff = false, admin = false, global_mod = false, turbo = false, prime = false;
+    private boolean staff = false, admin = false, global_mod = false, turbo = false, prime = false, verified = false;
     private String _nick, _lowerNick, displayName = null;
 
     private CopyOnWriteArraySet<Integer> emotes = new CopyOnWriteArraySet<>();
@@ -148,6 +148,19 @@ public class User implements Comparable<User> {
     public void setPrime(boolean bState)
     {
         prime = bState;
+    }
+
+    /**
+     * Checks if a user is a verified Twitch Partner
+     */
+    public boolean isVerified()
+    {
+        return verified;
+    }
+
+    public void setVerified(boolean bState)
+    {
+        verified = bState;
     }
 
     /**

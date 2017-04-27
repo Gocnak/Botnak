@@ -808,7 +808,7 @@ public class GUIMain extends JFrame {
                         timeOption30sec.setText("30 sec");
                         timeOption30sec.addActionListener(e -> {
                             if (bot != null && bot.getBot() != null) {
-                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getOAuth(),
                                         "30", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -827,7 +827,7 @@ public class GUIMain extends JFrame {
                         timeOption60sec.setText("1 min");
                         timeOption60sec.addActionListener(e -> {
                             if (bot != null && bot.getBot() != null) {
-                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getOAuth(),
                                         "1m", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -846,7 +846,7 @@ public class GUIMain extends JFrame {
                         timeOption90sec.setText("1 min 30 sec");
                         timeOption90sec.addActionListener(e -> {
                             if (bot != null && bot.getBot() != null) {
-                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getOAuth(),
                                         "1m30s", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -865,7 +865,7 @@ public class GUIMain extends JFrame {
                         timeOption120sec.setText("2 min");
                         timeOption120sec.addActionListener(e -> {
                             if (bot != null && bot.getBot() != null) {
-                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getOAuth(),
                                         "2m", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -884,7 +884,7 @@ public class GUIMain extends JFrame {
                         timeOption150sec.setText("2 min 30 sec");
                         timeOption150sec.addActionListener(e -> {
                             if (bot != null && bot.getBot() != null) {
-                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getOAuth(),
                                         "2m30s", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -903,7 +903,7 @@ public class GUIMain extends JFrame {
                         timeOption180sec.setText("3 min");
                         timeOption180sec.addActionListener(e -> {
                             if (bot != null && bot.getBot() != null) {
-                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getKey(),
+                                Response r = bot.playAdvert(Settings.accountManager.getUserAccount().getOAuth(),
                                         "3m", Settings.accountManager.getUserAccount().getName());
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());

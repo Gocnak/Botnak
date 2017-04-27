@@ -230,8 +230,8 @@ public class JTattooUtilities {
         }
         if (getJavaVersion() >= 1.6) {
             try {
-                Class swingUtilities2Class = Class.forName("sun.swing.SwingUtilities2");
-                Class classParams[] = {JComponent.class, Graphics.class, String.class, Integer.TYPE, Integer.TYPE};
+                Class<?> swingUtilities2Class = Class.forName("sun.swing.SwingUtilities2");
+                Class<?> classParams[] = {JComponent.class, Graphics.class, String.class, Integer.TYPE, Integer.TYPE};
                 Method m = swingUtilities2Class.getMethod("drawString", classParams);
                 Object methodParams[] = {c, g, text, x, y};
                 m.invoke(null, methodParams);

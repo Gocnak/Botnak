@@ -8,12 +8,13 @@ import irc.Donor;
 import irc.Subscriber;
 import irc.account.Account;
 import irc.account.AccountManager;
-import irc.account.Oauth;
+import irc.account.OAuth;
 import irc.account.Task;
 import lib.pircbot.ChannelManager;
 import sound.Sound;
 import sound.SoundEngine;
 import thread.ShutdownHook;
+import thread.ThreadEngine;
 import util.Permissions;
 import util.Utils;
 import util.comm.Command;
@@ -30,7 +31,6 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * This class is the container for every setting Botnak has.
@@ -284,17 +284,24 @@ public class Settings {
         }
         //checks online for offline donations and adds them
         if (donationManager.canCheck() && scannedInitialDonations.getValue()) {
-            donationManager.checkDonations(false);
-            donationManager.ranFirstCheck = true;
+            ThreadEngine.submit(() ->
+            {
+                donationManager.checkDonations(false);
+                donationManager.ranFirstCheck = true;
+            });
         }
         if (!scannedInitialDonations.getValue()) {
-            donationManager.scanInitialDonations(0);
-            scannedInitialDonations.setValue(true);
+            ThreadEngine.submit(() ->
+            {
+                donationManager.scanInitialDonations(0);
+                scannedInitialDonations.setValue(true);
+            });
         }
-        if (accountManager.getUserAccount() != null && accountManager.getUserAccount().getKey().canReadSubscribers()) {
+        if (accountManager.getUserAccount() != null && accountManager.getUserAccount().getOAuth().canReadSubscribers())
+        {
             if (!scannedInitialSubscribers.getValue() && accountManager.getUserAccount() != null) {
                 subscriberManager.scanInitialSubscribers(accountManager.getUserAccount().getName(),
-                        accountManager.getUserAccount().getKey(), 0, new HashSet<>());
+                        accountManager.getUserAccount().getOAuth(), 0, new HashSet<>());
             }
         }
         if (Utils.areFilesGood(subsFile.getAbsolutePath())) {
@@ -406,12 +413,12 @@ public class Settings {
                     boolean subs = Boolean.parseBoolean(p.getProperty("CanParseSubscribers", "false"));
                     boolean followed = Boolean.parseBoolean(p.getProperty("CanParseFollowedStreams", "false"));
                     if (followed) trackFollowers.setValue(true);
-                    accountManager.setUserAccount(new Account(userNorm, new Oauth(userNormPass, stat, ad, subs, followed)));
+                    accountManager.setUserAccount(new Account(userNorm, new OAuth(userNormPass, stat, ad, subs, followed)));
                 }
                 String userBot = p.getProperty("UserBot", "").toLowerCase();
                 String userBotPass = p.getProperty("UserBotPass", "");
                 if (!userBot.equals("") && !userBotPass.equals("") && userBotPass.contains("oauth")) {
-                    accountManager.setBotAccount(new Account(userBot, new Oauth(userBotPass, false, false, false, false)));
+                    accountManager.setBotAccount(new Account(userBot, new OAuth(userBotPass, false, false, false, false)));
                 }
                 if (accountManager.getUserAccount() != null) {
                     accountManager.addTask(new Task(null, Task.Type.CREATE_VIEWER_ACCOUNT, null));
@@ -444,7 +451,7 @@ public class Settings {
                 Account user = accountManager.getUserAccount();
                 Account bot = accountManager.getBotAccount();
                 if (user != null) {
-                    Oauth key = user.getKey();
+                    OAuth key = user.getOAuth();
                     p.put("UserNorm", user.getName());
                     p.put("UserNormPass", key.getKey());
                     p.put("CanStatus", String.valueOf(key.canSetTitle()));
@@ -453,7 +460,7 @@ public class Settings {
                     p.put("CanParseFollowedStreams", String.valueOf(key.canReadFollowed()));
                 }
                 if (bot != null) {
-                    Oauth key = bot.getKey();
+                    OAuth key = bot.getOAuth();
                     p.put("UserBot", bot.getName());
                     p.put("UserBotPass", key.getKey());
                 }
@@ -629,7 +636,7 @@ public class Settings {
         @Override
         public void handleLineLoad(String line) {
             String[] split = line.split("\\[");
-            String[] contents = split[1].split("\\]");
+            String[] contents = split[1].split("]");
             Command c = new Command(split[0], contents);
             if (split.length > 2) {
                 c.addArguments(split[2].split(","));
@@ -787,7 +794,7 @@ public class Settings {
                 GUIMain.log(e);
             }
         } else { //first time boot/reset/deleted file etc.
-            GUIMain.conCommands.addAll(hardcoded.stream().collect(Collectors.toList()));
+            GUIMain.conCommands.addAll(new ArrayList<>(hardcoded));
         }
         GUIMain.log("Loaded console commands!");
     }
@@ -823,7 +830,8 @@ public class Settings {
         @Override
         public void handleLineSave(PrintWriter pw) {
             Set<String> keys = GUIMain.keywordMap.keySet();
-            keys.stream().filter(word -> word != null).forEach(word -> {
+            keys.stream().filter(Objects::nonNull).forEach(word ->
+            {
                 Color c = GUIMain.keywordMap.get(word);
                 pw.println(word + "," + c.getRed() + "," + c.getGreen() + "," + c.getBlue());
             });

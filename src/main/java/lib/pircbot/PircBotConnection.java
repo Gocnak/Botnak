@@ -6,6 +6,7 @@ import util.Utils;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Created by Nick on 9/7/2015.
@@ -14,8 +15,8 @@ public class PircBotConnection {
 
     private InputThread _inputThread = null;
     private OutputThread _outputThread = null;
-    private Queue<String> _outQueue = new Queue<>();
-    private PircBot bot = null;
+    private ArrayBlockingQueue<String> _outQueue;
+    private PircBot bot;
     private ConnectionType type;
     private String _server, name;
 
@@ -23,7 +24,8 @@ public class PircBotConnection {
         return _outputThread;
     }
 
-    public Queue<String> getOutQueue() {
+    public ArrayBlockingQueue<String> getOutQueue()
+    {
         return _outQueue;
     }
 
@@ -31,6 +33,10 @@ public class PircBotConnection {
         return bot;
     }
 
+    public void setName(String name)
+    {
+        this.name = name;
+    }
     public String getName() {
         return name;
     }
@@ -57,6 +63,7 @@ public class PircBotConnection {
         this.bot = bot;
         this.type = type;
         this.name = bot.getNick();
+        this._outQueue = new ArrayBlockingQueue<>(500, true); // I don't know if people will use more than 500 msgs
     }
 
     /**

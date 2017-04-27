@@ -5,20 +5,20 @@ import irc.IRCBot;
 import irc.IRCViewer;
 import lib.pircbot.PircBot;
 import lib.pircbot.PircBotConnection;
-import lib.pircbot.Queue;
 import util.settings.Settings;
 
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created by Nick on 6/12/2014.
  */
 public class AccountManager extends Thread {
 
-    private Queue<Task> tasks;
+    private ConcurrentLinkedQueue<Task> tasks;
 
     private ConcurrentHashMap<String, ReconnectThread> reconnectThreads;
 
@@ -28,7 +28,7 @@ public class AccountManager extends Thread {
 
     public AccountManager() {
         reconnectThreads = new ConcurrentHashMap<>();
-        tasks = new Queue<>();
+        tasks = new ConcurrentLinkedQueue<>();
         userAccount = null;
         botAccount = null;
         viewer = null;
@@ -87,14 +87,14 @@ public class AccountManager extends Thread {
     @Override
     public void run() {//handle connection status
         while (!GUIMain.shutDown) {
-            Task t = tasks.next();
+            Task t = tasks.poll();
             if (t != null) {
                 switch (t.type) {
                     case CREATE_BOT_ACCOUNT:
                         GUIMain.bot = new IRCBot();
                         PircBot bot = new PircBot(GUIMain.bot);
                         bot.setNick(getBotAccount().getName());
-                        bot.setPassword(getBotAccount().getKey().getKey());
+                        bot.setPassword(getBotAccount().getOAuth().getKey());
                         bot.setMessageDelay(1500);
                         setBot(bot);
                         addTask(new Task(getBot(), Task.Type.CONNECT, "Loaded Bot: " + getBotAccount().getName() + "!"));
@@ -104,7 +104,7 @@ public class AccountManager extends Thread {
                         PircBot viewer = new PircBot(GUIMain.viewer);
                         viewer.setVerbose(true);//TODO remove this
                         viewer.setNick(getUserAccount().getName());
-                        viewer.setPassword(getUserAccount().getKey().getKey());
+                        viewer.setPassword(getUserAccount().getOAuth().getKey());
                         setViewer(viewer);
                         addTask(new Task(getViewer(), Task.Type.CONNECT, "Loaded User: " + getUserAccount().getName() + "!"));
                         break;
@@ -162,17 +162,23 @@ public class AccountManager extends Thread {
     }
 
     public void createReconnectThread(PircBotConnection connection) {
-        if (!Settings.autoReconnectAccounts.getValue())
+        try
         {
-            GUIMain.logCurrent("Auto-reconnects disabled, please check Preferences -> Auto-Reconnect!");
-            return;
+            if (!Settings.autoReconnectAccounts.getValue())
+            {
+                GUIMain.logCurrent("Auto-reconnects disabled, please check Preferences -> Auto-Reconnect!");
+                return;
+            }
+            if (connection == null) return;
+            if (reconnectThreads.containsKey(connection.getName())) return;
+            ReconnectThread rt = new ReconnectThread(connection);
+            rt.start();
+            reconnectThreads.put(connection.getName(), rt);
+            GUIMain.logCurrent("Attempting to reconnect the account: " + connection.getBot().getNick() + " ...");
+        } catch (Exception e)
+        {
+            GUIMain.log(e);
         }
-        if (connection == null) return;
-        if (reconnectThreads.containsKey(connection.getName())) return;
-        ReconnectThread rt = new ReconnectThread(connection);
-        rt.start();
-        reconnectThreads.put(connection.getName(), rt);
-        GUIMain.logCurrent("Attempting to reconnect the account: " + connection.getBot().getNick() + " ...");
     }
 
     private class ReconnectThread {

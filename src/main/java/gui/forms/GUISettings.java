@@ -549,12 +549,12 @@ public class GUISettings extends JFrame {
                 botPass.setEnabled(false);
                 if (GUIMain.loadedSettingsUser()) {
                     normUser.setText(Settings.accountManager.getUserAccount().getName());
-                    normPass.setText(Settings.accountManager.getUserAccount().getKey().getKey());
+                    normPass.setText(Settings.accountManager.getUserAccount().getOAuth().getKey());
                     userLogoutButton.setEnabled(true);
                 }
                 if (GUIMain.loadedSettingsBot()) {
                     botUser.setText(Settings.accountManager.getBotAccount().getName());
-                    botPass.setText(Settings.accountManager.getBotAccount().getKey().getKey());
+                    botPass.setText(Settings.accountManager.getBotAccount().getOAuth().getKey());
                     botLogoutButton.setEnabled(true);
                 }
 

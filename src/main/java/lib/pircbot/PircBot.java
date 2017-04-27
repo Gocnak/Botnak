@@ -521,15 +521,19 @@ public class PircBot {
                         break;
                     case "badges": // Although user-type handles most of this, we need it for bits status
                         String badges = tag.getValue();
+                        // Bit donor
                         if (badges.contains("bits"))
                         {
                             Matcher m = Pattern.compile("bits/(\\d+)").matcher(badges);
                             if (m.find())
                                 getChannelManager().getChannel(channel).setCheer(user, Integer.parseInt(m.group(1)));
                         }
-
+                        // Prime
                         if (badges.contains("premium"))
                             getChannelManager().getUser(user, true).setPrime(true);
+                        // Verified
+                        if (badges.contains("partner"))
+                            getChannelManager().getUser(user, true).setVerified(true);
                         break;
                     case "bits":
                         //This message contains a cheer!
@@ -641,6 +645,8 @@ public class PircBot {
      */
     public void setNick(String nick) {
         _nick = nick;
+        if (connection != null)
+            connection.setName(_nick);
     }
 
     public void setPassword(String password) {

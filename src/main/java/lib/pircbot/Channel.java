@@ -111,7 +111,7 @@ public class Channel {
      */
     public int getCheer(String user)
     {
-        return cheers.containsKey(user) ? cheers.get(user) : -1;
+        return cheers.getOrDefault(user, -1);
     }
 
     /**
