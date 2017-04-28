@@ -7,6 +7,24 @@ import util.settings.Settings;
 import javax.swing.*;
 import java.awt.*;
 
+
+/**
+ * TODO:
+ * Settings GUI
+ * Lotsofs: change the output AudioLine
+ * Gif faces
+ * Voting GUI
+ * TextCommands GUI
+ * (autocommand)
+ * Log Viewer GUI
+ * <p>
+ * Bug:
+ * Sound delay shows milliseconds
+ * Cheer donors should be able to play sounds/have donor benefits after a certain amount
+ * fix heartbeat threads from spouting issues (connection-wise) -- use WebSockets?
+ */
+
+
 public class Boot {
     public static void main(final String[] args) {
         /* Thread-safe initialization */

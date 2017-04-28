@@ -14,12 +14,11 @@ import java.util.Optional;
 public class Permissions {
 
     public enum Permission implements Comparable<Permission> {
-        ALL(0),
-        EX_SUBSCRIBER(1),
-        SUBSCRIBER(1),
-        DONOR(2),
-        MODERATOR(3),
-        BROADCASTER(4);
+        VIEWER(0),        // Somebody in chat
+        SUBSCRIBER(1),    // Somebody that is a subscriber
+        DONOR(2),         // Somebody that has donated/cheered
+        MODERATOR(3),     // Somebody that is a mod
+        BROADCASTER(4);   // Somebody that is the broadcaster of the channel
 
         public int permValue;
 
@@ -34,7 +33,7 @@ public class Permissions {
                 return p;
             }
         }
-        return Permission.ALL;
+        return Permission.VIEWER;
     }
 
     /**
@@ -46,11 +45,12 @@ public class Permissions {
      */
     public static ArrayList<Permission> getUserPermissions(User u, String channel) {
         ArrayList<Permission> permissionList = new ArrayList<>();
-        permissionList.add(Permission.ALL);
+        permissionList.add(Permission.VIEWER);
         if (Utils.isMainChannel(channel)) {
             Optional<Subscriber> sub = Settings.subscriberManager.getSubscriber(u.getNick());
             if (sub.isPresent() && !sub.get().isActive()) {
-                permissionList.add(Permission.EX_SUBSCRIBER);
+                // Technically this is an EX_SUBSCRIBER but they are the same as a SUBSCRIBER, permission-wise
+                permissionList.add(Permission.SUBSCRIBER);
             }
         }
         if (u.isSubscriber(channel)) {

@@ -221,9 +221,15 @@ public class User implements Comparable<User> {
         return displayName == null ? getLowerNick() : displayName;
     }
 
+    /**
+     * Since Twitch added Weaboo support, we need to determine if this name
+     * is a Japanese/Korean/Chinese name. If it is, show their nick next to their name, otherwise,
+     * set their name as is.
+     */
     public void setDisplayName(String name) {
         if (displayName == null) {
-            displayName = name;
+            boolean displayIsNick = name.equalsIgnoreCase(_nick);
+            displayName = displayIsNick ? name : name + " (" + _nick + ")";
         }
     }
 

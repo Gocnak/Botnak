@@ -13,7 +13,10 @@ import lib.pircbot.User;
 import sound.Sound;
 import sound.SoundEngine;
 import thread.ThreadEngine;
-import util.*;
+import util.APIRequests;
+import util.Response;
+import util.StringArray;
+import util.Utils;
 import util.comm.Command;
 import util.comm.ConsoleCommand;
 import util.misc.Raffle;
@@ -130,10 +133,7 @@ public class IRCBot extends MessageHandler {
                         }
                         String key = r.getKeyword();
                         if (message.contains(key)) {
-                            int permBase = r.getPermission();//TODO this will change to EXCLUDEDPerms and whatnot
-                            if (Permissions.hasAtLeast(Permissions.getUserPermissions(u, channel), permBase)) {
-                                r.addUser(u.getLowerNick());
-                            }
+                            r.addUser(u, channel); // Handles filtering permissions
                         }
                     }
                 }
@@ -143,7 +143,7 @@ public class IRCBot extends MessageHandler {
                     toRemove.add(r);
                 });
                 if (!toRemove.isEmpty()) {
-                    toRemove.forEach(raffles::remove);
+                    raffles.removeAll(toRemove);
                     toRemove.clear();
                 }
             }
@@ -329,12 +329,8 @@ public class IRCBot extends MessageHandler {
                                     }
                                 }
                                 Raffle r = new Raffle(getBot(), first, time, channel, perm);
-                                r.start();
-                                raffles.add(r);
-                                //print the blarb
-                                getBot().sendMessage(channel, r.getStartMessage());
-                                getBot().sendMessage(channel, "NOTE: This is a promotion from " + channel.substring(1) +
-                                        ". Twitch does not sponsor or endorse broadcaster promotions and is not responsible for them.");
+                                startRaffle(r);
+                                updateRaffleGUI(r, true);
                             } else {
                                 getBot().sendMessage(channel, "Failed to start raffle, usage: !startraffle (key) (time) (permission?)");
                             }
@@ -348,17 +344,10 @@ public class IRCBot extends MessageHandler {
                             }
                             break;
                         case STOP_RAFFLE:
-                            Raffle toRemove = null;
-                            for (Raffle r : raffles) {
-                                if (r.getKeyword().equalsIgnoreCase(first)) {
-                                    r.setDone(true);
-                                    r.interrupt();
-                                    toRemove = r;
-                                    getBot().sendMessage(channel, "The raffle with key " + first + " has been stopped!");
-                                    break;
-                                }
-                            }
+                            Raffle toRemove = stopRaffle(first);
                             if (toRemove != null) {
+                                sendStopRaffleMessage(toRemove);
+                                updateRaffleGUI(toRemove, false);
                                 raffles.remove(toRemove);
                             } else {
                                 getBot().sendMessage(channel, "There is no such raffle \"" + first + "\" !");
@@ -500,7 +489,8 @@ public class IRCBot extends MessageHandler {
     }
 
     //!startpoll time options
-    private void createPoll(String channel, String message) {
+    public void createPoll(String channel, String message)
+    {
         if (message.contains("]")) {//because what's the point of a poll with one option?
             int first = message.indexOf(" ") + 1;
             int second = message.indexOf(" ", first) + 1;
@@ -512,6 +502,50 @@ public class IRCBot extends MessageHandler {
                 poll.start();
             }
         }
+    }
+
+    private void updateRaffleGUI(Raffle r, boolean add)
+    {
+        if (GUIMain.raffleGUI != null && GUIMain.raffleGUI.isVisible())
+        {
+            if (add)
+            {
+                GUIMain.raffleGUI.addRaffle(r);
+            } else // removed
+            {
+                GUIMain.raffleGUI.removeRaffle(r);
+            }
+        }
+    }
+
+
+    public Raffle stopRaffle(String keyword)
+    {
+        for (Raffle r : raffles)
+        {
+            if (r.getKeyword().equalsIgnoreCase(keyword))
+            {
+                r.setDone(true);
+                r.interrupt();
+                return r;
+            }
+        }
+        return null;
+    }
+
+    public void sendStopRaffleMessage(Raffle r)
+    {
+        getBot().sendMessage(r.getChannel(), "The raffle with key \"" + r.getKeyword() + "\" has been stopped!");
+    }
+
+    public void startRaffle(Raffle toStart)
+    {
+        toStart.start();
+        raffles.add(toStart);
+        //print the blarb
+        getBot().sendMessage(toStart.getChannel(), toStart.getStartMessage());
+        getBot().sendMessage(toStart.getChannel(), "NOTE: This is a promotion from " + toStart.getChannel().substring(1) +
+                ". Twitch does not sponsor or endorse broadcaster promotions and is not responsible for them.");
     }
 
     public Response playAdvert(OAuth key, String first, String channel)

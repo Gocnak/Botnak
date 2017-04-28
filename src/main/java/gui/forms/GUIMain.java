@@ -56,6 +56,7 @@ public class GUIMain extends JFrame {
     public static GUIStreams streams = null;
     public static GUIAbout aboutGUI = null;
     public static GUIStatus statusGUI = null;
+    public static GUIRaffle raffleGUI = null;
 
     public static boolean shutDown = false;
 
@@ -343,7 +344,10 @@ public class GUIMain extends JFrame {
     }
 
     private void startRaffleOptionActionPerformed() {
-        // TODO add your code here
+        if (raffleGUI == null)
+            raffleGUI = new GUIRaffle();
+        if (!raffleGUI.isVisible())
+            raffleGUI.setVisible(true);
     }
 
     private void startVoteOptionActionPerformed() {
@@ -659,7 +663,7 @@ public class GUIMain extends JFrame {
 
                     //---- startRaffleOption ----
                     startRaffleOption.setText("Create Raffle...");
-                    startRaffleOption.setEnabled(false);//TODO
+                    //startRaffleOption.setEnabled(false);//TODO
                     startRaffleOption.addActionListener(e -> startRaffleOptionActionPerformed());
                     toolsMenu.add(startRaffleOption);
 
