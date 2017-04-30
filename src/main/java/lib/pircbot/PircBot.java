@@ -441,7 +441,7 @@ public class PircBot {
                 Settings.accountManager.createReconnectThread(getConnection());
                 return true;
             case "USERNOTICE": //User has resubscribed to this channel (for X months)
-                target = tokenizer.nextToken();
+                target = tokenizer.nextToken(); // TODO update to support upcoming subscriber change
                 String user = tagsMap.get("login");
                 parseTags(line, user, target);
                 getMessageHandler().onResubscribe(target, user, tagsMap.get("system-msg"));

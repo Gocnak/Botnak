@@ -41,9 +41,9 @@ public class GUILogViewer extends JFrame
             tree1.setModel(new DefaultTreeModel(
                     new DefaultMutableTreeNode("All Chats")
                     {
-                        {
-                            add(new DefaultMutableTreeNode("Channel"));
-                        }
+                    {
+                        add(new DefaultMutableTreeNode("Channel"));
+                    }
                     }));
             scrollPane1.setViewportView(tree1);
         }
@@ -73,7 +73,7 @@ public class GUILogViewer extends JFrame
                                 .addComponent(textField1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(scrollPane2, GroupLayout.DEFAULT_SIZE, 408, Short.MAX_VALUE))
-                        .addComponent(scrollPane1, GroupLayout.DEFAULT_SIZE, 434, Short.MAX_VALUE)
+                        .addComponent(scrollPane1, GroupLayout.DEFAULT_SIZE, 438, Short.MAX_VALUE)
         );
         pack();
         setLocationRelativeTo(getOwner());

@@ -4,163 +4,228 @@
 
 package gui.forms;
 
+import gui.PieChart;
+import gui.VoteCellRenderer;
+import util.Utils;
+import util.misc.Vote;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 
 /**
  * @author Nick Kerns
  */
 public class GUIVote extends JFrame
 {
+
+    private DefaultListModel<Vote.Option> voteListModel;
+
     public GUIVote()
     {
+        voteListModel = new DefaultListModel<>();
         initComponents();
+
+        // Check for past/current poll
+        if (GUIMain.bot != null && GUIMain.bot.pollExists())
+            addPoll(GUIMain.bot.getPoll());
     }
 
     private void newVoteButtonActionPerformed()
     {
-        // TODO add your code here
+        if (!GUICreateVote.isVisible())
+            GUICreateVote.setVisible(true);
+        else
+            GUICreateVote.toFront();
+
+        Utils.populateComboBox(channelsBox);
     }
 
     private void closeButtonActionPerformed()
     {
-        // TODO add your code here
+        dispose();
     }
 
     private void cancelVoteButtonActionPerformed()
     {
-        // TODO add your code here
+        GUIMain.bot.stopPoll();
+
+        stopVoteButton.setEnabled(false);
     }
 
     private void addOptionButtonActionPerformed()
     {
-        // TODO add your code here
+        DefaultTableModel dtm = (DefaultTableModel) optionTable.getModel();
+        String text = Utils.checkText(optionField.getText());
+        if (!text.isEmpty())
+        {
+            dtm.addRow(new Object[]{dtm.getRowCount() + 1, text});
+            optionField.setText("");
+        }
     }
 
     private void removeOptionButtonActionPerformed()
     {
-        // TODO add your code here
+        // Remove the selected row
+        int selRow = optionTable.getSelectedRow();
+        DefaultTableModel dtm = (DefaultTableModel) optionTable.getModel();
+        dtm.removeRow(selRow);
+
+        // Update the list
+        correctTable();
+
+        // Set this button back to disabled
+        removeOptionButton.setEnabled(false);
+    }
+
+    private void correctTable()
+    {
+        int optionNumCol = optionTable.getColumn("Option").getModelIndex();
+        for (int i = 0; i < optionTable.getRowCount(); i++)
+        {
+            int next = i + 1;
+            final int row = i; // Needed because of below for some reason
+            EventQueue.invokeLater(() -> optionTable.setValueAt(next, row, optionNumCol));
+        }
+    }
+
+
+    private void clearForm()
+    {
+        DefaultTableModel dtm = (DefaultTableModel) optionTable.getModel();
+        while (dtm.getRowCount() > 0)
+            dtm.removeRow(0);
+
+        optionField.setText("");
+        timeSpinner.setValue(((SpinnerNumberModel) timeSpinner.getModel()).getMinimum());
+    }
+
+    private void clearMainForm()
+    {
+        voteListModel.removeAllElements();
+        pieChart.clear();
+        stopVoteButton.setEnabled(false);
+        newVoteButton.setEnabled(true);
+    }
+
+    // Adds a poll to the main form
+    public void addPoll(Vote v)
+    {
+        // Reset our data
+        clearMainForm();
+
+        // Initialize the PieChart
+        boolean isOngoing = !v.isDone() || v.isAlive();
+        if (isOngoing)
+            pieChart.initialize(v.options);
+        else
+            pieChart.update(v);
+
+        // Populate the options list
+        v.options.forEach(voteListModel::addElement);
+
+        stopVoteButton.setEnabled(isOngoing);
+        newVoteButton.setEnabled(!isOngoing);
+    }
+
+    public void updatePoll(Vote v)
+    {
+        if (voteListModel.isEmpty())
+            addPoll(v);
+
+        votesList.repaint();
+
+        // Update the pie chart
+        pieChart.update(v);
+    }
+
+    public void pollEnded(Vote v)
+    {
+        if (voteListModel.isEmpty())
+            addPoll(v);
+
+        stopVoteButton.setEnabled(false);
+        newVoteButton.setEnabled(true);
     }
 
     private void startVoteButtonActionPerformed()
     {
-        // TODO add your code here
+        // Create the vote
+        int valueCol = optionTable.getColumn("Value").getModelIndex();
+        java.util.List<String> collect = new ArrayList<>();
+        for (int i = 0; i < optionTable.getRowCount(); i++)
+        {
+            collect.add((String) optionTable.getValueAt(i, valueCol));
+        }
+
+        // Start the vote we made, if we did
+        if (collect.size() > 1) // Because what's the point of a vote with only one option
+        {
+            Vote v = new Vote("#" + channelsBox.getSelectedItem(), (int) timeSpinner.getValue(), collect.toArray(new String[collect.size()]));
+            GUIMain.bot.startPoll(v);
+        }
+
+        // Clear the form
+        clearForm();
+        GUICreateVote.setVisible(false);
     }
 
     private void cancelButtonActionPerformed()
     {
-        // TODO add your code here
+        clearForm();
+        GUICreateVote.setVisible(false);
+    }
+
+    private void optionTableMouseReleased()
+    {
+        removeOptionButton.setEnabled(optionTable.getSelectedRow() > -1);
+    }
+
+    private void optionFieldKeyReleased(KeyEvent e)
+    {
+        if (e.getKeyCode() == KeyEvent.VK_ENTER)
+        {
+            addOptionButtonActionPerformed();
+        }
     }
 
     private void initComponents()
     {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner Evaluation license - Nick Kerns
-        option1Label = new JLabel();
-        pieChartPanel = new JPanel();
-        option2Label = new JLabel();
-        option3Label = new JLabel();
-        option4Label = new JLabel();
-        option5Label = new JLabel();
-        option6Label = new JLabel();
-        option7Label = new JLabel();
-        option8Label = new JLabel();
-        option9Label = new JLabel();
-        option10Label = new JLabel();
-        separator2 = new JSeparator();
         newVoteButton = new JButton();
         closeButton = new JButton();
-        cancelVoteButton = new JButton();
+        stopVoteButton = new JButton();
+        scrollPane2 = new JScrollPane();
+        votesList = new JList<>();
+        pieChart = new PieChart();
+        separator2 = new JSeparator();
         GUICreateVote = new JFrame();
         scrollPane1 = new JScrollPane();
         optionTable = new JTable();
         optionField = new JTextField();
-        addOptionButton = new JButton();
         removeOptionButton = new JButton();
         separator1 = new JSeparator();
         startVoteButton = new JButton();
         cancelButton = new JButton();
         label1 = new JLabel();
-        durationComboBox = new JComboBox<>();
+        addOptionButton = new JButton();
+        label2 = new JLabel();
+        channelsBox = new JComboBox<>();
+        timeSpinner = new JSpinner();
 
         //======== this ========
-        setTitle("User Votes");
+        setTitle("User Vote");
         setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
         setResizable(false);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         Container contentPane = getContentPane();
-
-        //---- option1Label ----
-        option1Label.setText("text");
-        option1Label.setForeground(Color.red);
-
-        //======== pieChartPanel ========
-        {
-
-            // JFormDesigner evaluation mark
-            pieChartPanel.setBorder(new javax.swing.border.CompoundBorder(
-                    new javax.swing.border.TitledBorder(new javax.swing.border.EmptyBorder(0, 0, 0, 0),
-                            "JFormDesigner Evaluation", javax.swing.border.TitledBorder.CENTER,
-                            javax.swing.border.TitledBorder.BOTTOM, new java.awt.Font("Dialog", java.awt.Font.BOLD, 12),
-                            java.awt.Color.red), pieChartPanel.getBorder()));
-            pieChartPanel.addPropertyChangeListener(new java.beans.PropertyChangeListener()
-            {
-                public void propertyChange(java.beans.PropertyChangeEvent e)
-                {
-                    if ("border".equals(e.getPropertyName())) throw new RuntimeException();
-                }
-            });
-
-
-            GroupLayout pieChartPanelLayout = new GroupLayout(pieChartPanel);
-            pieChartPanel.setLayout(pieChartPanelLayout);
-            pieChartPanelLayout.setHorizontalGroup(
-                    pieChartPanelLayout.createParallelGroup()
-                            .addGap(0, 230, Short.MAX_VALUE)
-            );
-            pieChartPanelLayout.setVerticalGroup(
-                    pieChartPanelLayout.createParallelGroup()
-                            .addGap(0, 0, Short.MAX_VALUE)
-            );
-        }
-
-        //---- option2Label ----
-        option2Label.setText("text");
-        option2Label.setForeground(new Color(153, 102, 0));
-
-        //---- option3Label ----
-        option3Label.setText("text");
-        option3Label.setForeground(Color.blue);
-
-        //---- option4Label ----
-        option4Label.setText("text");
-        option4Label.setForeground(Color.lightGray);
-        option4Label.setFont(option4Label.getFont().deriveFont(option4Label.getFont().getStyle() & ~Font.BOLD));
-
-        //---- option5Label ----
-        option5Label.setText("text");
-        option5Label.setForeground(Color.magenta);
-
-        //---- option6Label ----
-        option6Label.setText("text");
-        option6Label.setForeground(Color.pink);
-
-        //---- option7Label ----
-        option7Label.setText("text");
-        option7Label.setForeground(Color.orange);
-
-        //---- option8Label ----
-        option8Label.setText("text");
-        option8Label.setForeground(Color.yellow);
-
-        //---- option9Label ----
-        option9Label.setText("text");
-        option9Label.setForeground(Color.cyan);
-
-        //---- option10Label ----
-        option10Label.setText("text");
-        option10Label.setForeground(Color.green);
 
         //---- newVoteButton ----
         newVoteButton.setText("Create New Vote...");
@@ -172,76 +237,57 @@ public class GUIVote extends JFrame
         closeButton.setFocusable(false);
         closeButton.addActionListener(e -> closeButtonActionPerformed());
 
-        //---- cancelVoteButton ----
-        cancelVoteButton.setText("Cancel Current Vote");
-        cancelVoteButton.setFocusable(false);
-        cancelVoteButton.addActionListener(e -> cancelVoteButtonActionPerformed());
+        //---- stopVoteButton ----
+        stopVoteButton.setText("Stop Current Vote");
+        stopVoteButton.setFocusable(false);
+        stopVoteButton.setEnabled(false);
+        stopVoteButton.addActionListener(e -> cancelVoteButtonActionPerformed());
+
+        //======== scrollPane2 ========
+        {
+
+            //---- votesList ----
+            votesList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            votesList.setCellRenderer(new VoteCellRenderer());
+            votesList.setModel(voteListModel);
+            scrollPane2.setViewportView(votesList);
+        }
 
         GroupLayout contentPaneLayout = new GroupLayout(contentPane);
         contentPane.setLayout(contentPaneLayout);
         contentPaneLayout.setHorizontalGroup(
                 contentPaneLayout.createParallelGroup()
-                        .addComponent(separator2, GroupLayout.Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 508, Short.MAX_VALUE)
                         .addGroup(contentPaneLayout.createSequentialGroup()
                                 .addContainerGap()
                                 .addGroup(contentPaneLayout.createParallelGroup()
                                         .addGroup(contentPaneLayout.createSequentialGroup()
-                                                .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.TRAILING, false)
-                                                        .addComponent(option10Label, GroupLayout.Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE)
-                                                        .addComponent(option9Label, GroupLayout.Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE)
-                                                        .addComponent(option7Label, GroupLayout.Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE)
-                                                        .addComponent(option8Label, GroupLayout.Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE)
-                                                        .addComponent(option6Label, GroupLayout.Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE)
-                                                        .addComponent(option3Label, GroupLayout.Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE)
-                                                        .addComponent(option4Label, GroupLayout.Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE)
-                                                        .addComponent(option5Label, GroupLayout.Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE)
-                                                        .addComponent(option2Label, GroupLayout.Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE)
-                                                        .addComponent(option1Label, GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE))
+                                                .addComponent(scrollPane2, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE)
                                                 .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                                                .addComponent(pieChartPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                                                .addGap(0, 0, Short.MAX_VALUE))
+                                                .addComponent(pieChart, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                         .addGroup(contentPaneLayout.createSequentialGroup()
                                                 .addComponent(newVoteButton)
-                                                .addGap(64, 64, 64)
-                                                .addComponent(cancelVoteButton)
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 110, Short.MAX_VALUE)
+                                                .addGap(18, 18, 18)
+                                                .addComponent(stopVoteButton)
+                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 103, Short.MAX_VALUE)
                                                 .addComponent(closeButton)))
                                 .addContainerGap())
+                        .addComponent(separator2, GroupLayout.Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 443, Short.MAX_VALUE)
         );
         contentPaneLayout.setVerticalGroup(
                 contentPaneLayout.createParallelGroup()
                         .addGroup(contentPaneLayout.createSequentialGroup()
                                 .addContainerGap()
                                 .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.LEADING, false)
-                                        .addComponent(pieChartPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addGroup(contentPaneLayout.createSequentialGroup()
-                                                .addComponent(option1Label)
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(option2Label)
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(option3Label)
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(option4Label)
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(option5Label, GroupLayout.PREFERRED_SIZE, 15, GroupLayout.PREFERRED_SIZE)
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(option6Label)
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(option7Label)
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(option8Label)
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(option9Label)
-                                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(option10Label)))
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(separator2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
+                                        .addComponent(pieChart, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(scrollPane2, GroupLayout.DEFAULT_SIZE, 213, Short.MAX_VALUE))
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(separator2, GroupLayout.PREFERRED_SIZE, 2, GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addGroup(contentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                                        .addComponent(closeButton)
                                         .addComponent(newVoteButton)
-                                        .addComponent(cancelVoteButton))
-                                .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                        .addComponent(stopVoteButton)
+                                        .addComponent(closeButton))
+                                .addContainerGap(11, Short.MAX_VALUE))
         );
         pack();
         setLocationRelativeTo(getOwner());
@@ -251,6 +297,7 @@ public class GUIVote extends JFrame
             GUICreateVote.setTitle("Create New Vote");
             GUICreateVote.setIconImage(new ImageIcon(getClass().getResource("/image/icon.png")).getImage());
             GUICreateVote.setResizable(false);
+            GUICreateVote.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
             Container GUICreateVoteContentPane = GUICreateVote.getContentPane();
 
             //======== scrollPane1 ========
@@ -271,13 +318,11 @@ public class GUIVote extends JFrame
                     boolean[] columnEditable = new boolean[]{
                             false, true
                     };
-
                     @Override
                     public Class<?> getColumnClass(int columnIndex)
                     {
                         return columnTypes[columnIndex];
                     }
-
                     @Override
                     public boolean isCellEditable(int rowIndex, int columnIndex)
                     {
@@ -290,17 +335,32 @@ public class GUIVote extends JFrame
                     cm.getColumn(0).setPreferredWidth(50);
                     cm.getColumn(1).setPreferredWidth(165);
                 }
+                optionTable.addMouseListener(new MouseAdapter()
+                {
+                    @Override
+                    public void mouseReleased(MouseEvent e)
+                    {
+                        optionTableMouseReleased();
+                    }
+                });
+                optionTable.getTableHeader().setReorderingAllowed(false);
                 scrollPane1.setViewportView(optionTable);
             }
 
-            //---- addOptionButton ----
-            addOptionButton.setText("Add Option to List");
-            addOptionButton.setFocusable(false);
-            addOptionButton.addActionListener(e -> addOptionButtonActionPerformed());
+            //---- optionField ----
+            optionField.addKeyListener(new KeyAdapter()
+            {
+                @Override
+                public void keyReleased(KeyEvent e)
+                {
+                    optionFieldKeyReleased(e);
+                }
+            });
 
             //---- removeOptionButton ----
             removeOptionButton.setText("Remove");
             removeOptionButton.setFocusable(false);
+            removeOptionButton.setEnabled(false);
             removeOptionButton.addActionListener(e -> removeOptionButtonActionPerformed());
 
             //---- startVoteButton ----
@@ -314,16 +374,18 @@ public class GUIVote extends JFrame
             cancelButton.addActionListener(e -> cancelButtonActionPerformed());
 
             //---- label1 ----
-            label1.setText("Duration of Vote:");
+            label1.setText("Duration of Vote (in seconds):");
 
-            //---- durationComboBox ----
-            durationComboBox.setModel(new DefaultComboBoxModel<>(new String[]{
-                    "30 seconds",
-                    "1 minute",
-                    "2 minutes",
-                    "5 minutes"
-            }));
-            durationComboBox.setFocusable(false);
+            //---- addOptionButton ----
+            addOptionButton.setText("Add Option to List");
+            addOptionButton.setFocusable(false);
+            addOptionButton.addActionListener(e -> addOptionButtonActionPerformed());
+
+            //---- label2 ----
+            label2.setText("Channel:");
+
+            //---- timeSpinner ----
+            timeSpinner.setModel(new SpinnerNumberModel(20, 20, null, 1));
 
             GroupLayout GUICreateVoteContentPaneLayout = new GroupLayout(GUICreateVoteContentPane);
             GUICreateVoteContentPane.setLayout(GUICreateVoteContentPaneLayout);
@@ -333,23 +395,28 @@ public class GUIVote extends JFrame
                             .addGroup(GUICreateVoteContentPaneLayout.createSequentialGroup()
                                     .addContainerGap()
                                     .addGroup(GUICreateVoteContentPaneLayout.createParallelGroup()
+                                            .addComponent(scrollPane1, GroupLayout.DEFAULT_SIZE, 241, Short.MAX_VALUE)
                                             .addGroup(GUICreateVoteContentPaneLayout.createSequentialGroup()
                                                     .addComponent(startVoteButton)
-                                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 94, Short.MAX_VALUE)
                                                     .addComponent(cancelButton))
+                                            .addComponent(optionField, GroupLayout.DEFAULT_SIZE, 241, Short.MAX_VALUE)
                                             .addGroup(GUICreateVoteContentPaneLayout.createSequentialGroup()
-                                                    .addComponent(addOptionButton)
+                                                    .addComponent(label2)
                                                     .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                                                    .addComponent(removeOptionButton, GroupLayout.PREFERRED_SIZE, 75, GroupLayout.PREFERRED_SIZE))
-                                            .addGroup(GUICreateVoteContentPaneLayout.createParallelGroup(GroupLayout.Alignment.LEADING, false)
-                                                    .addComponent(scrollPane1, GroupLayout.DEFAULT_SIZE, 205, Short.MAX_VALUE)
-                                                    .addComponent(optionField))
-                                            .addGroup(GUICreateVoteContentPaneLayout.createSequentialGroup()
-                                                    .addGap(10, 10, 10)
-                                                    .addComponent(label1)
-                                                    .addGap(18, 18, 18)
-                                                    .addComponent(durationComboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
-                                    .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                                    .addComponent(channelsBox, GroupLayout.PREFERRED_SIZE, 112, GroupLayout.PREFERRED_SIZE)
+                                                    .addGap(0, 70, Short.MAX_VALUE))
+                                            .addGroup(GroupLayout.Alignment.TRAILING, GUICreateVoteContentPaneLayout.createSequentialGroup()
+                                                    .addGroup(GUICreateVoteContentPaneLayout.createParallelGroup()
+                                                            .addGroup(GUICreateVoteContentPaneLayout.createSequentialGroup()
+                                                                    .addComponent(addOptionButton)
+                                                                    .addGap(0, 33, Short.MAX_VALUE))
+                                                            .addComponent(label1, GroupLayout.DEFAULT_SIZE, 160, Short.MAX_VALUE))
+                                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                                                    .addGroup(GUICreateVoteContentPaneLayout.createParallelGroup()
+                                                            .addComponent(removeOptionButton, GroupLayout.PREFERRED_SIZE, 75, GroupLayout.PREFERRED_SIZE)
+                                                            .addComponent(timeSpinner, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 65, GroupLayout.PREFERRED_SIZE))))
+                                    .addContainerGap())
             );
             GUICreateVoteContentPaneLayout.setVerticalGroup(
                     GUICreateVoteContentPaneLayout.createParallelGroup()
@@ -362,11 +429,19 @@ public class GUIVote extends JFrame
                                     .addGroup(GUICreateVoteContentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                                             .addComponent(addOptionButton)
                                             .addComponent(removeOptionButton))
-                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 8, Short.MAX_VALUE)
+                                    .addGap(18, 18, 18)
                                     .addGroup(GUICreateVoteContentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                                            .addComponent(label1)
-                                            .addComponent(durationComboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-                                    .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                                            .addComponent(label1, GroupLayout.PREFERRED_SIZE, 20, GroupLayout.PREFERRED_SIZE)
+                                            .addComponent(timeSpinner, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+                                    .addGroup(GUICreateVoteContentPaneLayout.createParallelGroup()
+                                            .addGroup(GUICreateVoteContentPaneLayout.createSequentialGroup()
+                                                    .addGap(18, 18, 18)
+                                                    .addComponent(label2)
+                                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 23, Short.MAX_VALUE))
+                                            .addGroup(GroupLayout.Alignment.TRAILING, GUICreateVoteContentPaneLayout.createSequentialGroup()
+                                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 13, Short.MAX_VALUE)
+                                                    .addComponent(channelsBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+                                                    .addGap(18, 18, 18)))
                                     .addComponent(separator1, GroupLayout.PREFERRED_SIZE, 2, GroupLayout.PREFERRED_SIZE)
                                     .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                                     .addGroup(GUICreateVoteContentPaneLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
@@ -382,31 +457,25 @@ public class GUIVote extends JFrame
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
     // Generated using JFormDesigner Evaluation license - Nick Kerns
-    private JLabel option1Label;
-    private JPanel pieChartPanel;
-    private JLabel option2Label;
-    private JLabel option3Label;
-    private JLabel option4Label;
-    private JLabel option5Label;
-    private JLabel option6Label;
-    private JLabel option7Label;
-    private JLabel option8Label;
-    private JLabel option9Label;
-    private JLabel option10Label;
-    private JSeparator separator2;
     private JButton newVoteButton;
     private JButton closeButton;
-    private JButton cancelVoteButton;
+    private JButton stopVoteButton;
+    private JScrollPane scrollPane2;
+    private JList<Vote.Option> votesList;
+    private PieChart pieChart;
+    private JSeparator separator2;
     private JFrame GUICreateVote;
     private JScrollPane scrollPane1;
     private JTable optionTable;
     private JTextField optionField;
-    private JButton addOptionButton;
     private JButton removeOptionButton;
     private JSeparator separator1;
     private JButton startVoteButton;
     private JButton cancelButton;
     private JLabel label1;
-    private JComboBox<String> durationComboBox;
+    private JButton addOptionButton;
+    private JLabel label2;
+    private JComboBox<String> channelsBox;
+    private JSpinner timeSpinner;
     // JFormDesigner - End of variables declaration  //GEN-END:variables
 }

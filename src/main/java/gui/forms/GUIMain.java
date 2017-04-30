@@ -57,6 +57,7 @@ public class GUIMain extends JFrame {
     public static GUIAbout aboutGUI = null;
     public static GUIStatus statusGUI = null;
     public static GUIRaffle raffleGUI = null;
+    public static GUIVote voteGUI = null;
 
     public static boolean shutDown = false;
 
@@ -348,10 +349,17 @@ public class GUIMain extends JFrame {
             raffleGUI = new GUIRaffle();
         if (!raffleGUI.isVisible())
             raffleGUI.setVisible(true);
+        else
+            raffleGUI.toFront();
     }
 
     private void startVoteOptionActionPerformed() {
-        // TODO add your code here
+        if (voteGUI == null)
+            voteGUI = new GUIVote();
+        if (!voteGUI.isVisible())
+            voteGUI.setVisible(true);
+        else
+            voteGUI.toFront();
     }
 
     private void soundsToggleItemStateChanged() {
@@ -401,6 +409,8 @@ public class GUIMain extends JFrame {
     }
 
     public void updateSoundDelay(int secDelay) {
+        if (secDelay > 1000)
+            secDelay /= 1000;
         switch (secDelay) {
             case 0:
                 soundDelayOffOption.setSelected(true);
@@ -416,7 +426,7 @@ public class GUIMain extends JFrame {
                 break;
             default:
                 soundDelayCustomOption.setSelected(true);
-                soundDelayCustomOption.setText("Custom: " + secDelay + " seconds");
+                soundDelayCustomOption.setText(String.format("Custom: %d seconds", secDelay));
                 break;
         }
         if (!soundDelayCustomOption.isSelected()) soundDelayCustomOption.setText("Custom (use chat)");
@@ -663,13 +673,11 @@ public class GUIMain extends JFrame {
 
                     //---- startRaffleOption ----
                     startRaffleOption.setText("Create Raffle...");
-                    //startRaffleOption.setEnabled(false);//TODO
                     startRaffleOption.addActionListener(e -> startRaffleOptionActionPerformed());
                     toolsMenu.add(startRaffleOption);
 
                     //---- startVoteOption ----
                     startVoteOption.setText("Create Vote...");
-                    startVoteOption.setEnabled(false);//TODO
                     startVoteOption.addActionListener(e -> startVoteOptionActionPerformed());
                     toolsMenu.add(startVoteOption);
 
@@ -686,7 +694,8 @@ public class GUIMain extends JFrame {
                         //---- soundDelayOffOption ----
                         soundDelayOffOption.setText("None (Off)");
                         soundDelayOffOption.addActionListener(e -> {
-                            if (bot != null && bot.getBot() != null) {
+                            if (bot != null && bot.getBot() != null && Settings.soundEngineDelay.getValue() != 0)
+                            {
                                 Response r = SoundEngine.getEngine().setSoundDelay("0");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -697,7 +706,8 @@ public class GUIMain extends JFrame {
                         //---- soundDelay5secOption ----
                         soundDelay5secOption.setText("5 seconds");
                         soundDelay5secOption.addActionListener(e -> {
-                            if (bot != null && bot.getBot() != null) {
+                            if (bot != null && bot.getBot() != null && Settings.soundEngineDelay.getValue() != 5000)
+                            {
                                 Response r = SoundEngine.getEngine().setSoundDelay("5");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -708,7 +718,8 @@ public class GUIMain extends JFrame {
                         //---- soundDelay10secOption ----
                         soundDelay10secOption.setText("10 seconds");
                         soundDelay10secOption.addActionListener(e -> {
-                            if (bot != null && bot.getBot() != null) {
+                            if (bot != null && bot.getBot() != null && Settings.soundEngineDelay.getValue() != 10000)
+                            {
                                 Response r = SoundEngine.getEngine().setSoundDelay("10");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());
@@ -720,7 +731,8 @@ public class GUIMain extends JFrame {
                         //---- soundDelay20secOption ----
                         soundDelay20secOption.setText("20 seconds");
                         soundDelay20secOption.addActionListener(e -> {
-                            if (bot != null && bot.getBot() != null) {
+                            if (bot != null && bot.getBot() != null && Settings.soundEngineDelay.getValue() != 20000)
+                            {
                                 Response r = SoundEngine.getEngine().setSoundDelay("20");
                                 bot.getBot().sendMessage("#" + Settings.accountManager.getUserAccount().getName(),
                                         r.getResponseText());

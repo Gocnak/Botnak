@@ -7,13 +7,15 @@ import util.settings.Settings;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by Nick on 8/8/2014.
  */
 public class Vote extends Thread {
 
-    private int time;
+    private int time, totalVotes;
     private Timer pollTime;
     private boolean isDone;
     private String channel;
@@ -22,42 +24,57 @@ public class Vote extends Thread {
         return isDone;
     }
 
-    private ArrayList<Option> options;
+    public int getTotalVotes()
+    {
+        return totalVotes;
+    }
+
+    public List<Option> options;
 
     public Vote(String channel, int time, String... options) {
         this.channel = channel;
         isDone = false;
         this.time = time;
+        this.totalVotes = 0;
         this.options = createOptions(options);
     }
 
-    private ArrayList<Option> createOptions(String[] options) {
-        ArrayList<Option> toReturn = new ArrayList<>();
+    private List<Option> createOptions(String[] options)
+    {
+        List<Option> toReturn = new CopyOnWriteArrayList<>();
         for (int i = 0; i < options.length; i++) {
-            Option o = new Option(options[i], i + 1);
+            Option o = new Option(options[i], i + 1, this);
             toReturn.add(o);
         }
         return toReturn;
     }
 
-    public synchronized void addVote(String name, int option) {
+    public void addVote(String name, int option)
+    {
         if (option > options.size() || option < 1) return;
         Option vote = getOption(name);
         if (vote != null) {//they already voted
             if (vote.compare != option) {//but now it's for a different
                 vote.decrease(name);
+                totalVotes--;
             } else {
-                return;
+                return; // They already voted for this!
             }
         }
         option--;
         Option newVote = options.get(option);
         newVote.increment(name);
+        totalVotes++;
+
+        // Update the GUI
+        if (GUIMain.voteGUI != null && GUIMain.voteGUI.isVisible())
+            GUIMain.voteGUI.updatePoll(this);
     }
 
 
     @Override
-    public synchronized void start() {
+    public void start()
+    {
         pollTime = new Timer(Utils.handleInt(time));
         printStart();
         super.start();
@@ -89,7 +106,8 @@ public class Vote extends Thread {
      * @param user The user to check.
      * @return The option they voted for, otherwise null.
      */
-    private synchronized Option getOption(String user) {
+    private Option getOption(String user)
+    {
         for (Option o : options) {
             if (o.count > 0) {
                 for (String voter : o.voters) {
@@ -102,16 +120,20 @@ public class Vote extends Thread {
         return null;
     }
 
-    class Option implements Comparable<Option> {
-        String name;
-        ArrayList<String> voters;
+    public class Option implements Comparable<Option>
+    {
+        private String name;
+        List<String> voters;
         int count = 0;
         int compare;
+        private Vote parent;
 
-        Option(String name, int compareIndex) {
+        Option(String name, int compareIndex, Vote parent)
+        {
             this.name = name;
             compare = compareIndex;
             voters = new ArrayList<>();
+            this.parent = parent;
         }
 
         void increment(String name) {
@@ -122,6 +144,21 @@ public class Vote extends Thread {
         void decrease(String name) {
             count--;
             voters.remove(name);
+        }
+
+        public int getCount()
+        {
+            return count;
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+
+        public Vote getParent()
+        {
+            return parent;
         }
 
         @Override
@@ -149,7 +186,9 @@ public class Vote extends Thread {
         for (String s : results) {
             Settings.accountManager.getBot().sendMessage(channel, s);
         }
-        //TODO update GUIVote if it exists
+
+        if (GUIMain.voteGUI != null && GUIMain.voteGUI.isVisible())
+            GUIMain.voteGUI.pollEnded(this);
     }
 
     public String[] getResults() {
@@ -172,7 +211,7 @@ public class Vote extends Thread {
 
     private ArrayList<Option> getSortedOptions() {
         ArrayList<Option> results = new ArrayList<>();
-        options.forEach(results::add);
+        results.addAll(options);
         Collections.sort(results);//sort into ascending based on votes
         Collections.reverse(results);//make it descending
         return results;

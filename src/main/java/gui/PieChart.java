@@ -1,126 +1,76 @@
 package gui;
 
+import util.Constants;
+import util.misc.Vote;
+
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
+import java.util.stream.Collectors;
 
-public class PieChart extends JPanel {
+public class PieChart extends JPanel
+{
+    private java.util.List<Double> values = null;
 
-    enum Type {
-        STANDARD, SIMPLE_INDICATOR, GRADED_INDICATOR
+    public PieChart()
+    {
+        super();
     }
 
-    private Type type = null; //the type of pie chart
-
-    private ArrayList<Double> values;
-    private ArrayList<Color> colors;
-
-    private ArrayList<Double> gradingValues;
-    private ArrayList<Color> gradingColors;
-
-    double percent = 0; //percent is used for simple indicator and graded indicator
-
-    public PieChart(int percent) {
-
-        type = Type.SIMPLE_INDICATOR;
-        this.percent = percent;
+    /**
+     * @param options
+     */
+    public void initialize(java.util.List<Vote.Option> options)
+    {
+        values = options.stream().map(o -> 0.0).collect(Collectors.toList());
     }
 
-    public PieChart(ArrayList<Double> values, ArrayList<Color> colors) {
+    /**
+     *
+     * @param v
+     */
+    public void update(Vote v)
+    {
+        for (int i = 0; i < v.options.size(); i++)
+        {
+            values.set(i, (double) v.options.get(i).getCount() / (double) v.getTotalVotes());
+        }
 
-        type = Type.STANDARD;
-
-        this.values = values;
-        this.colors = colors;
+        repaint();
     }
 
-    public PieChart(int percent, ArrayList<Double> gradingValues, ArrayList<Color> gradingColors) {
-        type = Type.GRADED_INDICATOR;
-
-        this.gradingValues = gradingValues;
-        this.gradingColors = gradingColors;
-        this.percent = percent;
-
+    /**
+     *
+     */
+    public void clear()
+    {
+        if (values != null)
+            values.clear();
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
+    /**
+     *
+     * @param g
+     */
+    protected void paintComponent(Graphics g)
+    {
+        super.paintComponent(g);
 
         int width = getSize().width;
 
         Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, // Anti-alias!
-                RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        if (type == Type.SIMPLE_INDICATOR) {
+        int lastPoint = -270;
 
-            //colours used for simple indicator
-            Color backgroundColor = Color.WHITE;
-            Color mainColor = Color.BLUE;
-
-            g2d.setColor(backgroundColor);
-            g2d.fillOval(0, 0, width, width);
-            g2d.setColor(mainColor);
-            Double angle = (percent / 100) * 360;
-            g2d.fillArc(0, 0, width, width, -270, -angle.intValue());
-
-        } else if (type == Type.STANDARD) {
-
-            int lastPoint = -270;
-
-            for (int i = 0; i < values.size(); i++) {
-                g2d.setColor(colors.get(i));
-
+        if (values != null)
+        {
+            for (int i = 0; i < values.size(); i++)
+            {
+                g2d.setColor(Constants.colorArr[i]);
                 Double val = values.get(i);
-                Double angle = (val / 100) * 360;
-
+                Double angle = (val / (val <= 1.0d ? 1.0d : 100d)) * 360.0d;
                 g2d.fillArc(0, 0, width, width, lastPoint, -angle.intValue());
-                //System.out.println("fill arc " + lastPoint + " " + -angle.intValue());
-
                 lastPoint = lastPoint + -angle.intValue();
-            }
-        } else if (type == Type.GRADED_INDICATOR) {
-
-            int lastPoint = -270;
-
-            double gradingAccum = 0;
-
-            for (int i = 0; i < gradingValues.size(); i++) {
-                g2d.setColor(gradingColors.get(i));
-                Double val = gradingValues.get(i);
-                gradingAccum = gradingAccum + val;
-                Double angle = null;
-                /**
-                 * If the sum of the gradings is greater than the percent, then we want to recalculate
-                 * the last wedge, and break out of drawing.
-                 * */
-                if (gradingAccum > percent) {
-
-                    //System.out.println("gradingAccum > percent");
-
-                    //get the previous accumulated segments. Segments minus last one
-                    double gradingAccumMinusOneSegment = gradingAccum - val;
-
-                    //make an adjusted calculation of the last wedge
-                    angle = ((percent - gradingAccumMinusOneSegment) / 100) * 360;
-
-                    g2d.fillArc(0, 0, width, width, lastPoint, -angle.intValue());
-
-                    lastPoint = lastPoint + -angle.intValue();
-
-                    break;
-
-                } else {
-
-                    //System.out.println("normal");
-                    angle = (val / 100) * 360;
-
-                    g2d.fillArc(0, 0, width, width, lastPoint, -angle.intValue());
-
-                    //System.out.println("fill arc " + lastPoint + " " + -angle.intValue());
-
-                    lastPoint = lastPoint + -angle.intValue();
-                }
             }
         }
     }

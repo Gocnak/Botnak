@@ -8,6 +8,7 @@ import util.comm.Command;
 import util.comm.ConsoleCommand;
 import util.settings.Settings;
 
+import javax.swing.*;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.html.HTML;
@@ -1046,5 +1047,19 @@ public class Utils {
             }
         }
         return toReturn;
+    }
+
+
+    public static void populateComboBox(JComboBox<String> channelsBox)
+    {
+        channelsBox.removeAllItems();
+        if (GUIMain.bot == null || GUIMain.bot.getBot() == null) return;
+
+        String[] channels = GUIMain.bot.getBot().getChannels();
+
+        for (String s : channels)
+            channelsBox.addItem(s.replaceAll("#", ""));
+
+        channelsBox.setSelectedItem(GUIMain.getCurrentPane().getChannel());
     }
 }

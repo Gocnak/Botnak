@@ -5,6 +5,7 @@
 package gui.forms;
 
 import util.Permissions;
+import util.Utils;
 import util.misc.Raffle;
 import util.settings.Settings;
 
@@ -25,7 +26,7 @@ public class GUIRaffle extends JFrame
     public GUIRaffle()
     {
         initComponents();
-        populateChannelsBox();
+        Utils.populateComboBox(channelsComboBox);
     }
 
     @Override
@@ -161,19 +162,6 @@ public class GUIRaffle extends JFrame
         }
 
         stopRaffleButton.setEnabled(false);
-    }
-
-    private void populateChannelsBox()
-    {
-        channelsComboBox.removeAllItems();
-        if (GUIMain.bot == null || GUIMain.bot.getBot() == null) return;
-
-        String[] channels = GUIMain.bot.getBot().getChannels();
-
-        for (String s : channels)
-            channelsComboBox.addItem(s.replaceAll("#", ""));
-
-        channelsComboBox.setSelectedItem(GUIMain.getCurrentPane().getChannel());
     }
 
 

@@ -7,6 +7,7 @@ import gui.listeners.*;
 import javax.imageio.ImageIO;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
 import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -99,5 +100,28 @@ public class Constants {
             new NamedColor("HotPink", 255, 105, 180),
             new NamedColor("BlueViolet", 138, 43, 226),
             new NamedColor("SpringGreen", 0, 255, 127)
+    };
+
+    // Used for the voting GUI
+    public static final Color[] colorArr = {
+            Color.red,
+            Color.BLUE,
+            Color.green,
+            Color.orange,
+
+            Color.cyan,
+            Color.magenta,
+            Color.PINK,
+            Color.YELLOW,
+
+            Color.white,
+            Color.lightGray,
+            new Color(0, 71, 171),
+            new Color(128, 0, 0),
+
+            new Color(128, 128, 0),
+            new Color(0, 128, 0),
+            new Color(123, 175, 212),
+            new Color(96, 52, 177)
     };
 }

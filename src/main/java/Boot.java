@@ -13,15 +13,20 @@ import java.awt.*;
  * Settings GUI
  * Lotsofs: change the output AudioLine
  * Gif faces
- * Voting GUI
  * TextCommands GUI
  * (autocommand)
  * Log Viewer GUI
+ *
+ * Blacklists for commands
+ * Bttv emotes?
+ *
  * <p>
  * Bug:
- * Sound delay shows milliseconds
  * Cheer donors should be able to play sounds/have donor benefits after a certain amount
  * fix heartbeat threads from spouting issues (connection-wise) -- use WebSockets?
+ * Use Paths.get() instead of File.separators everywhere
+ * Refer to List as parameters/member variables
+ * Utils.checkText() removal?
  */
 
 

@@ -37,7 +37,7 @@ public class IRCBot extends MessageHandler {
     public ArrayList<String> winners;
     public ArrayList<Raffle> raffles;
 
-    private static Vote poll;
+    private Vote poll;
     private long lastAd;
 
     public IRCBot() {
@@ -388,7 +388,10 @@ public class IRCBot extends MessageHandler {
                             break;
                         case POLL_RESULT:
                             if (poll != null) {
-                                poll.printResults();
+                                if (poll.isDone())
+                                    poll.printResults();
+                                else
+                                    getBot().sendMessage(channel, "The poll is still running! Cancel it before seeing the results!");
                             } else {
                                 getBot().sendMessage(channel, "There never was a poll!");
                             }
@@ -398,8 +401,8 @@ public class IRCBot extends MessageHandler {
                                 if (poll.isDone()) {
                                     getBot().sendMessage(channel, "The poll is already finished!");
                                 } else {
-                                    poll.interrupt();
-                                    getBot().sendMessage(channel, "The poll has been stopped.");
+                                    stopPoll();
+                                    getBot().sendMessage(channel, "The poll has been stopped!");
                                 }
                             } else {
                                 getBot().sendMessage(channel, "There is no current poll!");
@@ -408,13 +411,13 @@ public class IRCBot extends MessageHandler {
                         case VOTE_POLL:
                             if (poll != null) {
                                 if (!poll.isDone()) {
-                                    int option;
                                     try {
-                                        option = Integer.parseInt(first);
-                                    } catch (Exception e) {
-                                        break;
+                                        int option = Integer.parseInt(first);
+                                        poll.addVote(sender, option);
+                                    } catch (Exception e)
+                                    {
+                                        GUIMain.log(e);
                                     }
-                                    poll.addVote(sender, option);
                                 }
                             }
                             break;
@@ -497,11 +500,44 @@ public class IRCBot extends MessageHandler {
             String[] split = message.split(" ");
             int time = Utils.getTime(split[1]);
             if (time > 0) {
-                //TODO update the GUIVote if there is one
-                poll = new Vote(channel, time, message.substring(second).split("]"));
-                poll.start();
+                startPoll(new Vote(channel, time, message.substring(second).split("]")));
             }
         }
+    }
+
+    public boolean pollExists()
+    {
+        return poll != null;
+    }
+
+    public boolean isPollRunning()
+    {
+        return pollExists() && !poll.isDone() && poll.isAlive();
+    }
+
+    public Vote getPoll()
+    {
+        return poll;
+    }
+
+    public void startPoll(Vote v)
+    {
+        // Actually start the poll
+        poll = v;
+        poll.start();
+
+        // Update the GUI, if there is one
+        if (GUIMain.voteGUI != null)
+            GUIMain.voteGUI.addPoll(poll);
+    }
+
+    public void stopPoll()
+    {
+        if (poll == null) return;
+        poll.interrupt();
+
+        if (GUIMain.voteGUI != null)
+            GUIMain.voteGUI.pollEnded(poll);
     }
 
     private void updateRaffleGUI(Raffle r, boolean add)

@@ -59,7 +59,7 @@ public class GUIStreams extends JFrame {
         } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
             dispose();
         } else {
-            final String text = Utils.checkText(newChannel.getText().trim());
+            final String text = Utils.checkText(newChannel.getText());
             if ("".equals(text) || text.length() < 3) {
                 parseFollowed();
             } else if (text.length() > 2) {
