@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * PircBot is a Java framework for writing IRC bots quickly and easily.
@@ -349,23 +348,8 @@ public class PircBot {
                 getMessageHandler().onAction(sourceNick, target, request.substring(7));
             }
         } else if (command.equals("PRIVMSG") && _channelPrefixes.indexOf(target.charAt(0)) >= 0) {
-            //catch the subscriber message
-            if (sourceNick.equalsIgnoreCase("twitchnotify"))
-            {
-                if (line.contains("resubscribed"))
-                {
-                    getMessageHandler().onJTVMessage(target, content, null);
-                } else if (line.contains("subscribed"))
-                {
-                    //we dont want to get the hosted sub messages, Botnak should be in that chat for that
-                    String user = content.split(" ")[0];
-                    getChannelManager().handleSubscriber(target, user);
-                    getMessageHandler().onNewSubscriber(target, content, user);
-                    return;
-                }
-            }
             //This message is a cheer message!
-            else if (tags != null && tags.contains("bits="))
+            if (tags != null && tags.contains("bits="))
             {
                 HashMap<String, String> tagsMap = Utils.parseTagsToMap(tags);
                 if (!tagsMap.isEmpty())
@@ -414,7 +398,7 @@ public class PircBot {
             case "ROOMSTATE":
                 target = tokenizer.nextToken();
                 getMessageHandler().onRoomstate(target, tags);
-                parseTags(tags, null, target);
+                parseTags(null, target, tagsMap);
                 return true;
             case "NOTICE":
                 if (tags.contains("room_mods"))
@@ -432,7 +416,7 @@ public class PircBot {
             case "WHISPER":
                 target = tokenizer.nextToken();
                 String nick = senderInfo.substring(1, senderInfo.indexOf('!'));
-                parseTags(tags, nick, null);
+                parseTags(nick, null, tagsMap);
                 getMessageHandler().onWhisper(nick, target, content);
                 return true;
             case "RECONNECT"://We need to reconnect to this server
@@ -440,11 +424,24 @@ public class PircBot {
                 getConnection().dispose();
                 Settings.accountManager.createReconnectThread(getConnection());
                 return true;
-            case "USERNOTICE": //User has resubscribed to this channel (for X months)
-                target = tokenizer.nextToken(); // TODO update to support upcoming subscriber change
+            case "USERNOTICE": //User has (re)subscribed to this channel (for X months)
+                target = tokenizer.nextToken();
                 String user = tagsMap.get("login");
-                parseTags(line, user, target);
-                getMessageHandler().onResubscribe(target, user, tagsMap.get("system-msg"));
+                parseTags(user, target, tagsMap);
+                String type = tagsMap.get("msg-id");
+                if (type != null)
+                {
+                    if ("sub".equals(type))
+                    {
+                        // A new sub??
+                        getChannelManager().handleSubscriber(target, user);
+                        getMessageHandler().onNewSubscriber(target, tagsMap.get("system-msg"), user);
+                    } else if ("resub".equals(type))
+                    {
+                        getMessageHandler().onResubscribe(target, user, tagsMap.get("system-msg"));
+                    }
+                }
+
                 //Only send their message if there is one
                 if (content != null && line.indexOf(" :", line.indexOf(" :") + 2) > -1)
                     getMessageHandler().onMessage(target, user, content);
@@ -463,9 +460,11 @@ public class PircBot {
     }
 
     private void parseTags(String line, String user, String channel) {
+        parseTags(user, channel, Utils.parseTagsToMap(line));
+    }
 
-        HashMap<String, String> tags = Utils.parseTagsToMap(line);
-
+    private void parseTags(String user, String channel, HashMap<String, String> tags)
+    {
         if (!tags.isEmpty())
         {
             Set<Map.Entry<String, String>> entries = tags.entrySet();
@@ -524,7 +523,7 @@ public class PircBot {
                         // Bit donor
                         if (badges.contains("bits"))
                         {
-                            Matcher m = Pattern.compile("bits/(\\d+)").matcher(badges);
+                            Matcher m = Constants.PATTERN_BITS.matcher(badges);
                             if (m.find())
                                 getChannelManager().getChannel(channel).setCheer(user, Integer.parseInt(m.group(1)));
                         }
