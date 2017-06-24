@@ -58,6 +58,9 @@ public class APIRequests {
          */
         public static String getChannelID(String channel)
         {
+            if (channel.contains("#"))
+                channel = channel.replaceAll("#", "");
+
             if (usersIDMap.contains(channel))
                 return usersIDMap.get(channel);
 
@@ -95,7 +98,6 @@ public class APIRequests {
         {
             try
             {
-                channel = channel.replaceAll("#", "");
                 String ID = getChannelID(channel);
                 URL toRead = new URL(TWITCH_API + "/chat/" + ID + "/badges?" + CLIENT_ID + "&" + API_VERSION);
                 String line = Utils.createAndParseBufferedReader(toRead.openStream());
@@ -125,12 +127,10 @@ public class APIRequests {
          */
         public static Response getUptimeString(String channelName)
         {
-            if (channelName.contains("#")) channelName = channelName.replaceAll("#", "");
             Response toReturn = new Response();
             try
             {
-                String ID = getChannelID(channelName);
-                URL uptime = new URL(TWITCH_API + "/streams/" + ID + "?" + CLIENT_ID + "&" + API_VERSION);
+                URL uptime = new URL(TWITCH_API + "/streams/" + getChannelID(channelName) + "?" + CLIENT_ID + "&" + API_VERSION);
                 String line = Utils.createAndParseBufferedReader(uptime.openStream());
                 if (!line.isEmpty()) {
                     JSONObject outer = new JSONObject(line);
@@ -164,7 +164,7 @@ public class APIRequests {
             boolean isLive = false;
             try
             {
-                URL twitch = new URL(TWITCH_API + "/streams/" + channelName + "?" + CLIENT_ID);
+                URL twitch = new URL(TWITCH_API + "/streams/" + getChannelID(channelName) + "?" + CLIENT_ID + "&" + API_VERSION);
                 String line = Utils.createAndParseBufferedReader(twitch.openStream());
                 if (!line.isEmpty()) {
                     JSONObject jsonObject = new JSONObject(line);
@@ -184,7 +184,7 @@ public class APIRequests {
         public static int countViewers(String channelName) {
             int count = -1;
             try {//this could be parsed with JSON, but patterns work, and if it ain't broke...
-                URL twitch = new URL(TWITCH_API + "/streams/" + channelName + "?" + CLIENT_ID);
+                URL twitch = new URL(TWITCH_API + "/streams/" + getChannelID(channelName) + "?" + CLIENT_ID + "&" + API_VERSION);
                 String line = Utils.createAndParseBufferedReader(twitch.openStream());
                 if (!line.isEmpty()) {
                     Matcher m = Constants.viewerTwitchPattern.matcher(line);
@@ -210,8 +210,8 @@ public class APIRequests {
         public static String[] getStatusOfStream(String channel) {
             String[] toRet = {"", ""};
             try {
-                if (channel.contains("#")) channel = channel.replaceAll("#", "");
-                URL twitch = new URL(TWITCH_API + "/channels/" + channel + "?" + CLIENT_ID);
+                channel = getChannelID(channel);
+                URL twitch = new URL(TWITCH_API + "/channels/" + channel + "?" + CLIENT_ID + "&" + API_VERSION);
                 String line = Utils.createAndParseBufferedReader(twitch.openStream());
                 if (!line.isEmpty()) {
                     JSONObject base = new JSONObject(line);
@@ -299,16 +299,35 @@ public class APIRequests {
         public static Response setStatusOfStream(String key, String channel, String title, String game) {
             Response toReturn = new Response();
             try {
-                if (channel.contains("#")) channel = channel.replace("#", "");
-                String request = TWITCH_API + "/channels/" + channel +
-                        "?channel[status]=" + URLEncoder.encode(title, "UTF-8") +
-                        "&channel[game]=" + URLEncoder.encode(game, "UTF-8") +
-                        "&oauth_token=" + key.split(":")[1] + "&_method=put&" + CLIENT_ID;
+                String request = TWITCH_API + "/channels/" + getChannelID(channel) + "?" + API_VERSION;
                 URL twitch = new URL(request);
-                String line = Utils.createAndParseBufferedReader(twitch.openStream());
-                if (!line.isEmpty() && line.contains(title) && line.contains(game)) {
-                    toReturn.wasSuccessful();
+                HttpURLConnection c = (HttpURLConnection) twitch.openConnection();
+                c.setRequestMethod("PUT");
+                c.setDoOutput(true);
+                c.setRequestProperty("Client-ID", CLIENT_ID.split("=")[1]);
+                c.setRequestProperty("Authorization", "OAuth " + key.split(":")[1]);
+                c.setRequestProperty("Accept", "application/vnd.twitchtv.v5+json");
+                c.setRequestProperty("Content-Type", "application/json");
+
+                String toWrite = String.format("{\"channel\": {\"status\": \"%s\", \"game\": \"%s\"}}", title, game);
+
+                OutputStreamWriter op = new OutputStreamWriter(c.getOutputStream());
+                op.write(toWrite);
+                op.flush();
+                op.close();
+
+                try
+                {
+                    int response = c.getResponseCode();
+                    if (response == 200)
+                        toReturn.wasSuccessful();
+                } catch (Exception e)
+                {
+                    GUIMain.log("Failed to get response code due to Exception: ");
+                    GUIMain.log(e);
                 }
+
+                c.disconnect();
             } catch (Exception e) {
                 GUIMain.log("Failed to update status due to Exception: ");
                 GUIMain.log(e);
@@ -330,16 +349,16 @@ public class APIRequests {
             try {
                 length = Utils.capNumber(30, 180, length);//can't be longer than 3 mins/shorter than 30 sec
                 if ((length % 30) != 0) length = 30;//has to be divisible by 30 seconds
-                if (channel.contains("#")) channel = channel.replace("#", "");
+                channel = getChannelID(channel);
                 String request = TWITCH_API + "/channels/" + channel + "/commercial";
                 URL twitch = new URL(request);
                 HttpURLConnection c = (HttpURLConnection) twitch.openConnection();
                 c.setRequestMethod("POST");
                 c.setDoOutput(true);
-                String toWrite = "length=" + length;
+                String toWrite = "{ \"duration\": " + length + " }";
                 c.setRequestProperty("Client-ID", CLIENT_ID.split("=")[1]);
                 c.setRequestProperty("Authorization", "OAuth " + key.split(":")[1]);
-                c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                c.setRequestProperty("Content-Type", "application/json");
                 c.setRequestProperty("Content-Length", String.valueOf(toWrite.length()));
                 OutputStreamWriter op = new OutputStreamWriter(c.getOutputStream());
                 op.write(toWrite);
@@ -431,6 +450,7 @@ public class APIRequests {
             ArrayList<String> toReturn = new ArrayList<>();
             try
             {
+                partial = URLEncoder.encode(partial, "UTF-8");
                 URL request = new URL(TWITCH_API + "/search/channels?limit=10&query=" + partial + "&" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
@@ -457,7 +477,8 @@ public class APIRequests {
             ArrayList<String> toReturn = new ArrayList<>();
             try
             {
-                URL request = new URL(TWITCH_API + "/channels/" + channel + "/follows?limit=20&" + CLIENT_ID);
+                channel = getChannelID(channel);
+                URL request = new URL(TWITCH_API + "/channels/" + channel + "/follows?limit=20&" + CLIENT_ID + "&" + API_VERSION);
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);

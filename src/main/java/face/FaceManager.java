@@ -313,6 +313,8 @@ public class FaceManager {
                     String[] keys = emotes.split(",");
                     JSONObject emote_sets = init.getJSONObject("emoticon_sets");
                     for (String s : keys) {
+                        if (!emote_sets.has(s))
+                            continue;
                         JSONArray set = emote_sets.getJSONArray(s);
                         for (int i = 0; i < set.length(); i++) {
                             JSONObject emote = set.getJSONObject(i);
