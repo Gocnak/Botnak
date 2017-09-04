@@ -350,12 +350,12 @@ public class APIRequests {
                 length = Utils.capNumber(30, 180, length);//can't be longer than 3 mins/shorter than 30 sec
                 if ((length % 30) != 0) length = 30;//has to be divisible by 30 seconds
                 channel = getChannelID(channel);
-                String request = TWITCH_API + "/channels/" + channel + "/commercial";
+                String request = TWITCH_API + "/channels/" + channel + "/commercial?" + API_VERSION;
                 URL twitch = new URL(request);
                 HttpURLConnection c = (HttpURLConnection) twitch.openConnection();
                 c.setRequestMethod("POST");
                 c.setDoOutput(true);
-                String toWrite = "{ \"duration\": " + length + " }";
+                String toWrite = "{\"length\": " + length + "}";
                 c.setRequestProperty("Client-ID", CLIENT_ID.split("=")[1]);
                 c.setRequestProperty("Authorization", "OAuth " + key.split(":")[1]);
                 c.setRequestProperty("Content-Type", "application/json");
@@ -365,7 +365,7 @@ public class APIRequests {
                 op.close();
                 try {
                     int response = c.getResponseCode();
-                    toReturn = (response == 204);
+                    toReturn = response == 200;
                 } catch (Exception e) {
                     GUIMain.log("Failed to get response code due to Exception: ");
                     GUIMain.log(e);
@@ -388,10 +388,10 @@ public class APIRequests {
             Response toReturn = new Response();
             try {
                 String ID = "";
-                Pattern p = Pattern.compile("/[vcb]/([^&?/]+)");
+                Pattern p = Pattern.compile("/videos/([0-9]+)");
                 Matcher m = p.matcher(URL);
                 if (m.find()) {
-                    ID = m.group().replaceAll("/", "");
+                    ID = m.group(1).replaceAll("/", "");
                 }
                 URL request = new URL(TWITCH_API + "/videos/" + ID + "?" + CLIENT_ID);
                 String line = Utils.createAndParseBufferedReader(request.openStream());

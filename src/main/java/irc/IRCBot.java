@@ -169,11 +169,10 @@ public class IRCBot extends MessageHandler {
                                     part.contains("tinyurl") || part.contains("goo.gl"))) {
                                 getBot().sendMessage(channel, APIRequests.UnshortenIt.getUnshortened(part).getResponseText());
                                 count++;
-                            } else if (twitchVOD && part.contains("twitch.tv/")) {
-                                if (part.contains("/v/") || part.contains("/c/") || part.contains("/b/")) {
-                                    getBot().sendMessage(channel, APIRequests.Twitch.getTitleOfVOD(part).getResponseText());
-                                    count++;
-                                }
+                            } else if (twitchVOD && part.contains("twitch.tv/videos/"))
+                            {
+                                getBot().sendMessage(channel, APIRequests.Twitch.getTitleOfVOD(part).getResponseText());
+                                count++;
                             }
                         }
                     }
