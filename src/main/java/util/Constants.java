@@ -54,7 +54,8 @@ public class Constants {
 
 
     public static final Pattern PATTERN_BITS = Pattern.compile("bits/(\\d+)");
-    public static final Pattern viewerTwitchPattern = Pattern.compile("\"viewers\":\\s*(\\d+)");
+    public static final Pattern twitchViewerCountPattern = Pattern.compile("\"viewers\":\\s*(\\d+)");
+    public static final Pattern twitchVideoURLPattern = Pattern.compile("/videos/([0-9]+)");
     public static final Pattern fileExclPattern = Pattern.compile("[/:\"*?<>|]");
     /**
      * The regex String for finding URLs in messages.

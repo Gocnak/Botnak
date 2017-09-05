@@ -8,6 +8,7 @@ import util.Timer;
 import util.settings.Settings;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -70,16 +71,16 @@ public class FollowCheck implements HeartbeatThread {
             } catch (InterruptedException ignored) {
             }
         }
-        String[] lastFollowers = APIRequests.Twitch.getLast20Followers(getUserAccount().getName());
-        if (lastFollowers.length > 0) {
-            for (String follower : lastFollowers) {
-                if (!followers.contains(follower)) {
-                    followers.add(follower);
-                    if (!initialBeat && BotnakTrayIcon.shouldDisplayNewFollowers()) {
-                        GUIMain.getSystemTrayIcon().displayNewFollower(follower);
-                    }
+        List<String> lastFollowers = APIRequests.Twitch.getLast20Followers(getUserAccount().getName());
+        if (!lastFollowers.isEmpty())
+        {
+            lastFollowers.stream().filter(f -> !followers.contains(f)).forEach(newFollower -> {
+                followers.add(newFollower);
+                if (!initialBeat && BotnakTrayIcon.shouldDisplayNewFollowers())
+                {
+                    GUIMain.getSystemTrayIcon().displayNewFollower(newFollower);
                 }
-            }
+            });
         }
     }
 

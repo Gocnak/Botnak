@@ -14,9 +14,11 @@ import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by Nick on 5/22/2015.
@@ -29,8 +31,83 @@ public class APIRequests {
         private static ConcurrentHashMap<String, String> usersIDMap = new ConcurrentHashMap<>();
 
         private static final String TWITCH_API = "https://api.twitch.tv/kraken";
-        private static final String API_VERSION = "api_version=5"; // TODO removeme when the default is v5
-        public static final String CLIENT_ID = "client_id=qw8d3ve921t0n6e3if07l664f1jn1y7";
+        private static final String CLIENT_ID = "qw8d3ve921t0n6e3if07l664f1jn1y7";
+
+        public enum TWITCH_API_REQUEST
+        {
+            CHAT_EMOTE_IMAGES_ALL("/chat/emoticon_images", "GET", false, false, false),
+            CHAT_EMOTE_IMAGES_SET("/chat/emoticon_images?emotesets=%s", "GET", true, false, false),
+            CHAT_GET_BADGES("/chat/%s/badges", "GET", true, false, false),
+            CHANNELS_GET("/channels/%s", "GET", true, false, false),
+            CHANNELS_GET_FOLLOWERS("/channels/%s/follows?limit=20", "GET", true, false, false),
+            CHANNELS_PUT("/channels/%s", "PUT", true, true, true),
+            CHANNELS_SHOW_COMMERCIAL("/channels/%s/commercial", "POST", true, true, true),
+            CHANNELS_GET_COMMUNITIES("/channels/%s/communities", "GET", true, false, false),
+            CHANNELS_SET_COMMUNITIES("/channels/%s/communities", "PUT", true, true, true),
+            CHANNELS_DELETE_COMMUNITIES("/channels/%s/community", "DELETE", true, false, true),
+            COMMUNITIES_GET_BY_NAME("/communities?name=%s", "GET", true, false, false),
+            SEARCH_CHANNELS("/search/channels?limit=10&query=%s", "GET", true, false, false),
+            STREAMS_GET("/streams/%s", "GET", true, false, false),
+            STREAMS_GET_FOLLOWED("/streams/followed?limit=100", "GET", false, false, true),
+            USERS_GET_BY_LOGIN("/users?login=%s", "GET", true, false, false),
+            VIDEOS_GET("/videos/%s", "GET", true, false, false);
+
+            String endpointURL, requestType;
+            boolean hasURLInput, hasBodyData, needsAuthentication;
+
+            TWITCH_API_REQUEST(String endpointURL, String requestType, boolean urlInput, boolean bodyData, boolean needsAuth)
+            {
+                this.endpointURL = endpointURL;
+                this.requestType = requestType;
+                this.hasURLInput = urlInput;
+                this.hasBodyData = bodyData;
+                this.needsAuthentication = needsAuth;
+            }
+        }
+
+        private static class TwitchAPIRequestResponse
+        {
+            int responseCode = 404;
+            String responseString = "";
+        }
+
+        private static TwitchAPIRequestResponse carryOutRequest(TWITCH_API_REQUEST request, String urlInput, String bodyData, String authKey)
+        {
+            TwitchAPIRequestResponse response = new TwitchAPIRequestResponse();
+            try
+            {
+                String formattedURL = request.hasURLInput ? String.format(request.endpointURL, urlInput) : request.endpointURL;
+                URL twitch = new URL(TWITCH_API + formattedURL);
+                HttpURLConnection c = (HttpURLConnection) twitch.openConnection();
+                c.setRequestMethod(request.requestType);
+
+                c.setRequestProperty("Client-ID", CLIENT_ID); // Client ID
+                c.setRequestProperty("Accept", "application/vnd.twitchtv.v5+json"); // API Version
+                c.setRequestProperty("Content-Type", "application/json");
+
+                if (request.needsAuthentication)
+                    c.setRequestProperty("Authorization", "OAuth " + authKey);
+
+                if (request.hasBodyData)
+                {
+                    c.setDoOutput(true);
+                    OutputStreamWriter op = new OutputStreamWriter(c.getOutputStream());
+                    op.write(bodyData);
+                    op.close();
+                }
+
+                response.responseString = Utils.createAndParseBufferedReader(c.getInputStream());
+                response.responseCode = c.getResponseCode();
+
+                c.disconnect();
+            } catch (Exception e)
+            {
+                GUIMain.log("Failed to carry out Twitch API request " + request.name() + " due to Exception:");
+                GUIMain.log(e);
+            }
+
+            return response;
+        }
 
         /**
          * @param emotes The emoteset String that twitch provides in IRC.
@@ -38,7 +115,7 @@ public class APIRequests {
          */
         public static String getEmoteSet(String emotes)
         {
-            return Utils.createAndParseBufferedReader(TWITCH_API + "/chat/emoticon_images?emotesets=" + emotes + "&" + CLIENT_ID);
+            return carryOutRequest(TWITCH_API_REQUEST.CHAT_EMOTE_IMAGES_SET, emotes, null, null).responseString;
         }
 
         /**
@@ -46,7 +123,7 @@ public class APIRequests {
          */
         public static String getAllEmotes()
         {
-            return Utils.createAndParseBufferedReader(TWITCH_API + "/chat/emoticon_images?" + CLIENT_ID);
+            return carryOutRequest(TWITCH_API_REQUEST.CHAT_EMOTE_IMAGES_ALL, null, null, null).responseString;
         }
 
         /**
@@ -64,25 +141,19 @@ public class APIRequests {
             if (usersIDMap.contains(channel))
                 return usersIDMap.get(channel);
 
-            try
+
+            String line = carryOutRequest(TWITCH_API_REQUEST.USERS_GET_BY_LOGIN, channel, null, null).responseString;
+            if (!line.isEmpty())
             {
-                URL toRead = new URL(TWITCH_API + "/users?login=" + channel + "&" + CLIENT_ID + "&" + API_VERSION);
-                String line = Utils.createAndParseBufferedReader(toRead.openStream());
-                if (!line.isEmpty())
+                JSONObject init = new JSONObject(line);
+                if (init.getInt("_total") > 0)
                 {
-                    JSONObject init = new JSONObject(line);
-                    if (init.getInt("_total") > 0)
-                    {
-                        JSONArray users = init.getJSONArray("users");
-                        JSONObject user = users.getJSONObject(0);
-                        String ID = user.getString("_id");
-                        usersIDMap.put(channel, ID);
-                        return ID;
-                    }
+                    JSONArray users = init.getJSONArray("users");
+                    JSONObject user = users.getJSONObject(0);
+                    String ID = user.getString("_id");
+                    usersIDMap.put(channel, ID);
+                    return ID;
                 }
-            } catch (Exception e)
-            {
-                GUIMain.log(e);
             }
 
             return "";
@@ -96,26 +167,19 @@ public class APIRequests {
          */
         public static String getSubIcon(String channel)
         {
-            try
+            String ID = getChannelID(channel);
+            String line = carryOutRequest(TWITCH_API_REQUEST.CHAT_GET_BADGES, ID, null, null).responseString;
+            if (!line.isEmpty())
             {
-                String ID = getChannelID(channel);
-                URL toRead = new URL(TWITCH_API + "/chat/" + ID + "/badges?" + CLIENT_ID + "&" + API_VERSION);
-                String line = Utils.createAndParseBufferedReader(toRead.openStream());
-                if (!line.isEmpty())
+                JSONObject init = new JSONObject(line);
+                if (init.has("subscriber"))
                 {
-                    JSONObject init = new JSONObject(line);
-                    if (init.has("subscriber"))
+                    JSONObject sub = init.getJSONObject("subscriber");
+                    if (!sub.getString("image").equalsIgnoreCase("null"))
                     {
-                        JSONObject sub = init.getJSONObject("subscriber");
-                        if (!sub.getString("image").equalsIgnoreCase("null"))
-                        {
-                            return FaceManager.downloadIcon(sub.getString("image"), channel);
-                        }
+                        return FaceManager.downloadIcon(sub.getString("image"), channel);
                     }
                 }
-            } catch (Exception e)
-            {
-                GUIMain.log(e);
             }
             return null;
         }
@@ -128,28 +192,24 @@ public class APIRequests {
         public static Response getUptimeString(String channelName)
         {
             Response toReturn = new Response();
-            try
+            String line = carryOutRequest(TWITCH_API_REQUEST.STREAMS_GET, getChannelID(channelName), null, null).responseString;
+            if (!line.isEmpty())
             {
-                URL uptime = new URL(TWITCH_API + "/streams/" + getChannelID(channelName) + "?" + CLIENT_ID + "&" + API_VERSION);
-                String line = Utils.createAndParseBufferedReader(uptime.openStream());
-                if (!line.isEmpty()) {
-                    JSONObject outer = new JSONObject(line);
-                    if (!outer.isNull("stream")) {
-                        JSONObject stream = outer.getJSONObject("stream");
-                        Instant started = Instant.parse(stream.getString("created_at"));
-                        Duration duration = Duration.between(started, Instant.now());
-                        int hours = (int) duration.abs().getSeconds() / 3600;
-                        int mins = ((int) duration.abs().getSeconds() % 3600) / 60;
-                        toReturn.wasSuccessful();
-                        toReturn.setResponseText("The stream has been live for: " +
-                                ((hours > 0 ? (hours + " hours ") : "") + mins + " minutes"));
-                    } else {
-                        toReturn.setResponseText("The stream is not live!");
-                    }
+                JSONObject outer = new JSONObject(line);
+                if (!outer.isNull("stream"))
+                {
+                    JSONObject stream = outer.getJSONObject("stream");
+                    Instant started = Instant.parse(stream.getString("created_at"));
+                    Duration duration = Duration.between(started, Instant.now());
+                    int hours = (int) duration.abs().getSeconds() / 3600;
+                    int mins = ((int) duration.abs().getSeconds() % 3600) / 60;
+                    toReturn.wasSuccessful();
+                    toReturn.setResponseText("The stream has been live for: " +
+                            ((hours > 0 ? (hours + " hours ") : "") + mins + " minutes"));
+                } else
+                {
+                    toReturn.setResponseText("The stream is not live!");
                 }
-            } catch (Exception e) {
-                toReturn.setResponseText("Error checking uptime due to Exception!");
-                GUIMain.log(e);
             }
             return toReturn;
         }
@@ -162,15 +222,11 @@ public class APIRequests {
          */
         public static boolean isChannelLive(String channelName) {
             boolean isLive = false;
-            try
+            String line = carryOutRequest(TWITCH_API_REQUEST.STREAMS_GET, getChannelID(channelName), null, null).responseString;
+            if (!line.isEmpty())
             {
-                URL twitch = new URL(TWITCH_API + "/streams/" + getChannelID(channelName) + "?" + CLIENT_ID + "&" + API_VERSION);
-                String line = Utils.createAndParseBufferedReader(twitch.openStream());
-                if (!line.isEmpty()) {
-                    JSONObject jsonObject = new JSONObject(line);
-                    isLive = !jsonObject.isNull("stream") && !jsonObject.getJSONObject("stream").isNull("preview");
-                }
-            } catch (Exception ignored) {
+                JSONObject jsonObject = new JSONObject(line);
+                isLive = !jsonObject.isNull("stream") && !jsonObject.getJSONObject("stream").isNull("preview");
             }
             return isLive;
         }
@@ -183,20 +239,19 @@ public class APIRequests {
          */
         public static int countViewers(String channelName) {
             int count = -1;
-            try {//this could be parsed with JSON, but patterns work, and if it ain't broke...
-                URL twitch = new URL(TWITCH_API + "/streams/" + getChannelID(channelName) + "?" + CLIENT_ID + "&" + API_VERSION);
-                String line = Utils.createAndParseBufferedReader(twitch.openStream());
-                if (!line.isEmpty()) {
-                    Matcher m = Constants.viewerTwitchPattern.matcher(line);
-                    if (m.find()) {
-                        try {
-                            count = Integer.parseInt(m.group(1));
-                        } catch (Exception ignored) {
-                        }//bad Int parsing
-                    }
+            String line = carryOutRequest(TWITCH_API_REQUEST.STREAMS_GET, getChannelID(channelName), null, null).responseString;
+            if (!line.isEmpty())
+            {
+                Matcher m = Constants.twitchViewerCountPattern.matcher(line);
+                if (m.find())
+                {
+                    try
+                    {
+                        count = Integer.parseInt(m.group(1));
+                    } catch (Exception ignored)
+                    {
+                    }//bad Int parsing
                 }
-            } catch (Exception e) {
-                count = -1;
             }
             return count;
         }
@@ -209,19 +264,13 @@ public class APIRequests {
          */
         public static String[] getStatusOfStream(String channel) {
             String[] toRet = {"", ""};
-            try {
-                channel = getChannelID(channel);
-                URL twitch = new URL(TWITCH_API + "/channels/" + channel + "?" + CLIENT_ID + "&" + API_VERSION);
-                String line = Utils.createAndParseBufferedReader(twitch.openStream());
-                if (!line.isEmpty()) {
-                    JSONObject base = new JSONObject(line);
-                    //these are never null, just blank strings at worst
-                    toRet[0] = base.getString("status");
-                    toRet[1] = base.getString("game");
-                }
-            } catch (Exception e) {
-                GUIMain.log("Failed to get status of stream due to Exception: ");
-                GUIMain.log(e);
+            String line = carryOutRequest(TWITCH_API_REQUEST.CHANNELS_GET, getChannelID(channel), null, null).responseString;
+            if (!line.isEmpty())
+            {
+                JSONObject base = new JSONObject(line);
+                //these are never null, just blank strings at worst
+                toRet[0] = base.getString("status");
+                toRet[1] = base.getString("game");
             }
             return toRet;
         }
@@ -298,41 +347,16 @@ public class APIRequests {
          */
         public static Response setStatusOfStream(String key, String channel, String title, String game) {
             Response toReturn = new Response();
-            try {
-                String request = TWITCH_API + "/channels/" + getChannelID(channel) + "?" + API_VERSION;
-                URL twitch = new URL(request);
-                HttpURLConnection c = (HttpURLConnection) twitch.openConnection();
-                c.setRequestMethod("PUT");
-                c.setDoOutput(true);
-                c.setRequestProperty("Client-ID", CLIENT_ID.split("=")[1]);
-                c.setRequestProperty("Authorization", "OAuth " + key.split(":")[1]);
-                c.setRequestProperty("Accept", "application/vnd.twitchtv.v5+json");
-                c.setRequestProperty("Content-Type", "application/json");
 
-                String toWrite = String.format("{\"channel\": {\"status\": \"%s\", \"game\": \"%s\"}}", title, game);
+            JSONObject outer = new JSONObject();
+            JSONObject channelObject = new JSONObject();
+            channelObject.put("status", title);
+            channelObject.put("game", game);
+            outer.put("channel", channelObject);
 
-                OutputStreamWriter op = new OutputStreamWriter(c.getOutputStream());
-                op.write(toWrite);
-                op.flush();
-                op.close();
+            if (carryOutRequest(TWITCH_API_REQUEST.CHANNELS_PUT, getChannelID(channel), outer.toString(), key.split(":")[1]).responseCode == 200)
+                toReturn.wasSuccessful();
 
-                try
-                {
-                    int response = c.getResponseCode();
-                    if (response == 200)
-                        toReturn.wasSuccessful();
-                } catch (Exception e)
-                {
-                    GUIMain.log("Failed to get response code due to Exception: ");
-                    GUIMain.log(e);
-                }
-
-                c.disconnect();
-            } catch (Exception e) {
-                GUIMain.log("Failed to update status due to Exception: ");
-                GUIMain.log(e);
-                toReturn.setResponseText("Failed to update status due to Exception!");
-            }
             return toReturn;
         }
 
@@ -345,37 +369,13 @@ public class APIRequests {
          * @return true if the commercial played, else false.
          */
         public static boolean playAdvert(String key, String channel, int length) {
-            boolean toReturn = false;
-            try {
-                length = Utils.capNumber(30, 180, length);//can't be longer than 3 mins/shorter than 30 sec
-                if ((length % 30) != 0) length = 30;//has to be divisible by 30 seconds
-                channel = getChannelID(channel);
-                String request = TWITCH_API + "/channels/" + channel + "/commercial?" + API_VERSION;
-                URL twitch = new URL(request);
-                HttpURLConnection c = (HttpURLConnection) twitch.openConnection();
-                c.setRequestMethod("POST");
-                c.setDoOutput(true);
-                String toWrite = "{\"length\": " + length + "}";
-                c.setRequestProperty("Client-ID", CLIENT_ID.split("=")[1]);
-                c.setRequestProperty("Authorization", "OAuth " + key.split(":")[1]);
-                c.setRequestProperty("Content-Type", "application/json");
-                c.setRequestProperty("Content-Length", String.valueOf(toWrite.length()));
-                OutputStreamWriter op = new OutputStreamWriter(c.getOutputStream());
-                op.write(toWrite);
-                op.close();
-                try {
-                    int response = c.getResponseCode();
-                    toReturn = response == 200;
-                } catch (Exception e) {
-                    GUIMain.log("Failed to get response code due to Exception: ");
-                    GUIMain.log(e);
-                }
-                c.disconnect();
-            } catch (Exception e) {
-                GUIMain.log("Failed to play advertisement due to Exception: ");
-                GUIMain.log(e);
-            }
-            return toReturn;
+            length = Utils.capNumber(30, 180, length);//can't be longer than 3 mins/shorter than 30 sec
+            if ((length % 30) != 0) length = 30;//has to be divisible by 30 seconds
+
+            JSONObject lengthObject = new JSONObject();
+            lengthObject.put("length", length);
+
+            return (carryOutRequest(TWITCH_API_REQUEST.CHANNELS_SHOW_COMMERCIAL, getChannelID(channel), lengthObject.toString(), key.split(":")[1]).responseCode == 200);
         }
 
         /**
@@ -386,27 +386,25 @@ public class APIRequests {
          */
         public static Response getTitleOfVOD(String URL) {
             Response toReturn = new Response();
-            try {
-                String ID = "";
-                Pattern p = Pattern.compile("/videos/([0-9]+)");
-                Matcher m = p.matcher(URL);
-                if (m.find()) {
-                    ID = m.group(1).replaceAll("/", "");
-                }
-                URL request = new URL(TWITCH_API + "/videos/" + ID + "?" + CLIENT_ID);
-                String line = Utils.createAndParseBufferedReader(request.openStream());
-                if (!line.isEmpty()) {
-                    JSONObject init = new JSONObject(line);
-                    String title = init.getString("title");
-                    JSONObject channel = init.getJSONObject("channel");
-                    String author = channel.getString("display_name");
-                    toReturn.wasSuccessful();
-                    toReturn.setResponseText("Linked Twitch VOD: \"" + title + "\" by " + author);
-                }
-            } catch (Exception e) {
-                toReturn.setResponseText("Failed to parse Twitch VOD due to an Exception!");
-                GUIMain.log(e);
+
+            String ID = "";
+            Matcher m = Constants.twitchVideoURLPattern.matcher(URL);
+            if (m.find())
+            {
+                ID = m.group(1);
             }
+
+            String line = carryOutRequest(TWITCH_API_REQUEST.VIDEOS_GET, ID, null, null).responseString;
+            if (!line.isEmpty())
+            {
+                JSONObject init = new JSONObject(line);
+                String title = init.getString("title");
+                JSONObject channel = init.getJSONObject("channel");
+                String author = channel.getString("display_name");
+                toReturn.wasSuccessful();
+                toReturn.setResponseText("Linked Twitch VOD: \"" + title + "\" by " + author);
+            }
+
             return toReturn;
         }
 
@@ -418,23 +416,17 @@ public class APIRequests {
          */
         public static ArrayList<String> getLiveFollowedChannels(String key) {
             ArrayList<String> toReturn = new ArrayList<>();
-            try
+
+            String line = carryOutRequest(TWITCH_API_REQUEST.STREAMS_GET_FOLLOWED, null, null, key).responseString;
+            if (!line.isEmpty())
             {
-                URL request = new URL(TWITCH_API + "/streams/followed?oauth_token=" + key + "&limit=100&" + CLIENT_ID);
-                String line = Utils.createAndParseBufferedReader(request.openStream());
-                if (!line.isEmpty()) {
-                    JSONObject init = new JSONObject(line);
-                    JSONArray streams = init.getJSONArray("streams");
-                    for (int i = 0; i < streams.length(); i++) {
-                        JSONObject stream = streams.getJSONObject(i);
-                        JSONObject channel = stream.getJSONObject("channel");
-                        toReturn.add(channel.getString("name").toLowerCase());
-                    }
-                }
-            } catch (Exception e) {
-                if (!e.getMessage().contains("401") && !e.getMessage().contains("503")) {
-                    GUIMain.log("Failed to get live followed channels due to exception:");
-                    GUIMain.log(e);
+                JSONObject init = new JSONObject(line);
+                JSONArray streams = init.getJSONArray("streams");
+                for (int i = 0; i < streams.length(); i++)
+                {
+                    JSONObject stream = streams.getJSONObject(i);
+                    JSONObject channel = stream.getJSONObject("channel");
+                    toReturn.add(channel.getString("name").toLowerCase());
                 }
             }
             return toReturn;
@@ -451,8 +443,7 @@ public class APIRequests {
             try
             {
                 partial = URLEncoder.encode(partial, "UTF-8");
-                URL request = new URL(TWITCH_API + "/search/channels?limit=10&query=" + partial + "&" + CLIENT_ID);
-                String line = Utils.createAndParseBufferedReader(request.openStream());
+                String line = carryOutRequest(TWITCH_API_REQUEST.SEARCH_CHANNELS, partial, null, null).responseString;
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);
                     JSONArray channels = init.getJSONArray("channels");
@@ -473,27 +464,116 @@ public class APIRequests {
          * @param channel The channel to check.
          * @return A string array of (up to) the last 20 followers.
          */
-        public static String[] getLast20Followers(String channel) {
-            ArrayList<String> toReturn = new ArrayList<>();
-            try
-            {
-                channel = getChannelID(channel);
-                URL request = new URL(TWITCH_API + "/channels/" + channel + "/follows?limit=20&" + CLIENT_ID + "&" + API_VERSION);
-                String line = Utils.createAndParseBufferedReader(request.openStream());
-                if (!line.isEmpty()) {
-                    JSONObject init = new JSONObject(line);
-                    JSONArray follows = init.getJSONArray("follows");
-                    for (int i = 0; i < follows.length(); i++) {
-                        JSONObject person = follows.getJSONObject(i);
-                        JSONObject user = person.getJSONObject("user");
-                        toReturn.add(user.getString("name"));
-                    }
-                }
+        public static List<String> getLast20Followers(String channel)
+        {
+            List<String> toReturn = new ArrayList<>();
 
-            } catch (Exception e) {
-                GUIMain.log(e);
+            String line = carryOutRequest(TWITCH_API_REQUEST.CHANNELS_GET_FOLLOWERS, getChannelID(channel), null, null).responseString;
+            if (!line.isEmpty())
+            {
+                JSONObject init = new JSONObject(line);
+                JSONArray follows = init.getJSONArray("follows");
+                for (int i = 0; i < follows.length(); i++)
+                {
+                    JSONObject person = follows.getJSONObject(i);
+                    JSONObject user = person.getJSONObject("user");
+                    toReturn.add(user.getString("name"));
+                }
             }
-            return toReturn.toArray(new String[toReturn.size()]);
+            return toReturn;
+        }
+
+        public static class Community
+        {
+            public String ID, name;
+
+            public Community(String id, String name)
+            {
+                this.ID = id;
+                this.name = name;
+            }
+
+            public String getID()
+            {
+                return ID;
+            }
+        }
+
+        /**
+         * @param communityName The name of the community to get
+         * @return The Community object of the community, or null
+         */
+        public static Community getCommunity(String communityName)
+        {
+
+            String response = carryOutRequest(TWITCH_API_REQUEST.COMMUNITIES_GET_BY_NAME, communityName, null, null).responseString;
+            if (!response.isEmpty())
+            {
+                JSONObject community = new JSONObject(response);
+                return new Community(community.getString("_id"), community.getString("display_name"));
+            }
+            return null;
+        }
+
+        /**
+         * Gets the given channel's communities
+         *
+         * @param channel The channel to get the communities of
+         */
+        public static List<Community> getChannelCommunities(String channel)
+        {
+            List<Community> communities = new ArrayList<>();
+
+            String response = carryOutRequest(TWITCH_API_REQUEST.CHANNELS_GET_COMMUNITIES, getChannelID(channel), null, null).responseString;
+            if (!response.isEmpty())
+            {
+                JSONObject outer = new JSONObject(response);
+                JSONArray comms = outer.getJSONArray("communities");
+                for (int i = 0; i < comms.length(); i++)
+                {
+                    JSONObject community = comms.getJSONObject(i);
+                    communities.add(new Community(community.getString("_id"), community.getString("display_name")));
+                }
+            }
+            return communities;
+        }
+
+        /**
+         * @param channel     The channel to set the communities for
+         * @param key         The OAuth key to use
+         * @param communities The communities to set
+         * @return A response object
+         */
+        public static Response setChannelCommunities(String channel, String key, List<Community> communities)
+        {
+            Response response = new Response();
+
+            // Setting to empty == removing all of them
+            if (communities.isEmpty())
+                return removeChannelFromCommunities(channel, key);
+
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("community_ids", communities.stream().map(Community::getID).collect(Collectors.toList()));
+
+            if (carryOutRequest(TWITCH_API_REQUEST.CHANNELS_SET_COMMUNITIES, getChannelID(channel), jsonObject.toString(), key.split(":")[1]).responseCode == 204)
+                response.wasSuccessful();
+
+            return response;
+        }
+
+        /**
+         * @param channel The channel to remove from its communities
+         * @param key     The OAuth key to use
+         * @return A response object
+         */
+        public static Response removeChannelFromCommunities(String channel, String key)
+        {
+            Response toReturn = new Response();
+
+            if (carryOutRequest(TWITCH_API_REQUEST.CHANNELS_DELETE_COMMUNITIES, getChannelID(channel), null, key.split(":")[1]).responseCode == 204)
+                toReturn.wasSuccessful();
+
+            return toReturn;
         }
     }
 
