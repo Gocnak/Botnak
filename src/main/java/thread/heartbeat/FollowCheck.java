@@ -50,6 +50,10 @@ public class FollowCheck implements HeartbeatThread {
     @Override
     public void beat() {
         beating = true;
+
+        if (getUserAccount() == null)
+            return;
+
         if (Settings.trackFollowers.getValue()) {
             ArrayList<String> livePeople = APIRequests.Twitch.getLiveFollowedChannels(getUserAccount().getOAuth().getKey().split(":")[1]);
             if (!livePeople.isEmpty() && count != livePeople.size()) {

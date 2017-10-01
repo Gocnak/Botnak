@@ -3,6 +3,7 @@ package lib.pircbot;
 import gui.forms.GUIMain;
 import util.Utils;
 
+import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -48,7 +49,7 @@ public class PircBotConnection {
     private InetAddress _inetAddress = null;
 
     public enum ConnectionType {
-        NORMAL(6667, "irc.chat.twitch.tv");
+        NORMAL(443, "irc.chat.twitch.tv");
 
         int port;
         String[] hosts;
@@ -89,7 +90,7 @@ public class PircBotConnection {
         InputStream socketIn;
         OutputStream socketOut;
         try {
-            socket = new Socket(_server, type.port);
+            socket = SSLSocketFactory.getDefault().createSocket(_server, type.port);
             bot.log("*** Trying to connect to " + _server + " on port " + getPort());
             socketIn = socket.getInputStream();
             socketOut = socket.getOutputStream();
