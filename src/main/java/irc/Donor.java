@@ -1,6 +1,7 @@
 package irc;
 
 import face.IconEnum;
+import util.settings.DonationManager;
 
 /**
  * Created by Nick on 1/26/14.
@@ -86,5 +87,10 @@ public class Donor {
      */
     public void addDonated(double toAdd) {
         donated += toAdd;
+    }
+
+    @Override
+    public String toString() {
+        return name + "," + DonationManager.getDecimalFormat().format(donated);
     }
 }

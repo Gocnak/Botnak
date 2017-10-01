@@ -6,7 +6,7 @@ import javax.sound.sampled.*;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 
 /**
  * Represents a sound with its source and use counter.
@@ -25,7 +25,7 @@ public class SoundEntry implements Closeable {
      * @param file The sound file.
      * @throws java.io.IOException
      */
-    public SoundEntry(File file, SoundEntry previous, ConcurrentHashMap<File, SoundEntry> map) throws IOException {
+    public SoundEntry(File file, SoundEntry previous, Map<File, SoundEntry> map) throws IOException {
         try {
             key = file;
             source = AudioSystem.getAudioInputStream(file);

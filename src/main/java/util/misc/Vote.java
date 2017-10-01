@@ -8,6 +8,7 @@ import util.settings.Settings;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -52,10 +53,10 @@ public class Vote extends Thread {
     public void addVote(String name, int option)
     {
         if (option > options.size() || option < 1) return;
-        Option vote = getOption(name);
-        if (vote != null) {//they already voted
-            if (vote.compare != option) {//but now it's for a different
-                vote.decrease(name);
+        Optional<Option> vote = getOption(name);
+        if (vote.isPresent()) {//they already voted
+            if (vote.get().compare != option) {//but now it's for a different
+                vote.get().decrease(name);
                 totalVotes--;
             } else {
                 return; // They already voted for this!
@@ -106,18 +107,9 @@ public class Vote extends Thread {
      * @param user The user to check.
      * @return The option they voted for, otherwise null.
      */
-    private Option getOption(String user)
+    private Optional<Option> getOption(String user)
     {
-        for (Option o : options) {
-            if (o.count > 0) {
-                for (String voter : o.voters) {
-                    if (voter.equalsIgnoreCase(user)) {
-                        return o;
-                    }
-                }
-            }
-        }
-        return null;
+        return options.stream().filter(o -> o.count > 0 && o.voters.contains(user.toLowerCase())).findFirst();
     }
 
     public class Option implements Comparable<Option>
@@ -138,12 +130,12 @@ public class Vote extends Thread {
 
         void increment(String name) {
             count++;
-            voters.add(name);
+            voters.add(name.toLowerCase());
         }
 
         void decrease(String name) {
             count--;
-            voters.remove(name);
+            voters.remove(name.toLowerCase());
         }
 
         public int getCount()
@@ -163,13 +155,7 @@ public class Vote extends Thread {
 
         @Override
         public int compareTo(Option o) {
-            if (o.count > this.count) {
-                return -1;
-            } else if (o.count == this.count) {
-                return 0;
-            } else {
-                return 1;
-            }
+            return Integer.compare(this.count, o.count);
         }
     }
 
@@ -182,7 +168,7 @@ public class Vote extends Thread {
     }
 
     public void printResults() {
-        String[] results = getResults();
+        List<String> results = getResults();
         for (String s : results) {
             Settings.accountManager.getBot().sendMessage(channel, s);
         }
@@ -191,10 +177,10 @@ public class Vote extends Thread {
             GUIMain.voteGUI.pollEnded(this);
     }
 
-    public String[] getResults() {
-        ArrayList<String> resultStrings = new ArrayList<>();
+    public List<String> getResults() {
+        List<String> resultStrings = new ArrayList<>();
         resultStrings.add("The results to the poll are:");
-        ArrayList<Option> results = getSortedOptions();
+        List<Option> results = getSortedOptions();
         int totalVotes = 0;
         for (Option o : results) {
             totalVotes += o.count;
@@ -206,11 +192,11 @@ public class Vote extends Thread {
         } else {
             resultStrings.add("Nobody voted for anything. BibleThump");
         }
-        return resultStrings.toArray(new String[resultStrings.size()]);
+        return resultStrings;
     }
 
-    private ArrayList<Option> getSortedOptions() {
-        ArrayList<Option> results = new ArrayList<>();
+    private List<Option> getSortedOptions() {
+        List<Option> results = new ArrayList<>();
         results.addAll(options);
         Collections.sort(results);//sort into ascending based on votes
         Collections.reverse(results);//make it descending

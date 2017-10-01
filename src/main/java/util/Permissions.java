@@ -6,6 +6,8 @@ import lib.pircbot.User;
 import util.settings.Settings;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -43,8 +45,8 @@ public class Permissions {
      * @param channel The channel this is for.
      * @return The permissions they have.
      */
-    public static ArrayList<Permission> getUserPermissions(User u, String channel) {
-        ArrayList<Permission> permissionList = new ArrayList<>();
+    public static List<Permission> getUserPermissions(User u, String channel) {
+        List<Permission> permissionList = new ArrayList<>();
         permissionList.add(Permission.VIEWER);
         if (Utils.isMainChannel(channel)) {
             Optional<Subscriber> sub = Settings.subscriberManager.getSubscriber(u.getNick());
@@ -70,16 +72,35 @@ public class Permissions {
         return permissionList;
     }
 
-    public static boolean hasAtLeast(ArrayList<Permission> permission, int perm) {
+    /**
+     * "Up-to" permissions, where the permission is exclusive to a lower bound. We check if that user
+     * hasAtLeast that lower bound here. Eg: a sound file that is only for mods and up to play
+     * @param permission The list of the user's permissions
+     * @param perm The lower bound permission to check against
+     * @return true if the user has at least the lower bound's permission, otherwise false
+     */
+    public static boolean hasAtLeast(List<Permission> permission, int perm) {
         return hasAtLeast(permission, asPermission(perm));
     }
 
-    public static boolean hasAtLeast(ArrayList<Permission> permissions, Permission toCheck) {
+    public static boolean hasAtLeast(List<Permission> permissions, Permission toCheck) {
         for (Permission p : permissions) {
             if (p.compareTo(toCheck) > -1) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Does an == check for a User in regards to the supplied permission(s)
+     * @param u The user to test
+     * @param channel The channel the user is in
+     * @param permissions The permission(s) to test against
+     * @return true if the User has all of the supplied permissions, else false
+     */
+    public static boolean userSatisfiesPermissions(User u, String channel, Permission... permissions) {
+        List<Permission> userPermissions = getUserPermissions(u, channel);
+        return Arrays.stream(permissions).allMatch(userPermissions::contains);
     }
 }

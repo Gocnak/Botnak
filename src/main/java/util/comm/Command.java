@@ -5,6 +5,7 @@ import util.Timer;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Created to cleanup the horrendous HashMap that was the commandMap in GUIMain.
@@ -14,7 +15,7 @@ public class Command {
     private Timer delayTimer;
     private String trigger;
     private StringArray contents;
-    private ArrayList<String> arguments;
+    private List<String> arguments;
 
     public Command(String name, String... contents) {
         arguments = new ArrayList<>();
@@ -27,7 +28,7 @@ public class Command {
         return trigger;
     }
 
-    public ArrayList<String> getArguments() {
+    public List<String> getArguments() {
         return arguments;
     }
 

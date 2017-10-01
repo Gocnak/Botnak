@@ -12,7 +12,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Nick K
@@ -50,7 +50,7 @@ public class GUIViewerList extends JFrame {
         return scrollPane.getVerticalScrollBar().getValue();
     }
 
-    public synchronized void updateCategory(ViewerType type, HashSet<String> names) {
+    public synchronized void updateCategory(ViewerType type, Set<String> names) {
         final DefaultMutableTreeNode node;
         switch (type) {
             case STAFF:

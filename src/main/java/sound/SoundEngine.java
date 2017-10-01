@@ -26,7 +26,7 @@ public class SoundEngine {
 
     private boolean soundToggle = true;
     private Timer soundTimer;
-    private ConcurrentHashMap<String, Sound> soundMap;
+    private Map<String, Sound> soundMap;
     private Deque<Sound> subStack, donationStack;
     private Sound lastSubSound, lastDonationSound;
 
@@ -49,7 +49,7 @@ public class SoundEngine {
         soundTimer = new Timer(newDelay);
     }
 
-    public ConcurrentHashMap<String, Sound> getSoundMap() {
+    public Map<String, Sound> getSoundMap() {
         return soundMap;
     }
 
@@ -221,7 +221,7 @@ public class SoundEngine {
     private boolean soundCheck(String sound, String sender, String channel) {
         //set the permission
         User u = Settings.channelManager.getUser(sender, true);
-        ArrayList<Permissions.Permission> permissions = Permissions.getUserPermissions(u, channel);
+        List<Permissions.Permission> permissions = Permissions.getUserPermissions(u, channel);
         Sound snd = soundMap.get(sound.toLowerCase());
         if (snd != null && snd.isEnabled()) {
             int perm = snd.getPermission();

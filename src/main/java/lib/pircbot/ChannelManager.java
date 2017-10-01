@@ -1,6 +1,8 @@
 package lib.pircbot;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -8,13 +10,15 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class ChannelManager {
 
-    private CopyOnWriteArraySet<Channel> channels = new CopyOnWriteArraySet<>();
-    private CopyOnWriteArraySet<User> users = new CopyOnWriteArraySet<>();
+    private Set<Channel> channels;
+    private Set<User> users;
 
     /**
      * Creates a blank ChannelManager.
      */
     public ChannelManager() {
+        channels = new CopyOnWriteArraySet<>();
+        users = new CopyOnWriteArraySet<>();
     }
 
     /**
@@ -134,10 +138,10 @@ public class ChannelManager {
      *
      * @return The names of the channels we are in.
      */
-    public String[] getChannelNames() {
-        ArrayList<String> names = new ArrayList<>();
+    public List<String> getChannelNames() {
+        List<String> names = new ArrayList<>();
         channels.forEach(c -> names.add(c.getName()));
-        return names.toArray(new String[names.size()]);
+        return names;
     }
 
     /**

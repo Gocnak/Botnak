@@ -15,6 +15,8 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by Nick on 1/4/14.
@@ -127,7 +129,7 @@ public class DraggableTabbedPane extends JTabbedPane {
                                             //single -> combined
                                             //adding to an already existing combined pane
 
-                                            if (willPlaceCombined.addChatPane(cp)) {
+                                            if (willPlaceCombined.addChatPane(Collections.singletonList(cp))) {
                                                 //successfully added to the pane
                                                 removeTabAt(draggedTabIndex);
                                                 setSelectedIndex(willPlaceCombined.getIndex());
@@ -141,7 +143,7 @@ public class DraggableTabbedPane extends JTabbedPane {
                                         if (willPlace != null) {
                                             //combined -> single
                                             //we'll convert it back to single -> combined
-                                            if (ccp.addChatPane(willPlace)) {
+                                            if (ccp.addChatPane(Collections.singletonList(willPlace))) {
                                                 if (!e.isControlDown()) {
                                                     removeTabAt(indexWillPlace);
                                                 }
@@ -189,7 +191,7 @@ public class DraggableTabbedPane extends JTabbedPane {
                             popupMenu.add(menuItem);
 
                             if (Settings.showTabPulses.getValue()) {
-                                menuItem = new JMenuItem("Toggle Tab Pulsing " +
+                                menuItem = new JMenuItem("Turn Tab Pulsing " +
                                         (first ? (detected.shouldPulseLoc() ? "OFF" : "ON") :
                                                 (detectedCombo.shouldPulseLoc() ? "OFF" : "ON")));
                                 menuItem.addActionListener(listener);
@@ -226,7 +228,7 @@ public class DraggableTabbedPane extends JTabbedPane {
 
                                 panels.add(new JPopupMenu.Separator());
 
-                                String[] streams = detectedCombo.getChannels();
+                                List<String> streams = detectedCombo.getChannels();
                                 for (String stream : streams) {
                                     streamCheck = new JCheckBoxMenuItem(stream);
                                     streamCheck.addActionListener(listener);

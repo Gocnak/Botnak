@@ -16,7 +16,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.Set;
 
 /**
  * @author Nick K
@@ -35,7 +35,7 @@ public class GUIStreams extends JFrame {
 
     public void parseFollowed() {
         if (getKey() != null && getKey().canReadFollowed()) {
-            CopyOnWriteArraySet<String> channels = FollowCheck.followedChannels;
+            Set<String> channels = FollowCheck.followedChannels;
             if (channels != null && channels.size() > 0) {
                 setFollowedListModel(channels.toArray(new String[channels.size()]));
             } else {
@@ -62,7 +62,7 @@ public class GUIStreams extends JFrame {
             final String text = Utils.checkText(newChannel.getText());
             if ("".equals(text) || text.length() < 3) {
                 parseFollowed();
-            } else if (text.length() > 2) {
+            } else {
                 ThreadEngine.submit(() -> {
                     if (!listLabel.getText().equals("Suggested Streams:")) {
                         listLabel.setText("Suggested Streams:");

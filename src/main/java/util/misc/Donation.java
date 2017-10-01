@@ -1,5 +1,8 @@
 package util.misc;
 
+import util.settings.DonationManager;
+
+import java.time.Instant;
 import java.util.Date;
 
 /**
@@ -67,5 +70,11 @@ public class Donation implements Comparable<Donation> {
                 && ((Donation) obj).getDateReceived().equals(this.getDateReceived()) &&
                 ((Donation) obj).getFromWho().equals(this.getFromWho()) && ((Donation) obj).getNote().equals(this.getNote()) &&
                 ((Donation) obj).getDonationID().equals(this.getDonationID()));
+    }
+
+    @Override
+    public String toString() {
+        return donationID + "[" + fromWho + "[" + note + "[" + DonationManager.getDecimalFormat().format(amount)
+                + "[" + Instant.ofEpochMilli(received.getTime()).toString();
     }
 }

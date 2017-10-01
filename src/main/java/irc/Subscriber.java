@@ -72,4 +72,9 @@ public class Subscriber implements Comparable<Subscriber> {
             return 1;
         }
     }
+
+    @Override
+    public String toString() {
+        return name + "[" + started.toString() + "[" + String.valueOf(isActive) + "[" + streak;
+    }
 }

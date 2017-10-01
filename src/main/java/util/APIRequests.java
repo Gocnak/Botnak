@@ -242,7 +242,7 @@ public class APIRequests {
             String line = carryOutRequest(TWITCH_API_REQUEST.STREAMS_GET, getChannelID(channelName), null, null).responseString;
             if (!line.isEmpty())
             {
-                Matcher m = Constants.twitchViewerCountPattern.matcher(line);
+                Matcher m = Constants.PATTERN_VIEWER_COUNT.matcher(line);
                 if (m.find())
                 {
                     try
@@ -388,7 +388,7 @@ public class APIRequests {
             Response toReturn = new Response();
 
             String ID = "";
-            Matcher m = Constants.twitchVideoURLPattern.matcher(URL);
+            Matcher m = Constants.PATTERN_TWITCH_VIDEO_URL.matcher(URL);
             if (m.find())
             {
                 ID = m.group(1);

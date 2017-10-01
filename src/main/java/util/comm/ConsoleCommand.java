@@ -1,6 +1,10 @@
 package util.comm;
 
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * This class is the container for all of the default
  * Botnak commands, like !mod and !addface, etc.
@@ -18,7 +22,7 @@ package util.comm;
 public class ConsoleCommand {
 
     public Action action;
-    public String[] certainPermission;
+    public List<String> certainPermission;
     public int classPermission;
     public String trigger;
 
@@ -75,7 +79,7 @@ public class ConsoleCommand {
      * @param classPerm         The class permission (@see Constants.PERMISSION_ s)
      * @param certainPermission The certain users able to use the command.
      */
-    public ConsoleCommand(String trigger, Action act, int classPerm, String[] certainPermission) {
+    public ConsoleCommand(String trigger, Action act, int classPerm, List<String> certainPermission) {
         action = act;
         this.trigger = trigger;
         classPermission = classPerm;
@@ -94,7 +98,7 @@ public class ConsoleCommand {
         return classPermission;
     }
 
-    public String[] getCertainPermissions() {
+    public List<String> getCertainPermissions() {
         return certainPermission;
     }
 
@@ -103,6 +107,12 @@ public class ConsoleCommand {
     }
 
     public void setCertainPermission(String... newPerm) {
-        certainPermission = newPerm;
+        certainPermission = Arrays.asList(newPerm);
+    }
+
+    @Override
+    public String toString() {
+        String certainPerm = certainPermission.isEmpty() ? "null" : certainPermission.stream().collect(Collectors.joining(","));
+        return trigger + "[" + action.toString() + "[" + classPermission + "[" + certainPerm;
     }
 }

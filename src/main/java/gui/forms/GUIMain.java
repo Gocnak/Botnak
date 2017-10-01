@@ -30,22 +30,21 @@ import java.awt.event.*;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class GUIMain extends JFrame {
 
-    public static ConcurrentHashMap<String, Color> userColMap, keywordMap;
-    public static CopyOnWriteArraySet<Command> commandSet;
-    public static CopyOnWriteArraySet<ConsoleCommand> conCommands;
-    public static CopyOnWriteArraySet<String> channelSet;
-    public static ConcurrentHashMap<String, ChatPane> chatPanes;
-    public static CopyOnWriteArraySet<CombinedChatPane> combinedChatPanes;
-    public static CopyOnWriteArraySet<TabPulse> tabPulses;
-    public static ConcurrentHashMap<String, GUIViewerList> viewerLists;
+    public static Map<String, Color> userColMap, keywordMap;
+    public static Set<Command> commandSet;
+    public static Set<ConsoleCommand> conCommands;
+    public static Set<String> channelSet;
+    public static Map<String, ChatPane> chatPanes;
+    public static Set<CombinedChatPane> combinedChatPanes;
+    public static Set<TabPulse> tabPulses;
+    public static Map<String, GUIViewerList> viewerLists;
 
     public static int userResponsesIndex = 0;
     public static ArrayList<String> userResponses;
@@ -118,36 +117,35 @@ public class GUIMain extends JFrame {
     public void chatButtonActionPerformed() {
         userResponsesIndex = 0;
         String channel = channelPane.getTitleAt(channelPane.getSelectedIndex());
-        if (Settings.accountManager.getViewer() == null) return;
+        if (Settings.accountManager.getViewer() == null) {
+            logCurrent("Failed to send message, there is no viewer account! Please set one up!");
+            return;
+        }
         if (!Settings.accountManager.getViewer().isConnected()) {
-            logCurrent("Failed to send message, currently trying to reconnect!");
+            logCurrent("Failed to send message, currently trying to (re)connect!");
             return;
         }
         String userInput = Utils.checkText(userChat.getText().replaceAll("\n", ""));
-        if (channel != null && !channel.equalsIgnoreCase("system logs")) {
+        if (channel != null && !channel.equalsIgnoreCase("system logs") && !"".equals(userInput)) {
             CombinedChatPane ccp = Utils.getCombinedChatPane(channelPane.getSelectedIndex());
             boolean comboExists = ccp != null;
             if (comboExists) {
-                String[] channels;
-                if (!ccp.getActiveChannel().equalsIgnoreCase("All")) {
-                    channels = new String[]{ccp.getActiveChannel()};
-                } else {
-                    channels = ccp.getChannels();
-                }
-                if (!"".equals(userInput)) {
-                    for (String c : channels) {
-                        Settings.accountManager.getViewer().sendMessage("#" + c, userInput);
-                    }
-                    if (!userResponses.contains(userInput)) userResponses.add(userInput);
-                }
-                userChat.setText("");
-            } else {
-                if (!"".equals(userInput)) {
-                    Settings.accountManager.getViewer().sendMessage("#" + channel, userInput);
-                    if (!userResponses.contains(userInput)) userResponses.add(userInput);
-                }
-                userChat.setText("");
+                List<String> channels = ccp.getActiveChannel().equalsIgnoreCase("All") ?
+                        ccp.getChannels() : Collections.singletonList(ccp.getActiveChannel());
+
+                for (String c : channels)
+                    Settings.accountManager.getViewer().sendMessage("#" + c, userInput);
+
+                if (!userResponses.contains(userInput))
+                    userResponses.add(userInput);
             }
+            else
+            {
+                Settings.accountManager.getViewer().sendMessage("#" + channel, userInput);
+                if (!userResponses.contains(userInput))
+                    userResponses.add(userInput);
+            }
+            userChat.setText("");
         }
     }
 

@@ -1,5 +1,6 @@
 package irc.account;
 
+import gui.BotnakTrayIcon;
 import gui.forms.GUIMain;
 import irc.IRCBot;
 import irc.IRCViewer;
@@ -7,9 +8,7 @@ import lib.pircbot.PircBot;
 import lib.pircbot.PircBotConnection;
 import util.settings.Settings;
 
-import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -18,9 +17,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class AccountManager extends Thread {
 
-    private ConcurrentLinkedQueue<Task> tasks;
+    private Queue<Task> tasks;
 
-    private ConcurrentHashMap<String, ReconnectThread> reconnectThreads;
+    private Map<String, ReconnectThread> reconnectThreads;
 
     private Account userAccount, botAccount;
 
@@ -169,13 +168,19 @@ public class AccountManager extends Thread {
                 GUIMain.logCurrent("Auto-reconnects disabled, please check Preferences -> Auto-Reconnect!");
                 return;
             }
-            if (connection == null) return;
-            if (reconnectThreads.containsKey(connection.getName())) return;
+            if (connection == null || reconnectThreads.containsKey(connection.getName()))
+                return;
+
             ReconnectThread rt = new ReconnectThread(connection);
             rt.start();
             reconnectThreads.put(connection.getName(), rt);
+
             GUIMain.logCurrent("Attempting to reconnect the account: " + connection.getBot().getNick() + " ...");
-        } catch (Exception e)
+
+            if (BotnakTrayIcon.shouldDisplayReconnects())
+                GUIMain.getSystemTrayIcon().displayReconnect(connection.getBot().getNick());
+        }
+        catch (Exception e)
         {
             GUIMain.log(e);
         }
@@ -184,7 +189,7 @@ public class AccountManager extends Thread {
     private class ReconnectThread {
 
         private PircBotConnection connection;
-        private ArrayList<Task> cachedTasks;
+        private List<Task> cachedTasks;
         private Timer t;
 
         ReconnectThread(PircBotConnection toReconnect) {

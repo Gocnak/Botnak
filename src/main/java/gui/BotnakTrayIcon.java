@@ -58,6 +58,10 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
         toAdd.setState(Settings.stShowSubscribers.getValue());
         toAdd.addItemListener(this);
         options.add(toAdd);
+        toAdd = new CheckboxMenuItem("Reconnect Warnings");
+        toAdd.setState(Settings.stShowReconnecting.getValue());
+        toAdd.addItemListener(this);
+        options.add(toAdd);
         menu.add(options);
 
 
@@ -124,6 +128,14 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
         displayMessage(continued ? "Continued subscription!" : "New Subscriber!", content, MessageType.INFO);
     }
 
+    public static boolean shouldDisplayReconnects() {
+        return shouldDisplay() && Settings.stShowReconnecting.getValue();
+    }
+
+    public void displayReconnect(String userName) {
+        displayMessage("Detected disconnection!", "Reconnecting account " + userName + "!", MessageType.INFO);
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() instanceof MenuItem) {
@@ -153,6 +165,8 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
                 Settings.stShowNewFollowers.setValue(bool);
             } else if (item.getLabel().startsWith("Followed")) {
                 Settings.stShowActivity.setValue(bool);
+            } else if (item.getLabel().startsWith("Reconn")) {
+                Settings.stShowReconnecting.setValue(bool);
             }
         }
     }

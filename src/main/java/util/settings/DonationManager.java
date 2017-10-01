@@ -17,6 +17,7 @@ import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.Currency;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -26,8 +27,8 @@ public class DonationManager {
 
     public boolean ranFirstCheck;
     private Donation lastDonation;
-    private CopyOnWriteArraySet<Donor> donors;
-    private CopyOnWriteArraySet<Donation> donations;
+    private Set<Donor> donors;
+    private Set<Donation> donations;
     private static NumberFormat CURRENCY_FORMAT, DECIMAL_FORMAT;
 
     //for displaying the numbers
@@ -160,11 +161,11 @@ public class DonationManager {
         return Settings.donationAuthCode.getValue();
     }
 
-    public CopyOnWriteArraySet<Donor> getDonors() {
+    public Set<Donor> getDonors() {
         return donors;
     }
 
-    public CopyOnWriteArraySet<Donation> getDonations() {
+    public Set<Donation> getDonations() {
         return donations;
     }
 

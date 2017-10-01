@@ -17,8 +17,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 
 /**
  * Created by Nick on 11/28/2014.
@@ -32,7 +35,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class SubscriberManager {
 
-    private CopyOnWriteArraySet<Subscriber> subscribers;
+    private Set<Subscriber> subscribers;
 
     private Subscriber lastSubscriber = null;
 
@@ -44,11 +47,11 @@ public class SubscriberManager {
         return lastSubscriber;
     }
 
-    public Subscriber[] getLastSubscribers(int count) {
-        return subscribers.stream().sorted().limit(count).toArray(Subscriber[]::new);
+    public List<Subscriber> getLastSubscribers(int count) {
+        return subscribers.stream().sorted().limit(count).collect(Collectors.toList());
     }
 
-    public CopyOnWriteArraySet<Subscriber> getSubscribers() {
+    public Set<Subscriber> getSubscribers() {
         return subscribers;
     }
 

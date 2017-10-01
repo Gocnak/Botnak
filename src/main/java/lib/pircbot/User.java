@@ -18,6 +18,7 @@ import irc.Donor;
 import util.settings.Settings;
 
 import java.awt.*;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -38,7 +39,7 @@ public class User implements Comparable<User> {
     private boolean staff = false, admin = false, global_mod = false, turbo = false, prime = false, verified = false;
     private String _nick, _lowerNick, displayName = null;
 
-    private CopyOnWriteArraySet<Integer> emotes = new CopyOnWriteArraySet<>();
+    private Set<Integer> emotes;
 
     private Color color = null;
     private Donor donor = null;
@@ -51,6 +52,7 @@ public class User implements Comparable<User> {
     public User(String nick) {
         _nick = nick;
         _lowerNick = nick.toLowerCase();
+        emotes = new CopyOnWriteArraySet<>();
     }
 
     /**
@@ -187,7 +189,7 @@ public class User implements Comparable<User> {
         this.emotes.add(emote);
     }
 
-    public CopyOnWriteArraySet<Integer> getEmotes() {
+    public Set<Integer> getEmotes() {
         return emotes;
     }
 

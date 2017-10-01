@@ -27,6 +27,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class IRCBot extends MessageHandler {
 
@@ -34,8 +35,8 @@ public class IRCBot extends MessageHandler {
         return Settings.accountManager.getBot();
     }
 
-    public ArrayList<String> winners;
-    public ArrayList<Raffle> raffles;
+    public List<String> winners;
+    public List<Raffle> raffles;
 
     private Vote poll;
     private long lastAd;

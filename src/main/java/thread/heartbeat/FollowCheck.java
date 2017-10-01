@@ -9,6 +9,7 @@ import util.settings.Settings;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -18,7 +19,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class FollowCheck implements HeartbeatThread {
 
-    public static CopyOnWriteArraySet<String> followers, followedChannels;
+    public static Set<String> followers, followedChannels;
     private Timer toUpdate;
     private boolean beating, initialBeat;
     private int count = 0;

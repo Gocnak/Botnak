@@ -3,7 +3,7 @@ package sound;
 import javax.sound.sampled.LineEvent;
 import javax.sound.sampled.LineListener;
 import java.io.File;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 
 /**
  * Provides listener for {@link SoundEntry} to close it, when the music is finished.
@@ -12,11 +12,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Closer implements LineListener {
     private SoundEntry entry;
-    private ConcurrentHashMap<File, SoundEntry> map;
+    private Map<File, SoundEntry> map;
     /**
      * @param entry The entry to hook.
      */
-    public Closer(final SoundEntry entry, ConcurrentHashMap<File, SoundEntry> map) {
+    public Closer(final SoundEntry entry, Map<File, SoundEntry> map) {
         this.entry = entry;
         this.map = map;
     }

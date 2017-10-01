@@ -7,8 +7,6 @@ import util.settings.Settings;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.URL;
 
 /**
@@ -24,10 +22,8 @@ public class GUIAbout extends JFrame {
     private void getUpdateInfo() {
         try {
             URL url = new URL("https://raw.githubusercontent.com/Gocnak/Botnak/master/version.txt");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
-            StringBuilder stanSB = new StringBuilder();
-            Utils.parseBufferedReader(reader, stanSB, true);
-            versionInformationArea.setText(stanSB.toString());
+            String versionText = Utils.createAndParseBufferedReader(url.openStream(), true);
+            versionInformationArea.setText(versionText);
             versionInformationArea.setCaretPosition(0);
         } catch (Exception e) {
             GUIMain.log("Failed to download version info: ");

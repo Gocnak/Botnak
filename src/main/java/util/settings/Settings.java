@@ -31,6 +31,8 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * This class is the container for every setting Botnak has.
@@ -94,6 +96,7 @@ public class Settings {
     public static Setting<Boolean> stUseSystemTray = new Setting<>("ST_UseSystemTray", false, Boolean.class);
     public static Setting<Boolean> stShowSubscribers = new Setting<>("ST_DisplaySubscribers", false, Boolean.class);
     public static Setting<Boolean> stShowNewFollowers = new Setting<>("ST_DisplayFollowers", false, Boolean.class);
+    public static Setting<Boolean> stShowReconnecting = new Setting<>("ST_DisplayReconnects", false, Boolean.class);
 
     //Bot Reply
     public static Setting<Boolean> botAnnounceSubscribers = new Setting<>(""/*TODO*/, true, Boolean.class);
@@ -679,23 +682,7 @@ public class Settings {
      */
     public static void saveConCommands() {
         try (PrintWriter br = new PrintWriter(ccommandsFile)) {
-            for (ConsoleCommand next : GUIMain.conCommands) {
-                if (next != null) {
-                    String name = next.getTrigger();
-                    String action = next.getAction().toString();
-                    int classPerm = next.getClassPermission();
-                    String certainPerm = "null";
-                    if (next.getCertainPermissions() != null) {
-                        StringBuilder sb = new StringBuilder();
-                        for (int i = 0; i < next.getCertainPermissions().length; i++) {
-                            sb.append(next.getCertainPermissions()[i]);
-                            if (i != (next.getCertainPermissions().length - 1)) sb.append(",");
-                        }
-                        certainPerm = sb.toString();
-                    }
-                    br.println(name + "[" + action + "[" + classPerm + "[" + certainPerm);
-                }
-            }
+            GUIMain.conCommands.forEach(br::println);
         } catch (Exception e) {
             GUIMain.log(e);
         }
@@ -713,7 +700,7 @@ public class Settings {
     }
 
     public static void loadConsoleCommands() {
-        HashSet<ConsoleCommand> hardcoded = new HashSet<>();
+        Set<ConsoleCommand> hardcoded = new HashSet<>();
         hardcoded.add(new ConsoleCommand("addface", ConsoleCommand.Action.ADD_FACE, Permissions.Permission.MODERATOR.permValue, null));
         hardcoded.add(new ConsoleCommand("changeface", ConsoleCommand.Action.CHANGE_FACE, Permissions.Permission.MODERATOR.permValue, null));
         hardcoded.add(new ConsoleCommand("removeface", ConsoleCommand.Action.REMOVE_FACE, Permissions.Permission.MODERATOR.permValue, null));
@@ -758,7 +745,9 @@ public class Settings {
         hardcoded.add(new ConsoleCommand("volume", ConsoleCommand.Action.SEE_OR_SET_VOLUME, Permissions.Permission.MODERATOR.permValue, null));
 
         if (Utils.areFilesGood(ccommandsFile.getAbsolutePath())) {
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(ccommandsFile.toURI().toURL().openStream()))) {
+            try (InputStreamReader isr = new InputStreamReader(ccommandsFile.toURI().toURL().openStream());
+                BufferedReader br = new BufferedReader(isr)) {
+
                 String line;
                 while ((line = br.readLine()) != null) {
                     String[] split = line.split("\\[");
@@ -769,32 +758,24 @@ public class Settings {
                     } catch (Exception e) {
                         classPerm = -1;
                     }
-                    String[] customUsers = null;
+                    List<String> customUsers = new ArrayList<>();
                     if (!split[3].equalsIgnoreCase("null")) {
-                        customUsers = split[3].split(",");
+                        customUsers.addAll(Arrays.asList(split[3].split(",")));
                     }
                     GUIMain.conCommands.add(new ConsoleCommand(split[0], a, classPerm, customUsers));
                 }
-                if (GUIMain.conCommands.size() != hardcoded.size()) { //something's not right...
-                    for (ConsoleCommand hard : hardcoded) {
-                        boolean isAdded = false;
-                        for (ConsoleCommand loaded : GUIMain.conCommands) {
-                            if (hard.getTrigger().equalsIgnoreCase(loaded.getTrigger())) {
-                                isAdded = true;
-                                //this ensures every hard coded ConCommand is loaded for Botnak
-                                break;
-                            }
-                        }
-                        if (!isAdded) {//if it isn't in the file, add it
-                            GUIMain.conCommands.add(hard);
-                        }
-                    }
+
+                // Did we miss any commands?
+                if (GUIMain.conCommands.size() != hardcoded.size()) {
+                    //this ensures every hard coded ConCommand is loaded for Botnak
+                    hardcoded.stream().filter(con -> !GUIMain.conCommands.contains(con)).forEach(GUIMain.conCommands::add);
                 }
             } catch (Exception e) {
                 GUIMain.log(e);
             }
-        } else { //first time boot/reset/deleted file etc.
-            GUIMain.conCommands.addAll(new ArrayList<>(hardcoded));
+        }
+        else { //first time boot/reset/deleted file etc.
+            GUIMain.conCommands.addAll(hardcoded);
         }
         GUIMain.log("Loaded console commands!");
     }
@@ -862,8 +843,7 @@ public class Settings {
 
         @Override
         public void handleLineSave(PrintWriter pw) {
-            donationManager.getDonors().forEach(d -> pw.println(d.getName() + "," +
-                    DonationManager.getDecimalFormat().format(d.getDonated())));
+            donationManager.getDonors().forEach(pw::println);
         }
 
         @Override
@@ -898,10 +878,7 @@ public class Settings {
 
         @Override
         public void handleLineSave(PrintWriter pw) {
-            donationManager.getDonations().stream().sorted().forEach(d ->
-                    pw.println(d.getDonationID() + "[" + d.getFromWho() + "[" + d.getNote() + "["
-                            + DonationManager.getDecimalFormat().format(d.getAmount()) + "["
-                            + Instant.ofEpochMilli(d.getDateReceived().getTime()).toString()));
+            donationManager.getDonations().stream().sorted().forEach(pw::println);
         }
 
         @Override
@@ -932,9 +909,7 @@ public class Settings {
 
         @Override
         public void handleLineSave(PrintWriter pw) {
-            subscriberManager.getSubscribers().stream().sorted().forEach(
-                    s -> pw.println(s.getName() + "[" + s.getStarted().toString() + "[" + String.valueOf(s.isActive())
-                            + "[" + s.getStreak()));
+            subscriberManager.getSubscribers().stream().sorted().forEach(pw::println);
         }
 
         @Override
@@ -1025,12 +1000,7 @@ public class Settings {
                         //their indexes are technically going to be -1
                         boolean selected = cc.getIndex() == currentSelectedIndex;
                         pw.print("false[" + String.valueOf(selected) + "[" + cc.getActiveChannel() + "[" + cc.getTabTitle() + "[");
-                        String[] chans = cc.getChannels();
-                        for (int s = 0; s < chans.length; s++) {
-                            String toPrint = chans[s];
-                            pw.print(toPrint);
-                            if (s != chans.length - 1) pw.print(",");
-                        }
+                        pw.print(cc.getChannels().stream().collect(Collectors.joining(",")));
                         pw.println();
                     }
                 }

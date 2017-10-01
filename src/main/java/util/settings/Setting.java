@@ -7,9 +7,8 @@ import java.awt.*;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
+import java.util.List;
 
 /**
  * This class was made for the standardization of Settings found in the Settings class.
@@ -31,7 +30,7 @@ public class Setting<E> {
     private E actualValue, defaultValue;
     private String nameInFile;
     private Class<E> type;
-    private ChangeListener<E> listener;
+    private List<ChangeListener<E>> listeners;
 
     /**
      * Constructor for the setting.
@@ -44,10 +43,11 @@ public class Setting<E> {
         this.nameInFile = nameInFile;
         this.defaultValue = defaultValue;
         this.type = type;
+        this.listeners = new ArrayList<>();
     }
 
     public void addChangeListener(ChangeListener<E> listener) {
-        this.listener = listener;
+        this.listeners.add(listener);
     }
 
     public E getValue() {
@@ -57,8 +57,8 @@ public class Setting<E> {
     public synchronized void setValue(E value) {
         boolean changed = !getValue().equals(value);
         actualValue = value;
-        if (listener != null && changed)
-            listener.onChange(value);//only fire if there's a change
+        if (!listeners.isEmpty() && changed) //only fire if there's a change
+            listeners.forEach(cl -> cl.onChange(value));
     }
 
     public synchronized void load(Properties p) {

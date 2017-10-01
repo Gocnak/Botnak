@@ -691,4 +691,10 @@ public class ChatPane implements DocumentListener {
         print(message, "\n" + getTime(), GUIMain.norm);
         print(message, " " + (isSystem ? "SYS: " : "") + message.getLocal().getContent(), GUIMain.norm);
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof ChatPane && ((ChatPane) obj).index == this.index &&
+                ((ChatPane) obj).getChannel().equals(this.getChannel());
+    }
 }

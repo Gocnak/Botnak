@@ -15,6 +15,8 @@ import java.awt.*;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Created by Nick on 8/9/2014.
@@ -24,7 +26,7 @@ import java.util.HashSet;
 public class UserManager implements HeartbeatThread {
 
     public static Timer toUpdate;
-    private HashSet<String> collectedUsers;
+    private Set<String> collectedUsers;
     private static boolean beating;
 
     public UserManager() {
@@ -41,7 +43,7 @@ public class UserManager implements HeartbeatThread {
     @Override
     public void beat() {
         beating = true;
-        String[] channels = Settings.channelManager.getChannelNames();
+        List<String> channels = Settings.channelManager.getChannelNames();
         URL url;
         for (String chan : channels) {
             String chanOut = chan.substring(1);

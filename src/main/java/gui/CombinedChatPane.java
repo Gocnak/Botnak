@@ -8,21 +8,31 @@ import util.settings.Settings;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by Nick on 1/4/14.
  */
 public class CombinedChatPane extends ChatPane {
 
-    private String title;
+    private String title, activeChannel = "All";
+
+    private boolean customTitle = false;
+
+    private List<String> channels;
+
+    private List<ChatPane> panes;
+
+    private JScrollPane scrollPaneAll;
+
+    private ChatPane activeChatPane = this;
 
     public String getTabTitle() {
         return title;
     }
 
-    private boolean customTitle = false;
 
     public void setCustomTitle(String title) {
         customTitle = true;
@@ -34,22 +44,14 @@ public class CombinedChatPane extends ChatPane {
         GUIMain.channelPane.setTitleAt(getIndex(), title);
     }
 
-    private String[] channels;
 
-    public String[] getChannels() {
+    public List<String> getChannels() {
         return channels;
     }
 
-
-    private ChatPane[] panes;
-
-    public ChatPane[] getPanes() {
+    public List<ChatPane> getPanes() {
         return panes;
     }
-
-    private JScrollPane scrollPaneAll;
-
-    private String activeChannel = "All";
 
     public void setActiveChannel(String channel) {
         activeChannel = channel;
@@ -59,21 +61,17 @@ public class CombinedChatPane extends ChatPane {
         return activeChannel;
     }
 
-    private ChatPane activeChatPane = this;
-
     public ChatPane getActiveChatPane() {
         return activeChatPane;
     }
 
     public void setActiveScrollPane(String channel) {
-        for (ChatPane p : panes) {
-            if (p.getChannel().equalsIgnoreCase(channel)) {
-                setScrollPane(p.getScrollPane());
-                p.scrollToBottom();
-                activeChatPane = p;
-                break;
-            }
-        }
+        panes.stream().filter(p -> p.getChannel().equalsIgnoreCase(channel)).forEach(chatPane -> {
+            setScrollPane(chatPane.getScrollPane());
+            chatPane.scrollToBottom();
+            activeChatPane = chatPane;
+        });
+
         GUIMain.channelPane.setComponentAt(getIndex(), getScrollPane());
         GUIMain.channelPane.fireStateChanged();
         GUIMain.channelPane.repaint();
@@ -92,12 +90,8 @@ public class CombinedChatPane extends ChatPane {
 
     public CombinedChatPane(JScrollPane scrollPane, JTextPane pane, ScrollablePanel panel, ChatPane... chatPanes) {
         super(null, scrollPane, pane, panel, -1);
-        panes = chatPanes;
-        ArrayList<String> channels = new ArrayList<>();
-        for (ChatPane cp : chatPanes) {
-            channels.add(cp.getChannel());
-        }
-        this.channels = channels.toArray(new String[channels.size()]);
+        panes = Arrays.asList(chatPanes);
+        this.channels = Arrays.stream(chatPanes).map(ChatPane::getChannel).collect(Collectors.toList());
         scrollPaneAll = scrollPane;
         determineTitle();
         determineIndex();
@@ -105,15 +99,10 @@ public class CombinedChatPane extends ChatPane {
 
     private void determineTitle() {
         //if we have only 2, it'll be channel1 + channel2
-        if (panes.length == 2) {
-            title = panes[0].getChannel() + " + " + panes[1].getChannel();
-        } else if (panes.length > 2) {//3 or more is separated by commas.
-            StringBuilder stanSB = new StringBuilder();
-            for (int i = 0; i < panes.length; i++) {
-                stanSB.append(panes[i].getChannel());
-                if (i != panes.length - 1) stanSB.append(", ");
-            }
-            title = stanSB.toString();
+        if (panes.size() == 2) {
+            title = panes.get(0).getChannel() + " + " + panes.get(1).getChannel();
+        } else if (panes.size() > 2) {//3 or more is separated by commas.
+            title = channels.stream().collect(Collectors.joining(", "));
         }
     }
 
@@ -136,37 +125,16 @@ public class CombinedChatPane extends ChatPane {
         }
     }
 
-    private boolean panesContains(ChatPane[] panesToCheck, ChatPane toCheck) {
-        for (ChatPane p : panesToCheck) {
-            if (p.getChannel().equalsIgnoreCase(toCheck.getChannel())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean addChatPane(ChatPane... newPanes) {
-        //null check
-        if (newPanes == null) return false;
-
-        ArrayList<String> channelsTemp = new ArrayList<>();
-        Collections.addAll(channelsTemp, channels);
-        ArrayList<ChatPane> panesTemp = new ArrayList<>();
-        Collections.addAll(panesTemp, panes);
+    public boolean addChatPane(List<ChatPane> newPanes) {
+        if (newPanes.isEmpty())
+            return false;
 
         //prevent adding a pane already in here/Copy the stuff
-        for (ChatPane p : newPanes) {
-            if (panesContains(panes, p)) {
-                return false;
-            } else {
-                p.setTabVisible(false);
-                panesTemp.add(p);
-                channelsTemp.add(p.getChannel());
-            }
-        }
-
-        channels = channelsTemp.toArray(new String[channelsTemp.size()]);
-        panes = panesTemp.toArray(new ChatPane[panesTemp.size()]);
+        newPanes.stream().filter(p -> !panes.contains(p)).forEach(newPane -> {
+            newPane.setTabVisible(false);
+            panes.add(newPane);
+            channels.add(newPane.getChannel());
+        });
 
         //redetermine the index and title
         if (!customTitle) {

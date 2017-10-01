@@ -8,6 +8,7 @@ import util.Timer;
 import util.Utils;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Nick on 7/17/2014.
@@ -18,8 +19,8 @@ public class Raffle extends Thread {
     private int time = 0;
     private String keyword = null;
     private String winner = null;
-    private ArrayList<String> entrants = null;
-    private ArrayList<Permissions.Permission> requiredPermissions, denyPerms;
+    private List<String> entrants = null;
+    private List<Permissions.Permission> requiredPermissions, denyPerms;
     private boolean isDone = false;
     private String channel;
     private String startMessage;
@@ -32,7 +33,7 @@ public class Raffle extends Thread {
     {
         if (!isDone && !entrants.contains(u.getDisplayName()))
         {
-            ArrayList<Permissions.Permission> userPerms = Permissions.getUserPermissions(u, channel);
+            List<Permissions.Permission> userPerms = Permissions.getUserPermissions(u, channel);
             if (userPerms.stream().anyMatch(p -> requiredPermissions.contains(p))
                     && userPerms.stream().noneMatch(p -> denyPerms.contains(p)))
                 entrants.add(u.getDisplayName());
@@ -74,8 +75,8 @@ public class Raffle extends Thread {
     }
 
     // Created from the GUI
-    public Raffle(PircBot bot, String key, int time, String channel, ArrayList<Permissions.Permission> allowPerms,
-                  ArrayList<Permissions.Permission> denyPerms)
+    public Raffle(PircBot bot, String key, int time, String channel, List<Permissions.Permission> allowPerms,
+                  List<Permissions.Permission> denyPerms)
     {
         this.bot = bot;
         this.keyword = key;

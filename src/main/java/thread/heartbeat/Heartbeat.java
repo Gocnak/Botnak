@@ -4,6 +4,7 @@ import gui.forms.GUIMain;
 import util.settings.Settings;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -14,7 +15,7 @@ import java.util.concurrent.Executors;
 public class Heartbeat extends Thread {
 
     private ExecutorService executor;
-    private ArrayList<HeartbeatThread> heartbeatThreads;
+    private List<HeartbeatThread> heartbeatThreads;
     private final int delay;
 
     /**

@@ -18,6 +18,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -600,15 +601,10 @@ public class Utils {
             for (ConsoleCommand c : GUIMain.conCommands) {
                 if (key.equalsIgnoreCase(c.getTrigger())) {
                     int conPerm = c.getClassPermission();
-                    String[] certainPerms = c.getCertainPermissions();
                     if (conPerm == -1) {
-                        if (certainPerms != null) {
-                            for (String s : certainPerms) {//specified name permission
-                                if (s.equalsIgnoreCase(u.getNick())) {
-                                    return c;
-                                }
-                            }
-                        }
+                        List<String> certainPerms = c.getCertainPermissions();
+                        if (certainPerms.contains(u.getNick()))
+                            return c;
                     } else {//int class permission
                         if (Permissions.hasAtLeast(Permissions.getUserPermissions(u, channel), conPerm)) {
                             return c;
@@ -930,7 +926,7 @@ public class Utils {
      * @return true if the name is invalid.
      */
     public static boolean checkName(String toCheck) {
-        Matcher m = Constants.fileExclPattern.matcher(toCheck);
+        Matcher m = Constants.PATTERN_FILE_NAME_EXCLUDE.matcher(toCheck);
         return m.find();
     }
 
@@ -961,11 +957,16 @@ public class Utils {
      * @return The string read from the input.
      */
     public static String createAndParseBufferedReader(InputStream input) {
+        return createAndParseBufferedReader(input, false);
+    }
+
+    public static String createAndParseBufferedReader(InputStream input, boolean includeNewLines)
+    {
         String toReturn = "";
         try (InputStreamReader inputStreamReader = new InputStreamReader(input, Charset.forName("UTF-8"));
              BufferedReader br = new BufferedReader(inputStreamReader)) {
             StringBuilder sb = new StringBuilder();
-            parseBufferedReader(br, sb, false);
+            parseBufferedReader(br, sb, includeNewLines);
             toReturn = sb.toString();
         } catch (Exception e) {
             GUIMain.log("Could not parse buffered reader due to exception: ");
@@ -1055,7 +1056,7 @@ public class Utils {
         channelsBox.removeAllItems();
         if (GUIMain.bot == null || GUIMain.bot.getBot() == null) return;
 
-        String[] channels = GUIMain.bot.getBot().getChannels();
+        List<String> channels = GUIMain.bot.getBot().getChannels();
 
         for (String s : channels)
             channelsBox.addItem(s.replaceAll("#", ""));

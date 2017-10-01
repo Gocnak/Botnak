@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -56,7 +57,7 @@ public final class SoundPlayer implements Closeable {
     /* immutable except counter */
 
 
-    private static ConcurrentHashMap<File, SoundEntry> clips;
+    private static Map<File, SoundEntry> clips;
 
     public SoundPlayer() {
         clips = new ConcurrentHashMap<>();

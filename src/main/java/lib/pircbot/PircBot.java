@@ -22,10 +22,8 @@ import util.Utils;
 import util.settings.Settings;
 
 import java.awt.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.*;
+import java.util.List;
 import java.util.regex.Matcher;
 
 /**
@@ -91,9 +89,7 @@ public class PircBot {
      * Attempt to connect to the specified IRC server using the supplied
      * password.
      * The onConnect method is called upon success.
-     *
-     * @param hostname The hostname of the server to connect to.
-     * @param port     The port number to connect to on the server.
+     * @return true if we successfully connect, otherwise false
      */
     public boolean connect() {
         if (connection.connect()) {
@@ -787,11 +783,11 @@ public class PircBot {
      * if the join was successful until a response is received from the
      * IRC server.
      *
-     * @return A String array containing the names of all channels that we
+     * @return A String list containing the names of all channels that we
      * are in.
      * @since PircBot 1.0.0
      */
-    public final String[] getChannels() {
+    public final List<String> getChannels() {
         return getChannelManager().getChannelNames();
     }
 
