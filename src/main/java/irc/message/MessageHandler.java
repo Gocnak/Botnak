@@ -1,5 +1,9 @@
 package irc.message;
 
+import lib.pircbot.User;
+
+import java.util.Map;
+
 /**
  * Created by Nick on 3/30/2014.
  * <p>
@@ -16,11 +20,12 @@ public abstract class MessageHandler {
      * The implementation of this method in the PircBot abstract class
      * performs no actions and may be overridden as required.
      *
-     * @param channel The channel to which the message was sent.
-     * @param sender  The nick of the person who sent the message.
-     * @param message The actual message sent to the channel.
+     * @param channel  The channel to which the message was sent.
+     * @param senderID The nick of the person who sent the message.
+     * @param message  The actual message sent to the channel.
      */
-    public void onMessage(String channel, String sender, String message) {
+    public void onMessage(String channel, long senderID, String message)
+    {
     }
 
     /**
@@ -32,16 +37,17 @@ public abstract class MessageHandler {
      * @param line    The line to parse.
      * @param newSub  The nick of the user.
      */
-    public void onNewSubscriber(String channel, String line, String newSub) {
+    public void onNewSubscriber(String channel, String line, User newSub)
+    {
     }
 
     /**
      *
      * @param channel The channel that this resubscribe has happened in.
-     * @param personResubbing The person resubbing
+     * @param personResubbingID The person resubbing
      * @param msg  The message that Twitch ever-so-nicely prints for us.
      */
-    public void onResubscribe(String channel, String personResubbing, String msg)
+    public void onResubscribe(String channel, final long personResubbingID, String msg)
     {
     }
 
@@ -54,11 +60,10 @@ public abstract class MessageHandler {
      * This is used when JTV sends its messages about who's op, subscriber, etc.
      *
      * @param sender   The nick of the person who sent the private message.
-     * @param login    The login of the person who sent the private message.
-     * @param hostname The hostname of the person who sent the private message.
      * @param message  The actual message.
      */
-    public void onPrivateMessage(String sender, String login, String hostname, String message) {
+    public void onPrivateMessage(String sender, String message)
+    {
     }
 
 
@@ -99,11 +104,12 @@ public abstract class MessageHandler {
      * The implementation of this method in the PircBot abstract class
      * performs no actions and may be overridden as required.
      *
-     * @param sender The nick of the user that sent the action.
+     * @param senderID The ID of the user that sent the action.
      * @param target The target of the action, be it a channel or our nick.
      * @param action The action carried out by the user.
      */
-    public void onAction(String sender, String target, String action) {
+    public void onAction(final long senderID, String target, String action)
+    {
     }
 
     /**
@@ -163,16 +169,18 @@ public abstract class MessageHandler {
      * @param channel The channel (used for getting the pane)
      * @param line    What JTV is trying to tell you.
      */
-    public void onJTVMessage(String channel, String line, String tags) {
+    public void onJTVMessage(String channel, String line, Map<String, String> tagsMap)
+    {
     }
 
     /**
      * Called when the state of a room is changing.
      *
      * @param channel The channel the ROOMSTATE is for.
-     * @param tags    The tags (what is changing).
+     * @param tagsMap The tags (what is changing).
      */
-    public void onRoomstate(String channel, String tags) {
+    public void onRoomstate(String channel, Map<String, String> tagsMap)
+    {
     }
 
 
@@ -183,7 +191,8 @@ public abstract class MessageHandler {
      * @param receiver The receiver of the whisper.
      * @param contents The contents of the whisper.
      */
-    public void onWhisper(String sender, String receiver, String contents) {
+    public void onWhisper(long sender, String receiver, String contents)
+    {
     }
 
     /**

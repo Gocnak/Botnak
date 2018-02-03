@@ -7,20 +7,22 @@ import java.time.LocalDateTime;
  */
 public class Subscriber implements Comparable<Subscriber> {
 
-    private String name;
+    private long userID;
     private LocalDateTime started;
     private boolean isActive;
     private int streak;
 
-    public Subscriber(String name, LocalDateTime started, boolean active, int streak) {
-        this.name = name;
+    public Subscriber(long subUserID, LocalDateTime started, boolean active, int streak)
+    {
+        this.userID = subUserID;
         this.started = started;
         this.isActive = active;
         this.streak = streak;//how many months in a row this person has subbed
     }
 
-    public String getName() {
-        return name;
+    public long getSubscriberID()
+    {
+        return userID;
     }
 
     public LocalDateTime getStarted() {
@@ -56,7 +58,7 @@ public class Subscriber implements Comparable<Subscriber> {
         return (obj instanceof Subscriber) &&
                 ((Subscriber) obj).getStarted().equals(this.getStarted()) &&
                 ((Subscriber) obj).getStreak() == this.getStreak() &&
-                ((Subscriber) obj).getName().equals(this.getName()) &&
+                ((Subscriber) obj).getSubscriberID() == (this.getSubscriberID()) &&
                 ((Subscriber) obj).isActive() == this.isActive();
     }
 
@@ -75,6 +77,6 @@ public class Subscriber implements Comparable<Subscriber> {
 
     @Override
     public String toString() {
-        return name + "[" + started.toString() + "[" + String.valueOf(isActive) + "[" + streak;
+        return String.valueOf(userID) + "[" + started.toString() + "[" + String.valueOf(isActive) + "[" + streak;
     }
 }

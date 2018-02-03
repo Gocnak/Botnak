@@ -28,6 +28,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class IRCBot extends MessageHandler {
 
@@ -97,20 +98,30 @@ public class IRCBot extends MessageHandler {
     }
 
     @Override
-    public void onJTVMessage(String channel, String line, String tags) {
-        if (tags != null) {
-            if (tags.contains("msg_banned") || tags.contains("msg_timedout")) {
-                MessageQueue.addMessage(new Message().setChannel(channel)
-                        .setType(Message.MessageType.JTV_NOTIFY).setContent(getBot().getNick() + " is " + line.substring(8)));
-            }
+    public void onJTVMessage(String channel, String line, Map<String, String> tags)
+    {
+        if (tags.containsValue("msg_banned") || tags.containsValue("msg_timedout"))
+        {
+            MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.JTV_NOTIFY)
+                    .setContent(getBot().getNick() + " is " + line.substring(8)));
         }
     }
 
     @Override
-    public void onMessage(String channel, String sender, String message) {
-        if (message != null && channel != null && sender != null && Settings.accountManager.getViewer() != null) {
+    public void onMessage(String channel, long senderID, String message)
+    {
+        if (message != null && channel != null && Settings.accountManager.getViewer() != null)
+        {
             String botnakUserName = Settings.accountManager.getUserAccount().getName();
-            sender = sender.toLowerCase();
+            User senderUser = Settings.channelManager.getUser(senderID, false);
+            if (senderUser == null)
+            {
+                GUIMain.logCurrent("THE SENDER FOR THE MESSAGE IS NULL!");
+                return;
+            }
+
+            String sender = senderUser.getLowerNick();
+
             if (!channel.contains(botnakUserName.toLowerCase())) {//in other channels
                 int replyType = Settings.botReplyType.getValue();
                 if (replyType == 0) return;
@@ -125,16 +136,16 @@ public class IRCBot extends MessageHandler {
             if (senderIsBot && !userIsBot) return;
 
             //raffles
-            User u = Settings.channelManager.getUser(sender, true);
             if (!raffles.isEmpty()) {
-                if (!winners.contains(u.getNick().toLowerCase())) {
+                if (!winners.contains(senderUser.getNick().toLowerCase()))
+                {
                     for (Raffle r : raffles) {
                         if (r.isDone()) {
                             continue;
                         }
                         String key = r.getKeyword();
                         if (message.contains(key)) {
-                            r.addUser(u, channel); // Handles filtering permissions
+                            r.addUser(senderUser, channel); // Handles filtering permissions
                         }
                     }
                 }
@@ -189,7 +200,7 @@ public class IRCBot extends MessageHandler {
                 if (SoundEngine.getEngine().soundTrigger(trigger, sender, channel)) {
                     SoundEngine.getEngine().playSound(new Sound(SoundEngine.getEngine().getSoundMap().get(trigger)));
                 }
-                ConsoleCommand consoleCommand = Utils.getConsoleCommand(trigger, channel, u);
+                ConsoleCommand consoleCommand = Utils.getConsoleCommand(trigger, channel, senderUser);
                 if (consoleCommand != null) {
                     Response commandResponse = null;
                     switch (consoleCommand.getAction()) {
@@ -232,7 +243,7 @@ public class IRCBot extends MessageHandler {
                             if (commandResponse.isSuccessful()) Settings.KEYWORDS.save();
                             break;
                         case SET_USER_COL:
-                            commandResponse = Utils.handleColor(sender, mess, u.getColor());
+                            commandResponse = Utils.handleColor(senderUser, mess, senderUser.getColor());
                             if (commandResponse.isSuccessful()) Settings.USER_COLORS.save();
                             break;
                         case SET_COMMAND_PERMISSION:
@@ -257,13 +268,14 @@ public class IRCBot extends MessageHandler {
                             if (first.startsWith("http")) {
                                 commandResponse = FaceManager.downloadFace(first,
                                         Settings.nameFaceDir.getAbsolutePath(),
-                                        Utils.setExtension(sender, ".png"), sender, FaceManager.FACE_TYPE.NAME_FACE);
+                                        Utils.setExtension(String.valueOf(senderID), ".png"), sender, FaceManager.FACE_TYPE.NAME_FACE);
                             }
                             break;
                         case REMOVE_NAME_FACE:
-                            if (FaceManager.nameFaceMap.containsKey(sender)) {
+                            if (FaceManager.nameFaceMap.containsKey(senderID))
+                            {
                                 try {
-                                    Face f = FaceManager.nameFaceMap.remove(sender);
+                                    Face f = FaceManager.nameFaceMap.remove(senderID);
                                     if (f != null && new File(f.getFilePath()).delete())
                                         getBot().sendMessage(channel, "Removed face for user: " + sender + " !");
                                 } catch (Exception e) {

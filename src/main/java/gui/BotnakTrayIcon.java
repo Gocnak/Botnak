@@ -88,7 +88,7 @@ public class BotnakTrayIcon extends TrayIcon implements ActionListener, ItemList
     }
 
     public void displayMention(Message m) {
-        displayMessage("Mention in " + m.getChannel(), m.getSender() + " says: " + m.getContent(), MessageType.INFO);
+        displayMessage("Mention in " + m.getChannel(), m.getSenderName() + " says: " + m.getContent(), MessageType.INFO);
     }
 
 

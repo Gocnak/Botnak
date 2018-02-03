@@ -34,7 +34,7 @@ public class ListenerUserChat extends KeyAdapter {
             if (suggestion != null) {
                 final String select = suggestion.getSelection();
                 final SuggestionPanel sugg = suggestion;
-                EventQueue.invokeLater(() -> { 
+                EventQueue.invokeLater(() -> {
                     userChat.setText(userChat.getText().replaceAll("\n", " "));
                     sugg.insertSelection(select);
                 });

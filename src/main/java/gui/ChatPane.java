@@ -332,54 +332,61 @@ public class ChatPane implements DocumentListener {
     public void onMessage(MessageWrapper m, boolean showChannel) {
         if (textPane == null) return;
         Message message = m.getLocal();
-        String sender = message.getSender().toLowerCase();
+        long senderID = message.getSenderID();
         String channel = message.getChannel();
         String mess = message.getContent();
         boolean isMe = (message.getType() == Message.MessageType.ACTION_MESSAGE);
         try {
             print(m, "\n" + getTime(), GUIMain.norm);
-            User u = Settings.channelManager.getUser(sender, true);
-            SimpleAttributeSet user = getUserSet(u);
+            User senderUser = Settings.channelManager.getUser(senderID, true);
+            String sender = senderUser.getLowerNick();
+            SimpleAttributeSet user = getUserSet(senderUser);
             if (channel.substring(1).equals(sender)) {
                 insertIcon(m, IconEnum.BROADCASTER, null);
             }
-            if (u.isOp(channel)) {
-                if (!channel.substring(1).equals(sender) && !u.isStaff() && !u.isAdmin() && !u.isGlobalMod()) {//not the broadcaster again
+            if (senderUser.isOp(channel))
+            {
+                if (!channel.substring(1).equals(sender) && !senderUser.isStaff() && !senderUser.isAdmin() && !senderUser.isGlobalMod())
+                {//not the broadcaster again
                     insertIcon(m, IconEnum.MOD, null);
                 }
             }
-            if (u.isGlobalMod()) {
+            if (senderUser.isGlobalMod())
+            {
                 insertIcon(m, IconEnum.GLOBAL_MOD, null);
             }
-            if (u.isStaff()) {
+            if (senderUser.isStaff())
+            {
                 insertIcon(m, IconEnum.STAFF, null);
             }
-            if (u.isAdmin()) {
+            if (senderUser.isAdmin())
+            {
                 insertIcon(m, IconEnum.ADMIN, null);
             }
-            boolean isSubscriber = u.isSubscriber(channel);
+            boolean isSubscriber = senderUser.isSubscriber(channel);
             if (isSubscriber) {
                 insertIcon(m, IconEnum.SUBSCRIBER, channel);
             } else {
                 if (Utils.isMainChannel(channel)) {
-                    Optional<Subscriber> sub = Settings.subscriberManager.getSubscriber(sender);
+                    Optional<Subscriber> sub = Settings.subscriberManager.getSubscriber(senderID);
                     if (sub.isPresent() && !sub.get().isActive()) {
                         insertIcon(m, IconEnum.EX_SUBSCRIBER, channel);
                     }
                 }
             }
-            if (u.isTurbo()) {
+            if (senderUser.isTurbo())
+            {
                 insertIcon(m, IconEnum.TURBO, null);
             }
 
-            if (u.isPrime())
+            if (senderUser.isPrime())
                 insertIcon(m, IconEnum.PRIME, null);
 
-            if (u.isVerified())
+            if (senderUser.isVerified())
                 insertIcon(m, IconEnum.VERIFIED, null);
 
             //Cheering
-            int cheerTotal = u.getCheer(channel);
+            int cheerTotal = senderUser.getCheer(channel);
             if (cheerTotal > 0)
             {
                 insertIcon(m, Donor.getCheerStatus(cheerTotal), null);
@@ -388,17 +395,17 @@ public class ChatPane implements DocumentListener {
             // Third party donor
             if (Settings.showDonorIcons.getValue())
             {
-                if (u.isDonor())
+                if (senderUser.isDonor())
                 {
-                    insertIcon(m, u.getDonationStatus(), null);
+                    insertIcon(m, senderUser.getDonationStatus(), null);
                 }
             }
 
             //name stuff
             print(m, " ", GUIMain.norm);
             SimpleAttributeSet userColor = new SimpleAttributeSet(user);
-            FaceManager.handleNameFaces(sender, user);
-            print(m, u.getDisplayName(), user);
+            FaceManager.handleNameFaces(senderID, user);
+            print(m, senderUser.getDisplayName(), user);
             if (showChannel) {
                 print(m, " (" + channel.substring(1) + ")" + (isMe ? " " : ": "), GUIMain.norm);
             } else {
@@ -412,7 +419,7 @@ public class ChatPane implements DocumentListener {
                 set = (isMe ? userColor : GUIMain.norm);
             }
             //URL, Faces, rest of message
-            printMessage(m, mess, set, u);
+            printMessage(m, mess, set, senderUser);
 
             if (BotnakTrayIcon.shouldDisplayMentions() && !Utils.isTabSelected(index)) {
                 if (mess.toLowerCase().contains(Settings.accountManager.getUserAccount().getName().toLowerCase())) {
@@ -422,7 +429,7 @@ public class ChatPane implements DocumentListener {
 
             if (Utils.isMainChannel(channel))
                 //check status of the sub, has it been a month?
-                Settings.subscriberManager.updateSubscriber(u, channel, isSubscriber);
+                Settings.subscriberManager.updateSubscriber(senderUser, channel, isSubscriber);
             if (shouldPulse())
                 GUIMain.instance.pulseTab(this);
         } catch (Exception e) {
@@ -536,7 +543,7 @@ public class ChatPane implements DocumentListener {
     public void onWhisper(MessageWrapper m) {
         SimpleAttributeSet senderSet, receiverSet;
 
-        String sender = m.getLocal().getSender();
+        long sender = m.getLocal().getSenderID();
         String receiver = (String) m.getLocal().getExtra();
         print(m, "\n" + getTime(), GUIMain.norm);
         User senderUser = Settings.channelManager.getUser(sender, true);
@@ -546,8 +553,8 @@ public class ChatPane implements DocumentListener {
 
         //name stuff
         print(m, " ", GUIMain.norm);
-        FaceManager.handleNameFaces(sender, senderSet);
-        FaceManager.handleNameFaces(receiverUser.getNick(), receiverSet);
+        FaceManager.handleNameFaces(senderUser.getUserID(), senderSet);
+        FaceManager.handleNameFaces(receiverUser.getUserID(), receiverSet);
         print(m, senderUser.getDisplayName(), senderSet);
         print(m, " (whisper)-> ", GUIMain.norm);
         print(m, receiverUser.getDisplayName(), receiverSet);
@@ -574,7 +581,7 @@ public class ChatPane implements DocumentListener {
     {
         int bitsAmount = (int) m.getLocal().getExtra();
         String bitString = "" + bitsAmount + " bit" + (bitsAmount > 1 ? "s" : "") + "!";
-        String cheerMessage = m.getLocal().getSender() + " just cheered " + bitString;
+        String cheerMessage = m.getLocal().getSenderName() + " just cheered " + bitString;
         String originalMessage = m.getLocal().getContent().replaceAll("(^|\\s?)cheer\\d+(\\s?|$)", " ").trim().replaceAll("\\s+", " ");
 
         //We're first going to send a "hey they cheered" message, then immediately follow it with their message

@@ -11,7 +11,7 @@ import lib.pircbot.User;
 import util.Utils;
 import util.settings.Settings;
 
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -60,13 +60,15 @@ public class IRCViewer extends MessageHandler {
     }
 
     @Override
-    public void onMessage(final String channel, final String sender, final String message) {
-        MessageQueue.addMessage(new Message(channel, sender, message, false));
+    public void onMessage(final String channel, final long senderID, final String message)
+    {
+        MessageQueue.addMessage(new Message(channel, message, Message.MessageType.NORMAL_MESSAGE).setSenderID(senderID));
     }
 
     @Override
-    public void onAction(final String sender, final String channel, final String action) {
-        MessageQueue.addMessage(new Message(channel, sender, action, true));
+    public void onAction(final long sender, final String channel, final String action)
+    {
+        MessageQueue.addMessage(new Message(channel, action, Message.MessageType.ACTION_MESSAGE).setSenderID(sender));
     }
 
     @Override
@@ -93,7 +95,8 @@ public class IRCViewer extends MessageHandler {
     }
 
     @Override
-    public void onNewSubscriber(String channel, String line, String newSub) {
+    public void onNewSubscriber(String channel, String line, User newSub)
+    {
         Message m = new Message(channel, line, Message.MessageType.SUB_NOTIFY);
         if (Utils.isMainChannel(channel))
         {
@@ -103,7 +106,7 @@ public class IRCViewer extends MessageHandler {
     }
 
     @Override
-    public void onResubscribe(String channel, String newSub, String msg)
+    public void onResubscribe(String channel, final long newSubID, String msg)
     {
         Message m = new Message(channel, msg, Message.MessageType.SUB_NOTIFY);
         if (Utils.isMainChannel(channel))
@@ -113,7 +116,7 @@ public class IRCViewer extends MessageHandler {
             //to tell us they've remained subbed... again
             //the catch is the message they send isn't automatic, so there's a chance it won't be sent (ex: on an IRC client, shy, etc)
             //HOWEVER, we will make sure Botnak does not increment the sub counter for this
-            Optional<Subscriber> s = Settings.subscriberManager.getSubscriber(newSub);
+            Optional<Subscriber> s = Settings.subscriberManager.getSubscriber(newSubID);
             if (s.isPresent() && !s.get().isActive())
             {
                 s.get().setActive(true);//fixes issue #87 (I hope)
@@ -138,7 +141,7 @@ public class IRCViewer extends MessageHandler {
     @Override
     public void onCheer(String channel, String sender, int amount, String message)
     {
-        MessageQueue.addMessage(new Message(channel, message, Message.MessageType.CHEER_MESSAGE).setSender(sender).setExtra(amount));
+        MessageQueue.addMessage(new Message(channel, message, Message.MessageType.CHEER_MESSAGE).setSenderName(sender).setExtra(amount));
     }
 
     @Override
@@ -153,6 +156,7 @@ public class IRCViewer extends MessageHandler {
         MessageQueue.addMessage(new Message.TimeoutMessage(channel, user, reason, duration));
     }
 
+    @Override
     public void onClearChat(String channel)
     {
         if (Settings.actuallyClearChat.getValue())
@@ -161,19 +165,21 @@ public class IRCViewer extends MessageHandler {
     }
 
     @Override
-    public void onJTVMessage(String channel, String line, String tags) {
+    public void onJTVMessage(String channel, String line, Map<String, String> tags)
+    {
         MessageQueue.addMessage(new Message(channel, line, Message.MessageType.JTV_NOTIFY));
     }
 
     @Override
-    public void onWhisper(String user, String receiver, String contents) {
-        MessageQueue.addMessage(new Message(contents, Message.MessageType.WHISPER_MESSAGE).setSender(user).setExtra(receiver));
+    public void onWhisper(long senderID, String receiver, String contents)
+    {
+        MessageQueue.addMessage(new Message(contents, Message.MessageType.WHISPER_MESSAGE).setSenderID(senderID).setExtra(receiver));
     }
 
     @Override
-    public void onRoomstate(String channel, String tags) {
+    public void onRoomstate(String channel, Map<String, String> tagsMap)
+    {
         if (Utils.isMainChannel(channel)) {
-            HashMap<String, String> tagsMap = Utils.parseTagsToMap(tags);
             if (!tagsMap.isEmpty())
             {
                 if (tagsMap.containsKey("subs-only"))

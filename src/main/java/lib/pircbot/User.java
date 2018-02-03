@@ -38,6 +38,7 @@ public class User implements Comparable<User> {
 
     private boolean staff = false, admin = false, global_mod = false, turbo = false, prime = false, verified = false;
     private String _nick, _lowerNick, displayName = null;
+    private long userID;
 
     private Set<Integer> emotes;
 
@@ -53,6 +54,15 @@ public class User implements Comparable<User> {
         _nick = nick;
         _lowerNick = nick.toLowerCase();
         emotes = new CopyOnWriteArraySet<>();
+        userID = -1L;
+    }
+
+    public User(long ID)
+    {
+        userID = ID;
+        emotes = new CopyOnWriteArraySet<>();
+        _nick = "NAME_NOT_SET";
+        _lowerNick = "name_not_set";
     }
 
     /**
@@ -183,8 +193,15 @@ public class User implements Comparable<User> {
     public int getCheer(String channel)
     {
         Channel c = Settings.channelManager.getChannel(channel);
-        return c.getCheer(getLowerNick());
+        return c.getCheer(userID);
     }
+
+    public void setCheer(String channel, int cheer)
+    {
+        Channel c = Settings.channelManager.getChannel(channel);
+        c.setCheer(userID, cheer);
+    }
+
     public void addEmote(int emote) {
         this.emotes.add(emote);
     }
@@ -220,7 +237,7 @@ public class User implements Comparable<User> {
     }
 
     public String getDisplayName() {
-        return displayName == null ? getLowerNick() : displayName;
+        return displayName == null ? _lowerNick : displayName;
     }
 
     /**
@@ -244,6 +261,12 @@ public class User implements Comparable<User> {
 
     public void setColor(Color c) {
         color = c;
+    }
+
+
+    public long getUserID()
+    {
+        return userID;
     }
 
     /**

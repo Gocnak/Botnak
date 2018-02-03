@@ -16,7 +16,6 @@ import java.sql.Date;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.Currency;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -72,7 +71,8 @@ public class DonationManager {
      *
      * @param d The HashSet of donations from loading through Settings.
      */
-    public void fillDonations(HashSet<Donation> d) {
+    public void fillDonations(Set<Donation> d)
+    {
         donations.addAll(d);
     }
 

@@ -10,7 +10,8 @@ public class Message {
     private MessageType type = null;
     private String content = null;
     private String channel = null;
-    private String sender = null;
+    private String senderName = null;
+    private long senderID = -1L;
     private Object extra = null;
 
     /**
@@ -48,14 +49,15 @@ public class Message {
      * Constructs either an Action or Normal chat message.
      *
      * @param channel  The channel the message is in.
-     * @param sender   The sender of the message.
+     * @param senderName   The sender of the message.
      * @param content  The content of the message.
      * @param isAction If the message is a /me message or not.
      */
-    public Message(String channel, String sender, String content, boolean isAction) {
+    public Message(String channel, String senderName, String content, boolean isAction)
+    {
         this.content = content;
         this.channel = channel;
-        this.sender = sender;
+        this.senderName = senderName;
         type = (isAction ? MessageType.ACTION_MESSAGE : MessageType.NORMAL_MESSAGE);
     }
 
@@ -69,8 +71,9 @@ public class Message {
         this.channel = other.channel;
         this.content = other.content;
         this.type = other.type;
-        this.sender = other.sender;
+        this.senderName = other.senderName;
         this.extra = other.extra;
+        this.senderID = other.senderID;
     }
 
     public String getContent() {
@@ -100,8 +103,15 @@ public class Message {
         return this;
     }
 
-    public Message setSender(String sender) {
-        this.sender = sender;
+    public Message setSenderName(String senderName)
+    {
+        this.senderName = senderName;
+        return this;
+    }
+
+    public Message setSenderID(long id)
+    {
+        this.senderID = id;
         return this;
     }
 
@@ -114,8 +124,14 @@ public class Message {
         return type;
     }
 
-    public String getSender() {
-        return sender;
+    public String getSenderName()
+    {
+        return senderName;
+    }
+
+    public long getSenderID()
+    {
+        return senderID;
     }
 
     public enum MessageType {

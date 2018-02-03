@@ -156,6 +156,11 @@ public class Setting<E> {
             return Float.valueOf(value);
         }
 
+        public static Double stringToDouble(String value)
+        {
+            return Double.valueOf(value);
+        }
+
         public static Font stringToFont(String value) {
             return Utils.stringToFont(value);
         }

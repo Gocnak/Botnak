@@ -10,8 +10,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class Channel {
 
     private CopyOnWriteArraySet<String> mods;
-    private CopyOnWriteArraySet<String> subscribers;
-    private ConcurrentHashMap<String, Integer> cheers;
+    private CopyOnWriteArraySet<Long> subscribers;
+    private ConcurrentHashMap<Long, Integer> cheers;
     private String name;
 
     /**
@@ -48,12 +48,7 @@ public class Channel {
      * @return True if the user is a subscriber, else false.
      */
     public boolean isSubscriber(User u) {
-        for (String s : subscribers) {
-            if (s.equals(u.getNick().toLowerCase())) {
-                return true;
-            }
-        }
-        return false;
+        return subscribers.contains(u.getUserID());
     }
 
     /**
@@ -87,31 +82,32 @@ public class Channel {
     /**
      * Adds a subscriber name to the channel.
      *
-     * @param sub The subscriber to add.
+     * @param subID The subscriber to add.
      */
-    public void addSubscriber(String sub) {
-        subscribers.add(sub);
+    public void addSubscriber(long subID)
+    {
+        subscribers.add(subID);
     }
 
     /**
      *  Sets a user's cheer amount.
-     * @param user   The user to set.
+     * @param userID The user to set.
      * @param amount Their cheer amount.
      */
-    public void setCheer(String user, int amount)
+    public void setCheer(long userID, int amount)
     {
-        cheers.put(user, amount);
+        cheers.put(userID, amount);
     }
 
     /**
      * Gets the cheer amount of bits this user has cheered, otherwise -1.
      *
-     * @param user The user in question.
+     * @param userID The user in question.
      * @return The amount of bits this user has cheered, otherwise -1.
      */
-    public int getCheer(String user)
+    public int getCheer(long userID)
     {
-        return cheers.getOrDefault(user, -1);
+        return cheers.getOrDefault(userID, -1);
     }
 
     /**

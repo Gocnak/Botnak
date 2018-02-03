@@ -44,7 +44,7 @@ public class FaceManager {
 
     //faces
     public static ConcurrentHashMap<String, Face> faceMap;
-    public static ConcurrentHashMap<String, Face> nameFaceMap;
+    public static ConcurrentHashMap<Long, Face> nameFaceMap;
     //  twitch
     public static CopyOnWriteArraySet<SubscriberIcon> subIconSet;
     public static File exSubscriberIcon;
@@ -258,14 +258,11 @@ public class FaceManager {
         return toReturn;
     }
 
-    public static void handleNameFaces(String object, SimpleAttributeSet set) {
-        Set<Map.Entry<String, Face>> entries = nameFaceMap.entrySet();
-        for (Map.Entry<String, Face> e : entries) {
-            if (object.equalsIgnoreCase(e.getKey())) {
-                insertFace(set, e.getValue().getFilePath());
-                break;
-            }
-        }
+    public static void handleNameFaces(long userID, SimpleAttributeSet set)
+    {
+        Face nameFace = nameFaceMap.get(userID);
+        if (nameFace != null)
+            insertFace(set, nameFace.getFilePath());
     }
 
     public static void handleFFZChannel(String channel) {
@@ -517,16 +514,15 @@ public class FaceManager {
         try {
             File toSave = new File(directory + File.separator + name);
             if (download(url, toSave, type)) {
-                if (type == FACE_TYPE.NORMAL_FACE) {
-                    Face face = new Face(regex, toSave.getAbsolutePath());
-                    name = Utils.removeExt(name);
+                Face face = new Face(regex, toSave.getAbsolutePath());
+                name = Utils.removeExt(name);
+                if (type == FACE_TYPE.NORMAL_FACE)
+                {
                     faceMap.put(name, face);//put it
                     toReturn.setResponseText("Successfully added the normal face: " + name + " !");
                 } else {
-                    Face face = new Face(regex, toSave.getAbsolutePath());
-                    name = Utils.removeExt(name);
-                    nameFaceMap.put(name, face);
-                    toReturn.setResponseText("Successfully added the nameface for user: " + name + " !");
+                    nameFaceMap.put(Long.parseLong(name), face);
+                    toReturn.setResponseText("Successfully added the nameface for user: " + regex + " !");
                 }
                 toReturn.wasSuccessful();
             } else {

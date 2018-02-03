@@ -2,8 +2,11 @@ package lib.pircbot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Stream;
 
 /**
  * Created by Nick on 12/22/13.
@@ -11,14 +14,14 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class ChannelManager {
 
     private Set<Channel> channels;
-    private Set<User> users;
+    private Map<Long, User> users;
 
     /**
      * Creates a blank ChannelManager.
      */
     public ChannelManager() {
         channels = new CopyOnWriteArraySet<>();
-        users = new CopyOnWriteArraySet<>();
+        users = new ConcurrentHashMap<>();
     }
 
     /**
@@ -76,30 +79,32 @@ public class ChannelManager {
      * @param create If true, create the user and add to the user list, else return null.
      * @return The user that either exists, was created if create is true, or null.
      */
-    public User getUser(String name, boolean create) {
-        for (User u : users) {
-            if (u.getNick().equalsIgnoreCase(name)) {
-                return u;
-            }
-        }
-        if (create) {
-            User u = new User(name);
-            addUser(u);
-            return u;
-        } else {
-            return null;
-        }
+    public User getUser(final String name, final boolean create)
+    {
+        return users.values().stream().filter(u -> u.getNick().equalsIgnoreCase(name)).findFirst().orElse(null);
     }
 
+
+    public User getUser(final long ID, final boolean create)
+    {
+        User u = users.get(ID);
+        if (u == null && create)
+        {
+            u = new User(ID);
+            addUser(u);
+        }
+        return u;
+    }
     /**
      * If a confirmed subscriber is found, this method handles finding and setting that user to true.
      *
      * @param channel The channel the user is in.
-     * @param user    The name of the user.
+     * @param userID    The ID of the user.
      */
-    public void handleSubscriber(String channel, String user) {
+    public void handleSubscriber(String channel, long userID)
+    {
         Channel c = getChannel(channel);
-        if (c != null) c.addSubscriber(user);
+        if (c != null) c.addSubscriber(userID);
     }
 
     /**
@@ -108,7 +113,7 @@ public class ChannelManager {
      * @param user The user to add.
      */
     public void addUser(User user) {
-        users.add(user);
+        users.put(user.getUserID(), user);
     }
 
     /**
@@ -117,20 +122,21 @@ public class ChannelManager {
      * @param u The user to remove.
      */
     public void removeUser(User u) {
-        users.remove(u);
+        users.remove(u.getUserID());
     }
 
     /**
      * Returns a list of users currently in the global user list.
      *
-     * @return an array of users.
+     * @return a Stream of users.
      */
-    public User[] getUsers() {
-        return users.stream().sorted().toArray(User[]::new);
+    public Stream<User> getUsers()
+    {
+        return users.values().stream().sorted();
     }
 
     public User[] getUsers(String subWord) {
-        return users.stream().sorted().filter(s -> s.getLowerNick().startsWith(subWord)).toArray(User[]::new);
+        return users.values().stream().sorted().filter(s -> s.getLowerNick().startsWith(subWord)).toArray(User[]::new);
     }
 
     /**

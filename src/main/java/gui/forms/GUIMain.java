@@ -37,7 +37,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 public class GUIMain extends JFrame {
 
-    public static Map<String, Color> userColMap, keywordMap;
+    public static Map<Long, Color> userColMap;
+    public static Map<String, Color> keywordMap;
     public static Set<Command> commandSet;
     public static Set<ConsoleCommand> conCommands;
     public static Set<String> channelSet;

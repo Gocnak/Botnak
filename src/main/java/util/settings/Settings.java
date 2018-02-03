@@ -153,6 +153,9 @@ public class Settings {
 
     public static Setting<Font> font = new Setting<>("Font", new Font("Calibri", Font.PLAIN, 18), Font.class);
 
+    public static Setting<Double> donorCutoff = new Setting<>("DonorCutoff", 2.50, Double.class);
+    public static Setting<Integer> cheerDonorCutoff = new Setting<>("CheerDonorCutoff", 250, Integer.class);
+
     private static ArrayList<Setting> settings;
 
     public static Window WINDOW = new Window();
@@ -312,7 +315,7 @@ public class Settings {
             SUBSCRIBERS.load();
             if (Subscribers.mostRecent != null) {
                 subscriberManager.setLastSubscriber(Subscribers.mostRecent);
-                GUIMain.log("Most recent subscriber: " + Subscribers.mostRecent.getName());
+                //GUIMain.log("Most recent subscriber: " + Subscribers.mostRecent.getName());
             }
             if (!Subscribers.subscribers.isEmpty()) subscriberManager.fillSubscribers(Subscribers.subscribers);
             Subscribers.subscribers.clear();
@@ -541,24 +544,15 @@ public class Settings {
         @Override
         public void handleLineLoad(String line) {
             String[] split = line.split(",");
-            GUIMain.userColMap.put(split[0], new Color(Integer.parseInt(split[1]), Integer.parseInt(split[2]), Integer.parseInt(split[3])));
+            GUIMain.userColMap.put(Long.parseLong(split[0]), new Color(Integer.parseInt(split[1]), Integer.parseInt(split[2]), Integer.parseInt(split[3])));
         }
 
         @Override
         public void handleLineSave(PrintWriter pw) {
-            Iterator<Map.Entry<String, Color>> entries = GUIMain.userColMap.entrySet().iterator();
-            StringBuilder sb = new StringBuilder();
-            while (entries.hasNext()) {
-                Map.Entry<String, Color> entry = entries.next();
-                sb.append(entry.getKey());
-                sb.append(",");
-                sb.append(entry.getValue().getRed());
-                sb.append(",");
-                sb.append(entry.getValue().getGreen());
-                sb.append(",");
-                sb.append(entry.getValue().getBlue());
-                pw.println(sb.toString());
-                sb.setLength(0);
+            for (Map.Entry<Long, Color> entry : GUIMain.userColMap.entrySet())
+            {
+                Color col = entry.getValue();
+                pw.println(String.format("%d,%d,%d,%d", entry.getKey(), col.getRed(), col.getGreen(), col.getBlue()));
             }
         }
 
@@ -896,20 +890,20 @@ public class Settings {
      */
     private static class Subscribers extends AbstractFileSave {
 
-        private static HashSet<Subscriber> subscribers = new HashSet<>();
+        private static Set<Subscriber> subscribers = new HashSet<>();
         private static Subscriber mostRecent = null;
 
         @Override
         public void handleLineLoad(String line) {
             String[] split = line.split("\\[");
-            Subscriber s = new Subscriber(split[0], LocalDateTime.parse(split[1]), Boolean.parseBoolean(split[2]), Integer.parseInt(split[3]));
+            Subscriber s = new Subscriber(Long.parseLong(split[0]), LocalDateTime.parse(split[1]), Boolean.parseBoolean(split[2]), Integer.parseInt(split[3]));
             subscribers.add(s);
             if (mostRecent == null || mostRecent.compareTo(s) > 0) mostRecent = s;
         }
 
         @Override
         public void handleLineSave(PrintWriter pw) {
-            subscriberManager.getSubscribers().stream().sorted().forEach(pw::println);
+            subscriberManager.getSubscribers().values().stream().sorted().forEach(pw::println);
         }
 
         @Override
@@ -1085,8 +1079,8 @@ public class Settings {
         try {
             for (File nameFace : nameFaces) {
                 if (nameFace.isDirectory()) continue;
-                String name = Utils.removeExt(nameFace.getName());
-                FaceManager.nameFaceMap.put(name, new Face(name, nameFace.getAbsolutePath()));
+                String userID = Utils.removeExt(nameFace.getName());
+                FaceManager.nameFaceMap.put(Long.parseLong(userID), new Face(userID, nameFace.getAbsolutePath()));
             }
             GUIMain.log("Loaded name faces!");
         } catch (Exception e) {

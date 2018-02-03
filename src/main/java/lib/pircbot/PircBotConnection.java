@@ -117,6 +117,8 @@ public class PircBotConnection {
         BufferedWriter bwriter = new BufferedWriter(outputStreamWriter);
         _outputThread = new OutputThread(bot, _outQueue, bwriter);
         // Attempt to join the server.
+        _outputThread.sendRawLine("CAP REQ :twitch.tv/tags");
+        _outputThread.sendRawLine("CAP REQ :twitch.tv/commands");
         _outputThread.sendRawLine("PASS " + bot.getPassword());
         _outputThread.sendRawLine("NICK " + bot.getNick());
 

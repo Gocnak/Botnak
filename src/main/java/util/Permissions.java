@@ -49,7 +49,7 @@ public class Permissions {
         List<Permission> permissionList = new ArrayList<>();
         permissionList.add(Permission.VIEWER);
         if (Utils.isMainChannel(channel)) {
-            Optional<Subscriber> sub = Settings.subscriberManager.getSubscriber(u.getNick());
+            Optional<Subscriber> sub = Settings.subscriberManager.getSubscriber(u.getUserID());
             if (sub.isPresent() && !sub.get().isActive()) {
                 // Technically this is an EX_SUBSCRIBER but they are the same as a SUBSCRIBER, permission-wise
                 permissionList.add(Permission.SUBSCRIBER);
@@ -58,8 +58,15 @@ public class Permissions {
         if (u.isSubscriber(channel)) {
             permissionList.add(Permission.SUBSCRIBER);
         }
+
+        // Check cheer status
+        if (u.getCheer(channel) >= Settings.cheerDonorCutoff.getValue())
+            permissionList.add(Permission.DONOR);
+
+        // Check donor status
         if (u.isDonor()) {
-            if (u.getDonated() >= 2.50) {
+            if (u.getDonated() >= Settings.donorCutoff.getValue())
+            {
                 permissionList.add(Permission.DONOR);
             }
         }

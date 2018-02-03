@@ -202,13 +202,13 @@ public class PircBot {
         if (message.startsWith("/w")) {
             String[] split = message.split(" ", 3);
             sendWhisper(split[1], split[2]);
-            getMessageHandler().onWhisper(getNick(), split[1], split[2]);
+            //getMessageHandler().onWhisper(getNick(), split[1], split[2]);
         } else {
             sendRawMessage(target, message);
             if (message.startsWith("/me")) {
-                getMessageHandler().onAction(getNick(), target, message.substring(4));
+                getMessageHandler().onAction(_userID, target, message.substring(4));
             } else {
-                getMessageHandler().onMessage(target, getNick(), message);
+                getMessageHandler().onMessage(target, _userID, message);
             }
         }
     }
@@ -267,17 +267,36 @@ public class PircBot {
      */
     public void handleLine(String line) {
         String sourceNick = "";
-        String sourceLogin = "";
-        String sourceHostname = "";
         StringTokenizer tokenizer = new StringTokenizer(line);
-        String tags = null;
+        HashMap<String, String> tagsMap = new HashMap<>();
         String content = null;
-        if (line.startsWith("@")) {
-            tags = tokenizer.nextToken();
-            if (line.contains("USERSTATE")) {
-                parseUserstate(line);
+        User senderUser = null;
+        if (line.startsWith("@"))
+        {
+            Utils.parseTagsToMap(tokenizer.nextToken().substring(1), tagsMap);
+
+            // This aims to be the central "user-creator" method, or if the user exists,
+            // user-getter
+            if (tagsMap.containsKey("user-id"))
+            {
+                long senderID = Long.parseLong(tagsMap.get("user-id"));
+                senderUser = getChannelManager().getUser(senderID, true);
+            }
+
+            if (line.contains("GLOBALUSERSTATE") && senderUser != null)
+            {
+                setUserID(senderUser.getUserID());
+                senderUser.setNick(_nick);
+                handleTags(senderUser, null, tagsMap);
                 return;
-            } else {
+            } else if (line.contains("USERSTATE"))
+            {
+                String[] parts = line.split(" ");
+                String channel = parts[3];
+                handleTags(getChannelManager().getUser(_userID, true), channel, tagsMap);
+                return;
+            } else
+            {
                 content = line.substring(line.indexOf(" :", line.indexOf(" :") + 2) + 2);
             }
         } else {
@@ -287,179 +306,145 @@ public class PircBot {
         String command = tokenizer.nextToken();
         String target = null;
 
-        if (checkCommand(command, tags, line, content, tokenizer, senderInfo)) return;
-
         int exclamation = senderInfo.indexOf("!");
         int at = senderInfo.indexOf("@");
-        if (senderInfo.startsWith(":")) {
-            if (exclamation > 0 && at > 0 && exclamation < at) {
-                sourceNick = senderInfo.substring(1, exclamation);
-                sourceLogin = senderInfo.substring(exclamation + 1, at);
-                sourceHostname = senderInfo.substring(at + 1);
-            } else {
-                if (tokenizer.hasMoreTokens()) {
-                    int code = -1;
-                    try {
-                        code = Integer.parseInt(command);
-                    } catch (NumberFormatException ignored) {
-                    }
-                    if (code != -1) {
-                        String response = line.substring(line.indexOf(command, senderInfo.length()) + 4, line.length());
-                        processServerResponse(code, response);
-                        // Return from the method.
-                        return;
-                    } else {
-                        // This is not a server response.
-                        // It must be a nick without login and hostname.
-                        // (or maybe a NOTICE or suchlike from the server)
-                        sourceNick = senderInfo;
-                        target = command;
-                    }
-                } else {
-                    // We don't know what this line means.
-                    onUnknown(line);
-                    // Return from the method;
-                    return;
-                }
-            }
-        }
-        if (sourceNick.startsWith(":")) {
-            sourceNick = sourceNick.substring(1);
-        }
-        command = command.toUpperCase();
-        if (target == null) {
-            target = tokenizer.nextToken();
-        }
-        if (target.startsWith(":")) {
-            target = target.substring(1);
-        }
-        String _channelPrefixes = "#&+!";
-
-        parseTags(tags, sourceNick, target);
-        // Check for CTCP requests.
-        if ("PRIVMSG".equals(command) && line.indexOf(":\u0001") > 0 && line.endsWith("\u0001")) {
-            String request = line.substring(line.indexOf(":\u0001") + 2, line.length() - 1);
-            if (request.startsWith("ACTION ")) {
-                // ACTION request
-                getMessageHandler().onAction(sourceNick, target, request.substring(7));
-            }
-        } else if (command.equals("PRIVMSG") && _channelPrefixes.indexOf(target.charAt(0)) >= 0) {
-            //This message is a cheer message!
-            if (tags != null && tags.contains("bits="))
+        if (senderInfo.startsWith(":"))
+        {
+            if (exclamation > 0 && at > 0 && exclamation < at)
             {
-                HashMap<String, String> tagsMap = Utils.parseTagsToMap(tags);
-                if (!tagsMap.isEmpty())
+                sourceNick = senderInfo.substring(1, exclamation);
+            } else if (tokenizer.hasMoreTokens())
+            {
+                try
                 {
-                    int bitAmount = Integer.parseInt(tagsMap.get("bits"));
-                    getMessageHandler().onCheer(target, sourceNick, bitAmount, content);
-                }
-                return;
-            } else
-                // This is a normal message to a channel.
-                getMessageHandler().onMessage(target, sourceNick, content);
-        } else if ("PRIVMSG".equals(command)) {
-            if (sourceNick.equals("jtv")) {
-                if (line.contains("now hosting you")) {
-                    getMessageHandler().onBeingHosted(content);//KEEP THIS
+                    int code = Integer.parseInt(command);
+                    String response = line.substring(line.indexOf(command, senderInfo.length()) + 4, line.length());
+                    processServerResponse(code, response);
+                    return;
+                } catch (NumberFormatException ignored)
+                {
+                    sourceNick = senderInfo;
+                    //target = command;
                 }
             }
-            // This is a private message to us.
-            getMessageHandler().onPrivateMessage(sourceNick, sourceLogin, sourceHostname, content);
-        } else {
-            // If we reach this point, then we've found something that the PircBot
-            // Doesn't currently deal with.
-            onUnknown(line);
         }
-    }
 
-    private boolean checkCommand(String command, String tags, String line, String content, StringTokenizer tokenizer, String senderInfo) {
-        String target;
-        HashMap<String, String> tagsMap = Utils.parseTagsToMap(tags);
+        if (senderUser != null)
+        {
+            senderUser.setNick(sourceNick);
+        }
+
+        command = command.toUpperCase();
+        if (target == null && tokenizer.hasMoreTokens())
+        {
+            target = tokenizer.nextToken();
+            if (target.startsWith(":"))
+            {
+                target = target.substring(1);
+            }
+        }
+
         switch (command)
         {
             case "CLEARCHAT":
-                target = tokenizer.nextToken();
                 if (tagsMap.isEmpty())
                     getMessageHandler().onClearChat(target);
                 else if (!tagsMap.containsKey("ban-duration"))
                     getMessageHandler().onUserPermaBanned(target, content, tagsMap.get("ban-reason"));
                 else
                     getMessageHandler().onUserTimedOut(target, content, Integer.parseInt(tagsMap.get("ban-duration")), tagsMap.get("ban-reason"));
-                return true;
+                return;
             case "HOSTTARGET":
-                target = tokenizer.nextToken();
                 String[] split = content.split(" ");
                 getMessageHandler().onHosting(target.substring(1), split[0], split[1]);
-                return true;
+                return;
             case "ROOMSTATE":
-                target = tokenizer.nextToken();
-                getMessageHandler().onRoomstate(target, tags);
-                parseTags(null, target, tagsMap);
-                return true;
+                getMessageHandler().onRoomstate(target, tagsMap);
+                handleTags(null, target, tagsMap);
+                return;
             case "NOTICE":
-                if (tags.contains("room_mods"))
+                if (tagsMap.containsValue("room_mods"))
                 {
-                    target = tokenizer.nextToken();
                     buildMods(target, content);
-                    return true;
-                } else if (!tags.contains("host_on") && !tags.contains("host_off"))
-                {//handled above
-                    target = tokenizer.nextToken();
-                    getMessageHandler().onJTVMessage(target.substring(1), content, tags);
-                    return true;
+                    return;
+                }
+                // Host messages are handled above in HOSTTARGET
+                else if (!tagsMap.containsValue("host_on") && !tagsMap.containsValue("host_off"))
+                {
+                    getMessageHandler().onJTVMessage(target.substring(1), content, tagsMap);
+                    return;
                 }
                 break;
             case "WHISPER":
-                target = tokenizer.nextToken();
-                String nick = senderInfo.substring(1, senderInfo.indexOf('!'));
-                parseTags(nick, null, tagsMap);
-                getMessageHandler().onWhisper(nick, target, content);
-                return true;
+                handleTags(senderUser, null, tagsMap);
+                getMessageHandler().onWhisper(senderUser.getUserID(), target, content);
+                return;
             case "RECONNECT"://We need to reconnect to this server
                 GUIMain.logCurrent("Detected a RECONNECT command, currently reconnecting the connection for: " + _nick + "!");
                 getConnection().dispose();
                 Settings.accountManager.createReconnectThread(getConnection());
-                return true;
+                return;
             case "USERNOTICE": //User has (re)subscribed to this channel (for X months)
-                target = tokenizer.nextToken();
-                String user = tagsMap.get("login");
-                parseTags(user, target, tagsMap);
+                handleTags(senderUser, target, tagsMap);
                 String type = tagsMap.get("msg-id");
                 if (type != null)
                 {
                     if ("sub".equals(type))
                     {
                         // A new sub??
-                        getChannelManager().handleSubscriber(target, user);
-                        getMessageHandler().onNewSubscriber(target, tagsMap.get("system-msg"), user);
+                        getChannelManager().handleSubscriber(target, senderUser.getUserID());
+                        getMessageHandler().onNewSubscriber(target, tagsMap.get("system-msg"), senderUser);
                     } else if ("resub".equals(type))
                     {
-                        getMessageHandler().onResubscribe(target, user, tagsMap.get("system-msg"));
+                        getMessageHandler().onResubscribe(target, senderUser.getUserID(), tagsMap.get("system-msg"));
                     }
                 }
 
                 //Only send their message if there is one
                 if (content != null && line.indexOf(" :", line.indexOf(" :") + 2) > -1)
-                    getMessageHandler().onMessage(target, user, content);
-                return true;
+                    getMessageHandler().onMessage(target, senderUser.getUserID(), content);
+                return;
             default:
-                return false;
+                break;
         }
-        return false;
+
+
+        handleTags(senderUser, target, tagsMap);
+        // Check for CTCP requests.
+        int unicodeIndex = line.indexOf(":\u0001");
+        if ("PRIVMSG".equals(command) && unicodeIndex > 0 && line.endsWith("\u0001"))
+        {
+            String request = line.substring(unicodeIndex + 2, line.length() - 1);
+            if (request.startsWith("ACTION "))
+            {
+                // ACTION request
+                getMessageHandler().onAction(senderUser.getUserID(), target, request.substring(7));
+            }
+        } else if (command.equals("PRIVMSG") && target.charAt(0) == '#')
+        {
+            //This message is a cheer message!
+            if (tagsMap.containsKey("bits"))
+            {
+                int bitAmount = Integer.parseInt(tagsMap.get("bits"));
+                getMessageHandler().onCheer(target, sourceNick, bitAmount, content);
+                return;
+            } else // This is a normal message to a channel.
+                getMessageHandler().onMessage(target, senderUser.getUserID(), content);
+        } else if ("PRIVMSG".equals(command))
+        {
+            if (sourceNick.equals("jtv"))
+            {
+                if (line.contains("now hosting you"))
+                {
+                    getMessageHandler().onBeingHosted(content);//KEEP THIS
+                }
+            }
+            // This is a private message to us.
+            getMessageHandler().onPrivateMessage(sourceNick, content);
+        }
     }
 
-    private void parseUserstate(String line) {
-        String[] parts = line.split(" ");
-        String tags = parts[0];
-        String channel = parts[3];
-        parseTags(tags, getNick(), channel);
-    }
-
-    private void parseTags(String line, String user, String channel) {
-        parseTags(user, channel, Utils.parseTagsToMap(line));
-    }
-
-    private void parseTags(String user, String channel, HashMap<String, String> tags)
+    private void handleTags(User user, String channel, Map<String, String> tags)
     {
         if (!tags.isEmpty())
         {
@@ -472,7 +457,7 @@ public class PircBot {
                         handleColor(tag.getValue(), user);
                         break;
                     case "display-name":
-                        handleDisplayName(tag.getValue(), user);
+                        user.setDisplayName(tag.getValue().replaceAll("\\\\s", " ").trim());
                         break;
                     case "emotes":
                         handleEmotes(tag.getValue(), user);
@@ -495,20 +480,20 @@ public class PircBot {
                     case "r9k":
                         if ("1".equals(tag.getValue()))
                         {
-                            getMessageHandler().onJTVMessage(channel, "This room is in r9k mode.", tag.getKey());
+                            getMessageHandler().onJTVMessage(channel, "This room is in r9k mode.", tags);
                         }
                         break;
                     case "slow":
                         if (!"0".equals(tag.getValue()))
                         {
                             getMessageHandler().onJTVMessage(channel,
-                                    "This room is in slow mode. You may send messages every " + tag.getValue() + " seconds.", tag.getKey());
+                                    "This room is in slow mode. You may send messages every " + tag.getValue() + " seconds.", tags);
                         }
                         break;
                     case "subs-only":
                         if ("1".equals(tag.getValue()))
                         {
-                            getMessageHandler().onJTVMessage(channel, "This room is in subscribers-only mode.", tag.getKey());
+                            getMessageHandler().onJTVMessage(channel, "This room is in subscribers-only mode.", tags);
                         }
                         break;
                     case "emote-sets":
@@ -521,14 +506,14 @@ public class PircBot {
                         {
                             Matcher m = Constants.PATTERN_BITS.matcher(badges);
                             if (m.find())
-                                getChannelManager().getChannel(channel).setCheer(user, Integer.parseInt(m.group(1)));
+                                user.setCheer(channel, Integer.parseInt(m.group(1)));
                         }
                         // Prime
                         if (badges.contains("premium"))
-                            getChannelManager().getUser(user, true).setPrime(true);
+                            user.setPrime(true);
                         // Verified
                         if (badges.contains("partner"))
-                            getChannelManager().getUser(user, true).setVerified(true);
+                            user.setVerified(true);
                         break;
                     case "bits":
                         //This message contains a cheer!
@@ -556,27 +541,28 @@ public class PircBot {
      * @param type    The user type
      * @param user    The user
      */
-    public void handleSpecial(String channel, String type, String user) {
+    public void handleSpecial(String channel, String type, User user)
+    {
         if (user != null) {
             Channel c = getChannelManager().getChannel(channel);
             switch (type) {
                 case "mod":
-                    if (c != null) c.addMods(user);
+                    if (c != null) c.addMods(user.getNick());
                     break;
                 case "subscriber":
-                    if (c != null) c.addSubscriber(user);
+                    if (c != null) c.addSubscriber(user.getUserID());
                     break;
                 case "turbo":
-                    getChannelManager().getUser(user, true).setTurbo(true);
+                    user.setTurbo(true);
                     break;
                 case "admin":
-                    getChannelManager().getUser(user, true).setAdmin(true);
+                    user.setAdmin(true);
                     break;
                 case "global_mod":
-                    getChannelManager().getUser(user, true).setGlobalMod(true);
+                    user.setGlobalMod(true);
                     break;
                 case "staff":
-                    getChannelManager().getUser(user, true).setStaff(true);
+                    user.setStaff(true);
                     break;
                 default:
                     break;
@@ -604,19 +590,6 @@ public class PircBot {
         }
     }
 
-    /**
-     * This method is called whenever we receive a line from the server that
-     * the PircBot has not been programmed to recognise.
-     * <p>
-     * The implementation of this method in the PircBot abstract class
-     * performs no actions and may be overridden as required.
-     *
-     * @param line The raw line that was received from the server.
-     */
-    protected void onUnknown(String line) {
-        // And then there were none :)
-    }
-
 
     /**
      * Sets the verbose mode. If verbose mode is set to true, then log entries
@@ -642,6 +615,12 @@ public class PircBot {
         _nick = nick;
         if (connection != null)
             connection.setName(_nick);
+    }
+
+
+    public void setUserID(long _userID)
+    {
+        this._userID = _userID;
     }
 
     public void setPassword(String password) {
@@ -673,6 +652,11 @@ public class PircBot {
      */
     public String getNick() {
         return _nick;
+    }
+
+    public long getUserID()
+    {
+        return _userID;
     }
 
 
@@ -795,33 +779,26 @@ public class PircBot {
         if (connection != null) connection.dispose();
     }
 
-    public void handleColor(String color, String user) {
+    public void handleColor(String color, User user)
+    {
         if (color != null) {
-            Color c;
             try {
-                c = Color.decode(color);
+                user.setColor(Color.decode(color));
             } catch (Exception ignored) {
                 return;
             }
-            getChannelManager().getUser(user, true).setColor(c);
         }
     }
 
-    public void handleDisplayName(String name, String user) {
-        if (name != null) {
-            getChannelManager().getUser(user, true).setDisplayName(name.replaceAll("\\\\s", " ").trim());
-        }
-    }
-
-    public void handleEmotes(String numbers, String user) {
+    public void handleEmotes(String numbers, User user)
+    {
         try {
             String[] parts = numbers.split("/");
-            User u = getChannelManager().getUser(user, true);
             for (String emote : parts) {
                 String emoteID = emote.split(":")[0];
                 try {
                     int id = Integer.parseInt(emoteID);
-                    u.addEmote(id);
+                    user.addEmote(id);
                 } catch (Exception e) {
                     GUIMain.log("Cannot parse emote ID given by IRCv3 tags!");
                 }
@@ -838,5 +815,6 @@ public class PircBot {
     // Default settings for the PircBot.
     private boolean _verbose = false;
     private String _nick = null;
+    private long _userID = -1L;
     private String _version = "Botnak " + Constants.VERSION;
 }

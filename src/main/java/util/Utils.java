@@ -833,15 +833,17 @@ public class Utils {
      * @param user User to change the color for.
      * @param mess Their message.
      */
-    public static Response handleColor(String user, String mess, Color old) {
+    public static Response handleColor(final User user, String mess, Color old)
+    {
         Response toReturn = new Response();
-        if (user != null && mess != null) {
+        if (mess != null)
+        {
             //mess = "!setcol r g b" or "!setcol #cd4fd5"
             //so let's send just the second part.
             Color newColor = getColor(mess.substring(mess.indexOf(" ") + 1), old);
             if (!newColor.equals(old)) {
-                GUIMain.userColMap.put(user, newColor);
-                toReturn.setResponseText("Successfully set color for user " + user + " !");
+                GUIMain.userColMap.put(user.getUserID(), newColor);
+                toReturn.setResponseText("Successfully set color for user " + user.getDisplayName() + " !");
                 toReturn.wasSuccessful();
             } else {
                 toReturn.setResponseText("Failed to update color, it may be too dark!");
@@ -1029,27 +1031,23 @@ public class Utils {
     /**
      * Parses Twitch's tags for an IRC message and spits them out into a HashMap.
      *
-     * @param line The line to parse.
-     * @return A HashMap full of Key and Value pairs for the tags.
+     * @param tagLine The tags line to parse
+     * @param map     The output map to put the tags into
      */
-    public static HashMap<String, String> parseTagsToMap(String line)
+    public static void parseTagsToMap(String tagLine, Map<String, String> map)
     {
-        HashMap<String, String> toReturn = new HashMap<>();
-        if (line != null)
+        if (tagLine != null)
         {
-            line = line.substring(1);
-            String[] parts = line.split(";");
+            String[] parts = tagLine.split(";");
             for (String part : parts)
             {
                 String[] objectPair = part.split("=");
                 //Don't add this key/pair value if there is no value.
                 if (objectPair.length <= 1) continue;
-                toReturn.put(objectPair[0], objectPair[1].replaceAll("\\\\s", " "));
+                map.put(objectPair[0], objectPair[1].replaceAll("\\\\s", " "));
             }
         }
-        return toReturn;
     }
-
 
     public static void populateComboBox(JComboBox<String> channelsBox)
     {

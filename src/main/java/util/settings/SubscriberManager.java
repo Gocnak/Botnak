@@ -16,11 +16,11 @@ import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  */
 public class SubscriberManager {
 
-    private Set<Subscriber> subscribers;
+    private Map<Long, Subscriber> subscribers;
 
     private Subscriber lastSubscriber = null;
 
@@ -48,24 +48,21 @@ public class SubscriberManager {
     }
 
     public List<Subscriber> getLastSubscribers(int count) {
-        return subscribers.stream().sorted().limit(count).collect(Collectors.toList());
+        return subscribers.values().stream().sorted().limit(count).collect(Collectors.toList());
     }
 
-    public Set<Subscriber> getSubscribers() {
+    public Map<Long, Subscriber> getSubscribers()
+    {
         return subscribers;
     }
 
     public SubscriberManager() {
-        subscribers = new CopyOnWriteArraySet<>();
+        subscribers = new ConcurrentHashMap<>();
     }
 
-    public Optional<Subscriber> getSubscriber(String name) {
-        for (Subscriber s : subscribers) {
-            if (s.getName().equalsIgnoreCase(name)) {
-                return Optional.of(s);
-            }
-        }
-        return Optional.empty();
+    public Optional<Subscriber> getSubscriber(final long subID)
+    {
+        return Optional.ofNullable(subscribers.get(subID));
     }
 
     /**
@@ -85,14 +82,14 @@ public class SubscriberManager {
             return;
         //you will always be your own sub, silly
 
-        Optional<Subscriber> s = getSubscriber(u.getNick());
+        Optional<Subscriber> s = getSubscriber(u.getUserID());
         if (s.isPresent()) {
             if (s.get().isActive()) {
                 int streak = s.get().getStreak();
                 int monthsSince = (int) (s.get().getStarted().until(LocalDateTime.now(), ChronoUnit.DAYS) / 32);
                 if (monthsSince > streak) {
                     if (currentlyActive) {
-                        String content = s.get().getName() + " has continued their subscription for over "
+                        String content = u.getDisplayName() + " has continued their subscription for over "
                                 + (monthsSince) + ((monthsSince) > 1 ? " months!" : " month!");
                         MessageQueue.addMessage(new Message().setChannel(channel).setType(Message.MessageType.SUB_NOTIFY).setContent(content));
                         s.get().incrementStreak(monthsSince - streak);//this will most likely be 1
@@ -112,7 +109,7 @@ public class SubscriberManager {
                     // make botnak send a "thanks for subbing offline" message
 
                     //or twitchnotify could have been a douchenozzle and did not send the message
-                    String content = s.get().getName() + " has RE-subscribed offline!";
+                    String content = u.getDisplayName() + " has RE-subscribed offline!";
                     if (Settings.botAnnounceSubscribers.getValue()) {
                         Settings.accountManager.getBot().sendMessage(channel, ".me " + u.getNick() + " has just RE-subscribed!");
                     }
@@ -135,28 +132,29 @@ public class SubscriberManager {
                 }
                 String content = u.getNick().toLowerCase() + " has subscribed offline!";
                 MessageQueue.addMessage(new Message().setContent(content).setType(Message.MessageType.SUB_NOTIFY).setChannel(channel));
-                addSub(new Subscriber(u.getNick().toLowerCase(), LocalDateTime.now(), true, 0));
+                addSub(new Subscriber(u.getUserID(), LocalDateTime.now(), true, 0));
                 playSubscriberSound();
                 notifyTrayIcon(content, false);
             }
         }
     }
 
-    public void fillSubscribers(HashSet<Subscriber> set) {
-        subscribers.addAll(set);
+    public void fillSubscribers(Set<Subscriber> set)
+    {
+        set.forEach(sub -> subscribers.put(sub.getSubscriberID(), sub));
     }
 
     public void addSub(Subscriber s) {
-        if (subscribers.add(s)) {
-            setLastSubscriber(s);
-        }
+        subscribers.put(s.getSubscriberID(), s);
+        setLastSubscriber(s);
     }
 
-    public boolean addNewSubscriber(String name, String channel) {
-        Optional<Subscriber> subscriber = getSubscriber(name);
+    public boolean addNewSubscriber(User newSub, String channel)
+    {
+        Optional<Subscriber> subscriber = getSubscriber(newSub.getUserID());
         if (!subscriber.isPresent()) {//brand spanking new sub, live as botnak caught it
-            addSub(new Subscriber(name, LocalDateTime.now(), true, 0));
-            notifyTrayIcon(name + " has just subscribed!", false);
+            addSub(new Subscriber(newSub.getUserID(), LocalDateTime.now(), true, 0));
+            notifyTrayIcon(newSub.getDisplayName() + " has just subscribed!", false);
             playSubscriberSound();
             //we're going to return false (end of method) so that Botnak generates the message
             //like it did before this manager was created and implemented (and because less of the same code is better eh?)
@@ -169,7 +167,7 @@ public class SubscriberManager {
             //question: should the streak still matter, if they're quick enough to resub?
             //answer: Botnak automatically acknowledges them for their continued support anyways, and
             // if they decide to cancel just to get the notification again, they deserve their streak to be reset
-            String content = name + " has just RE-subscribed!";
+            String content = newSub.getDisplayName() + " has just RE-subscribed!";
             MessageQueue.addMessage(new Message().setContent(content).setChannel(channel).setType(Message.MessageType.SUB_NOTIFY));
             notifyTrayIcon(content, false);
             playSubscriberSound();
@@ -194,7 +192,7 @@ public class SubscriberManager {
     }
 
 
-    public void scanInitialSubscribers(String channel, OAuth key, int passesCompleted, HashSet<Subscriber> set)
+    public void scanInitialSubscribers(String channel, OAuth key, int passesCompleted, Set<Subscriber> set)
     {
         String oauth = key.getKey().split(":")[1];
         String urlString = "https://api.twitch.tv/kraken/channels/" + channel + "/subscriptions?oauth_token=" +
@@ -220,10 +218,11 @@ public class SubscriberManager {
                             JSONObject outer = subs.getJSONObject(subIndex);
                             JSONObject user = outer.getJSONObject("user");
                             String name = user.getString("name");
+                            long ID = user.getLong("_id");
                             if (name.equalsIgnoreCase(channel)) continue;//don't want to add yourself
                             LocalDateTime started = LocalDateTime.parse(outer.getString("created_at"), DateTimeFormatter.ISO_DATE_TIME);
                             int streak = (int) started.until(LocalDateTime.now(), ChronoUnit.MONTHS);
-                            Subscriber s = new Subscriber(name, started, true, streak);
+                            Subscriber s = new Subscriber(ID, started, true, streak);
                             set.add(s);
                         }
                         scanInitialSubscribers(channel, key, passesCompleted + 1, set);
