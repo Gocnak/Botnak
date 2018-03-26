@@ -200,15 +200,8 @@ public class SoundEngine {
      * @param channel Channel the command was in.
      * @return true to play the sound, else false
      */
-    public boolean soundTrigger(String s, String send, String channel) {
-        if (SoundEngine.getEngine().shouldPlay()) {//sound not turned off
-            if (Utils.isMainChannel(channel)) {//is in main channel
-                if (soundCheck(s, send, channel)) {//let's check the existence/permission
-                    return true;//HIT THAT
-                }
-            }
-        }
-        return false;
+    public boolean soundTrigger(String s, User send, String channel) {
+        return soundToggle && Utils.isMainChannel(channel) && soundCheck(s, send, channel);
     }
 
     /**
@@ -218,15 +211,14 @@ public class SoundEngine {
      * @param sender Sender of the command trigger.
      * @return false if the sound is not allowed, else true if it is.
      */
-    private boolean soundCheck(String sound, String sender, String channel) {
+    private boolean soundCheck(String sound, User sender, String channel) {
         //set the permission
-        User u = Settings.channelManager.getUser(sender, true);
-        List<Permissions.Permission> permissions = Permissions.getUserPermissions(u, channel);
+        List<Permissions.Permission> permissions = Permissions.getUserPermissions(sender, channel);
         Sound snd = soundMap.get(sound.toLowerCase());
         if (snd != null && snd.isEnabled()) {
             int perm = snd.getPermission();
             if (Permissions.hasAtLeast(permissions, perm) &&
-                    Permissions.hasAtLeast(permissions, SoundEngine.getEngine().getPermission())) {
+                    Permissions.hasAtLeast(permissions, getPermission())) {
                 return true;
             }
         }

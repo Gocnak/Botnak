@@ -139,9 +139,9 @@ public class IRCViewer extends MessageHandler {
     }
 
     @Override
-    public void onCheer(String channel, String sender, int amount, String message)
+    public void onCheer(String channel, User sender, int amount, String message)
     {
-        MessageQueue.addMessage(new Message(channel, message, Message.MessageType.CHEER_MESSAGE).setSenderName(sender).setExtra(amount));
+        MessageQueue.addMessage(new Message(channel, message, Message.MessageType.CHEER_MESSAGE).setSender(sender).setExtra(amount));
     }
 
     @Override
@@ -196,7 +196,6 @@ public class IRCViewer extends MessageHandler {
 
     @Override
     public void onConnect() {
-        Settings.channelManager.addUser(new User(getViewer().getNick()));
         GUIMain.channelSet.forEach(this::doConnect);
         GUIMain.updateTitle(null);
     }

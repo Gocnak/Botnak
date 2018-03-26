@@ -36,14 +36,31 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class User implements Comparable<User> {
 
-    private boolean staff = false, admin = false, global_mod = false, turbo = false, prime = false, verified = false;
-    private String _nick, _lowerNick, displayName = null;
+    private boolean staff, admin, global_mod, turbo, prime, verified;
+    private String _nick, _lowerNick, displayName;
     private long userID;
 
     private Set<Integer> emotes;
 
-    private Color color = null;
-    private Donor donor = null;
+    private Color color;
+    private Donor donor;
+
+    public User()
+    {
+        staff = false;
+        admin = false;
+        global_mod = false;
+        turbo = false;
+        prime = false;
+        verified = false;
+        _nick = null;
+        _lowerNick = null;
+        displayName = null;
+        color = null;
+        donor = null;
+        userID = -1L;
+        emotes = new CopyOnWriteArraySet<>();
+    }
 
     /**
      * Constructs a User object with a known prefix and nick.
@@ -51,18 +68,14 @@ public class User implements Comparable<User> {
      * @param nick The nick of the user.
      */
     public User(String nick) {
-        _nick = nick;
-        _lowerNick = nick.toLowerCase();
-        emotes = new CopyOnWriteArraySet<>();
-        userID = -1L;
+        this();
+        setNick(nick);
     }
 
     public User(long ID)
     {
+        this();
         userID = ID;
-        emotes = new CopyOnWriteArraySet<>();
-        _nick = "NAME_NOT_SET";
-        _lowerNick = "name_not_set";
     }
 
     /**
@@ -231,9 +244,13 @@ public class User implements Comparable<User> {
         return _lowerNick;
     }
 
-    public void setNick(String newNick) {
-        _nick = newNick;
-        _lowerNick = _nick.toLowerCase();
+    public void setNick(String newNick)
+    {
+        if (_nick == null)
+        {
+            _nick = newNick;
+            _lowerNick = _nick.toLowerCase();
+        }
     }
 
     public String getDisplayName() {

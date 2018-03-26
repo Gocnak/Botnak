@@ -174,9 +174,6 @@ public class PircBotConnection {
 
         // Now start the outputThread that will be used to send all messages.
         _outputThread.start();
-
-        getOutputThread().sendRawLine("CAP REQ :twitch.tv/tags");
-        getOutputThread().sendRawLine("CAP REQ :twitch.tv/commands");
         return true;
     }
 

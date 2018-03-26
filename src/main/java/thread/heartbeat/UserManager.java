@@ -50,7 +50,7 @@ public class UserManager implements HeartbeatThread {
             GUIViewerList list = GUIMain.viewerLists.get(chanOut);
             if (list != null) {
                 try {
-                    url = new URL("http://tmi.twitch.tv/group/user/" + chan.substring(1) + "/chatters");
+                    url = new URL("https://tmi.twitch.tv/group/user/" + chan.substring(1) + "/chatters");
                     String line = Utils.createAndParseBufferedReader(url.openStream());
                     if (!line.isEmpty()) {
                         final Enumeration<TreePath> beforePaths = list.beforePaths();

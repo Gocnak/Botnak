@@ -168,9 +168,9 @@ public class FaceManager {
                     for (int i = 0; i < emotes.length(); i++) {
                         JSONObject emote = emotes.getJSONObject(i);
                         int ID = emote.getInt("id");
-                        if (twitchFaceMap.get(ID) != null) continue;
+                        if (twitchFaceMap.containsKey(ID)) continue;
                         String regex = emote.getString("code").replaceAll("\\\\&lt\\\\;", "\\<").replaceAll("\\\\&gt\\\\;", "\\>");
-                        String URL = "http://static-cdn.jtvnw.net/emoticons/v1/" + ID + "/1.0";
+                        String URL = "https://static-cdn.jtvnw.net/emoticons/v1/" + ID + "/1.0";
                         onlineTwitchFaces.put(ID, new TwitchFace(regex, URL, true));
                     }
                 } catch (Exception e) {
@@ -304,8 +304,7 @@ public class FaceManager {
                 checkedEmoteSets = true;
                 String line = APIRequests.Twitch.getEmoteSet(emotes);
                 if (!line.isEmpty()) {
-                    User main = Settings.channelManager
-                            .getUser(Settings.accountManager.getUserAccount().getName(), true);
+                    User main = Settings.channelManager.getUser(Settings.accountManager.getViewer().getUserID(), true);
                     JSONObject init = new JSONObject(line);
                     String[] keys = emotes.split(",");
                     JSONObject emote_sets = init.getJSONObject("emoticon_sets");

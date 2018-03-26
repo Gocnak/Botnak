@@ -51,7 +51,6 @@ public class IRCBot extends MessageHandler {
 
     @Override
     public void onConnect() {
-        Settings.channelManager.addUser(new User(getBot().getNick()));
         GUIMain.channelSet.forEach(this::doConnect);
         GUIMain.updateTitle(null);
     }
@@ -197,7 +196,7 @@ public class IRCBot extends MessageHandler {
                 String trigger = message.substring(1).split(" ")[0].toLowerCase();
                 String mess = message.substring(1);
                 //sound
-                if (SoundEngine.getEngine().soundTrigger(trigger, sender, channel)) {
+                if (SoundEngine.getEngine().soundTrigger(trigger, senderUser, channel)) {
                     SoundEngine.getEngine().playSound(new Sound(SoundEngine.getEngine().getSoundMap().get(trigger)));
                 }
                 ConsoleCommand consoleCommand = Utils.getConsoleCommand(trigger, channel, senderUser);

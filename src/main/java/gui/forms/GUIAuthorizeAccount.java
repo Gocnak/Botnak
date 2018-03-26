@@ -56,7 +56,7 @@ public class GUIAuthorizeAccount extends JFrame {
             String URL = "https://api.twitch.tv/kraken/oauth2/authorize" +
                     "?response_type=token" +
                     "&client_id=qw8d3ve921t0n6e3if07l664f1jn1y7" +
-                    "&redirect_uri=http://gocnak.github.io/Botnak/token_redirect.html" +
+                    "&redirect_uri=https://gocnak.github.io/Botnak/token_redirect.html" +
                     "&scope=chat_login";
             if (boxReadSubs.isSelected()) URL += "+channel_subscriptions";
             if (boxCommercial.isSelected()) URL += "+channel_commercial";

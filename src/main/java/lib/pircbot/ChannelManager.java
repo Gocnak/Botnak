@@ -81,7 +81,13 @@ public class ChannelManager {
      */
     public User getUser(final String name, final boolean create)
     {
-        return users.values().stream().filter(u -> u.getNick().equalsIgnoreCase(name)).findFirst().orElse(null);
+        User found = users.values().stream().filter(u -> u.getNick().equalsIgnoreCase(name)).findFirst().orElse(null);
+        if (found == null && create)
+        {
+            found = new User(name);
+            addUser(found);
+        }
+        return found;
     }
 
 

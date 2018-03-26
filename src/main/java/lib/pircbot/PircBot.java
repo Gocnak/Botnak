@@ -14,6 +14,7 @@ found at http://www.jibble.org/licenses/
 
 package lib.pircbot;
 
+import com.sun.istack.internal.Nullable;
 import face.FaceManager;
 import gui.forms.GUIMain;
 import irc.message.MessageHandler;
@@ -265,8 +266,8 @@ public class PircBot {
      *
      * @param line The raw line of text from the server.
      */
-    public void handleLine(String line) {
-        String sourceNick = "";
+    public void handleLine(String line)
+    {
         StringTokenizer tokenizer = new StringTokenizer(line);
         HashMap<String, String> tagsMap = new HashMap<>();
         String content = null;
@@ -305,6 +306,7 @@ public class PircBot {
         String senderInfo = tokenizer.nextToken();
         String command = tokenizer.nextToken();
         String target = null;
+        String sourceNick = "";
 
         int exclamation = senderInfo.indexOf("!");
         int at = senderInfo.indexOf("@");
@@ -313,7 +315,8 @@ public class PircBot {
             if (exclamation > 0 && at > 0 && exclamation < at)
             {
                 sourceNick = senderInfo.substring(1, exclamation);
-            } else if (tokenizer.hasMoreTokens())
+            }
+            else if (tokenizer.hasMoreTokens())
             {
                 try
                 {
@@ -329,12 +332,6 @@ public class PircBot {
             }
         }
 
-        if (senderUser != null)
-        {
-            senderUser.setNick(sourceNick);
-        }
-
-        command = command.toUpperCase();
         if (target == null && tokenizer.hasMoreTokens())
         {
             target = tokenizer.nextToken();
@@ -344,6 +341,16 @@ public class PircBot {
             }
         }
 
+        handleTags(senderUser, target, tagsMap);
+
+        if (senderUser != null)
+        {
+            // NOTE: The user will either already have a nick from the handleTags method above
+            // or will need it set here.
+            senderUser.setNick(sourceNick);
+        }
+
+        command = command.toUpperCase();
         switch (command)
         {
             case "CLEARCHAT":
@@ -360,7 +367,6 @@ public class PircBot {
                 return;
             case "ROOMSTATE":
                 getMessageHandler().onRoomstate(target, tagsMap);
-                handleTags(null, target, tagsMap);
                 return;
             case "NOTICE":
                 if (tagsMap.containsValue("room_mods"))
@@ -376,7 +382,6 @@ public class PircBot {
                 }
                 break;
             case "WHISPER":
-                handleTags(senderUser, null, tagsMap);
                 getMessageHandler().onWhisper(senderUser.getUserID(), target, content);
                 return;
             case "RECONNECT"://We need to reconnect to this server
@@ -385,7 +390,6 @@ public class PircBot {
                 Settings.accountManager.createReconnectThread(getConnection());
                 return;
             case "USERNOTICE": //User has (re)subscribed to this channel (for X months)
-                handleTags(senderUser, target, tagsMap);
                 String type = tagsMap.get("msg-id");
                 if (type != null)
                 {
@@ -396,6 +400,7 @@ public class PircBot {
                         getMessageHandler().onNewSubscriber(target, tagsMap.get("system-msg"), senderUser);
                     } else if ("resub".equals(type))
                     {
+                        getChannelManager().handleSubscriber(target, senderUser.getUserID());
                         getMessageHandler().onResubscribe(target, senderUser.getUserID(), tagsMap.get("system-msg"));
                     }
                 }
@@ -409,7 +414,6 @@ public class PircBot {
         }
 
 
-        handleTags(senderUser, target, tagsMap);
         // Check for CTCP requests.
         int unicodeIndex = line.indexOf(":\u0001");
         if ("PRIVMSG".equals(command) && unicodeIndex > 0 && line.endsWith("\u0001"))
@@ -426,7 +430,7 @@ public class PircBot {
             if (tagsMap.containsKey("bits"))
             {
                 int bitAmount = Integer.parseInt(tagsMap.get("bits"));
-                getMessageHandler().onCheer(target, sourceNick, bitAmount, content);
+                getMessageHandler().onCheer(target, senderUser, bitAmount, content);
                 return;
             } else // This is a normal message to a channel.
                 getMessageHandler().onMessage(target, senderUser.getUserID(), content);
@@ -444,6 +448,13 @@ public class PircBot {
         }
     }
 
+    /**
+     * Handles the tags parsed from Twitch
+     *
+     * @param user (Can be null) The user to modify, if present
+     * @param channel  (Can be null) The channel the tags are for, if present
+     * @param tags The map of parsed tags
+     */
     private void handleTags(User user, String channel, Map<String, String> tags)
     {
         if (!tags.isEmpty())
@@ -519,6 +530,9 @@ public class PircBot {
                         //This message contains a cheer!
                         //This is handled above, don't worry.
                         break;
+                    case "login":
+                        if (user != null)
+                            user.setNick(tag.getValue());
                     default:
                         break;
                 }

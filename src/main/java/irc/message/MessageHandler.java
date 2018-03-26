@@ -203,7 +203,7 @@ public abstract class MessageHandler {
      * @param amount  The amount of bits they cheered for.
      * @param message The message they included (if any)
      */
-    public void onCheer(String channel, String sender, int amount, String message)
+    public void onCheer(String channel, User sender, int amount, String message)
     {
     }
 }

@@ -1,5 +1,6 @@
 package irc.message;
 
+import lib.pircbot.User;
 import util.settings.Settings;
 
 /**
@@ -100,6 +101,13 @@ public class Message {
 
     public Message setType(MessageType type) {
         this.type = type;
+        return this;
+    }
+
+    public Message setSender(User senderUser)
+    {
+        this.senderName = senderUser.getNick();
+        this.senderID = senderUser.getUserID();
         return this;
     }
 
