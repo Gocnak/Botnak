@@ -263,7 +263,7 @@ public class User implements Comparable<User> {
      * set their name as is.
      */
     public void setDisplayName(String name) {
-        if (displayName == null) {
+        if (_nick != null && displayName == null) {
             boolean displayIsNick = name.equalsIgnoreCase(_nick);
             displayName = displayIsNick ? name : name + " (" + _nick + ")";
         }
