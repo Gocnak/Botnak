@@ -6,7 +6,7 @@ import lib.JSON.JSONObject;
 import util.Utils;
 
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Nick on 2/1/14.
@@ -30,9 +30,10 @@ public class FrankerFaceZ extends ToggleableFace {
      */
     static class FFZParser {
 
-        private static void parseSet(int set, ArrayList<FrankerFaceZ> collection) {
+        private static void parseSet(int set, List<FrankerFaceZ> collection)
+        {
             try {
-                URL url = new URL("http://api.frankerfacez.com/v1/set/" + set);
+                URL url = new URL("https://api.frankerfacez.com/v1/set/" + set);
                 String line = Utils.createAndParseBufferedReader(url.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);
@@ -43,7 +44,7 @@ public class FrankerFaceZ extends ToggleableFace {
                             JSONObject emote = emotes.getJSONObject(i);
                             String regex = emote.getString("name");
                             int ID = emote.getInt("id");
-                            collection.add(new FrankerFaceZ(regex, "http://cdn.frankerfacez.com/emoticon/" + ID + "/1", true));
+                            collection.add(new FrankerFaceZ(regex, "https://cdn.frankerfacez.com/emoticon/" + ID + "/1", true));
                         }
                     }
                 }
@@ -53,13 +54,14 @@ public class FrankerFaceZ extends ToggleableFace {
             }
         }
 
-        public static void parse(String channel, ArrayList<FrankerFaceZ> faces) {
+        public static void parse(String channel, List<FrankerFaceZ> faces)
+        {
             if ("global".equalsIgnoreCase(channel)) {
                 parseSet(3, faces);
                 return;
             }
             try {
-                URL url = new URL("http://api.frankerfacez.com/v1/_room/" + channel);
+                URL url = new URL("https://api.frankerfacez.com/v1/_room/" + channel);
                 String line = Utils.createAndParseBufferedReader(url.openStream());
                 if (!line.isEmpty()) {
                     JSONObject init = new JSONObject(line);

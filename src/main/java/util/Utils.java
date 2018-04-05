@@ -436,7 +436,7 @@ public class Utils {
      * Adds a command to the command map.
      * <p>
      * To do this in chat, simply type !addcommand command message
-     * More examples at http://bit.ly/1366RwM
+     * More examples at https://bit.ly/1366RwM
      *
      * @param s The string from the chat.
      * @return true if added, false if fail

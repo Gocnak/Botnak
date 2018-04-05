@@ -23,8 +23,8 @@ import java.awt.image.RescaleOp;
 import java.io.File;
 import java.net.URL;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,15 +43,15 @@ public class FaceManager {
     private static boolean checkedEmoteSets = false;
 
     //faces
-    public static ConcurrentHashMap<String, Face> faceMap;
-    public static ConcurrentHashMap<Long, Face> nameFaceMap;
+    public static Map<String, Face> faceMap;
+    public static Map<Long, Face> nameFaceMap;
     //  twitch
-    public static CopyOnWriteArraySet<SubscriberIcon> subIconSet;
+    public static Map<String, String> subIconMap;
     public static File exSubscriberIcon;
-    public static ConcurrentHashMap<Integer, TwitchFace> twitchFaceMap;
-    public static ConcurrentHashMap<Integer, TwitchFace> onlineTwitchFaces;
+    public static Map<Integer, TwitchFace> twitchFaceMap;
+    public static Map<Integer, TwitchFace> onlineTwitchFaces;
     //  ffz
-    public static ConcurrentHashMap<String, ArrayList<FrankerFaceZ>> ffzFaceMap;
+    public static Map<String, List<FrankerFaceZ>> ffzFaceMap;
 
     public static void init() {
         exSubscriberIcon = null;
@@ -60,7 +60,7 @@ public class FaceManager {
         twitchFaceMap = new ConcurrentHashMap<>();
         onlineTwitchFaces = new ConcurrentHashMap<>();
         ffzFaceMap = new ConcurrentHashMap<>();
-        subIconSet = new CopyOnWriteArraySet<>();
+        subIconMap = new ConcurrentHashMap<>();
     }
 
     public enum FACE_TYPE {
@@ -130,27 +130,34 @@ public class FaceManager {
      * @return The URL of the subscriber icon.
      */
     public static URL getSubIcon(String channel) {
-        for (SubscriberIcon i : subIconSet) {
-            if (i.getChannel().equalsIgnoreCase(channel)) {
+        String id = APIRequests.Twitch.getChannelID(channel);
+
+        if (!id.isEmpty())
+        {
+            String file = subIconMap.get(id);
+            if (file != null)
+            {
                 try {
-                    if (Utils.areFilesGood(i.getFileLoc())) {
-                        return new File(i.getFileLoc()).toURI().toURL();
+                    if (Utils.areFilesGood(file))
+                    {
+                        return new File(file).toURI().toURL();
                     } else {
                         //This updates the icon, all you need to do is remove the file
-                        subIconSet.remove(i);
-                        break;
+                        subIconMap.remove(id);
                     }
                 } catch (Exception e) {
                     GUIMain.log(e);
                 }
             }
+
+            String path = APIRequests.Twitch.getSubIcon(channel);
+            if (path != null)
+            {
+                subIconMap.put(id, path);
+                return getSubIcon(channel);
+            }
         }
-        String path = APIRequests.Twitch.getSubIcon(channel);
-        if (path != null)
-        {
-            subIconSet.add(new SubscriberIcon(channel, path));
-            return getSubIcon(channel);
-        }
+
         return null;
     }
 
@@ -238,9 +245,10 @@ public class FaceManager {
         }
         String errorMessage = "Could not find face " + faceName + " in the loaded Twitch faces";
         if (Settings.ffzFacesEnable.getValue()) {
-            Set<Map.Entry<String, ArrayList<FrankerFaceZ>>> channels = ffzFaceMap.entrySet();
-            for (Map.Entry<String, ArrayList<FrankerFaceZ>> entry : channels) {
-                ArrayList<FrankerFaceZ> faces = entry.getValue();
+            Set<Map.Entry<String, List<FrankerFaceZ>>> channels = ffzFaceMap.entrySet();
+            for (Map.Entry<String, List<FrankerFaceZ>> entry : channels)
+            {
+                List<FrankerFaceZ> faces = entry.getValue();
                 for (FrankerFaceZ f : faces) {
                     if (f.getRegex().equalsIgnoreCase(faceName)) {
                         boolean newStatus = !f.isEnabled();
@@ -267,8 +275,8 @@ public class FaceManager {
 
     public static void handleFFZChannel(String channel) {
         ThreadEngine.submit(() -> {
-            ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(channel);
-            ArrayList<FrankerFaceZ> fromOnline = new ArrayList<>();
+            List<FrankerFaceZ> faces = ffzFaceMap.get(channel);
+            List<FrankerFaceZ> fromOnline = new ArrayList<>();
             FrankerFaceZ.FFZParser.parse(channel, fromOnline);
             if (faces != null) { //already have the faces
                 for (FrankerFaceZ online : fromOnline) {
@@ -364,10 +372,10 @@ public class FaceManager {
             case FRANKER_FACE:
                 if (doneWithFrankerFaces) {
                     String[] channels = Settings.ffzFacesUseAll.getValue() ?
-                            ffzFaceMap.keySet().toArray(new String[ffzFaceMap.keySet().size()]) :
+                            ffzFaceMap.keySet().toArray(new String[0]) :
                             new String[]{"global", channel};
                     for (String currentChannel : channels) {
-                        ArrayList<FrankerFaceZ> faces = ffzFaceMap.get(currentChannel);
+                        List<FrankerFaceZ> faces = ffzFaceMap.get(currentChannel);
                         if (faces != null) {
                             for (FrankerFaceZ f : faces) {
                                 insertFaceMetadata(f, ranges, rangeStyles, currentChannel, object);
@@ -432,11 +440,12 @@ public class FaceManager {
      * Downloads the subscriber icon of the specified URL and channel.
      *
      * @param url     The url to download the icon from.
-     * @param channel The channel the icon is for.
+     * @param ID The channel ID the icon is for.
      * @return The path of the file of the icon.
      */
-    public static String downloadIcon(String url, String channel) {
-        File toSave = new File(Settings.subIconsDir + File.separator + Utils.setExtension(channel.substring(1), ".png"));
+    public static String downloadIcon(String url, String ID)
+    {
+        File toSave = new File(Settings.subIconsDir + File.separator + Utils.setExtension(ID, ".png"));
         if (download(url, toSave, null))
             return toSave.getAbsolutePath();
         else
@@ -538,7 +547,7 @@ public class FaceManager {
             BufferedImage image;
             URL URL = new URL(url);//bad URL or something
             if (URL.getHost().equals("imgur.com")) {
-                URL = new URL(Utils.setExtension("http://i.imgur.com" + URL.getPath(), ".png"));
+                URL = new URL(Utils.setExtension("https://i.imgur.com" + URL.getPath(), ".png"));
             }
             if (sanityCheck(URL)) {
                 image = ImageIO.read(URL);//just incase the file is null/it can't read it

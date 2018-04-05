@@ -1,6 +1,9 @@
 package util.settings;
 
-import face.*;
+import face.Face;
+import face.FaceManager;
+import face.FrankerFaceZ;
+import face.TwitchFace;
 import gui.ChatPane;
 import gui.CombinedChatPane;
 import gui.forms.GUIMain;
@@ -1129,7 +1132,7 @@ public class Settings {
      */
     public static void loadSubIcons(File[] subIconFiles) {
         for (File f : subIconFiles) {
-            FaceManager.subIconSet.add(new SubscriberIcon(Utils.removeExt(f.getName()), f.getAbsolutePath()));
+            FaceManager.subIconMap.put(Utils.removeExt(f.getName()), f.getAbsolutePath());
         }
     }
 

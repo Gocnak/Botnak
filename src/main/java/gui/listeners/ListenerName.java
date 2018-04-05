@@ -130,7 +130,7 @@ public class ListenerName extends MouseAdapter {
                     //ex: Go to gocnak's channel
                     //    0123456     ^ substring
                     String name = text.substring(6, text.indexOf("'"));
-                    Utils.openWebPage("http://twitch.tv/" + name);
+                    Utils.openWebPage("https://twitch.tv/" + name);
                 }
             }
         }

@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,7 +29,7 @@ public class APIRequests {
     //Anything Twitch
     public static class Twitch {
 
-        private static ConcurrentHashMap<String, String> usersIDMap = new ConcurrentHashMap<>();
+        private static Map<String, String> usersIDMap = new ConcurrentHashMap<>();
 
         private static final String TWITCH_API = "https://api.twitch.tv/kraken";
         private static final String CLIENT_ID = "qw8d3ve921t0n6e3if07l664f1jn1y7";
@@ -138,7 +139,7 @@ public class APIRequests {
             if (channel.contains("#"))
                 channel = channel.replaceAll("#", "");
 
-            if (usersIDMap.contains(channel))
+            if (usersIDMap.containsKey(channel))
                 return usersIDMap.get(channel);
 
 
@@ -175,9 +176,10 @@ public class APIRequests {
                 if (init.has("subscriber"))
                 {
                     JSONObject sub = init.getJSONObject("subscriber");
-                    if (!sub.getString("image").equalsIgnoreCase("null"))
+                    String image = sub.getString("image");
+                    if (!"null".equalsIgnoreCase(image))
                     {
-                        return FaceManager.downloadIcon(sub.getString("image"), channel);
+                        return FaceManager.downloadIcon(image, ID);
                     }
                 }
             }
@@ -591,9 +593,9 @@ public class APIRequests {
                 return toReturn;
             }
             //TODO check the song requests engine to see if that is currently playing
-            String tracks_url = "http://www.last.fm/user/" + Settings.lastFMAccount.getValue() + "/now";
+            String tracks_url = "https://www.last.fm/user/" + Settings.lastFMAccount.getValue() + "/now";
             try {
-                URL request = new URL("http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
+                URL request = new URL("https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
                         Settings.lastFMAccount.getValue() + "&api_key=e0d3467ebb54bb110787dd3d77705e1a&format=json");
                 String line = Utils.createAndParseBufferedReader(request.openStream());
                 JSONObject outermost = new JSONObject(line);

@@ -64,7 +64,7 @@ public class PaneMenuListener implements ActionListener {
                 //ex: Go to gocnak's channel
                 //    0123456     ^ substring
                 String name = text.substring(6, text.indexOf("'"));
-                Utils.openWebPage("http://twitch.tv/" + name);
+                Utils.openWebPage("https://twitch.tv/" + name);
             } else if (text.startsWith("Clear ")) {
                 if (pane == null) pane = Utils.getCombinedChatPane(GUIMain.channelPane.getSelectedIndex());
                 if (pane != null) { //The combined could return null, still have to check
