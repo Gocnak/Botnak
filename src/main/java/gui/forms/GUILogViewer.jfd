@@ -1,0 +1,40 @@
+JFDML JFormDesigner: "6.0.0.0.84" Java: "1.8.0_112-release" encoding: "UTF-8"
+
+new FormModel {
+	contentType: "form/swing"
+	root: new FormRoot {
+		add( new FormWindow( "javax.swing.JFrame", new FormLayoutManager( class org.jdesktop.layout.GroupLayout ) {
+			"$horizontalGroup": "par l {seq l {comp scrollPane1:::p:120:p, space :::x, par l:::p {comp scrollPane2::::518:x, comp textField1::::518:x}}}"
+			"$verticalGroup": "par l {seq {comp textField1:::p::p, space :::p, comp scrollPane2::::408:x}, comp scrollPane1::::438:x}"
+		} ) {
+			name: "this"
+			"title": "Log Viewer"
+			"iconImage": new com.jformdesigner.model.SwingIcon( 0, "/image/icon.png" )
+			add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
+				name: "scrollPane1"
+				add( new FormComponent( "javax.swing.JTree" ) {
+					name: "tree1"
+					"model": new javax.swing.tree.DefaultTreeModel( new javax.swing.tree.DefaultMutableTreeNode {
+						userObject: "All Chats"
+						add( new javax.swing.tree.DefaultMutableTreeNode {
+							userObject: "Channel"
+						} )
+					} )
+				} )
+			} )
+			add( new FormComponent( "javax.swing.JTextField" ) {
+				name: "textField1"
+				"text": "user:gocnak"
+			} )
+			add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
+				name: "scrollPane2"
+				add( new FormComponent( "javax.swing.JTextPane" ) {
+					name: "textPane1"
+				} )
+			} )
+		}, new FormLayoutConstraints( null ) {
+			"location": new java.awt.Point( 190, 60 )
+			"size": new java.awt.Dimension( 660, 470 )
+		} )
+	}
+}

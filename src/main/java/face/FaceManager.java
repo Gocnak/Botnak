@@ -1,5 +1,6 @@
 package face;
 
+import gui.ChatPane;
 import gui.forms.GUIMain;
 import lib.JSON.JSONArray;
 import lib.JSON.JSONObject;
@@ -137,11 +138,18 @@ public class FaceManager {
             String file = subIconMap.get(id);
             if (file != null)
             {
-                try {
+                try
+                {
                     if (Utils.areFilesGood(file))
                     {
                         return new File(file).toURI().toURL();
-                    } else {
+                    }
+                    else if ("DEFAULT".equals(file))
+                    {
+                        return ChatPane.class.getResource("/image/def_sub.png");
+                    }
+                    else
+                    {
                         //This updates the icon, all you need to do is remove the file
                         subIconMap.remove(id);
                     }
@@ -154,8 +162,13 @@ public class FaceManager {
             if (path != null)
             {
                 subIconMap.put(id, path);
-                return getSubIcon(channel);
             }
+            else
+            {
+                subIconMap.put(id, "DEFAULT");
+            }
+
+            return getSubIcon(channel);
         }
 
         return null;

@@ -62,7 +62,7 @@ public class ListenerName extends MouseAdapter {
                 if (main != null) {
                     int count = 0; //don't worry about it
                     //can't ban broadcaster or admin/staff/global mod
-                    if (u != null && (u.isAdmin() || u.isGlobalMod() || u.isStaff() || name.equalsIgnoreCase(channel.replace("#", ""))))
+                    if (u != null && (u.isAdmin() || u.isStaff() || name.equalsIgnoreCase(channel.replace("#", ""))))
                         count++;
 
                     //can't ban other mods if you aren't the broadcaster

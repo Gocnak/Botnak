@@ -346,14 +346,14 @@ public class ChatPane implements DocumentListener {
             }
             if (senderUser.isOp(channel))
             {
-                if (!channel.substring(1).equals(sender) && !senderUser.isStaff() && !senderUser.isAdmin() && !senderUser.isGlobalMod())
+                if (!channel.substring(1).equals(sender) && !senderUser.isStaff() && !senderUser.isAdmin())
                 {//not the broadcaster again
                     insertIcon(m, IconEnum.MOD, null);
                 }
             }
-            if (senderUser.isGlobalMod())
+            if (senderUser.isVIP(channel.substring(1)))
             {
-                insertIcon(m, IconEnum.GLOBAL_MOD, null);
+                insertIcon(m, IconEnum.VIP, null);
             }
             if (senderUser.isStaff())
             {
@@ -373,10 +373,6 @@ public class ChatPane implements DocumentListener {
                         insertIcon(m, IconEnum.EX_SUBSCRIBER, channel);
                     }
                 }
-            }
-            if (senderUser.isTurbo())
-            {
-                insertIcon(m, IconEnum.TURBO, null);
             }
 
             if (senderUser.isPrime())

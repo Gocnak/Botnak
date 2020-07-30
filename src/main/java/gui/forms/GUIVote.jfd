@@ -1,0 +1,145 @@
+JFDML JFormDesigner: "6.0.0.0.84" Java: "1.8.0_112-release" encoding: "UTF-8"
+
+new FormModel {
+	contentType: "form/swing"
+	root: new FormRoot {
+		add( new FormWindow( "javax.swing.JFrame", new FormLayoutManager( class org.jdesktop.layout.GroupLayout ) {
+			"$horizontalGroup": "par l {seq l {space :::p, par l {seq {comp scrollPane2:::p:200:p, space u:::p, comp pieChart:::::x}, seq {comp newVoteButton:::p::p, space s:::p, comp stopVoteButton:::p::p, space ::103:x, comp closeButton:::p::p}}, space :::p}, comp separator2::t::443:x}"
+			"$verticalGroup": "par l {seq l {space :::p, par l:::p {comp pieChart:::::x, comp scrollPane2::::213:x}, space u:::p, comp separator2:::p:2:p, space u:::p, par b {comp newVoteButton::b:p::p, comp stopVoteButton::b:p::p, comp closeButton::b:p::p}, space ::11:x}}"
+		} ) {
+			name: "this"
+			"title": "User Vote"
+			"iconImage": new com.jformdesigner.model.SwingIcon( 0, "/image/icon.png" )
+			"resizable": false
+			"defaultCloseOperation": 2
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "newVoteButton"
+				"text": "Create New Vote..."
+				"focusable": false
+				addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "newVoteButtonActionPerformed", false ) )
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "closeButton"
+				"text": "Close"
+				"focusable": false
+				addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "closeButtonActionPerformed", false ) )
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "stopVoteButton"
+				"text": "Stop Current Vote"
+				"focusable": false
+				"enabled": false
+				addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "cancelVoteButtonActionPerformed", false ) )
+			} )
+			add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
+				name: "scrollPane2"
+				add( new FormComponent( "javax.swing.JList" ) {
+					name: "votesList"
+					"selectionMode": 0
+					auxiliary() {
+						"JavaCodeGenerator.typeParameters": "Vote.Option"
+						"JavaCodeGenerator.postInitCode": "votesList.setCellRenderer(new VoteCellRenderer());\nvotesList.setModel(voteListModel);"
+					}
+				} )
+			} )
+			add( new FormComponent( "gui.PieChart" ) {
+				name: "pieChart"
+			} )
+			add( new FormComponent( "javax.swing.JSeparator" ) {
+				name: "separator2"
+			} )
+		}, new FormLayoutConstraints( null ) {
+			"location": new java.awt.Point( 355, 105 )
+			"size": new java.awt.Dimension( 445, 320 )
+		} )
+		add( new FormWindow( "javax.swing.JFrame", new FormLayoutManager( class org.jdesktop.layout.GroupLayout ) {
+			"$horizontalGroup": "par l {comp separator1::t:::x, seq {space :::p, par l {comp scrollPane1::::241:x, seq {comp startVoteButton:::p::p, space ::94:x, comp cancelButton:::p::p}, comp optionField::::241:x, seq {comp label2:::p::p, space u:::p, comp channelsBox:::p:112:p, space :0:70:x}, seq t {par l {seq l {comp addOptionButton:::p::p, space :0:33:x}, comp label1::::160:x}, space :::p, par l {comp removeOptionButton:::p:75:p, comp timeSpinner::t:p:65:p}}}, space :::p}}"
+			"$verticalGroup": "par l {seq l {space :::p, comp scrollPane1:::p:125:p, space u:::p, comp optionField:::p::p, space :::p, par b {comp addOptionButton::b:p::p, comp removeOptionButton::b:p::p}, space s:::p, par b {comp label1::b:p:20:p, comp timeSpinner::b:p::p}, par l {seq {space s:::p, comp label2:::p::p, space ::23:x}, seq t {space ::13:x, comp channelsBox:::p::p, space s:::p}}, comp separator1:::p:2:p, space u:::p, par b {comp startVoteButton::b:p::p, comp cancelButton::b:p::p}, space :::p}}"
+		} ) {
+			name: "GUICreateVote"
+			"title": "Create New Vote"
+			"iconImage": new com.jformdesigner.model.SwingIcon( 0, "/image/icon.png" )
+			"resizable": false
+			"defaultCloseOperation": 2
+			add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
+				name: "scrollPane1"
+				add( new FormComponent( "javax.swing.JTable" ) {
+					name: "optionTable"
+					"model": new com.jformdesigner.model.SwingTableModel( new java.util.Vector, new java.util.Vector {
+						add( "Option" )
+						add( "Value" )
+					}, new java.util.Vector {
+						add( class java.lang.Integer )
+						add( class java.lang.String )
+					}, new java.util.Vector {
+						add( false )
+						add( null )
+					}, new java.util.Vector {
+						add( new com.jformdesigner.model.SwingTableColumn( null, 50, 0, 0, false ) )
+						add( new com.jformdesigner.model.SwingTableColumn( null, 165, 0, 0, true ) )
+					} )
+					auxiliary() {
+						"JavaCodeGenerator.postInitCode": "optionTable.getTableHeader().setReorderingAllowed(false);"
+					}
+					addEvent( new FormEvent( "java.awt.event.MouseListener", "mouseReleased", "optionTableMouseReleased", false ) )
+				} )
+			} )
+			add( new FormComponent( "javax.swing.JTextField" ) {
+				name: "optionField"
+				addEvent( new FormEvent( "java.awt.event.KeyListener", "keyReleased", "optionFieldKeyReleased", true ) )
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "removeOptionButton"
+				"text": "Remove"
+				"focusable": false
+				"enabled": false
+				addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "removeOptionButtonActionPerformed", false ) )
+			} )
+			add( new FormComponent( "javax.swing.JSeparator" ) {
+				name: "separator1"
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "startVoteButton"
+				"text": "Start Vote"
+				"focusable": false
+				addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "startVoteButtonActionPerformed", false ) )
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "cancelButton"
+				"text": "Cancel"
+				"focusable": false
+				addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "cancelButtonActionPerformed", false ) )
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "label1"
+				"text": "Duration of Vote (in seconds):"
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "addOptionButton"
+				"text": "Add Option to List"
+				"focusable": false
+				addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "addOptionButtonActionPerformed", false ) )
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "label2"
+				"text": "Channel:"
+			} )
+			add( new FormComponent( "javax.swing.JComboBox" ) {
+				name: "channelsBox"
+				auxiliary() {
+					"JavaCodeGenerator.typeParameters": "String"
+				}
+			} )
+			add( new FormComponent( "javax.swing.JSpinner" ) {
+				name: "timeSpinner"
+				"model": new javax.swing.SpinnerNumberModel {
+					minimum: 20
+					value: 20
+				}
+			} )
+		}, new FormLayoutConstraints( null ) {
+			"location": new java.awt.Point( 60, 110 )
+			"size": new java.awt.Dimension( 255, 390 )
+		} )
+	}
+}

@@ -172,15 +172,7 @@ public class IRCBot extends MessageHandler {
                     for (String part : split) {
                         if (count > 1) break;//only allowing 2 requests here; don't want spam
                         if (part.startsWith("http") || part.startsWith("www")) {
-                            if (ytVidDetail && (part.contains("youtu.be") || part.contains("youtube.com/watch")
-                                    || part.contains("youtube.com/v") || part.contains("youtube.com/embed/"))) {
-                                getBot().sendMessage(channel, APIRequests.YouTube.getVideoData(part).getResponseText());
-                                count++;
-                            } else if (unshortenURLs && (part.contains("bit.ly") ||
-                                    part.contains("tinyurl") || part.contains("goo.gl"))) {
-                                getBot().sendMessage(channel, APIRequests.UnshortenIt.getUnshortened(part).getResponseText());
-                                count++;
-                            } else if (twitchVOD && part.contains("twitch.tv/videos/"))
+                            if (twitchVOD && part.contains("twitch.tv/videos/"))
                             {
                                 getBot().sendMessage(channel, APIRequests.Twitch.getTitleOfVOD(part).getResponseText());
                                 count++;

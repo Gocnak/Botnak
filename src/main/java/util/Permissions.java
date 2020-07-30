@@ -50,7 +50,7 @@ public class Permissions {
         permissionList.add(Permission.VIEWER);
         if (Utils.isMainChannel(channel)) {
             Optional<Subscriber> sub = Settings.subscriberManager.getSubscriber(u.getUserID());
-            if (sub.isPresent() && !sub.get().isActive()) {
+            if ((sub.isPresent() && !sub.get().isActive()) || u.isVIP(channel)) {
                 // Technically this is an EX_SUBSCRIBER but they are the same as a SUBSCRIBER, permission-wise
                 permissionList.add(Permission.SUBSCRIBER);
             }
@@ -70,7 +70,7 @@ public class Permissions {
                 permissionList.add(Permission.DONOR);
             }
         }
-        if (u.isOp(channel) || u.isAdmin() || u.isStaff() || u.isGlobalMod()) {
+        if (u.isOp(channel) || u.isAdmin() || u.isStaff()) {
             permissionList.add(Permission.MODERATOR);
         }
         if (GUIMain.viewer != null && Settings.accountManager.getUserAccount().getName().equalsIgnoreCase(u.getNick())) {

@@ -23,7 +23,7 @@ public class GUIViewerList extends JFrame {
 
     private DefaultTreeModel defaultModel;
 
-    public DefaultMutableTreeNode staff, admins, global_mods, mods, viewers, default_root, filtered_root;
+    public DefaultMutableTreeNode staff, admins, vips, mods, viewers, default_root, filtered_root;
 
     public GUIViewerList(String channel) {
         initComponents(channel);
@@ -33,7 +33,7 @@ public class GUIViewerList extends JFrame {
     public enum ViewerType {
         STAFF,
         ADMIN,
-        GLOBAL_MOD,
+        VIP,
         MOD,
         VIEWER
     }
@@ -65,8 +65,8 @@ public class GUIViewerList extends JFrame {
             case VIEWER:
                 node = viewers;
                 break;
-            case GLOBAL_MOD:
-                node = global_mods;
+            case VIP:
+                node = vips;
                 break;
             default:
                 node = null;
@@ -84,7 +84,7 @@ public class GUIViewerList extends JFrame {
         default_root.removeAllChildren();
         if (staff.getChildCount() > 0) default_root.add(staff);
         if (admins.getChildCount() > 0) default_root.add(admins);
-        if (global_mods.getChildCount() > 0) default_root.add(global_mods);
+        if (vips.getChildCount() > 0) default_root.add(vips);
         if (mods.getChildCount() > 0) default_root.add(mods);
         default_root.add(viewers);
         if (!isFiltering) defaultModel.reload(default_root);
@@ -120,9 +120,9 @@ public class GUIViewerList extends JFrame {
                 rows.add(filtered);
             }
         }
-        if (global_mods.getChildCount() > 0) {
-            DefaultMutableTreeNode filtered = new DefaultMutableTreeNode("Global Moderators");
-            filterNode(global_mods, text, filtered);
+        if (vips.getChildCount() > 0) {
+            DefaultMutableTreeNode filtered = new DefaultMutableTreeNode("VIPs");
+            filterNode(vips, text, filtered);
             if (filtered.getChildCount() > 0) {
                 filtered_root.add(filtered);
                 rows.add(filtered);
@@ -213,7 +213,7 @@ public class GUIViewerList extends JFrame {
             viewerTree.setShowsRootHandles(true);
             staff = new DefaultMutableTreeNode("Staff");
             admins = new DefaultMutableTreeNode("Admins");
-            global_mods = new DefaultMutableTreeNode("Global Moderators");
+            vips = new DefaultMutableTreeNode("VIPs");
             mods = new DefaultMutableTreeNode("Moderators");
             viewers = new DefaultMutableTreeNode("Viewers");
             setViewerTreeModel(defaultModel);

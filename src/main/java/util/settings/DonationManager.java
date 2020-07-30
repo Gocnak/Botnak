@@ -60,7 +60,7 @@ public class DonationManager {
     }
 
     public boolean canCheck() {
-        return !getClientID().isEmpty() && !getAccessCode().isEmpty();
+        return false;//!getAccessCode().isEmpty();
     }
 
     /**
@@ -153,10 +153,6 @@ public class DonationManager {
         return false;
     }
 
-    public String getClientID() {
-        return Settings.donationClientID.getValue();
-    }
-
     public String getAccessCode() {
         return Settings.donationAuthCode.getValue();
     }
@@ -179,12 +175,13 @@ public class DonationManager {
 
     public void checkDonations(boolean single) {
         int limit = (single ? 5 : 100);
-        String url = "https://streamtip.com/api/tips?client_id=" + getClientID() + "&access_token=" + getAccessCode() +
+        String url = "https://streamlabs.com/api/v1.0/donations?access_token=" + getAccessCode() +
                 "&limit=" + limit;
         try {
             String line = Utils.createAndParseBufferedReader(new URL(url).openStream());
             if (!line.isEmpty()) {
                 JSONObject outerShell = new JSONObject(line);
+                JSONArray data = outerShell.getJSONArray("data");
                 int status = outerShell.getInt("status");
                 int count = outerShell.getInt("_count");
                 if (status == 200) { //ensure there's no problem with the site
@@ -212,9 +209,9 @@ public class DonationManager {
         }
     }
 
+    // TODO: REDO THIS, STREAMLABS DOES ONLY DESCENDING
     public void scanInitialDonations(int passesCompleted) {
-        String url = "https://streamtip.com/api/tips?client_id=" + getClientID() + "&access_token=" + getAccessCode() +
-                "&limit=100&direction=asc";
+        String url = "https://streamlabs.com/api/v1.0/donations?access_token=" + getAccessCode() + "&limit=100&direction=asc";
         try {
             String offset = "&offset=" + String.valueOf(100 * passesCompleted);
             String line = Utils.createAndParseBufferedReader(new URL(url + offset).openStream());

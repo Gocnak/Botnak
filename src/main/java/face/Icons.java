@@ -54,9 +54,6 @@ public class Icons
             case STAFF:
                 icon = sizeIcon(Settings.staffIcon.getValue());
                 break;
-            case TURBO:
-                icon = sizeIcon(Settings.turboIcon.getValue());
-                break;
             case PRIME:
                 icon = sizeIcon(ChatPane.class.getResource("/image/prime.png"));
                 break;
@@ -92,8 +89,8 @@ public class Icons
             case DONOR_INSANE:
                 icon = sizeIcon(ChatPane.class.getResource("/image/diamond.png"));
                 break;
-            case GLOBAL_MOD:
-                icon = sizeIcon(ChatPane.class.getResource("/image/globalmod.png"));
+            case VIP:
+                icon = sizeIcon(ChatPane.class.getResource("/image/vip.png"));
                 break;
             case CHEER_BIT_AMT_RED:
                 icon = sizeGifIcon(ChatPane.class.getResource("/image/bits_red.gif"), i.name());

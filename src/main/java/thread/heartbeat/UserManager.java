@@ -50,7 +50,7 @@ public class UserManager implements HeartbeatThread {
             GUIViewerList list = GUIMain.viewerLists.get(chanOut);
             if (list != null) {
                 try {
-                    url = new URL("https://tmi.twitch.tv/group/user/" + chan.substring(1) + "/chatters");
+                    url = new URL("https://tmi.twitch.tv/group/user/" + chanOut + "/chatters");
                     String line = Utils.createAndParseBufferedReader(url.openStream());
                     if (!line.isEmpty()) {
                         final Enumeration<TreePath> beforePaths = list.beforePaths();
@@ -60,19 +60,19 @@ public class UserManager implements HeartbeatThread {
                         JSONObject chatters = site.getJSONObject("chatters");
 
                         JSONArray mods = chatters.getJSONArray("moderators");
-                        readAndUpdate(mods, list, GUIViewerList.ViewerType.MOD);
+                        readAndUpdate(mods, list, GUIViewerList.ViewerType.MOD, chanOut);
 
                         JSONArray staff = chatters.getJSONArray("staff");
-                        readAndUpdate(staff, list, GUIViewerList.ViewerType.STAFF);
+                        readAndUpdate(staff, list, GUIViewerList.ViewerType.STAFF, chanOut);
 
                         JSONArray admins = chatters.getJSONArray("admins");
-                        readAndUpdate(admins, list, GUIViewerList.ViewerType.ADMIN);
+                        readAndUpdate(admins, list, GUIViewerList.ViewerType.ADMIN, chanOut);
 
-                        JSONArray global_mods = chatters.getJSONArray("global_mods");
-                        readAndUpdate(global_mods, list, GUIViewerList.ViewerType.GLOBAL_MOD);
+                        JSONArray global_mods = chatters.getJSONArray("vips");
+                        readAndUpdate(global_mods, list, GUIViewerList.ViewerType.VIP, chanOut);
 
                         JSONArray viewers = chatters.getJSONArray("viewers");
-                        readAndUpdate(viewers, list, GUIViewerList.ViewerType.VIEWER);
+                        readAndUpdate(viewers, list, GUIViewerList.ViewerType.VIEWER, chanOut);
 
                         EventQueue.invokeLater(() -> list.updateRoot(beforePaths, beforeScroll));
 
@@ -85,12 +85,12 @@ public class UserManager implements HeartbeatThread {
         }
     }
 
-    private void readAndUpdate(JSONArray toRead, GUIViewerList list, GUIViewerList.ViewerType type) {
+    private void readAndUpdate(JSONArray toRead, GUIViewerList list, GUIViewerList.ViewerType type, String channel) {
         for (int i = 0; i < toRead.length(); i++) {
             User u = new User(toRead.getString(i));
             switch (type) {
-                case GLOBAL_MOD:
-                    u.setGlobalMod(true);
+                case VIP:
+                    u.setVIP(channel);
                     break;
                 case ADMIN:
                     u.setAdmin(true);

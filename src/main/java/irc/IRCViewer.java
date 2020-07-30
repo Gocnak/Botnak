@@ -78,6 +78,13 @@ public class IRCViewer extends MessageHandler {
     }
 
     @Override
+    public void onBeingRaided(String userRaiding, int howManyPeople)
+    {
+        MessageQueue.addMessage(new Message(String.format("%s is raiding with %d viewer(s)!", userRaiding, howManyPeople),
+                Message.MessageType.RAIDED_NOTIFY).setChannel(Settings.accountManager.getUserAccount().getName()));
+    }
+
+    @Override
     public void onHosting(final String channel, final String target, String viewers) {
         Message m = new Message().setChannel(channel).setType(Message.MessageType.HOSTING_NOTIFY);
         if ("-".equals(target)) m.setContent("Exited host mode.");

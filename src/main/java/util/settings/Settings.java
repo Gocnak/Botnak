@@ -130,7 +130,6 @@ public class Settings {
     public static Setting<URL> broadIcon = new Setting<>("CustomBroad", Settings.class.getResource("/image/broad.png"), URL.class);
     public static Setting<URL> adminIcon = new Setting<>("CustomAdmin", Settings.class.getResource("/image/mod.png"), URL.class);
     public static Setting<URL> staffIcon = new Setting<>("CustomStaff", Settings.class.getResource("/image/mod.png"), URL.class);
-    public static Setting<URL> turboIcon = new Setting<>("", Settings.class.getResource("/image/turbo.png"), URL.class);
 
     public static Setting<Boolean> autoReconnectAccounts = new Setting<>("", true, Boolean.class);
 
@@ -145,7 +144,6 @@ public class Settings {
     public static Setting<String> defaultSoundDir = new Setting<>("SoundDir", "", String.class);
     public static Setting<String> defaultFaceDir = new Setting<>("FaceDir", "", String.class);
 
-    public static Setting<String> donationClientID = new Setting<>("DCID", "", String.class);
     public static Setting<String> donationAuthCode = new Setting<>("DCOAUTH", "", String.class);
     public static Setting<Boolean> scannedInitialDonations = new Setting<>("RanInitDonations", true, Boolean.class);
     public static Setting<Boolean> scannedInitialSubscribers = new Setting<>("RanInitSub", false, Boolean.class);

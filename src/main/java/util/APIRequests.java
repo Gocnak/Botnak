@@ -142,7 +142,6 @@ public class APIRequests {
             if (usersIDMap.containsKey(channel))
                 return usersIDMap.get(channel);
 
-
             String line = carryOutRequest(TWITCH_API_REQUEST.USERS_GET_BY_LOGIN, channel, null, null).responseString;
             if (!line.isEmpty())
             {
@@ -173,7 +172,7 @@ public class APIRequests {
             if (!line.isEmpty())
             {
                 JSONObject init = new JSONObject(line);
-                if (init.has("subscriber"))
+                if (init.has("subscriber") && !init.isNull("subscriber"))
                 {
                     JSONObject sub = init.getJSONObject("subscriber");
                     String image = sub.getString("image");
@@ -593,7 +592,7 @@ public class APIRequests {
                 return toReturn;
             }
             //TODO check the song requests engine to see if that is currently playing
-            String tracks_url = "https://www.last.fm/user/" + Settings.lastFMAccount.getValue() + "/now";
+            String tracks_url = "https://www.last.fm/user/" + Settings.lastFMAccount.getValue();
             try {
                 URL request = new URL("https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
                         Settings.lastFMAccount.getValue() + "&api_key=e0d3467ebb54bb110787dd3d77705e1a&format=json");
@@ -685,44 +684,6 @@ public class APIRequests {
             int seconds = (s % 60);
             if (hours > 0) return String.format("%d:%02d:%02d", hours, minutes, seconds);
             else return String.format("%02d:%02d", minutes, seconds);
-        }
-    }
-
-    //URL Un-shortening
-    public static class UnshortenIt {
-        /**
-         * Fetches the domain of the shortened URL's un-shortened destination.
-         *
-         * @param shortenedURL The shortened URL string.
-         * @return The appropriate response.
-         */
-        public static Response getUnshortened(String shortenedURL) {
-            Response toReturn = new Response();
-            toReturn.setResponseText("Failed to un-shorten URL! Click with caution!");
-            try {
-                URL request = new URL("http://urlex.org/txt/" + shortenedURL);
-                String line = Utils.createAndParseBufferedReader(request.openStream());
-                if (!line.isEmpty()) {
-                    if (!line.equals(shortenedURL)) {
-                        line = getHost(line).replaceAll("\\.", ",");
-                        toReturn.setResponseText("Linked Shortened URL directs to: " + line + " !");
-                    } else {
-                        toReturn.setResponseText("Invalid shortened URL!");
-                    }
-                }
-            } catch (Exception ignored) {
-            }
-            return toReturn;
-        }
-
-        private static String getHost(String webURL) {
-            String toReturn = webURL;
-            try {
-                URL url = new URL(webURL);
-                toReturn = url.getHost();
-            } catch (Exception ignored) {
-            }
-            return toReturn;
         }
     }
 }

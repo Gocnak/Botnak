@@ -398,10 +398,16 @@ public class PircBot {
                         // A new sub??
                         getChannelManager().handleSubscriber(target, senderUser.getUserID());
                         getMessageHandler().onNewSubscriber(target, tagsMap.get("system-msg"), senderUser);
-                    } else if ("resub".equals(type))
+                    }
+                    else if ("resub".equals(type))
                     {
                         getChannelManager().handleSubscriber(target, senderUser.getUserID());
                         getMessageHandler().onResubscribe(target, senderUser.getUserID(), tagsMap.get("system-msg"));
+                    }
+                    else if ("raid".equals(type))
+                    {
+                        getMessageHandler().onBeingRaided(tagsMap.get("msg-param-displayName"),
+                                Integer.parseInt(tagsMap.getOrDefault("msg-param-viewerCount", "0")));
                     }
                 }
 
@@ -473,21 +479,6 @@ public class PircBot {
                     case "emotes":
                         handleEmotes(tag.getValue(), user);
                         break;
-                    case "subscriber":
-                        if ("1".equals(tag.getValue()))
-                        {
-                            handleSpecial(channel, tag.getKey(), user);
-                        }
-                        break;
-                    case "turbo":
-                        if ("1".equals(tag.getValue()))
-                        {
-                            handleSpecial(null, tag.getKey(), user);
-                        }
-                        break;
-                    case "user-type":
-                        handleSpecial(channel, tag.getValue(), user);
-                        break;
                     case "r9k":
                         if ("1".equals(tag.getValue()))
                         {
@@ -510,7 +501,7 @@ public class PircBot {
                     case "emote-sets":
                         FaceManager.handleEmoteSet(tag.getValue());
                         break;
-                    case "badges": // Although user-type handles most of this, we need it for bits status
+                    case "badges":
                         String badges = tag.getValue();
                         // Bit donor
                         if (badges.contains("bits"))
@@ -522,9 +513,29 @@ public class PircBot {
                         // Prime
                         if (badges.contains("premium"))
                             user.setPrime(true);
+
                         // Verified
                         if (badges.contains("partner"))
                             user.setVerified(true);
+                        
+                        if (badges.contains("admin"))
+                            user.setAdmin(true);
+
+                        if (badges.contains("staff"))
+                            user.setStaff(true);
+
+                        Channel c = getChannelManager().getChannel(channel);
+                        if (c != null)
+                        {
+                            if (badges.contains("vip"))
+                                c.addVIP(user.getUserID());
+
+                            if (badges.contains("mod"))
+                                c.addMods(user.getNick());
+
+                            if (badges.contains("subscriber") || badges.contains("founder"))
+                                c.addSubscriber(user.getUserID());
+                        }
                         break;
                     case "bits":
                         //This message contains a cheer!
@@ -545,42 +556,6 @@ public class PircBot {
             String init = line.substring(line.indexOf(":") + 1);
             String[] upMods = init.replaceAll(" ", "").split(",");
             getChannelManager().getChannel(channel).addMods(upMods);
-        }
-    }
-
-    /**
-     * Determines if a user is admin, staff, turbo, or subscriber and sets their prefix accordingly.
-     *
-     * @param channel The channel it's for
-     * @param type    The user type
-     * @param user    The user
-     */
-    public void handleSpecial(String channel, String type, User user)
-    {
-        if (user != null) {
-            Channel c = getChannelManager().getChannel(channel);
-            switch (type) {
-                case "mod":
-                    if (c != null) c.addMods(user.getNick());
-                    break;
-                case "subscriber":
-                    if (c != null) c.addSubscriber(user.getUserID());
-                    break;
-                case "turbo":
-                    user.setTurbo(true);
-                    break;
-                case "admin":
-                    user.setAdmin(true);
-                    break;
-                case "global_mod":
-                    user.setGlobalMod(true);
-                    break;
-                case "staff":
-                    user.setStaff(true);
-                    break;
-                default:
-                    break;
-            }
         }
     }
 

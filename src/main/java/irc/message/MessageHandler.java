@@ -164,6 +164,15 @@ public abstract class MessageHandler {
     }
 
     /**
+     * Called when you're being raided by somebody
+     *
+     * @param userRaiding    The person raiding
+     * @param howManyPeople  How many people they're raiding with
+     */
+    public void onBeingRaided(String userRaiding, int howManyPeople) {
+    }
+
+    /**
      * This method is called if JTV is trying to tell you something.
      *
      * @param channel The channel (used for getting the pane)

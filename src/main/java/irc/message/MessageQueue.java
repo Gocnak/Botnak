@@ -86,6 +86,8 @@ public class MessageQueue extends Thread {
                         case HOSTED_NOTIFY:
                         case HOSTING_NOTIFY:
                         case JTV_NOTIFY:
+                        case RAIDED_NOTIFY:
+                        case RAIDING_NOTIFY:
                             GUIMain.getChatPane(mess.getChannel()).log(wrap, false);
                             break;
                         case DONATION_NOTIFY:

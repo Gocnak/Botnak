@@ -36,7 +36,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class User implements Comparable<User> {
 
-    private boolean staff, admin, global_mod, turbo, prime, verified;
+    private boolean staff, admin, prime, verified;
     private String _nick, _lowerNick, displayName;
     private long userID;
 
@@ -49,8 +49,6 @@ public class User implements Comparable<User> {
     {
         staff = false;
         admin = false;
-        global_mod = false;
-        turbo = false;
         prime = false;
         verified = false;
         _nick = null;
@@ -88,11 +86,11 @@ public class User implements Comparable<User> {
      */
     public String getPrefix() {
         StringBuilder foxStevenson = new StringBuilder();
-        if (isTurbo()) {
-            foxStevenson.append(" [Turbo]");
+        if (isVerified()) {
+            foxStevenson.append(" [Verified]");
         }
-        if (isGlobalMod()) {
-            foxStevenson.append(" [Global Mod]");
+        if (isPrime()) {
+            foxStevenson.append(" [Prime]");
         }
         if (isAdmin()) {
             foxStevenson.append(" [Admin]");
@@ -117,13 +115,6 @@ public class User implements Comparable<User> {
         return c != null && c.isMod(getNick());
     }
 
-    public boolean isGlobalMod() {
-        return global_mod;
-    }
-
-    public void setGlobalMod(boolean newBool) {
-        global_mod = newBool;
-    }
     /**
      * Checks to see if the user is an Admin on Twitch.
      *
@@ -149,18 +140,6 @@ public class User implements Comparable<User> {
     public void setStaff(boolean newBool) {
         staff = newBool;
     }
-
-    /**
-     * Checks to see if a user has twitch turbo.
-     */
-    public boolean isTurbo() {
-        return turbo;
-    }
-
-    public void setTurbo(boolean newBool) {
-        turbo = newBool;
-    }
-
 
     /**
      * Checks to see if a user has Twitch Prime.
@@ -198,6 +177,11 @@ public class User implements Comparable<User> {
         return c != null && c.isSubscriber(this);
     }
 
+    public boolean isVIP(String channel) {
+        Channel c = Settings.channelManager.getChannel(channel);
+        return c != null && c.isVIP(this);
+    }
+
     public boolean isDonor() {
         donor = Settings.donationManager.getDonor(getNick());
         return donor != null;
@@ -213,6 +197,12 @@ public class User implements Comparable<User> {
     {
         Channel c = Settings.channelManager.getChannel(channel);
         c.setCheer(userID, cheer);
+    }
+
+    public void setVIP(String channel)
+    {
+        Channel c = Settings.channelManager.getChannel(channel);
+        c.addVIP(userID);
     }
 
     public void addEmote(int emote) {

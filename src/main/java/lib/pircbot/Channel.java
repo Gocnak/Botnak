@@ -11,6 +11,7 @@ public class Channel {
 
     private CopyOnWriteArraySet<String> mods;
     private CopyOnWriteArraySet<Long> subscribers;
+    private CopyOnWriteArraySet<Long> vips;
     private ConcurrentHashMap<Long, Integer> cheers;
     private String name;
 
@@ -24,6 +25,7 @@ public class Channel {
         this.mods = new CopyOnWriteArraySet<>();
         this.subscribers = new CopyOnWriteArraySet<>();
         this.cheers = new ConcurrentHashMap<>();
+        this.vips = new CopyOnWriteArraySet<>();
     }
 
     /**
@@ -88,6 +90,9 @@ public class Channel {
     {
         subscribers.add(subID);
     }
+
+    public void addVIP(long userID) { vips.add(userID); }
+    public boolean isVIP(User u) { return vips.contains(u.getUserID()); }
 
     /**
      *  Sets a user's cheer amount.

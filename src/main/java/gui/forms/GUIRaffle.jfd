@@ -1,0 +1,144 @@
+JFDML JFormDesigner: "6.0.0.0.84" Java: "1.8.0_112-release" encoding: "UTF-8"
+
+new FormModel {
+	contentType: "form/swing"
+	root: new FormRoot {
+		add( new FormWindow( "javax.swing.JFrame", new FormLayoutManager( class org.jdesktop.layout.GroupLayout ) {
+			"$horizontalGroup": "par l {seq {space :::p, par l {seq {par l:::p {comp scrollPane1::::282:x, comp separator2::::282:x}, space :::x}, seq {par l {seq l {space :6:6:p, par l {comp label4::l:p::p, comp subscriberState::l:p::p}, space :p:26:p, par l {comp donorState:::p::p, comp label6:::p::p}, space :p:27:p, par l {comp label5:::p::p, comp modState:::p::p}}, comp label3::l:p::p, seq {space :65:65:p, comp label2:::p::p, space :11:11:p, comp keywordField:::p:149:p}, seq {space :p:65:p, comp label7:::p::p, space u:::p, comp channelsComboBox:::p::p}, seq {comp label1:::p::p, space :9:9:p, comp durationSpinner:::p:149:p}}, space :0:13:x}, seq l {comp startRaffleButton:::p::p, space ::107:x, comp stopRaffleButton:::p::p, space :0:6:x}}}}"
+			"$verticalGroup": "par l {seq l {space :::p, comp scrollPane1:::p:124:p, space :::p, comp separator2:::p:2:p, space :::p, comp label3:::p::p, space :::p, par t {seq {par b {comp label4::b:p::p, comp label5::b:p::p, comp label6::b:p::p}, space :::p, par l {comp subscriberState:::p::p, comp donorState:::p::p, comp modState::l:p::p}, space u:::p, par l {seq {space :5:5:p, comp label2:::p::p}, comp keywordField:::p::p}, space :1:1:p, par l {seq {space :5:5:p, comp label1:::p::p}, comp durationSpinner:::p::p}, space s:::p, comp label7:::p::p, space :p:6:p}, comp channelsComboBox:::p::p}, space :p:23:p, par b {comp startRaffleButton::b:p::p, comp stopRaffleButton::b:p::p}, space :::x}}"
+		} ) {
+			name: "this"
+			"title": "Raffles"
+			"iconImage": new com.jformdesigner.model.SwingIcon( 0, "/image/icon.png" )
+			"resizable": false
+			"defaultCloseOperation": 2
+			add( new FormComponent( "javax.swing.JSeparator" ) {
+				name: "separator2"
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "startRaffleButton"
+				"text": "Start Raffle"
+				"focusable": false
+				addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "startRaffleButtonActionPerformed", false ) )
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "stopRaffleButton"
+				"text": "Stop Raffle"
+				"enabled": false
+				"focusable": false
+				addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "stopRaffleButtonActionPerformed", false ) )
+			} )
+			add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
+				name: "scrollPane1"
+				add( new FormComponent( "javax.swing.JTable" ) {
+					name: "previousWinnersTable"
+					"model": new com.jformdesigner.model.SwingTableModel( new java.util.Vector, new java.util.Vector {
+						add( "Keyword" )
+						add( "Winner" )
+						add( "# Entered" )
+					}, new java.util.Vector {
+						add( class java.lang.String )
+						add( class java.lang.String )
+						add( class java.lang.Integer )
+					}, new java.util.Vector {
+						add( false )
+						add( false )
+						add( false )
+					}, new java.util.Vector {
+						add( new com.jformdesigner.model.SwingTableColumn( null, 100, 0, 0, false ) )
+						add( new com.jformdesigner.model.SwingTableColumn( null, 100, 0, 0, false ) )
+						add( new com.jformdesigner.model.SwingTableColumn( null, 50, 0, 0, false ) )
+					} )
+					"rowSelectionAllowed": false
+					"selectionMode": 0
+					auxiliary() {
+						"JavaCodeGenerator.postCreateCode": "previousWinnersTable.getTableHeader().setReorderingAllowed(false);"
+					}
+					addEvent( new FormEvent( "java.awt.event.MouseListener", "mouseReleased", "previousWinnersTableMouseReleased", false ) )
+				} )
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "label4"
+				"text": "Subscribers"
+			} )
+			add( new FormComponent( "javax.swing.JComboBox" ) {
+				name: "subscriberState"
+				"model": new javax.swing.DefaultComboBoxModel {
+					selectedItem: "-"
+					addElement( "-" )
+					addElement( "Include" )
+					addElement( "Exclude" )
+				}
+				"focusable": false
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "label6"
+				"text": "Donors"
+			} )
+			add( new FormComponent( "javax.swing.JComboBox" ) {
+				name: "donorState"
+				"model": new javax.swing.DefaultComboBoxModel {
+					selectedItem: "-"
+					addElement( "-" )
+					addElement( "Include" )
+					addElement( "Exclude" )
+				}
+				"focusable": false
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "label5"
+				"text": "Mods"
+			} )
+			add( new FormComponent( "javax.swing.JComboBox" ) {
+				name: "modState"
+				"model": new javax.swing.DefaultComboBoxModel {
+					selectedItem: "-"
+					addElement( "-" )
+					addElement( "Include" )
+					addElement( "Exclude" )
+				}
+				"focusable": false
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "label3"
+				"text": "Permissions:"
+				"toolTipText": "<html>These are automatically exclusive if left unchecked.<br>\nIf you want everybody to enter, check all the boxes.<br>\nOtherwise the person has to be JUST what you checked.<br>\nExample: A moderator that is also a subscriber<br>\nCANNOT enter if only moderator OR only subscriber is chosen.</html>"
+			} )
+			add( new FormComponent( "javax.swing.JComboBox" ) {
+				name: "channelsComboBox"
+				auxiliary() {
+					"JavaCodeGenerator.typeParameters": "String"
+				}
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "label7"
+				"text": "Channel:"
+				"horizontalAlignment": 4
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "label2"
+				"text": "Keyword:"
+				"horizontalAlignment": 4
+			} )
+			add( new FormComponent( "javax.swing.JSpinner" ) {
+				name: "durationSpinner"
+				"focusable": false
+				"model": new javax.swing.SpinnerNumberModel {
+					minimum: 20
+					value: 20
+				}
+			} )
+			add( new FormComponent( "javax.swing.JTextField" ) {
+				name: "keywordField"
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "label1"
+				"text": "Duration (in seconds):"
+				"horizontalAlignment": 4
+			} )
+		}, new FormLayoutConstraints( null ) {
+			"location": new java.awt.Point( 230, 50 )
+			"size": new java.awt.Dimension( 295, 405 )
+		} )
+	}
+}

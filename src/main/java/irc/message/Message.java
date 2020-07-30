@@ -154,7 +154,9 @@ public class Message {
         JTV_NOTIFY,
         WHISPER_MESSAGE,
         CLEAR_TEXT,
-        CHEER_MESSAGE
+        CHEER_MESSAGE,
+        RAIDING_NOTIFY,
+        RAIDED_NOTIFY,
     }
 
     public static class ClearChatMessage extends Message
